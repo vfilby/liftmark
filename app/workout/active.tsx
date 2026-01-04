@@ -332,12 +332,15 @@ export default function ActiveWorkoutScreen() {
 
   const formatSetTarget = (set: SessionSet): string => {
     const parts: string[] = [];
-    if (set.targetWeight !== undefined) {
-      parts.push(`${set.targetWeight}${set.targetWeightUnit || ''}`);
-    }
+    const unit = set.targetWeightUnit || 'lbs';
+
+    // Always show weight for rep-based exercises
     if (set.targetReps !== undefined) {
+      const weight = set.targetWeight ?? 0;
+      parts.push(`${weight}${unit}`);
       parts.push(`${set.targetReps} reps`);
     }
+    // Time-based sets (like planks)
     if (set.targetTime !== undefined) {
       parts.push(`${set.targetTime}s`);
     }
@@ -349,22 +352,24 @@ export default function ActiveWorkoutScreen() {
 
   const formatSetActual = (set: SessionSet): string => {
     const parts: string[] = [];
-    // Use actual values if available, fall back to target values
-    const weight = set.actualWeight ?? set.targetWeight;
-    const weightUnit = set.actualWeightUnit || set.targetWeightUnit || '';
+    const unit = set.actualWeightUnit || set.targetWeightUnit || 'lbs';
     const reps = set.actualReps ?? set.targetReps;
     const rpe = set.actualRpe ?? set.targetRpe;
 
-    if (weight !== undefined) {
-      parts.push(`${weight}${weightUnit}`);
-    }
+    // Always show weight for rep-based exercises
     if (reps !== undefined) {
+      const weight = set.actualWeight ?? set.targetWeight ?? 0;
+      parts.push(`${weight}${unit}`);
       parts.push(`${reps} reps`);
+    }
+    // Time-based sets
+    if (set.actualTime ?? set.targetTime) {
+      parts.push(`${set.actualTime ?? set.targetTime}s`);
     }
     if (rpe !== undefined) {
       parts.push(`RPE ${rpe}`);
     }
-    return parts.join(' × ') || '';
+    return parts.join(' × ') || 'Bodyweight';
   };
 
   return (

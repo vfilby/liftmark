@@ -33,6 +33,12 @@ export default function RootLayout() {
           gestureEnabled: false,
         }}
       />
+      <Stack.Screen
+        name="history/[id]"
+        options={{
+          title: 'Workout Details',
+        }}
+      />
     </Stack>
   );
 }
