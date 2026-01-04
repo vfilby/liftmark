@@ -15,7 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.liftmark.app"
+      "bundleIdentifier": "com.liftmark.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
+        "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
+      }
     },
     "android": {
       "adaptiveIcon": {

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
+import { audioService } from '@/services/audioService';
 import RestTimer from '@/components/RestTimer';
 import type { SessionExercise, SessionSet } from '@/types';
 
@@ -70,6 +71,14 @@ export default function ActiveWorkoutScreen() {
     if (!activeSession) {
       resumeSession();
     }
+  }, []);
+
+  // Preload audio for timer sounds
+  useEffect(() => {
+    audioService.preloadSounds();
+    return () => {
+      audioService.unloadSounds();
+    };
   }, []);
 
   // Initialize edit values for the current set when it changes
@@ -130,20 +139,24 @@ export default function ActiveWorkoutScreen() {
     return () => backHandler.remove();
   }, []);
 
-  // Rest timer tick
+  // Rest timer tick with audio cues
   useEffect(() => {
     if (restTimer?.isRunning) {
       const interval = setInterval(() => {
+        // Play countdown beeps at 3, 2, 1 seconds
+        if (restTimer.remainingSeconds <= 3 && restTimer.remainingSeconds > 0) {
+          audioService.playTick();
+        }
         tickRestTimer();
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [restTimer?.isRunning]);
+  }, [restTimer?.isRunning, restTimer?.remainingSeconds]);
 
   // Track if timer was running to detect when it finishes
   const wasTimerRunning = useRef(false);
 
-  // When rest timer finishes (goes from running to null), clear preview state
+  // When rest timer finishes (goes from running to null), clear preview state and play sound
   useEffect(() => {
     if (restTimer?.isRunning) {
       wasTimerRunning.current = true;
@@ -152,6 +165,8 @@ export default function ActiveWorkoutScreen() {
       wasTimerRunning.current = false;
       setShowUpNextPreview(false);
       setLastCompletedSetId(null);
+      // Play completion sound
+      audioService.playComplete();
     }
   }, [restTimer]);
 
