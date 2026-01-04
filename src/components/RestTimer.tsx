@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '@/theme';
 
 interface RestTimerProps {
   remainingSeconds: number;
@@ -13,10 +14,69 @@ export default function RestTimer({
   isRunning,
   onStop,
 }: RestTimerProps) {
+  const { colors } = useTheme();
   const progress = totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0;
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
   const timeDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+  const styles = StyleSheet.create({
+    container: {
+      marginBottom: 8,
+    },
+    timerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryLight,
+      borderRadius: 10,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    timerInfo: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      marginRight: 12,
+    },
+    timerLabel: {
+      fontSize: 14,
+      color: colors.primary,
+      marginRight: 6,
+    },
+    timeDisplay: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.primary,
+    },
+    progressContainer: {
+      flex: 1,
+      marginRight: 12,
+    },
+    progressBar: {
+      height: 6,
+      backgroundColor: colors.border,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 3,
+    },
+    skipButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      backgroundColor: colors.card,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    skipButtonText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -41,61 +101,3 @@ export default function RestTimer({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 8,
-  },
-  timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  timerInfo: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginRight: 12,
-  },
-  timerLabel: {
-    fontSize: 14,
-    color: '#1e40af',
-    marginRight: 6,
-  },
-  timeDisplay: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e40af',
-  },
-  progressContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#dbeafe',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2563eb',
-    borderRadius: 3,
-  },
-  skipButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  skipButtonText: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-});

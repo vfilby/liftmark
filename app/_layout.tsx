@@ -1,8 +1,21 @@
 import { Stack } from 'expo-router';
+import { useTheme } from '@/theme';
 
 export default function RootLayout() {
+  const { colors } = useTheme();
+
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.card,
+        },
+        headerTintColor: colors.text,
+        contentStyle: {
+          backgroundColor: colors.background,
+        },
+      }}
+    >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal/import"

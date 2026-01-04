@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'rea
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useTheme } from '@/theme';
 import type { TemplateExercise, TemplateSet } from '@/types';
 
 // Represents either a single exercise or a superset group
@@ -22,6 +23,7 @@ interface InterleavedSet {
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { colors } = useTheme();
   const { selectedWorkout, loadWorkout, reprocessWorkout, isLoading, error, clearError } = useWorkoutStore();
   const { startWorkout, checkForActiveSession } = useSessionStore();
   const [isReprocessing, setIsReprocessing] = useState(false);
@@ -161,6 +163,208 @@ export default function WorkoutDetailScreen() {
 
     return result;
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 100,
+    },
+    header: {
+      backgroundColor: colors.card,
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    description: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    tagContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+    },
+    tag: {
+      backgroundColor: colors.primaryLight,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 6,
+    },
+    tagText: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    metaContainer: {
+      flexDirection: 'row',
+      gap: 16,
+    },
+    metaItem: {
+      flex: 1,
+    },
+    metaLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    metaValue: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    exercisesSection: {
+      padding: 16,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    exerciseCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    exerciseHeader: {
+      flexDirection: 'row',
+      marginBottom: 12,
+    },
+    exerciseNumber: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.primary,
+      marginRight: 12,
+      minWidth: 24,
+    },
+    exerciseInfo: {
+      flex: 1,
+    },
+    exerciseName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    exerciseMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    exerciseMetaText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    metaSeparator: {
+      fontSize: 13,
+      color: colors.borderLight,
+      marginHorizontal: 6,
+    },
+    exerciseNotes: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      marginTop: 4,
+    },
+    setsContainer: {
+      gap: 8,
+    },
+    setRow: {
+      backgroundColor: colors.backgroundSecondary,
+      padding: 12,
+      borderRadius: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+    },
+    setText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    // Superset-specific styles
+    supersetCard: {
+      borderLeftWidth: 4,
+      borderLeftColor: '#8b5cf6',
+    },
+    supersetBadge: {
+      backgroundColor: '#8b5cf6',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 4,
+      alignSelf: 'flex-start',
+      marginBottom: 6,
+    },
+    supersetBadgeText: {
+      color: '#ffffff',
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    supersetSetRow: {
+      borderLeftColor: '#8b5cf6',
+    },
+    setRowGroupStart: {
+      marginTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 12,
+    },
+    // Start Workout button
+    startWorkoutButton: {
+      marginTop: 16,
+      backgroundColor: colors.primary,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    startWorkoutButtonDisabled: {
+      opacity: 0.5,
+    },
+    startWorkoutButtonText: {
+      color: '#ffffff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // Reprocess button
+    reprocessButton: {
+      marginTop: 12,
+      backgroundColor: colors.backgroundTertiary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    reprocessButtonDisabled: {
+      opacity: 0.5,
+    },
+    reprocessButtonText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+  });
 
   if (!selectedWorkout) {
     return (
@@ -383,205 +587,3 @@ export default function WorkoutDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  tag: {
-    backgroundColor: '#dbeafe',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  tagText: {
-    fontSize: 13,
-    color: '#1e40af',
-    fontWeight: '500',
-  },
-  metaContainer: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  metaItem: {
-    flex: 1,
-  },
-  metaLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  metaValue: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  exercisesSection: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  exerciseCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  exerciseNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2563eb',
-    marginRight: 12,
-    minWidth: 24,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  exerciseMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  exerciseMetaText: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  metaSeparator: {
-    fontSize: 13,
-    color: '#d1d5db',
-    marginHorizontal: 6,
-  },
-  exerciseNotes: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  setsContainer: {
-    gap: 8,
-  },
-  setRow: {
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#2563eb',
-  },
-  setText: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  // Superset-specific styles
-  supersetCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
-  },
-  supersetBadge: {
-    backgroundColor: '#8b5cf6',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  supersetBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  supersetSetRow: {
-    borderLeftColor: '#8b5cf6',
-  },
-  setRowGroupStart: {
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 12,
-  },
-  // Start Workout button
-  startWorkoutButton: {
-    marginTop: 16,
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  startWorkoutButtonDisabled: {
-    opacity: 0.5,
-  },
-  startWorkoutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Reprocess button
-  reprocessButton: {
-    marginTop: 12,
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-  },
-  reprocessButtonDisabled: {
-    opacity: 0.5,
-  },
-  reprocessButtonText: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-});

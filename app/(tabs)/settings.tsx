@@ -9,8 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useTheme } from '@/theme';
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
   const { settings, loadSettings, updateSettings, error, clearError } =
     useSettingsStore();
 
@@ -31,6 +33,95 @@ export default function SettingsScreen() {
   const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
     updateSettings({ theme });
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 100,
+    },
+    section: {
+      backgroundColor: colors.card,
+      marginTop: 24,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    sectionTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 12,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    settingInfo: {
+      flex: 1,
+      marginRight: 16,
+    },
+    settingLabel: {
+      fontSize: 16,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    settingDescription: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    segmentedControl: {
+      flexDirection: 'row',
+      backgroundColor: colors.borderLight,
+      borderRadius: 8,
+      padding: 2,
+    },
+    segment: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    segmentLeft: {
+      borderTopLeftRadius: 6,
+      borderBottomLeftRadius: 6,
+    },
+    segmentRight: {
+      borderTopRightRadius: 6,
+      borderBottomRightRadius: 6,
+    },
+    segmentActive: {
+      backgroundColor: colors.primary,
+    },
+    segmentText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    segmentTextActive: {
+      color: '#ffffff',
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    infoLabel: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    infoValue: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+  });
 
   if (!settings) {
     return (
@@ -168,6 +259,7 @@ export default function SettingsScreen() {
             onValueChange={(value) =>
               updateSettings({ enableWorkoutTimer: value })
             }
+            trackColor={{ false: colors.border, true: colors.primary }}
             testID="switch-workout-timer"
           />
         </View>
@@ -184,6 +276,7 @@ export default function SettingsScreen() {
             onValueChange={(value) =>
               updateSettings({ autoStartRestTimer: value })
             }
+            trackColor={{ false: colors.border, true: colors.primary }}
             testID="switch-auto-start-rest"
           />
         </View>
@@ -204,6 +297,7 @@ export default function SettingsScreen() {
             onValueChange={(value) =>
               updateSettings({ notificationsEnabled: value })
             }
+            trackColor={{ false: colors.border, true: colors.primary }}
             testID="switch-notifications"
           />
         </View>
@@ -225,92 +319,3 @@ export default function SettingsScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  section: {
-    backgroundColor: '#ffffff',
-    marginTop: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  settingInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingLabel: {
-    fontSize: 16,
-    color: '#111827',
-    marginBottom: 2,
-  },
-  settingDescription: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    padding: 2,
-  },
-  segment: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  segmentLeft: {
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
-  },
-  segmentRight: {
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-  },
-  segmentActive: {
-    backgroundColor: '#2563eb',
-  },
-  segmentText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  segmentTextActive: {
-    color: '#ffffff',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  infoLabel: {
-    fontSize: 16,
-    color: '#111827',
-  },
-  infoValue: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-});

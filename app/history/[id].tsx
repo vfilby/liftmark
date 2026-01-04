@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { getWorkoutSessionById, deleteSession } from '@/db/sessionRepository';
+import { useTheme } from '@/theme';
 import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
 
 interface ExerciseGroup {
@@ -19,6 +20,7 @@ interface InterleavedSet {
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { colors } = useTheme();
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -201,6 +203,220 @@ export default function HistoryDetailScreen() {
 
     return result;
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    errorText: {
+      fontSize: 16,
+      color: colors.error,
+    },
+    deleteButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    deleteButtonText: {
+      fontSize: 16,
+      color: colors.error,
+      fontWeight: '500',
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: 16,
+    },
+    // Header Card
+    headerCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    date: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    timeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    time: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
+    timeSeparator: {
+      fontSize: 15,
+      color: colors.borderLight,
+      marginHorizontal: 8,
+    },
+    duration: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
+    // Stats Grid
+    statsGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 16,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    statValue: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 4,
+    },
+    statLabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    // Exercises Section
+    exercisesSection: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    exerciseCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    exerciseHeader: {
+      flexDirection: 'row',
+      marginBottom: 12,
+    },
+    exerciseNumber: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.primary,
+      marginRight: 12,
+      minWidth: 20,
+    },
+    exerciseInfo: {
+      flex: 1,
+    },
+    exerciseName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    equipmentType: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    setsContainer: {
+      marginLeft: 32,
+    },
+    setRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+    },
+    setRowSkipped: {
+      opacity: 0.6,
+    },
+    setNumber: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.successLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    setNumberCompleted: {
+      backgroundColor: colors.successLighter,
+    },
+    setNumberSkipped: {
+      backgroundColor: colors.warningLighter,
+    },
+    setNumberText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    setNumberTextCompleted: {
+      color: colors.success,
+    },
+    setNumberTextSkipped: {
+      color: colors.warning,
+    },
+    setResult: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
+    setResultSkipped: {
+      fontStyle: 'italic',
+      color: colors.textMuted,
+    },
+    setResultContainer: {
+      flex: 1,
+    },
+    setExerciseName: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    // Notes Section
+    notesSection: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    notesText: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+  });
 
   if (isLoading) {
     return (
@@ -392,217 +608,3 @@ export default function HistoryDetailScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#ef4444',
-  },
-  deleteButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    color: '#ef4444',
-    fontWeight: '500',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  // Header Card
-  headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  date: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  time: {
-    fontSize: 15,
-    color: '#6b7280',
-  },
-  timeSeparator: {
-    fontSize: 15,
-    color: '#d1d5db',
-    marginHorizontal: 8,
-  },
-  duration: {
-    fontSize: 15,
-    color: '#6b7280',
-  },
-  // Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2563eb',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  // Exercises Section
-  exercisesSection: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  exerciseCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  exerciseNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2563eb',
-    marginRight: 12,
-    minWidth: 20,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  equipmentType: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  setsContainer: {
-    marginLeft: 32,
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  setRowSkipped: {
-    opacity: 0.6,
-  },
-  setNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#f0fdf4',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  setNumberCompleted: {
-    backgroundColor: '#dcfce7',
-  },
-  setNumberSkipped: {
-    backgroundColor: '#fef9c3',
-  },
-  setNumberText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  setNumberTextCompleted: {
-    color: '#16a34a',
-  },
-  setNumberTextSkipped: {
-    color: '#ca8a04',
-  },
-  setResult: {
-    fontSize: 15,
-    color: '#374151',
-  },
-  setResultSkipped: {
-    fontStyle: 'italic',
-    color: '#9ca3af',
-  },
-  setResultContainer: {
-    flex: 1,
-  },
-  setExerciseName: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  // Notes Section
-  notesSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  notesText: {
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
-  },
-});

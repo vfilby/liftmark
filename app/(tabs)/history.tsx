@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { getCompletedSessions } from '@/db/sessionRepository';
+import { useTheme } from '@/theme';
 import type { WorkoutSession } from '@/types';
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -99,6 +101,116 @@ export default function HistoryScreen() {
     return { completedSets, totalSets, totalVolume };
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    listContent: {
+      padding: 16,
+    },
+    separator: {
+      height: 12,
+    },
+    sessionCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    sessionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+    },
+    sessionName: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+      marginRight: 12,
+    },
+    sessionDate: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    sessionMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    sessionTime: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    metaSeparator: {
+      fontSize: 14,
+      color: colors.border,
+      marginHorizontal: 8,
+    },
+    sessionDuration: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    sessionStats: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.borderLight,
+      borderRadius: 8,
+      padding: 12,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: 24,
+      backgroundColor: colors.border,
+    },
+  });
+
   const renderSession = ({ item: session }: { item: WorkoutSession }) => {
     const stats = getSessionStats(session);
 
@@ -183,113 +295,3 @@ export default function HistoryScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  listContent: {
-    padding: 16,
-  },
-  separator: {
-    height: 12,
-  },
-  sessionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  sessionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  sessionName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-    marginRight: 12,
-  },
-  sessionDate: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  sessionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sessionTime: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  metaSeparator: {
-    fontSize: 14,
-    color: '#d1d5db',
-    marginHorizontal: 8,
-  },
-  sessionDuration: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  sessionStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    padding: 12,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#e5e7eb',
-  },
-});

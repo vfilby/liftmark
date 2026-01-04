@@ -11,9 +11,11 @@ import {
 import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useTheme } from '@/theme';
 
 export default function ImportWorkoutModal() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { saveWorkout } = useWorkoutStore();
   const [markdown, setMarkdown] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -101,6 +103,83 @@ export default function ImportWorkoutModal() {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.card,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    cancelButton: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    importButton: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    importButtonDisabled: {
+      color: colors.textMuted,
+    },
+    content: {
+      flex: 1,
+      padding: 16,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    hint: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    input: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 14,
+      fontFamily: 'monospace',
+      minHeight: 300,
+      textAlignVertical: 'top',
+      color: colors.text,
+    },
+    helpSection: {
+      marginTop: 24,
+      padding: 16,
+      backgroundColor: colors.primaryLight,
+      borderRadius: 8,
+    },
+    helpTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      marginBottom: 8,
+    },
+    helpText: {
+      fontSize: 13,
+      color: colors.primary,
+      marginBottom: 4,
+    },
+  });
+
   return (
     <View style={styles.container} testID="import-modal">
       <View style={styles.header}>
@@ -144,7 +223,7 @@ Bench Press
 Incline Dumbbell Press
 - 3x12 @60
 - @rest: 90s`}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.textMuted}
           value={markdown}
           onChangeText={setMarkdown}
           autoCapitalize="none"
@@ -166,79 +245,3 @@ Incline Dumbbell Press
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  cancelButton: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  importButton: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  importButtonDisabled: {
-    color: '#9ca3af',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  hint: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
-  input: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    fontFamily: 'monospace',
-    minHeight: 300,
-    textAlignVertical: 'top',
-  },
-  helpSection: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-  },
-  helpTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e40af',
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: 13,
-    color: '#1e40af',
-    marginBottom: 4,
-  },
-});

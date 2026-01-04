@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useTheme } from '@/theme';
 import RestTimer from '@/components/RestTimer';
 import type { SessionExercise, SessionSet } from '@/types';
 
@@ -38,6 +39,7 @@ export default function ActiveWorkoutScreen() {
   } = useSessionStore();
 
   const { settings } = useSettingsStore();
+  const { colors } = useTheme();
 
   // Track which non-current set is being edited (when user taps on another set)
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
@@ -315,6 +317,415 @@ export default function ActiveWorkoutScreen() {
     setShowUpNextPreview(false);
     setLastCompletedSetId(null);
   }, [stopRestTimer]);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    // Header
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 50,
+      paddingBottom: 12,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    headerButtonText: {
+      fontSize: 16,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    finishText: {
+      color: colors.success,
+    },
+    headerTitle: {
+      flex: 1,
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      textAlign: 'center',
+      marginHorizontal: 8,
+    },
+    // Progress
+    progressContainer: {
+      backgroundColor: colors.card,
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+    },
+    progressBar: {
+      height: 6,
+      backgroundColor: colors.border,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 3,
+    },
+    progressText: {
+      marginTop: 6,
+      fontSize: 13,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    // Rest Timer (inline)
+    restTimerInline: {
+      marginBottom: 16,
+    },
+    restSuggestionInline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.primaryLight,
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.primaryLightBorder,
+    },
+    restSuggestionText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    restSuggestionButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    startRestButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 6,
+    },
+    startRestButtonText: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    dismissRestButton: {
+      backgroundColor: colors.card,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    dismissRestButtonText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    // Content
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: 16,
+    },
+    // Exercise Section
+    exerciseSection: {
+      marginBottom: 20,
+    },
+    exerciseHeader: {
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    exerciseNumber: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.primary,
+      marginRight: 12,
+      minWidth: 24,
+    },
+    exerciseInfo: {
+      flex: 1,
+    },
+    exerciseName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    equipmentType: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    exerciseNotes: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      marginTop: 4,
+    },
+    // Sets Container
+    setsContainer: {
+      marginLeft: 36,
+    },
+    // Set Row
+    setRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    setRowActive: {
+      borderColor: colors.primary,
+      borderWidth: 2,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    setRowCompleted: {
+      backgroundColor: colors.successLight,
+      borderColor: colors.successBorder,
+    },
+    setRowSkipped: {
+      backgroundColor: colors.warningLight,
+      borderColor: colors.warningBorder,
+    },
+    // Active editing states with colored borders
+    setRowCompletedActive: {
+      backgroundColor: colors.successLight,
+      borderColor: colors.success,
+      borderWidth: 2,
+      shadowColor: colors.success,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    setRowSkippedActive: {
+      backgroundColor: colors.warningLight,
+      borderColor: colors.warning,
+      borderWidth: 2,
+      shadowColor: colors.warning,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    setRowPendingActive: {
+      backgroundColor: colors.backgroundSecondary,
+      borderColor: colors.textMuted,
+      borderWidth: 2,
+      shadowColor: colors.textMuted,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    // Set Number
+    setNumberContainer: {
+      width: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundSecondary,
+      borderRightWidth: 1,
+      borderRightColor: colors.border,
+    },
+    setNumberContainerActive: {
+      backgroundColor: colors.primaryLight,
+      borderRightColor: colors.primaryLightBorder,
+    },
+    setNumberContainerCompleted: {
+      backgroundColor: colors.successLighter,
+      borderRightColor: colors.successBorder,
+    },
+    setNumberContainerSkipped: {
+      backgroundColor: colors.warningLighter,
+      borderRightColor: colors.warningBorder,
+    },
+    setNumberContainerPending: {
+      backgroundColor: colors.backgroundTertiary,
+      borderRightColor: colors.borderLight,
+    },
+    setNumber: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    setNumberCompleted: {
+      color: colors.success,
+      fontSize: 18,
+    },
+    setNumberSkipped: {
+      color: colors.warning,
+      fontSize: 20,
+    },
+    // Set Content
+    setContent: {
+      flex: 1,
+      padding: 12,
+    },
+    // Active Set
+    activeSetContent: {},
+    targetLabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      gap: 16,
+      marginBottom: 12,
+    },
+    inputGroup: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    inputLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    input: {
+      width: '100%',
+      height: 44,
+      backgroundColor: colors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      fontSize: 20,
+      fontWeight: '600',
+      textAlign: 'center',
+      color: colors.text,
+    },
+    inputUnit: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    setActions: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    completeButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    completeButtonText: {
+      color: '#ffffff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    skipButtonInline: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: colors.backgroundTertiary,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    skipButtonText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    updateButton: {
+      flex: 1,
+      backgroundColor: colors.success,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    updateButtonText: {
+      color: '#ffffff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // Completed Set
+    completedSetContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    completedText: {
+      fontSize: 15,
+      color: colors.success,
+      fontWeight: '500',
+    },
+    tapToEdit: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    // Skipped Set
+    skippedSetContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    skippedText: {
+      fontSize: 14,
+      color: colors.warning,
+      fontStyle: 'italic',
+    },
+    // Pending Set
+    pendingSetContent: {},
+    pendingText: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
+    // Up Next Preview
+    upNextContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    upNextLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.primary,
+      letterSpacing: 0.5,
+    },
+    upNextTarget: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
+    // Rest Placeholder
+    restPlaceholder: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 4,
+      marginBottom: 4,
+    },
+    restPlaceholderLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    restPlaceholderText: {
+      fontSize: 10,
+      color: colors.textMuted,
+      marginHorizontal: 8,
+    },
+  });
 
   // Loading/empty states
   if (!activeSession) {
@@ -642,412 +1053,3 @@ export default function ActiveWorkoutScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  headerButtonText: {
-    fontSize: 16,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  finishText: {
-    color: '#16a34a',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-    marginHorizontal: 8,
-  },
-  // Progress
-  progressContainer: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2563eb',
-    borderRadius: 3,
-  },
-  progressText: {
-    marginTop: 6,
-    fontSize: 13,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  // Rest Timer (inline)
-  restTimerInline: {
-    marginBottom: 16,
-  },
-  restSuggestionInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#eff6ff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  restSuggestionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e40af',
-  },
-  restSuggestionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  startRestButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-  },
-  startRestButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  dismissRestButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  dismissRestButtonText: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  // Content
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  // Exercise Section
-  exerciseSection: {
-    marginBottom: 20,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  exerciseNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2563eb',
-    marginRight: 12,
-    minWidth: 24,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  equipmentType: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  exerciseNotes: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  // Sets Container
-  setsContainer: {
-    marginLeft: 36,
-  },
-  // Set Row
-  setRow: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  setRowActive: {
-    borderColor: '#2563eb',
-    borderWidth: 2,
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  setRowCompleted: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#86efac',
-  },
-  setRowSkipped: {
-    backgroundColor: '#fefce8',
-    borderColor: '#fde047',
-  },
-  // Active editing states with colored borders
-  setRowCompletedActive: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#16a34a',
-    borderWidth: 2,
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  setRowSkippedActive: {
-    backgroundColor: '#fefce8',
-    borderColor: '#ca8a04',
-    borderWidth: 2,
-    shadowColor: '#ca8a04',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  setRowPendingActive: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#9ca3af',
-    borderWidth: 2,
-    shadowColor: '#9ca3af',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  // Set Number
-  setNumberContainer: {
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f9fafb',
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
-  },
-  setNumberContainerActive: {
-    backgroundColor: '#eff6ff',
-    borderRightColor: '#bfdbfe',
-  },
-  setNumberContainerCompleted: {
-    backgroundColor: '#dcfce7',
-    borderRightColor: '#86efac',
-  },
-  setNumberContainerSkipped: {
-    backgroundColor: '#fef9c3',
-    borderRightColor: '#fde047',
-  },
-  setNumberContainerPending: {
-    backgroundColor: '#f3f4f6',
-    borderRightColor: '#d1d5db',
-  },
-  setNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  setNumberCompleted: {
-    color: '#16a34a',
-    fontSize: 18,
-  },
-  setNumberSkipped: {
-    color: '#ca8a04',
-    fontSize: 20,
-  },
-  // Set Content
-  setContent: {
-    flex: 1,
-    padding: 12,
-  },
-  // Active Set
-  activeSetContent: {},
-  targetLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 12,
-  },
-  inputGroup: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  inputLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  input: {
-    width: '100%',
-    height: 44,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#111827',
-  },
-  inputUnit: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  setActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  completeButton: {
-    flex: 1,
-    backgroundColor: '#2563eb',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  completeButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  skipButtonInline: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  skipButtonText: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  updateButton: {
-    flex: 1,
-    backgroundColor: '#16a34a',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  updateButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Completed Set
-  completedSetContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  completedText: {
-    fontSize: 15,
-    color: '#16a34a',
-    fontWeight: '500',
-  },
-  tapToEdit: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  // Skipped Set
-  skippedSetContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  skippedText: {
-    fontSize: 14,
-    color: '#ca8a04',
-    fontStyle: 'italic',
-  },
-  // Pending Set
-  pendingSetContent: {},
-  pendingText: {
-    fontSize: 15,
-    color: '#374151',
-  },
-  // Up Next Preview
-  upNextContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  upNextLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#2563eb',
-    letterSpacing: 0.5,
-  },
-  upNextTarget: {
-    fontSize: 15,
-    color: '#374151',
-  },
-  // Rest Placeholder
-  restPlaceholder: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    marginBottom: 4,
-  },
-  restPlaceholderLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e5e7eb',
-  },
-  restPlaceholderText: {
-    fontSize: 10,
-    color: '#c0c0c0',
-    marginHorizontal: 8,
-  },
-});
