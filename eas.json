@@ -22,13 +22,13 @@
       "extends": "base",
       "distribution": "store",
       "channel": "preview",
-      "autoIncrement": "buildNumber"
+      "autoIncrement": true
     },
     "production": {
       "extends": "base",
       "distribution": "store",
       "channel": "production",
-      "autoIncrement": "buildNumber"
+      "autoIncrement": true
     }
   },
   "submit": {
