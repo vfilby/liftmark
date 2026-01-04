@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.liftmark.app",
+      "bundleIdentifier": "com.eff3.liftmark",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
@@ -30,8 +30,8 @@
         "com.apple.developer.healthkit.access": [],
         "aps-environment": "production",
         "com.apple.developer.icloud-services": ["CloudKit"],
-        "com.apple.developer.icloud-container-identifiers": ["iCloud.com.liftmark.app"],
-        "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)com.liftmark.app"
+        "com.apple.developer.icloud-container-identifiers": ["iCloud.com.eff3.liftmark"],
+        "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)com.eff3.liftmark"
       },
       "usesIcloudStorage": true
     },
@@ -40,7 +40,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.liftmark.app",
+      "package": "com.eff3.liftmark",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
