@@ -5,7 +5,10 @@
   },
   "build": {
     "base": {
-      "node": "20.18.0"
+      "node": "20.18.0",
+      "ios": {
+        "image": "latest"
+      }
     },
     "development": {
       "extends": "base",
@@ -17,16 +20,26 @@
     },
     "preview": {
       "extends": "base",
-      "distribution": "internal",
-      "ios": {
-        "simulator": false
-      }
+      "distribution": "store",
+      "channel": "preview",
+      "autoIncrement": "buildNumber"
     },
     "production": {
       "extends": "base",
-      "autoIncrement": true,
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": "buildNumber"
+    }
+  },
+  "submit": {
+    "production": {
       "ios": {
-        "image": "latest"
+        "ascAppId": "6745413657"
+      }
+    },
+    "preview": {
+      "ios": {
+        "ascAppId": "6745413657"
       }
     }
   }

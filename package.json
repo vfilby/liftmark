@@ -12,7 +12,10 @@
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "audit": "npm audit --audit-level=high",
-    "ci": "npm run audit && npm run typecheck && npm run test"
+    "ci": "npm run audit && npm run typecheck && npm run test",
+    "release:alpha": "git tag alpha-v$(node -p \"require('./package.json').version\") && git push --tags",
+    "release:beta": "git tag beta-v$(node -p \"require('./package.json').version\") && git push --tags",
+    "release:production": "git tag v$(node -p \"require('./package.json').version\") && git push --tags"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
