@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { getWorkoutSessionById } from '@/db/sessionRepository';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import { getWorkoutSessionById, deleteSession } from '@/db/sessionRepository';
 import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
 
 interface ExerciseGroup {
@@ -18,8 +18,34 @@ interface InterleavedSet {
 
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleDelete = () => {
+    if (!session) return;
+
+    Alert.alert(
+      'Delete Workout',
+      `Are you sure you want to delete "${session.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteSession(session.id);
+              router.back();
+            } catch (error) {
+              console.error('Failed to delete session:', error);
+              Alert.alert('Error', 'Failed to delete workout');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     async function loadSession() {
@@ -202,7 +228,16 @@ export default function HistoryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: session.name }} />
+      <Stack.Screen
+        options={{
+          title: session.name,
+          headerRight: () => (
+            <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Header Info */}
@@ -375,6 +410,15 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: '#ef4444',
+  },
+  deleteButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    color: '#ef4444',
+    fontWeight: '500',
   },
   content: {
     flex: 1,

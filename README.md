@@ -1,96 +1,13 @@
-# LiftMark 2.0 - MVP
+# LiftMark - MVP
 
-A React Native fitness tracking application for managing workout templates using the LiftMark Workout Format (LMWF).
+I have tried many different fitness apps and programs to help me create and track workouts but they tend to be limited in what they allow you to do and they make it difficult to import of export workouts.  I have spent nearly as much time "creating" or "tweaking" workouts as I have actually working out in some cases. I want something that gives me all the benefits of tracking without the tedium.
 
-## MVP Features
+Liftmark let's you import workouts written in a simple text based format - LiftMark Workout Format (LMWF) - and create a structured workout that you can use to track during the workout and see historical stats as well.  
 
-### Implemented Features
-- ✅ **Home Screen** - Quick overview with workout stats and quick actions
-- ✅ **Import Workout** - Parse and save workouts from markdown format
-- ✅ **Workout List** - Browse and search imported workouts
-- ✅ **Workout Details** - View detailed workout information with exercises and sets
-- ✅ **Settings** - Configure default units, theme, and preferences
-- ✅ **Markdown Parser** - Full LMWF v1.0 spec compliance
-- ✅ **SQLite Database** - Local storage with migrations
-- ✅ **State Management** - Zustand stores for workouts and settings
+With GenAI at our finger tips it is incredibly easy to create and import workouts.
 
-### Features Not in MVP (Future Phases)
-- ⏳ Active Workout Tracking (Phase 3)
-- ⏳ Workout History (Phase 4)
-- ⏳ Exercise History & Charts (Phase 4)
-- ⏳ Create/Edit Workouts (Deferred)
+This is very, _very_ beta at this point.
 
-## Tech Stack
-
-- **Framework**: Expo SDK 54
-- **Language**: TypeScript 5.9.2
-- **Runtime**: React 19.1.0, React Native 0.81.5
-- **Navigation**: Expo Router 6.0.21
-- **Database**: expo-sqlite 16.0.10
-- **State Management**: Zustand 5.0.9
-- **ID Generation**: expo-crypto 15.0.8 (UUID v4)
-- **Date Utilities**: date-fns 4.1.0
-
-## Project Structure
-
-```
-/LiftMark2
-├── app/                          # Expo Router screens
-│   ├── (tabs)/                  # Tab navigation
-│   │   ├── _layout.tsx          # Tab layout
-│   │   ├── index.tsx            # Home screen
-│   │   ├── workouts.tsx         # Workout list screen
-│   │   └── settings.tsx         # Settings screen
-│   ├── modal/                   # Modal screens
-│   │   └── import.tsx           # Import workout modal
-│   ├── workout/                 # Workout detail
-│   │   └── [id].tsx            # Workout detail screen
-│   └── _layout.tsx              # Root layout
-├── src/
-│   ├── db/                      # Database layer
-│   │   ├── index.ts            # SQLite setup & migrations
-│   │   └── repository.ts       # CRUD operations
-│   ├── services/                # Business logic
-│   │   ├── MarkdownParser.ts   # LMWF parser (1,038 lines)
-│   │   ├── README.md
-│   │   ├── PARSER_EXAMPLES.md
-│   │   └── PARSER_FEATURES.md
-│   ├── stores/                  # Zustand state
-│   │   ├── workoutStore.ts     # Workout state & actions
-│   │   └── settingsStore.ts    # Settings state & actions
-│   ├── types/                   # TypeScript types
-│   │   ├── workout.ts          # All type definitions
-│   │   └── index.ts
-│   └── utils/                   # Utilities
-│       └── id.ts               # UUID generation
-├── babel.config.js              # Babel with module resolver
-├── tsconfig.json                # TypeScript config
-├── package.json
-└── app.json                     # Expo config
-```
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v18 or later recommended)
-- npm or yarn
-- Expo Go app (for testing on physical device)
-
-### Installation
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Start the development server:
-```bash
-npm start
-```
-
-3. Run on your device:
-- Scan the QR code with Expo Go (Android) or Camera app (iOS)
-- Or press `i` for iOS simulator, `a` for Android emulator
 
 ## Usage
 
@@ -193,47 +110,9 @@ The markdown parser (`src/services/MarkdownParser.ts`) implements the complete L
 
 See `src/services/PARSER_FEATURES.md` for full feature list.
 
-## Testing
 
-All screens include `testID` props for E2E testing with Detox (planned for future phase).
 
-Example test IDs:
-- `home-screen`
-- `button-import-workout`
-- `workout-list`
-- `workout-card-{id}`
-- `settings-screen`
-- `switch-workout-timer`
 
-## Known Issues
-
-- Minor version mismatch warning for `react-native-screens` (4.19.0 vs expected 4.16.0) - functionality not affected
-
-## Development Notes
-
-### Path Aliases
-The project uses `@/` as an alias for `src/`:
-```typescript
-import { useWorkoutStore } from '@/stores/workoutStore';
-```
-
-Configured in:
-- `tsconfig.json` - TypeScript compilation
-- `babel.config.js` - Runtime module resolution
-
-### ID Generation
-All entities use UUID v4 for primary keys:
-```typescript
-import { generateId } from '@/utils/id';
-const id = generateId(); // Returns UUID v4 string
-```
-
-### Database Access
-Always use `getDatabase()` to get the singleton instance:
-```typescript
-import { getDatabase } from '@/db';
-const db = await getDatabase();
-```
 
 ## Future Roadmap
 
@@ -254,11 +133,3 @@ const db = await getDatabase();
 - Export to markdown
 - Workout templates library
 - Social features
-
-## License
-
-MIT
-
-## Author
-
-Built with Claude Code
