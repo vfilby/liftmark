@@ -1,0 +1,33 @@
+# Fitness Tracker App - Development Rules
+
+## Platform & Technology
+- **Primary Platform**: iOS (iPhone)
+- **Future Support**: Android (build with cross-platform compatibility in mind)
+- **Framework**: React Native or similar cross-platform framework
+- **Testing**: High-quality test coverage required to prevent regressions
+
+## Core Features
+1. **Workout Import**: Text/Markdown-based format that LLMs can easily generate
+2. **In-Workout Tracking**:
+   - Mark off sets as completed
+   - Built-in timers (rest periods, workout duration)
+3. **Workout History**: Track past workouts
+4. **Exercise History**: Track progress per exercise over time
+
+## Design Requirements
+- **All screens**: Support both light and dark mode
+- **Mobile-first**: Optimized for mobile experience
+- **No web support**: Focus on native mobile experience initially
+
+## Development Standards
+- Write comprehensive tests for all features
+- Follow mobile UI/UX best practices
+- Keep code modular for future Android support
+- Use TypeScript for type safety
+- Follow accessibility guidelines
+
+## Code Quality
+- Clean, maintainable code
+- Proper error handling
+- Consistent code style
+- Document complex logic

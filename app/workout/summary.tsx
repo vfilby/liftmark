@@ -1,0 +1,340 @@
+import { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSessionStore } from '@/stores/sessionStore';
+
+export default function WorkoutSummaryScreen() {
+  const router = useRouter();
+  const { activeSession, pauseSession, getProgress, getTrackableExercises } = useSessionStore();
+
+  // If no session, go back
+  useEffect(() => {
+    if (!activeSession) {
+      router.replace('/');
+    }
+  }, [activeSession]);
+
+  const handleDone = async () => {
+    // Clear session from store (it's already saved as completed in DB)
+    await pauseSession();
+    router.replace('/');
+  };
+
+  if (!activeSession) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.centered}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const { completed, total } = getProgress();
+  const trackableExercises = getTrackableExercises();
+
+  // Calculate duration
+  const formatDuration = (seconds: number | undefined): string => {
+    if (!seconds) return '--:--';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m ${secs}s`;
+  };
+
+  // Calculate totals
+  let totalWeight = 0;
+  let totalReps = 0;
+  let completedSets = 0;
+  let skippedSets = 0;
+
+  for (const exercise of trackableExercises) {
+    for (const set of exercise.sets) {
+      if (set.status === 'completed') {
+        completedSets++;
+        if (set.actualWeight && set.actualReps) {
+          totalWeight += set.actualWeight * set.actualReps;
+          totalReps += set.actualReps;
+        } else if (set.actualReps) {
+          totalReps += set.actualReps;
+        }
+      } else if (set.status === 'skipped') {
+        skippedSets++;
+      }
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        {/* Success Header */}
+        <View style={styles.successHeader}>
+          <Text style={styles.checkmark}>✓</Text>
+          <Text style={styles.successTitle}>Workout Complete!</Text>
+          <Text style={styles.workoutName}>{activeSession.name}</Text>
+        </View>
+
+        {/* Summary Stats */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{formatDuration(activeSession.duration)}</Text>
+            <Text style={styles.statLabel}>Duration</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{completedSets}</Text>
+            <Text style={styles.statLabel}>Sets Completed</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{totalReps}</Text>
+            <Text style={styles.statLabel}>Total Reps</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>
+              {totalWeight > 0 ? `${Math.round(totalWeight).toLocaleString()}` : '-'}
+            </Text>
+            <Text style={styles.statLabel}>Total Volume</Text>
+          </View>
+        </View>
+
+        {/* Completion Summary */}
+        <View style={styles.completionCard}>
+          <View style={styles.completionRow}>
+            <Text style={styles.completionLabel}>Sets Completed</Text>
+            <Text style={styles.completionValue}>{completedSets}</Text>
+          </View>
+          {skippedSets > 0 && (
+            <View style={styles.completionRow}>
+              <Text style={styles.completionLabel}>Sets Skipped</Text>
+              <Text style={[styles.completionValue, styles.skippedValue]}>{skippedSets}</Text>
+            </View>
+          )}
+          <View style={styles.completionRow}>
+            <Text style={styles.completionLabel}>Completion Rate</Text>
+            <Text style={styles.completionValue}>
+              {total > 0 ? Math.round((completedSets / total) * 100) : 0}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Exercise Summary */}
+        <View style={styles.exerciseSummary}>
+          <Text style={styles.sectionTitle}>Exercises</Text>
+          {trackableExercises.map((exercise) => {
+            const exerciseCompletedSets = exercise.sets.filter(
+              (s) => s.status === 'completed'
+            ).length;
+            const exerciseSkippedSets = exercise.sets.filter(
+              (s) => s.status === 'skipped'
+            ).length;
+
+            return (
+              <View key={exercise.id} style={styles.exerciseRow}>
+                <View style={styles.exerciseInfo}>
+                  <Text style={styles.exerciseRowName}>{exercise.exerciseName}</Text>
+                  <Text style={styles.exerciseRowMeta}>
+                    {exerciseCompletedSets} / {exercise.sets.length} sets
+                    {exerciseSkippedSets > 0 && ` (${exerciseSkippedSets} skipped)`}
+                  </Text>
+                </View>
+                {exerciseCompletedSets === exercise.sets.length && (
+                  <Text style={styles.exerciseCheck}>✓</Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Done Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  // Success Header
+  successHeader: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  checkmark: {
+    fontSize: 64,
+    color: '#16a34a',
+    marginBottom: 12,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  workoutName: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    width: '47%',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  // Completion Card
+  completionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  completionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  completionLabel: {
+    fontSize: 15,
+    color: '#374151',
+  },
+  completionValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  skippedValue: {
+    color: '#f59e0b',
+  },
+  // Exercise Summary
+  exerciseSummary: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseRowName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  exerciseRowMeta: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  exerciseCheck: {
+    fontSize: 18,
+    color: '#16a34a',
+    marginLeft: 8,
+  },
+  // Footer
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  doneButton: {
+    backgroundColor: '#16a34a',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  doneButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});

@@ -1,0 +1,217 @@
+import * as SQLite from 'expo-sqlite';
+
+const DB_NAME = 'liftmark.db';
+
+let db: SQLite.SQLiteDatabase | null = null;
+
+/**
+ * Initialize and return the database instance
+ * Creates tables if they don't exist
+ */
+export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (db) {
+    return db;
+  }
+
+  db = await SQLite.openDatabaseAsync(DB_NAME);
+
+  // Enable foreign keys
+  await db.execAsync('PRAGMA foreign_keys = ON;');
+
+  // Run migrations
+  await runMigrations(db);
+
+  return db;
+}
+
+/**
+ * Run database migrations
+ */
+async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
+  // Create tables for MVP
+  // Only creating workout_templates, template_exercises, template_sets, and user_settings
+  // Session tables will be added in Phase 3
+
+  await database.execAsync(`
+    -- Workout Templates
+    CREATE TABLE IF NOT EXISTS workout_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      tags TEXT,
+      default_weight_unit TEXT,
+      source_markdown TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Template Exercises
+    CREATE TABLE IF NOT EXISTS template_exercises (
+      id TEXT PRIMARY KEY,
+      workout_template_id TEXT NOT NULL,
+      exercise_name TEXT NOT NULL,
+      order_index INTEGER NOT NULL,
+      notes TEXT,
+      equipment_type TEXT,
+      group_type TEXT,
+      group_name TEXT,
+      parent_exercise_id TEXT,
+      FOREIGN KEY (workout_template_id) REFERENCES workout_templates(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
+    );
+
+    -- Template Sets
+    CREATE TABLE IF NOT EXISTS template_sets (
+      id TEXT PRIMARY KEY,
+      template_exercise_id TEXT NOT NULL,
+      order_index INTEGER NOT NULL,
+      target_weight REAL,
+      target_weight_unit TEXT,
+      target_reps INTEGER,
+      target_time INTEGER,
+      target_rpe INTEGER,
+      rest_seconds INTEGER,
+      tempo TEXT,
+      is_dropset INTEGER DEFAULT 0,
+      FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
+    );
+
+    -- User Settings
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id TEXT PRIMARY KEY,
+      default_weight_unit TEXT NOT NULL DEFAULT 'lbs',
+      enable_workout_timer INTEGER DEFAULT 1,
+      auto_start_rest_timer INTEGER DEFAULT 1,
+      theme TEXT DEFAULT 'auto',
+      notifications_enabled INTEGER DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_template_exercises_workout
+      ON template_exercises(workout_template_id);
+
+    CREATE INDEX IF NOT EXISTS idx_template_sets_exercise
+      ON template_sets(template_exercise_id);
+
+    -- Workout Sessions (actual workout instances)
+    CREATE TABLE IF NOT EXISTS workout_sessions (
+      id TEXT PRIMARY KEY,
+      workout_template_id TEXT,
+      name TEXT NOT NULL,
+      date TEXT NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      duration INTEGER,
+      notes TEXT,
+      status TEXT NOT NULL DEFAULT 'in_progress',
+      FOREIGN KEY (workout_template_id) REFERENCES workout_templates(id) ON DELETE SET NULL
+    );
+
+    -- Session Exercises
+    CREATE TABLE IF NOT EXISTS session_exercises (
+      id TEXT PRIMARY KEY,
+      workout_session_id TEXT NOT NULL,
+      exercise_name TEXT NOT NULL,
+      order_index INTEGER NOT NULL,
+      notes TEXT,
+      equipment_type TEXT,
+      group_type TEXT,
+      group_name TEXT,
+      parent_exercise_id TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      FOREIGN KEY (workout_session_id) REFERENCES workout_sessions(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE
+    );
+
+    -- Session Sets
+    CREATE TABLE IF NOT EXISTS session_sets (
+      id TEXT PRIMARY KEY,
+      session_exercise_id TEXT NOT NULL,
+      order_index INTEGER NOT NULL,
+      parent_set_id TEXT,
+      drop_sequence INTEGER,
+      -- Target/Planned values (copied from template)
+      target_weight REAL,
+      target_weight_unit TEXT,
+      target_reps INTEGER,
+      target_time INTEGER,
+      target_rpe INTEGER,
+      rest_seconds INTEGER,
+      -- Actual performance values (user input)
+      actual_weight REAL,
+      actual_weight_unit TEXT,
+      actual_reps INTEGER,
+      actual_time INTEGER,
+      actual_rpe INTEGER,
+      -- Metadata
+      completed_at TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT,
+      tempo TEXT,
+      is_dropset INTEGER DEFAULT 0,
+      FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_set_id) REFERENCES session_sets(id) ON DELETE CASCADE
+    );
+
+    -- Session indexes
+    CREATE INDEX IF NOT EXISTS idx_session_exercises_session
+      ON session_exercises(workout_session_id);
+
+    CREATE INDEX IF NOT EXISTS idx_session_sets_exercise
+      ON session_sets(session_exercise_id);
+
+    CREATE INDEX IF NOT EXISTS idx_workout_sessions_status
+      ON workout_sessions(status);
+  `);
+
+  // Migration: Add auto_start_rest_timer column if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE user_settings ADD COLUMN auto_start_rest_timer INTEGER DEFAULT 1`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
+  // Initialize default user settings if they don't exist
+  const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
+
+  if (!settings) {
+    const { generateId } = await import('@/utils/id');
+    const now = new Date().toISOString();
+
+    await database.runAsync(
+      `INSERT INTO user_settings (id, default_weight_unit, enable_workout_timer, auto_start_rest_timer, theme, notifications_enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [generateId(), 'lbs', 1, 1, 'auto', 1, now, now]
+    );
+  }
+}
+
+/**
+ * Close the database connection
+ */
+export async function closeDatabase(): Promise<void> {
+  if (db) {
+    await db.closeAsync();
+    db = null;
+  }
+}
+
+/**
+ * Clear all data (for testing/development)
+ */
+export async function clearDatabase(): Promise<void> {
+  const database = await getDatabase();
+
+  await database.execAsync(`
+    DELETE FROM session_sets;
+    DELETE FROM session_exercises;
+    DELETE FROM workout_sessions;
+    DELETE FROM template_sets;
+    DELETE FROM template_exercises;
+    DELETE FROM workout_templates;
+  `);
+}
