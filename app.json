@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "LiftMark",
-    "slug": "liftmark2",
+    "slug": "liftmark",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,9 +17,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.liftmark.app",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ],
         "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
-        "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
+        "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -36,6 +40,13 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d1ba6917-1e66-4e9b-9e0a-e4025bd892bc"
+      }
+    },
+    "owner": "akin-gulp"
   }
 }
