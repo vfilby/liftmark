@@ -21,13 +21,11 @@
     "preview": {
       "extends": "base",
       "distribution": "store",
-      "channel": "preview",
       "autoIncrement": true
     },
     "production": {
       "extends": "base",
       "distribution": "store",
-      "channel": "production",
       "autoIncrement": true
     }
   },
