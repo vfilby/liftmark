@@ -13,9 +13,10 @@
     "typecheck": "tsc --noEmit",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run audit && npm run typecheck && npm run test",
-    "release:alpha": "gh release create alpha-v$(node -p \"require('./package.json').version\") --title \"Alpha Release v$(node -p \"require('./package.json').version\")\" --notes \"Alpha build for internal testing\" --prerelease",
-    "release:beta": "gh release create beta-v$(node -p \"require('./package.json').version\") --title \"Beta Release v$(node -p \"require('./package.json').version\")\" --notes \"Beta build for external testing\" --prerelease",
-    "release:production": "gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Production release\""
+    "prerelease:check": "node -e \"const { execSync } = require('child_process'); const branch = execSync('git branch --show-current', { encoding: 'utf8' }).trim(); if (branch !== 'main') { console.error('Error: Must be on main branch for releases. Current branch:', branch); process.exit(1); } const status = execSync('git status --porcelain', { encoding: 'utf8' }).trim(); if (status) { console.error('Error: Working tree is not clean. Please commit or stash changes:'); console.error(status); process.exit(1); } console.log('✅ Repository is clean and on main branch');\"",
+    "release:alpha": "npm run prerelease:check && gh release create alpha-v$(node -p \"require('./package.json').version\") --title \"Alpha Release v$(node -p \"require('./package.json').version\")\" --notes \"Alpha build for internal testing\" --prerelease",
+    "release:beta": "npm run prerelease:check && gh release create beta-v$(node -p \"require('./package.json').version\") --title \"Beta Release v$(node -p \"require('./package.json').version\")\" --notes \"Beta build for external testing\" --prerelease",
+    "release:production": "npm run prerelease:check && gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Production release\""
   },
   "dependencies": {
     "@react-native-clipboard/clipboard": "^1.16.3",
