@@ -13,9 +13,9 @@
     "typecheck": "tsc --noEmit",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run audit && npm run typecheck && npm run test",
-    "release:alpha": "git tag alpha-v$(node -p \"require('./package.json').version\") && git push --tags",
-    "release:beta": "git tag beta-v$(node -p \"require('./package.json').version\") && git push --tags",
-    "release:production": "git tag v$(node -p \"require('./package.json').version\") && git push --tags"
+    "release:alpha": "gh release create alpha-v$(node -p \"require('./package.json').version\") --title \"Alpha Release v$(node -p \"require('./package.json').version\")\" --notes \"Alpha build for internal testing\" --prerelease",
+    "release:beta": "gh release create beta-v$(node -p \"require('./package.json').version\") --title \"Beta Release v$(node -p \"require('./package.json').version\")\" --notes \"Beta build for external testing\" --prerelease",
+    "release:production": "gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Production release\""
   },
   "dependencies": {
     "date-fns": "^4.1.0",
