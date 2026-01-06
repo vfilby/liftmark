@@ -1,12 +1,14 @@
 # LiftMark Development Makefile
 
-.PHONY: help server ios android web test typecheck lint clean install build
+.PHONY: help server server-go ios android web test typecheck lint clean install build
 
 # Default target
 help:
 	@echo "LiftMark Development Commands:"
 	@echo ""
-	@echo "  make server     - Start Expo development server"
+	@echo "Development servers:"
+	@echo "  make server     - Start Expo dev server for development builds"
+	@echo "  make server-go  - Start Expo dev server for Expo Go"
 	@echo "  make ios        - Run development build on iOS simulator"
 	@echo "  make android    - Run development build on Android emulator"
 	@echo "  make web        - Start web development server"
@@ -29,7 +31,11 @@ help:
 
 # Development servers
 server:
-	@echo "🚀 Starting Expo development server..."
+	@echo "🚀 Starting Expo development server with dev client..."
+	npx expo start --dev-client
+
+server-go:
+	@echo "📱 Starting Expo development server for Expo Go..."
 	npx expo start
 
 ios:
