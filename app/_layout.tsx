@@ -18,11 +18,11 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.card,
+          backgroundColor: colors?.card || '#FFFFFF',
         },
-        headerTintColor: colors.text,
+        headerTintColor: colors?.text || '#000000',
         contentStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colors?.background || '#F5F5F5',
         },
       }}
     >
