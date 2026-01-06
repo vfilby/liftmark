@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Clipboard,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
@@ -61,7 +61,7 @@ Generate a [workout type] workout with [specific requirements].`;
 
   const copyPrompt = async () => {
     try {
-      await Clipboard.setString(promptText);
+      Clipboard.setString(promptText);
       Alert.alert('Copied!', 'Prompt copied to clipboard');
     } catch (error) {
       Alert.alert('Error', 'Failed to copy prompt');

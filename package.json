@@ -18,6 +18,7 @@
     "release:production": "gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Production release\""
   },
   "dependencies": {
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "date-fns": "^4.1.0",
     "expo": "~54.0.30",
     "expo-audio": "~1.1.1",
