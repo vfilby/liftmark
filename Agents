@@ -31,3 +31,9 @@
 - Proper error handling
 - Consistent code style
 - Document complex logic
+
+## Deployment & CI/CD
+- **GitHub Actions**: Automated testing and builds
+- **EAS Build**: Expo Application Services for iOS builds
+- **TestFlight**: Alpha/beta distribution via App Store Connect
+- **Release Process**: Use GitHub releases (not direct tags) to trigger deployments
