@@ -41,5 +41,5 @@ yarn-error.*
 /android
 
 # logs
-expo.log
+logs/
 *.log

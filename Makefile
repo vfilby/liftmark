@@ -1,6 +1,6 @@
 # LiftMark Development Makefile
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view
+.PHONY: help server server-go server-bg server-tmux server-stop ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
 
 # Default target
 help:
@@ -30,8 +30,9 @@ help:
 	@echo ""
 	@echo "Logging & Monitoring:"
 	@echo "  make logs       - Show current Expo logs"
-	@echo "  make logs-tail  - Follow logs in real time (requires server-bg)"
+	@echo "  make logs-tail  - Follow logs in real time"
 	@echo "  make logs-view  - View current log file contents"
+	@echo "  make logs-clean - Clean all log files"
 	@echo ""
 	@echo "Release commands:"
 	@echo "  make release-alpha      - Create alpha release"
@@ -41,11 +42,13 @@ help:
 # Development servers
 server:
 	@echo "🚀 Starting Expo development server with dev client..."
-	script -q expo.log npx expo start --dev-client
+	@mkdir -p logs
+	script -q logs/expo.log npx expo start --dev-client
 
 server-go:
 	@echo "📱 Starting Expo development server for Expo Go..."
-	script -q expo.log npx expo start
+	@mkdir -p logs
+	script -q logs/expo.log npx expo start
 
 ios:
 	@echo "📱 Running development build on iOS simulator..."
@@ -82,10 +85,11 @@ install:
 	npm install
 
 clean:
-	@echo "🧹 Cleaning cache and dependencies..."
+	@echo "🧹 Cleaning cache, dependencies, and logs..."
 	npx expo install --fix
 	npm cache clean --force
 	rm -rf node_modules
+	rm -rf logs
 	npm install
 
 build:
@@ -117,22 +121,24 @@ logs:
 
 logs-file:
 	@echo "📝 Starting Expo server with console + file logging..."
-	script -q expo.log npx expo start --dev-client
+	@mkdir -p logs
+	script -q logs/expo.log npx expo start --dev-client
 
 logs-tail:
 	@echo "👀 Following Expo logs in real time (Ctrl+C to stop)..."
-	tail -f expo.log
+	tail -f logs/expo.log
 
 logs-view:
 	@echo "📖 Current Expo logs:"
 	@echo "===================="
-	cat expo.log
+	cat logs/expo.log
 
 server-bg:
 	@echo "🚀 Starting Expo dev server in background with file logging..."
-	nohup npx expo start --dev-client > expo.log 2>&1 &
+	@mkdir -p logs
+	nohup npx expo start --dev-client > logs/expo.log 2>&1 &
 	@echo "✅ Server running in background"
-	@echo "📝 Logs: expo.log (background only)"
+	@echo "📝 Logs: logs/expo.log (background only)"
 	@echo "🔍 Monitor: make logs-tail"
 	@echo "🛑 Stop: make server-stop"
 
@@ -142,18 +148,24 @@ server-tmux:
 		echo "❌ tmux not installed. Install with: brew install tmux"; \
 		exit 1; \
 	fi
+	@mkdir -p logs
 	@tmux has-session -t expo 2>/dev/null && tmux kill-session -t expo || true
 	@tmux new-session -d -s expo -x 120 -y 30
-	@tmux send-keys -t expo "script -f -q expo.log npx expo start --dev-client" Enter
+	@tmux send-keys -t expo "script -f -q logs/expo.log npx expo start --dev-client" Enter
 	@echo "✅ Expo server running in tmux session 'expo'"
 	@echo "📺 Attach: tmux attach -t expo"
-	@echo "📝 Logs: expo.log (real-time)"
+	@echo "📝 Logs: logs/expo.log (real-time)"
 	@echo "🛑 Stop: tmux kill-session -t expo"
 
 server-stop:
 	@echo "🛑 Stopping background Expo servers..."
 	pkill -f "expo start" || echo "No Expo servers found"
 	@echo "✅ Stopped"
+
+logs-clean:
+	@echo "🗑️ Cleaning log files..."
+	rm -rf logs
+	@echo "✅ Logs cleaned"
 
 tunnel:
 	@echo "🌍 Starting Expo with tunnel connection..."
