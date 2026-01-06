@@ -239,6 +239,11 @@ Generate a [workout type] workout with [specific requirements].`;
       borderWidth: 1,
       borderColor: colors.primaryLightBorder,
     },
+    promptToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
     promptButtonText: {
       fontSize: 14,
       fontWeight: '600',
@@ -275,9 +280,10 @@ Generate a [workout type] workout with [specific requirements].`;
     },
     copyButton: {
       backgroundColor: colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
       borderRadius: 6,
+      marginLeft: 12,
     },
     copyButtonText: {
       fontSize: 12,
@@ -311,29 +317,31 @@ Generate a [workout type] workout with [specific requirements].`;
 
       <ScrollView style={styles.content}>
         <View style={styles.promptSection}>
-          <TouchableOpacity
-            style={styles.promptButton}
-            onPress={() => setIsPromptExpanded(!isPromptExpanded)}
-          >
-            <Text style={styles.promptButtonText}>
-              📋 AI Workout Prompt
-            </Text>
-            <Ionicons
-              name={isPromptExpanded ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              color={colors.primary}
-            />
-          </TouchableOpacity>
+          <View style={styles.promptButton}>
+            <TouchableOpacity
+              style={styles.promptToggle}
+              onPress={() => setIsPromptExpanded(!isPromptExpanded)}
+            >
+              <Text style={styles.promptButtonText}>
+                📋 AI Workout Prompt
+              </Text>
+              <Ionicons
+                name={isPromptExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.copyButton} onPress={copyPrompt}>
+              <Text style={styles.copyButtonText}>Copy</Text>
+            </TouchableOpacity>
+          </View>
 
           {isPromptExpanded && (
             <View style={styles.promptExpanded}>
               <View style={styles.promptHeader}>
                 <Text style={styles.promptHeaderText}>
-                  Copy this prompt for AI assistants
+                  Prompt for AI assistants (ChatGPT, Claude, etc.)
                 </Text>
-                <TouchableOpacity style={styles.copyButton} onPress={copyPrompt}>
-                  <Text style={styles.copyButtonText}>Copy</Text>
-                </TouchableOpacity>
               </View>
               <View style={styles.promptContent}>
                 <Text style={styles.promptText}>{promptText}</Text>
