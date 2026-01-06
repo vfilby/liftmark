@@ -8,16 +8,16 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.tabIconSelected,
-        tabBarInactiveTintColor: colors.tabIconDefault,
+        tabBarActiveTintColor: colors?.tabIconSelected || '#007AFF',
+        tabBarInactiveTintColor: colors?.tabIconDefault || '#8E8E93',
         tabBarStyle: {
-          backgroundColor: colors.tabBar,
-          borderTopColor: colors.border,
+          backgroundColor: colors?.tabBar || '#FFFFFF',
+          borderTopColor: colors?.border || '#E5E5EA',
         },
         headerStyle: {
-          backgroundColor: colors.card,
+          backgroundColor: colors?.card || '#FFFFFF',
         },
-        headerTintColor: colors.text,
+        headerTintColor: colors?.text || '#000000',
       }}
     >
       <Tabs.Screen
@@ -25,7 +25,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
@@ -34,7 +34,7 @@ export default function TabLayout() {
         options={{
           title: 'Workouts',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="barbell-outline" size={size} color={color} />
+            <Ionicons name="fitness" size={size} color={color} />
           ),
         }}
       />
@@ -43,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <Ionicons name="settings" size={size} color={color} />
           ),
         }}
       />
