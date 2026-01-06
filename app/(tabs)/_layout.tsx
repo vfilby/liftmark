@@ -34,7 +34,7 @@ export default function TabLayout() {
         options={{
           title: 'Workouts',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="fitness-outline" size={size} color={color} />
+            <Ionicons name="barbell-outline" size={size} color={color} />
           ),
         }}
       />
