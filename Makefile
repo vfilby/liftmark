@@ -1,14 +1,18 @@
 # LiftMark Development Makefile
 
-.PHONY: help server server-go ios android web test typecheck lint clean install build
+.PHONY: help server server-go server-bg server-tmux server-stop ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view
 
 # Default target
 help:
 	@echo "LiftMark Development Commands:"
 	@echo ""
 	@echo "Development servers:"
-	@echo "  make server     - Start Expo dev server for development builds"
-	@echo "  make server-go  - Start Expo dev server for Expo Go"
+	@echo "  make server     - Start Expo dev server (interactive + file logging)"
+	@echo "  make server-go  - Start Expo dev server for Expo Go (interactive + file logging)"
+	@echo "  make server-bg  - Start Expo dev server in background (file logging only)"
+	@echo "  make server-tmux - Start Expo dev server in tmux (full colors + logging)"
+	@echo "  make logs-file  - Start Expo dev server (interactive + file logging)"
+	@echo "  make server-stop - Stop background Expo servers"
 	@echo "  make ios        - Run development build on iOS simulator"
 	@echo "  make android    - Run development build on Android emulator"
 	@echo "  make web        - Start web development server"
@@ -24,6 +28,11 @@ help:
 	@echo ""
 	@echo "  make ci         - Run CI pipeline (audit, typecheck, test)"
 	@echo ""
+	@echo "Logging & Monitoring:"
+	@echo "  make logs       - Show current Expo logs"
+	@echo "  make logs-tail  - Follow logs in real time (requires server-bg)"
+	@echo "  make logs-view  - View current log file contents"
+	@echo ""
 	@echo "Release commands:"
 	@echo "  make release-alpha      - Create alpha release"
 	@echo "  make release-beta       - Create beta release" 
@@ -32,11 +41,11 @@ help:
 # Development servers
 server:
 	@echo "🚀 Starting Expo development server with dev client..."
-	npx expo start --dev-client
+	script -q expo.log npx expo start --dev-client
 
 server-go:
 	@echo "📱 Starting Expo development server for Expo Go..."
-	npx expo start
+	script -q expo.log npx expo start
 
 ios:
 	@echo "📱 Running development build on iOS simulator..."
@@ -105,6 +114,46 @@ release-production:
 logs:
 	@echo "📋 Showing Expo logs..."
 	npx expo logs
+
+logs-file:
+	@echo "📝 Starting Expo server with console + file logging..."
+	script -q expo.log npx expo start --dev-client
+
+logs-tail:
+	@echo "👀 Following Expo logs in real time (Ctrl+C to stop)..."
+	tail -f expo.log
+
+logs-view:
+	@echo "📖 Current Expo logs:"
+	@echo "===================="
+	cat expo.log
+
+server-bg:
+	@echo "🚀 Starting Expo dev server in background with file logging..."
+	nohup npx expo start --dev-client > expo.log 2>&1 &
+	@echo "✅ Server running in background"
+	@echo "📝 Logs: expo.log (background only)"
+	@echo "🔍 Monitor: make logs-tail"
+	@echo "🛑 Stop: make server-stop"
+
+server-tmux:
+	@echo "🚀 Starting Expo dev server in tmux session with logging..."
+	@if ! command -v tmux >/dev/null 2>&1; then \
+		echo "❌ tmux not installed. Install with: brew install tmux"; \
+		exit 1; \
+	fi
+	@tmux has-session -t expo 2>/dev/null && tmux kill-session -t expo || true
+	@tmux new-session -d -s expo -x 120 -y 30
+	@tmux send-keys -t expo "script -f -q expo.log npx expo start --dev-client" Enter
+	@echo "✅ Expo server running in tmux session 'expo'"
+	@echo "📺 Attach: tmux attach -t expo"
+	@echo "📝 Logs: expo.log (real-time)"
+	@echo "🛑 Stop: tmux kill-session -t expo"
+
+server-stop:
+	@echo "🛑 Stopping background Expo servers..."
+	pkill -f "expo start" || echo "No Expo servers found"
+	@echo "✅ Stopped"
 
 tunnel:
 	@echo "🌍 Starting Expo with tunnel connection..."
