@@ -49,9 +49,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         };
         set({ settings, isLoading: false });
       } else {
-        throw new Error('Settings not found');
+        console.warn('No settings found in database, using defaults');
+        set({ isLoading: false });
       }
     } catch (error) {
+      console.error('Failed to load settings:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to load settings',
         isLoading: false,

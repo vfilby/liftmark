@@ -8,12 +8,16 @@ export function useTheme(): { colors: ThemeColors; isDark: boolean } {
 
   // Determine which theme to use
   let isDark: boolean;
-  if (settings?.theme === 'dark') {
+  
+  // If settings are not loaded yet, default to system preference
+  if (!settings) {
+    isDark = systemColorScheme === 'dark';
+  } else if (settings.theme === 'dark') {
     isDark = true;
-  } else if (settings?.theme === 'light') {
+  } else if (settings.theme === 'light') {
     isDark = false;
   } else {
-    // 'auto' or settings not loaded yet - use system preference
+    // 'auto' theme - use system preference
     isDark = systemColorScheme === 'dark';
   }
 

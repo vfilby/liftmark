@@ -13,15 +13,21 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     return db;
   }
 
-  db = await SQLite.openDatabaseAsync(DB_NAME);
+  try {
+    db = await SQLite.openDatabaseAsync(DB_NAME);
 
-  // Enable foreign keys
-  await db.execAsync('PRAGMA foreign_keys = ON;');
+    // Enable foreign keys
+    await db.execAsync('PRAGMA foreign_keys = ON;');
 
-  // Run migrations
-  await runMigrations(db);
+    // Run migrations
+    await runMigrations(db);
 
-  return db;
+    return db;
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    db = null;
+    throw error;
+  }
 }
 
 /**
@@ -176,17 +182,23 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
   }
 
   // Initialize default user settings if they don't exist
-  const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
+  try {
+    const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
 
-  if (!settings) {
-    const { generateId } = await import('@/utils/id');
-    const now = new Date().toISOString();
+    if (!settings) {
+      const { generateId } = await import('@/utils/id');
+      const now = new Date().toISOString();
 
-    await database.runAsync(
-      `INSERT INTO user_settings (id, default_weight_unit, enable_workout_timer, auto_start_rest_timer, theme, notifications_enabled, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [generateId(), 'lbs', 1, 1, 'auto', 1, now, now]
-    );
+      await database.runAsync(
+        `INSERT INTO user_settings (id, default_weight_unit, enable_workout_timer, auto_start_rest_timer, theme, notifications_enabled, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [generateId(), 'lbs', 1, 1, 'auto', 1, now, now]
+      );
+      console.log('Default user settings created');
+    }
+  } catch (error) {
+    console.error('Failed to initialize default settings:', error);
+    // Don't throw here - the app can still function without settings
   }
 }
 

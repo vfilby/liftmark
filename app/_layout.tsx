@@ -1,8 +1,18 @@
 import { Stack } from 'expo-router';
 import { useTheme } from '@/theme';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useEffect } from 'react';
 
 export default function RootLayout() {
   const { colors } = useTheme();
+  const { loadSettings } = useSettingsStore();
+
+  // Load settings when the app starts
+  useEffect(() => {
+    loadSettings().catch((error) => {
+      console.error('Failed to load settings on app start:', error);
+    });
+  }, [loadSettings]);
 
   return (
     <Stack
