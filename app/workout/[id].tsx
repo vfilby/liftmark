@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import type { TemplateExercise, TemplateSet } from '@/types';
+
+const openYouTubeSearch = (exerciseName: string) => {
+  const query = encodeURIComponent(exerciseName + ' exercise');
+  Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
+};
 
 // Represents either a single exercise or a superset group
 interface ExerciseGroup {
@@ -342,6 +348,15 @@ export default function WorkoutDetailScreen() {
       color: colors.text,
       marginBottom: 4,
     },
+    exerciseNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+    },
+    youtubeLink: {
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
     exerciseMeta: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -647,7 +662,17 @@ export default function WorkoutDetailScreen() {
                           <View style={styles.supersetBadge}>
                             <Text style={styles.supersetBadgeText}>SUPERSET</Text>
                           </View>
-                          <Text style={styles.exerciseName}>{exerciseNames}</Text>
+                          <View style={styles.exerciseNameRow}>
+                            {group.exercises.map((ex, idx) => (
+                              <View key={ex.id} style={styles.exerciseNameRow}>
+                                {idx > 0 && <Text style={styles.exerciseName}> & </Text>}
+                                <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
+                                  <Ionicons name="open-outline" size={16} style={styles.youtubeLink} />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
 
                           {/* Show notes from child exercises */}
                           {group.exercises.map((ex) =>
@@ -693,7 +718,12 @@ export default function WorkoutDetailScreen() {
                       <View style={styles.exerciseHeader}>
                         <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
                         <View style={styles.exerciseInfo}>
-                          <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                          <View style={styles.exerciseNameRow}>
+                            <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                              <Ionicons name="open-outline" size={16} style={styles.youtubeLink} />
+                            </TouchableOpacity>
+                          </View>
 
                           {exercise.equipmentType && (
                             <View style={styles.exerciseMeta}>

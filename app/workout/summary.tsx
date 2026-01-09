@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+const openYouTubeSearch = (exerciseName: string) => {
+  const query = encodeURIComponent(exerciseName + ' exercise');
+  Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
+};
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 
@@ -166,6 +172,16 @@ export default function WorkoutSummaryScreen() {
       color: colors.text,
       marginBottom: 2,
     },
+    exerciseNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+    },
+    youtubeLink: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
     exerciseRowMeta: {
       fontSize: 13,
       color: colors.textSecondary,
@@ -316,7 +332,12 @@ export default function WorkoutSummaryScreen() {
             return (
               <View key={exercise.id} style={styles.exerciseRow}>
                 <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseRowName}>{exercise.exerciseName}</Text>
+                  <View style={styles.exerciseNameRow}>
+                    <Text style={styles.exerciseRowName}>{exercise.exerciseName}</Text>
+                    <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                      <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.exerciseRowMeta}>
                     {exerciseCompletedSets} / {exercise.sets.length} sets
                     {exerciseSkippedSets > 0 && ` (${exerciseSkippedSets} skipped)`}

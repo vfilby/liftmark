@@ -8,8 +8,15 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+const openYouTubeSearch = (exerciseName: string) => {
+  const query = encodeURIComponent(exerciseName + ' exercise');
+  Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
+};
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
@@ -661,6 +668,16 @@ export default function ActiveWorkoutScreen() {
       fontStyle: 'italic',
       marginTop: 4,
     },
+    youtubeLink: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
+    exerciseNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+    },
     // Sets Container
     setsContainer: {
       marginLeft: 36,
@@ -1047,7 +1064,17 @@ export default function ActiveWorkoutScreen() {
                             <Text style={styles.supersetBadgeText}>SUPERSET</Text>
                           </View>
                           <Text style={styles.exerciseName}>{group.groupName}</Text>
-                          <Text style={styles.supersetExerciseNames}>{exerciseNames}</Text>
+                          <View style={styles.exerciseNameRow}>
+                            {group.exercises.map((ex, idx) => (
+                              <View key={ex.id} style={styles.exerciseNameRow}>
+                                {idx > 0 && <Text style={styles.supersetExerciseNames}> & </Text>}
+                                <Text style={styles.supersetExerciseNames}>{ex.exerciseName}</Text>
+                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
+                                  <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
                         </View>
                       </View>
 
@@ -1214,7 +1241,12 @@ export default function ActiveWorkoutScreen() {
                       <View style={styles.exerciseHeader}>
                         <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
                         <View style={styles.exerciseInfo}>
-                          <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                          <View style={styles.exerciseNameRow}>
+                            <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                              <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
+                            </TouchableOpacity>
+                          </View>
                           {exercise.equipmentType && (
                             <Text style={styles.equipmentType}>{exercise.equipmentType}</Text>
                           )}
