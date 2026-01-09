@@ -51,7 +51,7 @@ export async function generateWorkoutHistoryContext(recentCount: number = 5): Pr
  * Format a single workout session in compact format
  * Example: "2024-01-15 Push Day: Bench 185x8,205x5; Incline DB 60x10,70x8"
  */
-function formatSessionCompact(session: WorkoutSession): string {
+export function formatSessionCompact(session: WorkoutSession): string {
   const date = session.date.split('T')[0]; // Just the date part
   const exercises = session.exercises
     .filter(ex => ex.sets.length > 0) // Skip section/superset parents
@@ -65,7 +65,7 @@ function formatSessionCompact(session: WorkoutSession): string {
  * Format a single exercise in compact format
  * Example: "Bench 185x8,205x5,225x3"
  */
-function formatExerciseCompact(exercise: SessionExercise): string {
+export function formatExerciseCompact(exercise: SessionExercise): string {
   const completedSets = exercise.sets.filter(s => s.status === 'completed');
   if (completedSets.length === 0) return '';
 
@@ -85,7 +85,7 @@ function formatExerciseCompact(exercise: SessionExercise): string {
  * Format a single set in compact format
  * Example: "185x8" or "30s" or "bwx10"
  */
-function formatSetCompact(set: SessionSet): string {
+export function formatSetCompact(set: SessionSet): string {
   const weight = set.actualWeight ?? set.targetWeight;
   const reps = set.actualReps ?? set.targetReps;
   const time = set.actualTime ?? set.targetTime;
@@ -109,7 +109,7 @@ function formatSetCompact(set: SessionSet): string {
 /**
  * Abbreviate common exercise names to save tokens
  */
-function abbreviateExerciseName(name: string): string {
+export function abbreviateExerciseName(name: string): string {
   const abbreviations: Record<string, string> = {
     'barbell bench press': 'Bench',
     'bench press': 'Bench',
