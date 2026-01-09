@@ -123,6 +123,7 @@ export interface UserSettings {
   autoStartRestTimer: boolean;
   theme: 'light' | 'dark' | 'auto';
   notificationsEnabled: boolean;
+  customPromptAddition?: string; // Custom text appended to AI workout prompts
   createdAt: string;
   updatedAt: string;
 }
@@ -182,6 +183,7 @@ export interface UserSettingsRow {
   auto_start_rest_timer: number; // SQLite boolean
   theme: string;
   notifications_enabled: number; // SQLite boolean
+  custom_prompt_addition: string | null;
   created_at: string;
   updated_at: string;
 }

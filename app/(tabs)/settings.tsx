@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
@@ -15,10 +16,18 @@ export default function SettingsScreen() {
   const { colors } = useTheme();
   const { settings, loadSettings, updateSettings, error, clearError } =
     useSettingsStore();
+  const [promptText, setPromptText] = useState('');
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Sync local prompt state with settings
+  useEffect(() => {
+    if (settings?.customPromptAddition !== undefined) {
+      setPromptText(settings.customPromptAddition || '');
+    }
+  }, [settings?.customPromptAddition]);
 
   useEffect(() => {
     if (error) {
@@ -32,6 +41,12 @@ export default function SettingsScreen() {
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
     updateSettings({ theme });
+  };
+
+  const handlePromptBlur = () => {
+    if (promptText !== (settings?.customPromptAddition || '')) {
+      updateSettings({ customPromptAddition: promptText });
+    }
   };
 
   const styles = StyleSheet.create({
@@ -120,6 +135,17 @@ export default function SettingsScreen() {
     infoValue: {
       fontSize: 16,
       color: colors.textSecondary,
+    },
+    textInput: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 14,
+      color: colors.text,
+      minHeight: 80,
+      textAlignVertical: 'top',
     },
   });
 
@@ -301,6 +327,27 @@ export default function SettingsScreen() {
             testID="switch-notifications"
           />
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>AI Prompt</Text>
+
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingLabel}>Custom Prompt Addition</Text>
+          <Text style={styles.settingDescription}>
+            This text will be appended to AI workout prompts
+          </Text>
+        </View>
+        <TextInput
+          style={styles.textInput}
+          multiline
+          placeholder="e.g., Focus on compound movements. Keep rest periods under 90 seconds."
+          placeholderTextColor={colors.textMuted}
+          value={promptText}
+          onChangeText={setPromptText}
+          onBlur={handlePromptBlur}
+          testID="input-custom-prompt"
+        />
       </View>
 
       <View style={styles.section}>

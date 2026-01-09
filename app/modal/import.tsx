@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
 
 export default function ImportWorkoutModal() {
   const router = useRouter();
   const { colors } = useTheme();
   const { saveWorkout } = useWorkoutStore();
+  const { settings, loadSettings } = useSettingsStore();
   const [markdown, setMarkdown] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
 
-  const promptText = `Generate a workout in LiftMark Workout Format (LMWF). Use this exact format:
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const basePromptText = `Generate a workout in LiftMark Workout Format (LMWF). Use this exact format:
 
 # Workout Name
 @tags: tag1, tag2
@@ -58,6 +64,14 @@ Example:
 - 12 @dropset
 
 Generate a [workout type] workout with [specific requirements].`;
+
+  // Combine base prompt with custom addition from settings
+  const promptText = useMemo(() => {
+    if (settings?.customPromptAddition) {
+      return `${basePromptText}\n\nAdditional requirements:\n${settings.customPromptAddition}`;
+    }
+    return basePromptText;
+  }, [settings?.customPromptAddition]);
 
   const copyPrompt = async () => {
     try {

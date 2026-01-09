@@ -32,6 +32,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         auto_start_rest_timer: number;
         theme: string;
         notifications_enabled: number;
+        custom_prompt_addition: string | null;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -44,6 +45,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           autoStartRestTimer: row.auto_start_rest_timer === 1,
           theme: row.theme as 'light' | 'dark' | 'auto',
           notificationsEnabled: row.notifications_enabled === 1,
+          customPromptAddition: row.custom_prompt_addition ?? undefined,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -96,6 +98,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.notificationsEnabled !== undefined) {
         updateFields.push('notifications_enabled = ?');
         values.push(updates.notificationsEnabled ? 1 : 0);
+      }
+      if (updates.customPromptAddition !== undefined) {
+        updateFields.push('custom_prompt_addition = ?');
+        values.push(updates.customPromptAddition || null);
       }
 
       // Always update updated_at

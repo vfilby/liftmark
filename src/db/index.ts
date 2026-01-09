@@ -181,6 +181,15 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add custom_prompt_addition column if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE user_settings ADD COLUMN custom_prompt_addition TEXT`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
