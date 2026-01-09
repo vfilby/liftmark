@@ -1,6 +1,6 @@
 # LiftMark Development Makefile
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
+.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
 
 # Default target
 help:
@@ -16,6 +16,11 @@ help:
 	@echo "  make ios        - Run development build on iOS simulator"
 	@echo "  make android    - Run development build on Android emulator"
 	@echo "  make web        - Start web development server"
+	@echo ""
+	@echo "Native builds:"
+	@echo "  make prebuild       - Generate native projects (ios/android)"
+	@echo "  make rebuild-native - Clean and regenerate native projects"
+	@echo "  make rebuild-ios    - Prebuild and run on iOS simulator"
 	@echo ""
 	@echo "  make test       - Run test suite"
 	@echo "  make test-watch - Run tests in watch mode"
@@ -53,6 +58,21 @@ server-go:
 ios:
 	@echo "📱 Running development build on iOS simulator..."
 	npx expo run:ios
+
+prebuild:
+	@echo "🔧 Generating native projects..."
+	npx expo prebuild
+
+rebuild-native:
+	@echo "🧹 Cleaning native directories..."
+	rm -rf ios android
+	@echo "🔧 Regenerating native projects..."
+	npx expo prebuild
+	@echo "✅ Native projects rebuilt. Run 'make ios' or 'make android' to build."
+
+rebuild-ios:
+	@echo "🔄 Rebuilding iOS dev client (prebuild + run)..."
+	npx expo prebuild && npx expo run:ios
 
 android:
 	@echo "🤖 Running development build on Android emulator..."

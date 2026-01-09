@@ -18,6 +18,7 @@ Run `npm run ci` before committing. This runs:
 When adding native modules (like `react-native-health`), remember:
 - They require rebuilding the dev client
 - Use `make prebuild` to generate native projects
+- Use `make rebuild-native` to clean and regenerate all native projects
 - Use `make rebuild-ios` to prebuild and run on iOS simulator
 - They won't work in Expo Go
 - User must test on device after rebuild

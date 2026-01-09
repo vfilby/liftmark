@@ -2,24 +2,20 @@ import { Platform } from 'react-native';
 import type { WorkoutSession } from '@/types';
 
 // Lazy load the native module to avoid crashes when not available
-let AppleHealthKit: any = undefined;
-let HealthActivity: any = undefined;
+let HealthKit: typeof import('@kingstinct/react-native-healthkit') | undefined;
 let moduleLoadAttempted = false;
 
 function getHealthKit() {
   if (!moduleLoadAttempted && Platform.OS === 'ios') {
     moduleLoadAttempted = true;
     try {
-      const health = require('react-native-health');
-      if (health?.default?.initHealthKit) {
-        AppleHealthKit = health.default;
-        HealthActivity = health.HealthActivity;
-      }
+      HealthKit = require('@kingstinct/react-native-healthkit');
+      console.log('HealthKit: Module loaded successfully');
     } catch (e) {
       console.log('HealthKit module not available:', e);
     }
   }
-  return AppleHealthKit;
+  return HealthKit;
 }
 
 /**
@@ -29,22 +25,10 @@ export function isHealthKitAvailable(): boolean {
   if (Platform.OS !== 'ios') return false;
   try {
     const hk = getHealthKit();
-    return hk != null && typeof hk?.initHealthKit === 'function';
+    return hk?.isHealthDataAvailable?.() ?? false;
   } catch {
     return false;
   }
-}
-
-// HealthKit permissions needed for workout tracking
-function getHealthKitPermissions() {
-  const hk = getHealthKit();
-  if (!hk) return null;
-  return {
-    permissions: {
-      read: [],
-      write: [hk.Constants.Permissions.Workout],
-    },
-  };
 }
 
 /**
@@ -57,26 +41,24 @@ export async function requestHealthKitAuthorization(): Promise<boolean> {
   }
 
   const hk = getHealthKit();
-  const permissions = getHealthKitPermissions();
-  if (!hk || !permissions) return false;
+  if (!hk) return false;
 
-  return new Promise((resolve) => {
-    hk.initHealthKit(permissions, (error: string | null) => {
-      if (error) {
-        console.log('HealthKit authorization error:', error);
-        resolve(false);
-      } else {
-        console.log('HealthKit authorized successfully');
-        resolve(true);
-      }
+  try {
+    // Request write permission for workouts
+    const result = await hk.requestAuthorization({
+      toShare: [hk.WorkoutTypeIdentifier],
+      toRead: [],
     });
-  });
+    console.log('HealthKit authorization result:', result);
+    return result;
+  } catch (error) {
+    console.log('HealthKit authorization error:', error);
+    return false;
+  }
 }
 
 /**
  * Check if HealthKit has been authorized
- * Note: This actually re-requests authorization, as react-native-health
- * doesn't have a separate check method
  */
 export async function isHealthKitAuthorized(): Promise<boolean> {
   if (!isHealthKitAvailable()) {
@@ -84,14 +66,17 @@ export async function isHealthKitAuthorized(): Promise<boolean> {
   }
 
   const hk = getHealthKit();
-  const permissions = getHealthKitPermissions();
-  if (!hk || !permissions) return false;
+  if (!hk) return false;
 
-  return new Promise((resolve) => {
-    hk.initHealthKit(permissions, (error: string | null) => {
-      resolve(!error);
+  try {
+    const status = await hk.getRequestStatusForAuthorization({
+      toShare: [hk.WorkoutTypeIdentifier],
+      toRead: [],
     });
-  });
+    return status === hk.AuthorizationRequestStatus.unnecessary;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -105,32 +90,41 @@ export async function saveWorkoutToHealthKit(
   }
 
   const hk = getHealthKit();
-  if (!hk || !HealthActivity) {
+  if (!hk) {
     return { success: false, error: 'HealthKit module not loaded' };
   }
 
-  // Calculate workout stats
-  const startTime = session.startTime || session.date;
-  const endTime = session.endTime || new Date().toISOString();
+  try {
+    // Calculate workout times and stats
+    const startTime = session.startTime || session.date;
+    const endTime = session.endTime || new Date().toISOString();
+    const totalVolume = calculateWorkoutVolume(session);
 
-  const workoutOptions = {
-    type: HealthActivity.TraditionalStrengthTraining,
-    startDate: new Date(startTime).toISOString(),
-    endDate: new Date(endTime).toISOString(),
-  };
+    // Build metadata with workout details
+    const metadata: Record<string, string | number> = {
+      HKExternalUUID: session.id,
+    };
 
-  return new Promise((resolve) => {
-    hk.saveWorkout(workoutOptions, (error: string | null, result: any) => {
-      if (error) {
-        console.log('Error saving workout to HealthKit:', error);
-        resolve({ success: false, error: String(error) });
-      } else {
-        console.log('Workout saved to HealthKit:', result);
-        // Result is a HealthValue which could be the workout ID
-        resolve({ success: true, healthKitId: String(result) });
-      }
-    });
-  });
+    // Add total volume if any sets were completed
+    if (totalVolume > 0) {
+      metadata['TotalVolumeLbs'] = totalVolume;
+    }
+
+    const result = await hk.saveWorkoutSample(
+      hk.WorkoutActivityType.traditionalStrengthTraining,
+      [],
+      new Date(startTime),
+      new Date(endTime),
+      undefined, // no totals (distance/energy)
+      metadata
+    );
+
+    console.log('Workout saved to HealthKit:', result, 'Volume:', totalVolume);
+    return { success: true, healthKitId: result?.uuid };
+  } catch (error) {
+    console.log('Error saving workout to HealthKit:', error);
+    return { success: false, error: String(error) };
+  }
 }
 
 /**

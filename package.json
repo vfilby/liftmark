@@ -19,6 +19,7 @@
     "release:production": "npm run prerelease:check && gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Production release\""
   },
   "dependencies": {
+    "@kingstinct/react-native-healthkit": "^13.1.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "date-fns": "^4.1.0",
     "expo": "~54.0.30",
@@ -32,7 +33,6 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-health": "^1.19.0",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",
     "react-test-renderer": "19.1.0",

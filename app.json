@@ -50,10 +50,10 @@
     "plugins": [
       "expo-router",
       [
-        "react-native-health",
+        "@kingstinct/react-native-healthkit",
         {
-          "healthSharePermission": "LiftMark needs access to read your workout history",
-          "healthUpdatePermission": "LiftMark needs access to save your completed workouts to Apple Health"
+          "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
+          "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
         }
       ]
     ],
