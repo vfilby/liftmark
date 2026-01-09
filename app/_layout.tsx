@@ -26,7 +26,13 @@ export default function RootLayout() {
         },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: false,
+          headerBackTitle: 'Back',
+        }}
+      />
       <Stack.Screen
         name="modal/import"
         options={{
@@ -38,6 +44,7 @@ export default function RootLayout() {
         name="workout/[id]"
         options={{
           title: 'Workout Details',
+          headerBackTitle: 'Back',
         }}
       />
       <Stack.Screen
@@ -60,6 +67,7 @@ export default function RootLayout() {
         name="history/[id]"
         options={{
           title: 'Workout Details',
+          headerBackTitle: 'Back',
         }}
       />
     </Stack>
