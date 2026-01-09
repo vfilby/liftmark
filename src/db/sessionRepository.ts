@@ -307,6 +307,69 @@ export async function getCompletedSessions(): Promise<WorkoutSession[]> {
   return sessions;
 }
 
+/**
+ * Get recent completed sessions with a limit
+ */
+export async function getRecentSessions(limit: number = 5): Promise<WorkoutSession[]> {
+  const db = await getDatabase();
+
+  const sessionRows = await db.getAllAsync<WorkoutSessionRow>(
+    "SELECT * FROM workout_sessions WHERE status = 'completed' ORDER BY date DESC, start_time DESC LIMIT ?",
+    [limit]
+  );
+
+  const sessions: WorkoutSession[] = [];
+
+  for (const sessionRow of sessionRows) {
+    const exercises = await getSessionExercises(sessionRow.id);
+    sessions.push(rowToWorkoutSession(sessionRow, exercises));
+  }
+
+  return sessions;
+}
+
+/**
+ * Get best weights for each exercise across all completed sessions
+ * Returns a map of exercise name -> { weight, reps, unit }
+ */
+export async function getExerciseBestWeights(): Promise<Map<string, { weight: number; reps: number; unit: string }>> {
+  const db = await getDatabase();
+
+  // Get max weight per exercise from all completed sets
+  const rows = await db.getAllAsync<{
+    exercise_name: string;
+    max_weight: number;
+    reps: number;
+    unit: string;
+  }>(`
+    SELECT
+      se.exercise_name,
+      MAX(ss.actual_weight) as max_weight,
+      ss.actual_reps as reps,
+      COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+    FROM session_sets ss
+    JOIN session_exercises se ON ss.session_exercise_id = se.id
+    JOIN workout_sessions ws ON se.workout_session_id = ws.id
+    WHERE ws.status = 'completed'
+      AND ss.status = 'completed'
+      AND ss.actual_weight IS NOT NULL
+      AND ss.actual_weight > 0
+    GROUP BY se.exercise_name
+    ORDER BY se.exercise_name
+  `);
+
+  const bestWeights = new Map<string, { weight: number; reps: number; unit: string }>();
+  for (const row of rows) {
+    bestWeights.set(row.exercise_name, {
+      weight: row.max_weight,
+      reps: row.reps || 0,
+      unit: row.unit,
+    });
+  }
+
+  return bestWeights;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================

@@ -12,6 +12,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
+import { generateWorkoutHistoryContext } from '@/services/workoutHistoryService';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
@@ -24,9 +25,12 @@ export default function ImportWorkoutModal() {
   const [markdown, setMarkdown] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
+  const [workoutHistory, setWorkoutHistory] = useState<string>('');
 
   useEffect(() => {
     loadSettings();
+    // Load workout history for AI context
+    generateWorkoutHistoryContext(5).then(setWorkoutHistory);
   }, []);
 
   const basePromptText = `Generate a workout in LiftMark Workout Format (LMWF). Use this exact format:
@@ -92,13 +96,22 @@ Example:
 
 Generate a [workout type] workout with [specific requirements].`;
 
-  // Combine base prompt with custom addition from settings
+  // Combine base prompt with workout history and custom addition from settings
   const promptText = useMemo(() => {
-    if (settings?.customPromptAddition) {
-      return `${basePromptText}\n\nAdditional requirements:\n${settings.customPromptAddition}`;
+    let prompt = basePromptText;
+
+    // Add workout history context if available
+    if (workoutHistory) {
+      prompt += `\n\n--- MY WORKOUT HISTORY ---\n${workoutHistory}\n--- END HISTORY ---\nUse this history to select appropriate weights and exercises. Progress weights gradually.`;
     }
-    return basePromptText;
-  }, [settings?.customPromptAddition]);
+
+    // Add custom user requirements
+    if (settings?.customPromptAddition) {
+      prompt += `\n\nAdditional requirements:\n${settings.customPromptAddition}`;
+    }
+
+    return prompt;
+  }, [settings?.customPromptAddition, workoutHistory]);
 
   const copyPrompt = async () => {
     try {
