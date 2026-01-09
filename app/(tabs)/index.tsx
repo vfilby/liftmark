@@ -41,21 +41,6 @@ export default function HomeScreen() {
       flex: 1,
       backgroundColor: colors.background,
     },
-    header: {
-      padding: 24,
-      paddingTop: 60,
-      backgroundColor: colors.primary,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: '#ffffff',
-      marginBottom: 4,
-    },
-    subtitle: {
-      fontSize: 16,
-      color: colors.primaryLight,
-    },
     stats: {
       flexDirection: 'row',
       padding: 16,
@@ -208,11 +193,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} testID="home-screen">
-      <View style={styles.header}>
-        <Text style={styles.title}>LiftMark</Text>
-        <Text style={styles.subtitle}>Track your strength training</Text>
-      </View>
-
       {/* Resume Workout Banner */}
       {hasActiveSession && activeSession && (
         <TouchableOpacity
