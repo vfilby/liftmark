@@ -126,6 +126,7 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'auto';
   notificationsEnabled: boolean;
   customPromptAddition?: string; // Custom text appended to AI workout prompts
+  healthKitEnabled: boolean; // Whether to sync workouts to Apple Health
   createdAt: string;
   updatedAt: string;
 }
@@ -187,6 +188,7 @@ export interface UserSettingsRow {
   theme: string;
   notifications_enabled: number; // SQLite boolean
   custom_prompt_addition: string | null;
+  healthkit_enabled: number; // SQLite boolean
   created_at: string;
   updated_at: string;
 }

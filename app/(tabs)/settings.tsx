@@ -8,9 +8,14 @@ import {
   Switch,
   Alert,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
+import {
+  isHealthKitAvailable,
+  requestHealthKitAuthorization,
+} from '@/services/healthKitService';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
@@ -46,6 +51,24 @@ export default function SettingsScreen() {
   const handlePromptBlur = () => {
     if (promptText !== (settings?.customPromptAddition || '')) {
       updateSettings({ customPromptAddition: promptText });
+    }
+  };
+
+  const handleHealthKitToggle = async (enabled: boolean) => {
+    if (enabled) {
+      // Request HealthKit authorization
+      const authorized = await requestHealthKitAuthorization();
+      if (authorized) {
+        updateSettings({ healthKitEnabled: true });
+      } else {
+        Alert.alert(
+          'Authorization Required',
+          'Please enable HealthKit access in Settings > Privacy > Health to sync your workouts.',
+          [{ text: 'OK' }]
+        );
+      }
+    } else {
+      updateSettings({ healthKitEnabled: false });
     }
   };
 
@@ -328,6 +351,28 @@ export default function SettingsScreen() {
           />
         </View>
       </View>
+
+      {/* Only show HealthKit settings on iOS */}
+      {Platform.OS === 'ios' && isHealthKitAvailable() && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Apple Health</Text>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Sync to Apple Health</Text>
+              <Text style={styles.settingDescription}>
+                Automatically save completed workouts to Apple Health
+              </Text>
+            </View>
+            <Switch
+              value={settings.healthKitEnabled}
+              onValueChange={handleHealthKitToggle}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              testID="switch-healthkit"
+            />
+          </View>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>AI Prompt</Text>

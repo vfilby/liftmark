@@ -48,7 +48,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "LiftMark needs access to read your workout history",
+          "healthUpdatePermission": "LiftMark needs access to save your completed workouts to Apple Health"
+        }
+      ]
     ],
     "extra": {
       "router": {},

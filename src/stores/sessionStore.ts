@@ -9,6 +9,8 @@ import {
   updateSessionExercise,
   deleteSession,
 } from '@/db/sessionRepository';
+import { saveWorkoutToHealthKit, isHealthKitAvailable } from '@/services/healthKitService';
+import { useSettingsStore } from './settingsStore';
 
 interface RestTimer {
   isRunning: boolean;
@@ -202,6 +204,18 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       };
 
       await updateSession(updatedSession);
+
+      // Save to HealthKit if enabled
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.healthKitEnabled && isHealthKitAvailable()) {
+        const result = await saveWorkoutToHealthKit(updatedSession);
+        if (result.success) {
+          console.log('Workout saved to HealthKit:', result.healthKitId);
+        } else {
+          console.warn('Failed to save workout to HealthKit:', result.error);
+          // Don't fail the workout completion if HealthKit fails
+        }
+      }
 
       set({
         activeSession: updatedSession,

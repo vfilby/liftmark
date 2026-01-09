@@ -33,6 +33,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         theme: string;
         notifications_enabled: number;
         custom_prompt_addition: string | null;
+        healthkit_enabled: number;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -46,6 +47,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           theme: row.theme as 'light' | 'dark' | 'auto',
           notificationsEnabled: row.notifications_enabled === 1,
           customPromptAddition: row.custom_prompt_addition ?? undefined,
+          healthKitEnabled: row.healthkit_enabled === 1,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -102,6 +104,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.customPromptAddition !== undefined) {
         updateFields.push('custom_prompt_addition = ?');
         values.push(updates.customPromptAddition || null);
+      }
+      if (updates.healthKitEnabled !== undefined) {
+        updateFields.push('healthkit_enabled = ?');
+        values.push(updates.healthKitEnabled ? 1 : 0);
       }
 
       // Always update updated_at
