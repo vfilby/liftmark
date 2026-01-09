@@ -331,6 +331,14 @@ export default function ActiveWorkoutScreen() {
               router.replace('/workout/summary');
             },
           },
+          {
+            text: 'Discard Workout',
+            style: 'destructive',
+            onPress: async () => {
+              await cancelWorkout();
+              router.back();
+            },
+          },
         ]
       );
     } else {
@@ -338,7 +346,7 @@ export default function ActiveWorkoutScreen() {
         router.replace('/workout/summary');
       });
     }
-  }, [getProgress, completeWorkout, router]);
+  }, [getProgress, completeWorkout, cancelWorkout, router]);
 
   const handleCompleteSet = useCallback(async (set: SessionSet) => {
     const values = editValues[set.id];
