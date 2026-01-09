@@ -41,6 +41,7 @@ export interface TemplateSet {
   restSeconds?: number;
   tempo?: string; // e.g., "3-0-1-0"
   isDropset?: boolean; // Drop set indicator
+  isPerSide?: boolean; // Per side indicator (e.g., for unilateral exercises)
 }
 
 // Workout Session Types (for future implementation)
@@ -101,6 +102,7 @@ export interface SessionSet {
   notes?: string;
   tempo?: string; // e.g., "3-0-1-0"
   isDropset?: boolean; // Flag indicating this set is part of a drop set
+  isPerSide?: boolean; // Per side indicator (e.g., for unilateral exercises)
 }
 
 // Exercise Catalog (for suggestions & history aggregation)
@@ -174,6 +176,7 @@ export interface TemplateSetRow {
   rest_seconds: number | null;
   tempo: string | null;
   is_dropset: number; // SQLite boolean (0 or 1)
+  is_per_side: number; // SQLite boolean (0 or 1)
 }
 
 export interface UserSettingsRow {
@@ -239,4 +242,5 @@ export interface SessionSetRow {
   notes: string | null;
   tempo: string | null;
   is_dropset: number; // SQLite boolean (0 or 1)
+  is_per_side: number; // SQLite boolean (0 or 1)
 }

@@ -111,6 +111,9 @@ export default function HistoryDetailScreen() {
     if (rpe !== undefined) {
       parts.push(`RPE ${rpe}`);
     }
+    if (set.isPerSide) {
+      parts.push('(per side)');
+    }
     return parts.join(' × ') || 'Bodyweight';
   };
 

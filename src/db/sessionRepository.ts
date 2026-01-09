@@ -137,8 +137,8 @@ export async function createSessionFromTemplate(
             id, session_exercise_id, order_index, parent_set_id, drop_sequence,
             target_weight, target_weight_unit, target_reps, target_time, target_rpe, rest_seconds,
             actual_weight, actual_weight_unit, actual_reps, actual_time, actual_rpe,
-            completed_at, status, notes, tempo, is_dropset
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            completed_at, status, notes, tempo, is_dropset, is_per_side
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             set.id,
             set.sessionExerciseId,
@@ -161,6 +161,7 @@ export async function createSessionFromTemplate(
             set.notes || null,
             set.tempo || null,
             set.isDropset ? 1 : 0,
+            set.isPerSide ? 1 : 0,
           ]
         );
       }
@@ -419,5 +420,6 @@ function rowToSessionSet(row: SessionSetRow): SessionSet {
     notes: row.notes || undefined,
     tempo: row.tempo || undefined,
     isDropset: row.is_dropset === 1,
+    isPerSide: row.is_per_side === 1,
   };
 }

@@ -190,6 +190,24 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add is_per_side column to template_sets if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE template_sets ADD COLUMN is_per_side INTEGER DEFAULT 0`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
+  // Migration: Add is_per_side column to session_sets if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE session_sets ADD COLUMN is_per_side INTEGER DEFAULT 0`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');

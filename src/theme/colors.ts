@@ -36,6 +36,14 @@ export const Colors = {
     tabBar: '#ffffff',
     tabIconDefault: '#6b7280',
     tabIconSelected: '#2563eb',
+
+    // Workout sections
+    sectionWarmup: '#10b981',
+    sectionWarmupLight: '#ecfdf5',
+    sectionWarmupBorder: '#6ee7b7',
+    sectionCooldown: '#06b6d4',
+    sectionCooldownLight: '#ecfeff',
+    sectionCooldownBorder: '#67e8f9',
   },
   dark: {
     // Backgrounds
@@ -74,6 +82,14 @@ export const Colors = {
     tabBar: '#1f2937',
     tabIconDefault: '#6b7280',
     tabIconSelected: '#3b82f6',
+
+    // Workout sections
+    sectionWarmup: '#10b981',
+    sectionWarmupLight: '#064e3b',
+    sectionWarmupBorder: '#059669',
+    sectionCooldown: '#06b6d4',
+    sectionCooldownLight: '#164e63',
+    sectionCooldownBorder: '#0891b2',
   },
 };
 

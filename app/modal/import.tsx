@@ -35,33 +35,60 @@ export default function ImportWorkoutModal() {
 @tags: tag1, tag2
 @units: lbs
 
-## Exercise Name
-- weight unit x reps @modifiers
-- weight unit x reps @modifiers
+## Section Name (e.g., Warmup, Workout, Cool Down)
+
+### Exercise Name
+- weight x reps @modifiers
+
+### Superset: Name
+#### Exercise A
+- weight x reps
+#### Exercise B
+- weight x reps
 
 Format rules:
-- Start with # for workout name
-- Use @tags and @units for metadata
-- ## for exercises
-- Sets: "weight unit x reps" (e.g., "225 lbs x 5")
+- # for workout name, @tags and @units for metadata
+- ## for sections (Warmup, Workout, Cool Down, etc.)
+- ### for exercises within sections
+- Supersets: section header containing "superset" with #### exercise headers
+- Sets: "weight x reps" (e.g., "225 x 5" or "225 lbs x 5")
 - Bodyweight: just reps (e.g., "10") or "bw x 10"
-- Time: "60s" or "weight x time"
+- Time-based: "60s" or "weight x time"
 - Modifiers: @rpe:8, @rest:90s, @tempo:3-0-1-0, @dropset
-- AMRAP sets: "weight x AMRAP"
+- AMRAP: "weight x AMRAP"
 
 Example:
 # Push Day
 @tags: push, chest
 @units: lbs
 
-## Bench Press
+## Warmup
+### Arm Circles
+- 30s
+### Band Pull-Aparts
+- 15
+
+## Workout
+### Bench Press
 - 135 x 10
 - 185 x 8 @rpe: 7
 - 225 x 5 @rpe: 9 @rest: 180s
 
-## Push-ups
+### Superset: Chest & Triceps
+#### Incline Dumbbell Press
+- 50 x 12
+- 60 x 10
+#### Tricep Pushdowns
+- 40 x 15
+- 50 x 12
+
+### Push-ups
 - 15
-- 12 @dropset
+- AMRAP
+
+## Cool Down
+### Chest Stretch
+- 30s each side
 
 Generate a [workout type] workout with [specific requirements].`;
 

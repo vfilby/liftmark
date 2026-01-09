@@ -142,5 +142,108 @@ without a proper workout`;
       // Should have parent superset + 2 child exercises
       expect(result.data?.exercises.length).toBeGreaterThanOrEqual(2);
     });
+
+    it('parses sections with exercises', () => {
+      const markdown = `# Workout
+
+## Warmup
+### Arm Circles
+- 30s
+### Jumping Jacks
+- 60s
+
+## Workout
+### Bench Press
+- 135 x 10
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      const exercises = result.data?.exercises || [];
+
+      // Should have: Warmup section parent, 2 warmup exercises, Workout section parent, 1 workout exercise
+      expect(exercises.length).toBe(5);
+
+      // First should be section parent
+      expect(exercises[0].groupType).toBe('section');
+      expect(exercises[0].exerciseName).toBe('Warmup');
+      expect(exercises[0].sets).toHaveLength(0);
+
+      // Warmup exercises should have parent pointing to warmup section
+      expect(exercises[1].exerciseName).toBe('Arm Circles');
+      expect(exercises[1].parentExerciseId).toBe(exercises[0].id);
+
+      expect(exercises[2].exerciseName).toBe('Jumping Jacks');
+      expect(exercises[2].parentExerciseId).toBe(exercises[0].id);
+    });
+
+    it('parses supersets inside sections', () => {
+      const markdown = `# Workout
+
+## Workout
+### Superset: Arms
+#### Bicep Curls
+- 20 x 10
+#### Tricep Extensions
+- 20 x 10
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      const exercises = result.data?.exercises || [];
+
+      // Should have: Workout section parent, Superset parent, 2 superset children
+      expect(exercises.length).toBe(4);
+
+      // First should be section parent
+      const sectionParent = exercises[0];
+      expect(sectionParent.groupType).toBe('section');
+      expect(sectionParent.exerciseName).toBe('Workout');
+      expect(sectionParent.sets).toHaveLength(0);
+
+      // Second should be superset parent, with parent pointing to section
+      const supersetParent = exercises[1];
+      expect(supersetParent.groupType).toBe('superset');
+      expect(supersetParent.exerciseName).toBe('Superset: Arms');
+      expect(supersetParent.sets).toHaveLength(0);
+      expect(supersetParent.parentExerciseId).toBe(sectionParent.id);
+
+      // Superset children should have parent pointing to superset, NOT section
+      const child1 = exercises[2];
+      expect(child1.exerciseName).toBe('Bicep Curls');
+      expect(child1.parentExerciseId).toBe(supersetParent.id);
+      expect(child1.sets).toHaveLength(1);
+
+      const child2 = exercises[3];
+      expect(child2.exerciseName).toBe('Tricep Extensions');
+      expect(child2.parentExerciseId).toBe(supersetParent.id);
+      expect(child2.sets).toHaveLength(1);
+    });
+
+    it('parses @perside modifier', () => {
+      const markdown = `# Workout
+## Stretches
+- 30s @perside
+- 45s @perside
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].isPerSide).toBe(true);
+      expect(result.data?.exercises[0].sets[1].isPerSide).toBe(true);
+    });
+
+    it('parses @dropset modifier', () => {
+      const markdown = `# Workout
+## Curls
+- 20 x 10
+- 15 x 12 @dropset
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].isDropset).toBeFalsy();
+      expect(result.data?.exercises[0].sets[1].isDropset).toBe(true);
+    });
   });
 });

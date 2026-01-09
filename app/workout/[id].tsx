@@ -11,6 +11,13 @@ interface ExerciseGroup {
   type: 'single' | 'superset';
   exercises: TemplateExercise[];
   groupName?: string;
+  sectionName?: string; // The section this exercise belongs to (Warmup, Cool Down, etc.)
+}
+
+// Represents a section containing exercise groups
+interface WorkoutSection {
+  name: string | null; // null for exercises not in a section
+  exerciseGroups: ExerciseGroup[];
 }
 
 // Interleaved set with exercise context
@@ -18,6 +25,21 @@ interface InterleavedSet {
   exerciseName: string;
   set: TemplateSet;
   setIndex: number; // 0-based index within the exercise
+}
+
+// Detect section type from name for styling
+type SectionType = 'warmup' | 'cooldown' | 'default';
+
+function getSectionType(sectionName: string | null): SectionType {
+  if (!sectionName) return 'default';
+  const lower = sectionName.toLowerCase();
+  if (lower.includes('warm') || lower.includes('mobility') || lower.includes('activation')) {
+    return 'warmup';
+  }
+  if (lower.includes('cool') || lower.includes('stretch') || lower.includes('recovery')) {
+    return 'cooldown';
+  }
+  return 'default';
 }
 
 export default function WorkoutDetailScreen() {
@@ -100,19 +122,34 @@ export default function WorkoutDetailScreen() {
     }
   }, [error]);
 
-  // Group exercises: combine superset children, keep singles separate
-  const exerciseGroups = useMemo((): ExerciseGroup[] => {
+  // Group exercises by sections, then by superset/single within each section
+  const workoutSections = useMemo((): WorkoutSection[] => {
     if (!selectedWorkout) return [];
 
-    const groups: ExerciseGroup[] = [];
+    const sections: WorkoutSection[] = [];
     const processedIds = new Set<string>();
     const exercises = selectedWorkout.exercises;
+
+    // Track current section as we iterate
+    let currentSectionName: string | null = null;
+    let currentSection: WorkoutSection | null = null;
 
     for (const exercise of exercises) {
       if (processedIds.has(exercise.id)) continue;
 
-      // Check if this is a superset parent (has groupType 'superset', no parent, and no sets)
-      if (exercise.groupType === 'superset' && !exercise.parentExerciseId && exercise.sets.length === 0) {
+      // Check if this is a section parent (groupType 'section', no parent, no sets)
+      if (exercise.groupType === 'section' && !exercise.parentExerciseId && exercise.sets.length === 0) {
+        // This is a section header - start a new section
+        processedIds.add(exercise.id);
+        currentSectionName = exercise.groupName || exercise.exerciseName;
+        currentSection = { name: currentSectionName, exerciseGroups: [] };
+        sections.push(currentSection);
+        continue;
+      }
+
+      // Check if this is a superset parent (has groupType 'superset' and no sets)
+      // Note: superset parents inside sections will have parentExerciseId pointing to the section
+      if (exercise.groupType === 'superset' && exercise.sets.length === 0) {
         // Find all children of this superset
         const children = exercises.filter(
           (ex) => ex.parentExerciseId === exercise.id
@@ -124,25 +161,64 @@ export default function WorkoutDetailScreen() {
 
         // Only add if there are actual child exercises with sets
         if (children.length > 0) {
-          groups.push({
+          const group: ExerciseGroup = {
             type: 'superset',
             exercises: children,
             groupName: exercise.groupName || exercise.exerciseName,
-          });
+            sectionName: currentSectionName || undefined,
+          };
+
+          if (currentSection) {
+            currentSection.exerciseGroups.push(group);
+          } else {
+            // No section yet - create a default section
+            if (sections.length === 0 || sections[sections.length - 1].name !== null) {
+              sections.push({ name: null, exerciseGroups: [] });
+            }
+            sections[sections.length - 1].exerciseGroups.push(group);
+          }
         }
-      } else if (!exercise.parentExerciseId) {
-        // Regular exercise (not a superset child)
+      } else {
+        // Check if this is a superset child (skip - handled when processing superset parent)
+        if (exercise.parentExerciseId) {
+          const parent = exercises.find(ex => ex.id === exercise.parentExerciseId);
+          if (parent?.groupType === 'superset') {
+            // Skip superset children - they're handled when we process the parent
+            continue;
+          }
+        }
+
+        // Regular exercise or section child
         processedIds.add(exercise.id);
-        groups.push({
+
+        // Check if this exercise belongs to a section (has groupName from being a section child)
+        const exerciseSectionName = exercise.groupType === 'section' ? exercise.groupName : currentSectionName;
+
+        const group: ExerciseGroup = {
           type: 'single',
           exercises: [exercise],
-        });
+          sectionName: exerciseSectionName || undefined,
+        };
+
+        if (currentSection) {
+          currentSection.exerciseGroups.push(group);
+        } else {
+          // No section yet - create a default section
+          if (sections.length === 0 || sections[sections.length - 1].name !== null) {
+            sections.push({ name: null, exerciseGroups: [] });
+          }
+          sections[sections.length - 1].exerciseGroups.push(group);
+        }
       }
-      // Skip superset children - they're handled when we process the parent
     }
 
-    return groups;
+    return sections;
   }, [selectedWorkout]);
+
+  // Flatten for exercise numbering (global index across all sections)
+  const allExerciseGroups = useMemo(() => {
+    return workoutSections.flatMap(section => section.exerciseGroups);
+  }, [workoutSections]);
 
   // Interleave sets from multiple exercises in a superset
   const interleavesets = (exercises: TemplateExercise[]): InterleavedSet[] => {
@@ -302,8 +378,7 @@ export default function WorkoutDetailScreen() {
     },
     // Superset-specific styles
     supersetCard: {
-      borderLeftWidth: 4,
-      borderLeftColor: '#8b5cf6',
+      // No outer border - sets will match section color
     },
     supersetBadge: {
       backgroundColor: '#8b5cf6',
@@ -319,14 +394,40 @@ export default function WorkoutDetailScreen() {
       fontWeight: '700',
       letterSpacing: 0.5,
     },
-    supersetSetRow: {
-      borderLeftColor: '#8b5cf6',
-    },
     setRowGroupStart: {
       marginTop: 8,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       paddingTop: 12,
+    },
+    // Section header styles
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 20,
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    sectionHeaderLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    sectionHeaderTextContainer: {
+      paddingHorizontal: 12,
+    },
+    sectionHeaderText: {
+      fontSize: 14,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    // Section-specific styles
+    warmupSetRow: {
+      borderLeftColor: colors.sectionWarmup,
+    },
+    cooldownSetRow: {
+      borderLeftColor: colors.sectionCooldown,
     },
     // Start Workout button
     startWorkoutButton: {
@@ -417,6 +518,9 @@ export default function WorkoutDetailScreen() {
     if (set.isDropset) {
       parts.push('(Dropset)');
     }
+    if (set.isPerSide) {
+      parts.push('(per side)');
+    }
 
     return parts.join(' • ');
   };
@@ -488,100 +592,140 @@ export default function WorkoutDetailScreen() {
       <View style={styles.exercisesSection}>
         <Text style={styles.sectionTitle}>Exercises</Text>
 
-        {exerciseGroups.map((group, groupIndex) => {
-          if (group.type === 'superset') {
-            // Render superset with interleaved sets
-            const interleavedSets = interleavesets(group.exercises);
-            const exerciseNames = group.exercises.map((ex) => ex.exerciseName).join(' & ');
+        {workoutSections.map((section, sectionIndex) => {
+          const sectionType = getSectionType(section.name);
+          const sectionColor = sectionType === 'warmup'
+            ? colors.sectionWarmup
+            : sectionType === 'cooldown'
+              ? colors.sectionCooldown
+              : colors.primary;
 
-            return (
-              <View
-                key={`superset-${groupIndex}`}
-                style={[styles.exerciseCard, styles.supersetCard]}
-                testID={`superset-${groupIndex}`}
-              >
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseNumber}>{groupIndex + 1}</Text>
-                  <View style={styles.exerciseInfo}>
-                    <View style={styles.supersetBadge}>
-                      <Text style={styles.supersetBadgeText}>SUPERSET</Text>
-                    </View>
-                    <Text style={styles.exerciseName}>{exerciseNames}</Text>
-
-                    {/* Show notes from child exercises */}
-                    {group.exercises.map((ex) =>
-                      ex.notes ? (
-                        <Text key={ex.id} style={styles.exerciseNotes}>
-                          {ex.exerciseName}: {ex.notes}
-                        </Text>
-                      ) : null
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.setsContainer}>
-                  {interleavedSets.map((item, idx) => (
-                    <View
-                      key={`${item.set.id}-${idx}`}
-                      style={[
-                        styles.setRow,
-                        styles.supersetSetRow,
-                        idx % group.exercises.length === 0 && idx > 0
-                          ? styles.setRowGroupStart
-                          : null,
-                      ]}
-                      testID={`set-${item.set.id}`}
-                    >
-                      <Text style={styles.setText}>
-                        {formatSet(item.set, item.setIndex, item.exerciseName)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          } else {
-            // Render single exercise
-            const exercise = group.exercises[0];
-            return (
-              <View
-                key={exercise.id}
-                style={styles.exerciseCard}
-                testID={`exercise-${exercise.id}`}
-              >
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseNumber}>{groupIndex + 1}</Text>
-                  <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-
-                    {exercise.equipmentType && (
-                      <View style={styles.exerciseMeta}>
-                        <Text style={styles.exerciseMetaText}>
-                          {exercise.equipmentType}
-                        </Text>
-                      </View>
-                    )}
-
-                    {exercise.notes && (
-                      <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.setsContainer}>
-                  {exercise.sets.map((set, setIndex) => (
-                    <View
-                      key={set.id}
-                      style={styles.setRow}
-                      testID={`set-${set.id}`}
-                    >
-                      <Text style={styles.setText}>{formatSet(set, setIndex)}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
+          // Calculate global exercise index for numbering
+          let globalIndexOffset = 0;
+          for (let i = 0; i < sectionIndex; i++) {
+            globalIndexOffset += workoutSections[i].exerciseGroups.length;
           }
+
+          return (
+            <View key={`section-${sectionIndex}`}>
+              {/* Section header - only show if section has a name */}
+              {section.name && (
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionHeaderLine, { backgroundColor: sectionColor }]} />
+                  <View style={styles.sectionHeaderTextContainer}>
+                    <Text style={[styles.sectionHeaderText, { color: sectionColor }]}>
+                      {section.name}
+                    </Text>
+                  </View>
+                  <View style={[styles.sectionHeaderLine, { backgroundColor: sectionColor }]} />
+                </View>
+              )}
+
+              {section.exerciseGroups.map((group, groupIndex) => {
+                const globalIndex = globalIndexOffset + groupIndex;
+                const numberColor = sectionColor;
+                const setRowSectionStyle = sectionType === 'warmup'
+                  ? styles.warmupSetRow
+                  : sectionType === 'cooldown'
+                    ? styles.cooldownSetRow
+                    : null;
+
+                if (group.type === 'superset') {
+                  // Render superset with interleaved sets
+                  const interleavedSets = interleavesets(group.exercises);
+                  const exerciseNames = group.exercises.map((ex) => ex.exerciseName).join(' & ');
+
+                  return (
+                    <View
+                      key={`superset-${globalIndex}`}
+                      style={[styles.exerciseCard, styles.supersetCard]}
+                      testID={`superset-${globalIndex}`}
+                    >
+                      <View style={styles.exerciseHeader}>
+                        <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
+                        <View style={styles.exerciseInfo}>
+                          <View style={styles.supersetBadge}>
+                            <Text style={styles.supersetBadgeText}>SUPERSET</Text>
+                          </View>
+                          <Text style={styles.exerciseName}>{exerciseNames}</Text>
+
+                          {/* Show notes from child exercises */}
+                          {group.exercises.map((ex) =>
+                            ex.notes ? (
+                              <Text key={ex.id} style={styles.exerciseNotes}>
+                                {ex.exerciseName}: {ex.notes}
+                              </Text>
+                            ) : null
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.setsContainer}>
+                        {interleavedSets.map((item, idx) => (
+                          <View
+                            key={`${item.set.id}-${idx}`}
+                            style={[
+                              styles.setRow,
+                              setRowSectionStyle,
+                              idx % group.exercises.length === 0 && idx > 0
+                                ? styles.setRowGroupStart
+                                : null,
+                            ]}
+                            testID={`set-${item.set.id}`}
+                          >
+                            <Text style={styles.setText}>
+                              {formatSet(item.set, item.setIndex, item.exerciseName)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                } else {
+                  // Render single exercise
+                  const exercise = group.exercises[0];
+                  return (
+                    <View
+                      key={exercise.id}
+                      style={styles.exerciseCard}
+                      testID={`exercise-${exercise.id}`}
+                    >
+                      <View style={styles.exerciseHeader}>
+                        <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
+                        <View style={styles.exerciseInfo}>
+                          <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+
+                          {exercise.equipmentType && (
+                            <View style={styles.exerciseMeta}>
+                              <Text style={styles.exerciseMetaText}>
+                                {exercise.equipmentType}
+                              </Text>
+                            </View>
+                          )}
+
+                          {exercise.notes && (
+                            <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.setsContainer}>
+                        {exercise.sets.map((set, setIndex) => (
+                          <View
+                            key={set.id}
+                            style={[styles.setRow, setRowSectionStyle]}
+                            testID={`set-${set.id}`}
+                          >
+                            <Text style={styles.setText}>{formatSet(set, setIndex)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                }
+              })}
+            </View>
+          );
         })}
       </View>
     </ScrollView>

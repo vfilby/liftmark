@@ -288,8 +288,8 @@ async function insertTemplateSet(set: TemplateSet): Promise<void> {
   await db.runAsync(
     `INSERT INTO template_sets (
       id, template_exercise_id, order_index, target_weight, target_weight_unit,
-      target_reps, target_time, target_rpe, rest_seconds, tempo, is_dropset
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      target_reps, target_time, target_rpe, rest_seconds, tempo, is_dropset, is_per_side
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       set.id,
       set.templateExerciseId,
@@ -302,6 +302,7 @@ async function insertTemplateSet(set: TemplateSet): Promise<void> {
       set.restSeconds ?? null,
       set.tempo || null,
       set.isDropset ? 1 : 0,
+      set.isPerSide ? 1 : 0,
     ]
   );
 }
@@ -363,5 +364,6 @@ function rowToTemplateSet(row: TemplateSetRow): TemplateSet {
     restSeconds: row.rest_seconds ?? undefined,
     tempo: row.tempo || undefined,
     isDropset: row.is_dropset === 1,
+    isPerSide: row.is_per_side === 1,
   };
 }

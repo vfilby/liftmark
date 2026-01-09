@@ -10,7 +10,7 @@
  * - @tags and @units metadata
  * - Exercise metadata (@type, superset detection)
  * - Full set parsing: weight x reps, time-based, AMRAP, modifiers
- * - Set modifiers: @rpe, @rest, @tempo, @dropset
+ * - Set modifiers: @rpe, @rest, @tempo, @dropset, @perside
  * - Supersets via nested headers containing "superset"
  * - Section grouping (nested headers without "superset")
  * - Comprehensive validation with clear error messages
@@ -67,6 +67,7 @@ interface ParsedSet {
   rest?: number; // seconds
   tempo?: string;
   isDropset?: boolean;
+  isPerSide?: boolean;
 }
 
 // ============================================================================
@@ -550,12 +551,21 @@ function parseGroupedExercises(
     if (line.headerLevel === headerLine.headerLevel! + 1) {
       const result = parseExerciseBlock(context, workoutTemplateId, orderIndex + childOrderIndex + 1);
       if (result) {
-        // Handle both single exercise and nested arrays
+        // Handle both single exercise and nested arrays (e.g., superset inside section)
         const exercises = Array.isArray(result) ? result : [result];
         for (const childExercise of exercises) {
-          childExercise.parentExerciseId = parentId;
-          childExercise.groupType = groupType;
-          childExercise.groupName = groupName;
+          // Only set parentExerciseId if not already set (preserves superset children's parent)
+          if (!childExercise.parentExerciseId) {
+            childExercise.parentExerciseId = parentId;
+          }
+          // Only set groupType/groupName for direct children, not nested superset children
+          if (childExercise.groupType !== 'superset' || childExercise.sets.length === 0) {
+            // This is either a regular exercise or a superset parent
+            if (!childExercise.groupType) {
+              childExercise.groupType = groupType;
+              childExercise.groupName = groupName;
+            }
+          }
           childExercises.push(childExercise);
           childOrderIndex++;
         }
@@ -653,6 +663,7 @@ function parseSets(
           restSeconds: parsedSet.rest,
           tempo: parsedSet.tempo,
           isDropset: parsedSet.isDropset,
+          isPerSide: parsedSet.isPerSide,
         });
         orderIndex++;
       }
@@ -909,6 +920,7 @@ function normalizeTimeToSeconds(value: number, unit: string | undefined): number
  * - @rest: 3m
  * - @tempo: 3-0-1-0
  * - @dropset
+ * - @perside
  */
 function parseModifiers(
   parts: string[],
@@ -923,6 +935,10 @@ function parseModifiers(
     // Handle flag modifiers (no value)
     if (trimmed.toLowerCase() === 'dropset') {
       modifiers.isDropset = true;
+      continue;
+    }
+    if (trimmed.toLowerCase() === 'perside') {
+      modifiers.isPerSide = true;
       continue;
     }
 
