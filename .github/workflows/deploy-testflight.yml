@@ -1,13 +1,6 @@
 name: Deploy to TestFlight
 
 on:
-  push:
-    tags:
-      - 'alpha-v*'
-      - 'beta-v*'
-      - 'v*'
-  release:
-    types: [created]
   workflow_dispatch:
     inputs:
       profile:
@@ -32,46 +25,28 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run ci
+
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Determine build profile
-        id: profile
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "BUILD_PROFILE=${{ github.event.inputs.profile }}" >> $GITHUB_OUTPUT
-            echo "RELEASE_TYPE=manual" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/alpha-v* ]]; then
-            echo "BUILD_PROFILE=preview" >> $GITHUB_OUTPUT
-            echo "RELEASE_TYPE=alpha" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/beta-v* ]]; then
-            echo "BUILD_PROFILE=preview" >> $GITHUB_OUTPUT
-            echo "RELEASE_TYPE=beta" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            echo "BUILD_PROFILE=production" >> $GITHUB_OUTPUT
-            echo "RELEASE_TYPE=production" >> $GITHUB_OUTPUT
-          else
-            echo "BUILD_PROFILE=preview" >> $GITHUB_OUTPUT
-            echo "RELEASE_TYPE=preview" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and submit to TestFlight
         run: |
-          echo "Building with profile: ${{ steps.profile.outputs.BUILD_PROFILE }}"
-          echo "Release type: ${{ steps.profile.outputs.RELEASE_TYPE }}"
-          eas build --platform ios --profile ${{ steps.profile.outputs.BUILD_PROFILE }} --non-interactive --auto-submit
+          echo "Building with profile: ${{ github.event.inputs.profile }}"
+          eas build --platform ios --profile ${{ github.event.inputs.profile }} --non-interactive --auto-submit
 
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Profile:** ${{ steps.profile.outputs.BUILD_PROFILE }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release Type:** ${{ steps.profile.outputs.RELEASE_TYPE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile:** ${{ github.event.inputs.profile }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** Manual (workflow_dispatch)" >> $GITHUB_STEP_SUMMARY
           echo "- **Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Build submitted to TestFlight. Check App Store Connect for processing status." >> $GITHUB_STEP_SUMMARY
