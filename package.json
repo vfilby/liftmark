@@ -1,6 +1,6 @@
 {
   "name": "liftmark2",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
