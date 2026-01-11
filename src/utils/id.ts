@@ -9,3 +9,13 @@ import { randomUUID } from 'expo-crypto';
 export function generateId(): string {
   return randomUUID();
 }
+
+/**
+ * Creates a short ID suitable for UI display
+ * @param fullId - Full UUID to shorten
+ * @returns First 8 characters of the UUID
+ */
+export function createShortId(fullId?: string): string {
+  const id = fullId || generateId();
+  return id.substring(0, 8);
+}
