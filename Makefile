@@ -1,5 +1,9 @@
 # LiftMark Development Makefile
 
+# Dynamic port allocation for parallel workers (range: 54100-54199)
+EXPO_PORT := $(shell for p in $$(seq 54100 54199); do \
+  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
+
 .PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
 
 # Default target
@@ -48,14 +52,14 @@ help:
 
 # Development servers
 server:
-	@echo "🚀 Starting Expo development server with dev client..."
+	@echo "🚀 Starting Expo development server with dev client on port $(EXPO_PORT)..."
 	@mkdir -p logs
-	script -q logs/expo.log npx expo start --dev-client
+	script -q logs/expo.log npx expo start --dev-client --port $(EXPO_PORT)
 
 server-go:
-	@echo "📱 Starting Expo development server for Expo Go..."
+	@echo "📱 Starting Expo development server for Expo Go on port $(EXPO_PORT)..."
 	@mkdir -p logs
-	script -q logs/expo.log npx expo start
+	script -q logs/expo.log npx expo start --port $(EXPO_PORT)
 
 ios:
 	@echo "📱 Running development build on iOS simulator..."
@@ -81,8 +85,8 @@ android:
 	npx expo run:android
 
 web:
-	@echo "🌐 Starting web development server..."
-	npx expo start --web
+	@echo "🌐 Starting web development server on port $(EXPO_PORT)..."
+	npx expo start --web --port $(EXPO_PORT)
 
 # Testing
 test:
@@ -156,9 +160,9 @@ logs:
 	npx expo logs
 
 logs-file:
-	@echo "📝 Starting Expo server with console + file logging..."
+	@echo "📝 Starting Expo server with console + file logging on port $(EXPO_PORT)..."
 	@mkdir -p logs
-	script -q logs/expo.log npx expo start --dev-client
+	script -q logs/expo.log npx expo start --dev-client --port $(EXPO_PORT)
 
 logs-tail:
 	@echo "👀 Following Expo logs in real time (Ctrl+C to stop)..."
@@ -170,16 +174,16 @@ logs-view:
 	cat logs/expo.log
 
 server-bg:
-	@echo "🚀 Starting Expo dev server in background with file logging..."
+	@echo "🚀 Starting Expo dev server in background on port $(EXPO_PORT)..."
 	@mkdir -p logs
-	nohup npx expo start --dev-client > logs/expo.log 2>&1 &
-	@echo "✅ Server running in background"
+	nohup npx expo start --dev-client --port $(EXPO_PORT) > logs/expo.log 2>&1 &
+	@echo "✅ Server running in background on port $(EXPO_PORT)"
 	@echo "📝 Logs: logs/expo.log (background only)"
 	@echo "🔍 Monitor: make logs-tail"
 	@echo "🛑 Stop: make server-stop"
 
 server-tmux:
-	@echo "🚀 Starting Expo dev server in tmux session with logging..."
+	@echo "🚀 Starting Expo dev server in tmux session on port $(EXPO_PORT)..."
 	@if ! command -v tmux >/dev/null 2>&1; then \
 		echo "❌ tmux not installed. Install with: brew install tmux"; \
 		exit 1; \
@@ -187,8 +191,8 @@ server-tmux:
 	@mkdir -p logs
 	@tmux has-session -t expo 2>/dev/null && tmux kill-session -t expo || true
 	@tmux new-session -d -s expo -x 120 -y 30
-	@tmux send-keys -t expo "script -f -q logs/expo.log npx expo start --dev-client" Enter
-	@echo "✅ Expo server running in tmux session 'expo'"
+	@tmux send-keys -t expo "script -f -q logs/expo.log npx expo start --dev-client --port $(EXPO_PORT)" Enter
+	@echo "✅ Expo server running in tmux session 'expo' on port $(EXPO_PORT)"
 	@echo "📺 Attach: tmux attach -t expo"
 	@echo "📝 Logs: logs/expo.log (real-time)"
 	@echo "🛑 Stop: tmux kill-session -t expo"
@@ -204,12 +208,12 @@ logs-clean:
 	@echo "✅ Logs cleaned"
 
 tunnel:
-	@echo "🌍 Starting Expo with tunnel connection..."
-	npx expo start --tunnel
+	@echo "🌍 Starting Expo with tunnel connection on port $(EXPO_PORT)..."
+	npx expo start --tunnel --port $(EXPO_PORT)
 
 clear-cache:
-	@echo "🗑️ Clearing Expo and Metro cache..."
-	npx expo start --clear
+	@echo "🗑️ Clearing Expo and Metro cache on port $(EXPO_PORT)..."
+	npx expo start --clear --port $(EXPO_PORT)
 
 doctor:
 	@echo "🩺 Running Expo doctor..."
