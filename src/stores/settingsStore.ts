@@ -34,6 +34,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         notifications_enabled: number;
         custom_prompt_addition: string | null;
         healthkit_enabled: number;
+        live_activities_enabled: number;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -48,6 +49,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           notificationsEnabled: row.notifications_enabled === 1,
           customPromptAddition: row.custom_prompt_addition ?? undefined,
           healthKitEnabled: row.healthkit_enabled === 1,
+          liveActivitiesEnabled: row.live_activities_enabled === 1,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -108,6 +110,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.healthKitEnabled !== undefined) {
         updateFields.push('healthkit_enabled = ?');
         values.push(updates.healthKitEnabled ? 1 : 0);
+      }
+      if (updates.liveActivitiesEnabled !== undefined) {
+        updateFields.push('live_activities_enabled = ?');
+        values.push(updates.liveActivitiesEnabled ? 1 : 0);
       }
 
       // Always update updated_at

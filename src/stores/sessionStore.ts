@@ -10,6 +10,12 @@ import {
   deleteSession,
 } from '@/db/sessionRepository';
 import { saveWorkoutToHealthKit, isHealthKitAvailable } from '@/services/healthKitService';
+import {
+  startWorkoutLiveActivity,
+  updateWorkoutLiveActivity,
+  endWorkoutLiveActivity,
+  isLiveActivityAvailable,
+} from '@/services/liveActivityService';
 import { useSettingsStore } from './settingsStore';
 
 interface RestTimer {
@@ -135,6 +141,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         restTimer: null,
         isLoading: false,
       });
+
+      // Start Live Activity if enabled
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        const trackable = getTrackableExercisesFromSession(session);
+        const exercise = trackable[0] || null;
+        const progress = calculateProgress(session);
+        startWorkoutLiveActivity(session, exercise, 0, progress);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to start workout',
@@ -165,6 +180,14 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         restTimer: null,
         isLoading: false,
       });
+
+      // Start Live Activity if enabled (resuming a session)
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        const exercise = trackable[exerciseIndex] || null;
+        const progress = calculateProgress(session);
+        startWorkoutLiveActivity(session, exercise, setIndex, progress);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to resume workout',
@@ -217,6 +240,13 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         }
       }
 
+      // End Live Activity
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        const progress = calculateProgress(updatedSession);
+        const durationMin = Math.floor((duration || 0) / 60);
+        endWorkoutLiveActivity(`${progress.completed} sets \u2022 ${durationMin} min`);
+      }
+
       set({
         activeSession: updatedSession,
         isLoading: false,
@@ -242,6 +272,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       };
 
       await updateSession(updatedSession);
+
+      // End Live Activity
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        endWorkoutLiveActivity('Workout Canceled');
+      }
 
       set({
         activeSession: null,
@@ -341,15 +377,27 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         }
       }
 
+      const updatedSession = {
+        ...activeSession,
+        exercises: updatedExercises,
+      };
+
       set({
-        activeSession: {
-          ...activeSession,
-          exercises: updatedExercises,
-        },
+        activeSession: updatedSession,
       });
 
       // Auto-advance to next set
       get().goToNextSet();
+
+      // Update Live Activity with new position
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        const { currentExerciseIndex: newExIdx, currentSetIndex: newSetIdx } = get();
+        const trackable = getTrackableExercisesFromSession(updatedSession);
+        const newExercise = trackable[newExIdx] || null;
+        const newProgress = calculateProgress(updatedSession);
+        updateWorkoutLiveActivity(updatedSession, newExercise, newSetIdx, newProgress);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to complete set',
@@ -404,15 +452,27 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         }
       }
 
+      const updatedSession = {
+        ...activeSession,
+        exercises: updatedExercises,
+      };
+
       set({
-        activeSession: {
-          ...activeSession,
-          exercises: updatedExercises,
-        },
+        activeSession: updatedSession,
       });
 
       // Auto-advance to next set
       get().goToNextSet();
+
+      // Update Live Activity with new position
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable()) {
+        const { currentExerciseIndex: newExIdx, currentSetIndex: newSetIdx } = get();
+        const trackable = getTrackableExercisesFromSession(updatedSession);
+        const newExercise = trackable[newExIdx] || null;
+        const newProgress = calculateProgress(updatedSession);
+        updateWorkoutLiveActivity(updatedSession, newExercise, newSetIdx, newProgress);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to skip set',
@@ -492,6 +552,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   // Start the rest timer
   startRestTimer: (seconds: number) => {
+    const { activeSession, currentExerciseIndex } = get();
+
     set({
       restTimer: {
         isRunning: true,
@@ -499,11 +561,35 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         totalSeconds: seconds,
       },
     });
+
+    // Update Live Activity with rest countdown
+    const settings = useSettingsStore.getState().settings;
+    if (settings?.liveActivitiesEnabled && isLiveActivityAvailable() && activeSession) {
+      const trackable = getTrackableExercisesFromSession(activeSession);
+      const currentExercise = trackable[currentExerciseIndex] || null;
+      const nextExercise = trackable[currentExerciseIndex + 1] || null;
+      const progress = calculateProgress(activeSession);
+      updateWorkoutLiveActivity(activeSession, currentExercise, 0, progress, {
+        remainingSeconds: seconds,
+        nextExercise,
+      });
+    }
   },
 
   // Stop the rest timer
   stopRestTimer: () => {
+    const { activeSession, currentExerciseIndex, currentSetIndex } = get();
+
     set({ restTimer: null });
+
+    // Update Live Activity to show current set (no timer)
+    const settings = useSettingsStore.getState().settings;
+    if (settings?.liveActivitiesEnabled && isLiveActivityAvailable() && activeSession) {
+      const trackable = getTrackableExercisesFromSession(activeSession);
+      const currentExercise = trackable[currentExerciseIndex] || null;
+      const progress = calculateProgress(activeSession);
+      updateWorkoutLiveActivity(activeSession, currentExercise, currentSetIndex, progress);
+    }
   },
 
   // Tick the rest timer (called every second)

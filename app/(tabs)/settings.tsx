@@ -16,6 +16,7 @@ import {
   isHealthKitAvailable,
   requestHealthKitAuthorization,
 } from '@/services/healthKitService';
+import { isLiveActivityAvailable } from '@/services/liveActivityService';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
@@ -369,6 +370,30 @@ export default function SettingsScreen() {
               onValueChange={handleHealthKitToggle}
               trackColor={{ false: colors.border, true: colors.primary }}
               testID="switch-healthkit"
+            />
+          </View>
+        </View>
+      )}
+
+      {/* Only show Live Activities settings on iOS */}
+      {Platform.OS === 'ios' && isLiveActivityAvailable() && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Live Activities</Text>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Lock Screen Widget</Text>
+              <Text style={styles.settingDescription}>
+                Show workout progress on lock screen and Dynamic Island
+              </Text>
+            </View>
+            <Switch
+              value={settings.liveActivitiesEnabled}
+              onValueChange={(value) =>
+                updateSettings({ liveActivitiesEnabled: value })
+              }
+              trackColor={{ false: colors.border, true: colors.primary }}
+              testID="switch-live-activities"
             />
           </View>
         </View>

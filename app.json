@@ -23,7 +23,9 @@
         ],
         "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
         "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSupportsLiveActivities": true,
+        "NSSupportsLiveActivitiesFrequentUpdates": true
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,
@@ -55,7 +57,8 @@
           "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
           "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
         }
-      ]
+      ],
+      ["expo-live-activity", { "enablePushNotifications": false }]
     ],
     "extra": {
       "router": {},
