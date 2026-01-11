@@ -1,6 +1,6 @@
 # LiftMark Development Makefile
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
+.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
 
 # Default target
 help:
@@ -22,9 +22,11 @@ help:
 	@echo "  make rebuild-native - Clean and regenerate native projects"
 	@echo "  make rebuild-ios    - Prebuild and run on iOS simulator"
 	@echo ""
-	@echo "  make test       - Run test suite"
-	@echo "  make test-watch - Run tests in watch mode"
-	@echo "  make test-coverage - Run tests with coverage report"
+	@echo "  make test              - Run test suite"
+	@echo "  make test-watch        - Run tests in watch mode"
+	@echo "  make test-coverage     - Run tests with coverage report"
+	@echo "  make test-coverage-open - Run coverage tests and open HTML report"
+	@echo "  make test-coverage-watch - Run coverage tests in watch mode"
 	@echo "  make typecheck  - Run TypeScript type checking"
 	@echo ""
 	@echo "  make install    - Install dependencies"
@@ -94,6 +96,20 @@ test-watch:
 test-coverage:
 	@echo "📊 Running tests with coverage report..."
 	npm run test:coverage
+
+test-coverage-open:
+	@echo "📊 Running tests with coverage and opening report..."
+	npm run test:coverage
+	@if [ -f coverage/lcov-report/index.html ]; then \
+		echo "🌐 Opening coverage report in browser..."; \
+		open coverage/lcov-report/index.html; \
+	else \
+		echo "❌ Coverage report not found. Make sure tests ran successfully."; \
+	fi
+
+test-coverage-watch:
+	@echo "👀 Running tests with coverage in watch mode..."
+	npm run test:coverage:watch
 
 typecheck:
 	@echo "🔍 Running TypeScript type checking..."

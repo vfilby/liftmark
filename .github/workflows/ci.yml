@@ -32,6 +32,21 @@ jobs:
       - name: Run tests
         run: npm run test -- --ci --coverage
 
+      - name: Generate coverage summary
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npx jest --coverage --coverageReporters=text-summary | tail -n +6 | head -n -2 >> $GITHUB_STEP_SUMMARY
+
+      - name: Coverage Comment
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          lcov-file: ./coverage/lcov.info
+          delete-old-comments: true
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
