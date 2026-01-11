@@ -4,7 +4,7 @@
 EXPO_PORT := $(shell for p in $$(seq 54100 54199); do \
   lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean
+.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims
 
 # Default target
 help:
@@ -20,6 +20,14 @@ help:
 	@echo "  make ios        - Run development build on iOS simulator"
 	@echo "  make android    - Run development build on Android emulator"
 	@echo "  make web        - Start web development server"
+	@echo ""
+	@echo "Parallel development (multi-agent workflows):"
+	@echo "  make list-sims          - List all available iOS simulators"
+	@echo "  make create-polecat-sims - Create named simulators for polecats"
+	@echo "  make ios-polecat1       - Run on Polecat 1 simulator (port 54100)"
+	@echo "  make ios-polecat2       - Run on Polecat 2 simulator (port 54101)"
+	@echo "  make ios-polecat3       - Run on Polecat 3 simulator (port 54102)"
+	@echo "  make kill-all-sims      - Close all running simulators"
 	@echo ""
 	@echo "Native builds:"
 	@echo "  make prebuild       - Generate native projects (ios/android)"
@@ -227,6 +235,41 @@ ios-device:
 ios-simulator-list:
 	@echo "📋 Listing available iOS simulators..."
 	xcrun simctl list devices available | grep "iPhone"
+
+# Parallel development support (multi-agent workflows)
+# See docs/parallel-expo-workflow.md for details
+list-sims:
+	@echo "📋 Available iOS Simulators:"
+	@echo "============================"
+	@xcrun simctl list devices available | grep "iPhone" || echo "No simulators found"
+
+create-polecat-sims:
+	@echo "🏗️ Creating named simulators for polecats..."
+	@echo "Note: This creates iPhone 15 Pro simulators with iOS 17.0"
+	@echo ""
+	@xcrun simctl create "iPhone 15 Pro - Polecat 1" "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro" "com.apple.CoreSimulator.SimRuntime.iOS-17-0" 2>/dev/null || echo "✓ Polecat 1 simulator already exists"
+	@xcrun simctl create "iPhone 15 Pro - Polecat 2" "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro" "com.apple.CoreSimulator.SimRuntime.iOS-17-0" 2>/dev/null || echo "✓ Polecat 2 simulator already exists"
+	@xcrun simctl create "iPhone 15 Pro - Polecat 3" "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro" "com.apple.CoreSimulator.SimRuntime.iOS-17-0" 2>/dev/null || echo "✓ Polecat 3 simulator already exists"
+	@echo ""
+	@echo "✅ Simulators created. Use 'make list-sims' to verify."
+	@echo "📚 See docs/parallel-expo-workflow.md for usage instructions."
+
+ios-polecat1:
+	@echo "📱 Running on Polecat 1 simulator (port 54100)..."
+	EXPO_PORT=54100 npx expo run:ios --device "iPhone 15 Pro - Polecat 1"
+
+ios-polecat2:
+	@echo "📱 Running on Polecat 2 simulator (port 54101)..."
+	EXPO_PORT=54101 npx expo run:ios --device "iPhone 15 Pro - Polecat 2"
+
+ios-polecat3:
+	@echo "📱 Running on Polecat 3 simulator (port 54102)..."
+	EXPO_PORT=54102 npx expo run:ios --device "iPhone 15 Pro - Polecat 3"
+
+kill-all-sims:
+	@echo "🛑 Closing all running simulators..."
+	@killall "Simulator" 2>/dev/null || echo "No simulators running"
+	@echo "✅ All simulators closed"
 
 # Android specific commands  
 android-device:
