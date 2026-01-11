@@ -11,9 +11,10 @@ function getLiveActivityModule() {
     moduleLoadAttempted = true;
     try {
       LiveActivityModule = require('expo-live-activity');
-      console.log('LiveActivity: Module loaded successfully');
+      console.log('[LiveActivity] Module loaded successfully');
+      console.log('[LiveActivity] Platform:', Platform.OS, Platform.Version);
     } catch (e) {
-      console.log('LiveActivity module not available:', e);
+      console.log('[LiveActivity] Module not available:', e);
     }
   }
   return LiveActivityModule;
@@ -107,14 +108,25 @@ export function startWorkoutLiveActivity(
   setIndex: number,
   progress: { completed: number; total: number }
 ): void {
-  if (!isLiveActivityAvailable()) return;
+  console.log('[LiveActivity] startWorkoutLiveActivity called');
+  console.log('[LiveActivity] Session:', session.name, '| Exercise:', exercise?.exerciseName || 'none');
+  console.log('[LiveActivity] Progress:', progress.completed, '/', progress.total);
+
+  if (!isLiveActivityAvailable()) {
+    console.log('[LiveActivity] Not available, skipping start');
+    return;
+  }
 
   const module = getLiveActivityModule();
-  if (!module) return;
+  if (!module) {
+    console.log('[LiveActivity] Module not loaded, skipping start');
+    return;
+  }
 
   try {
     // End any existing activity first
     if (currentActivityId) {
+      console.log('[LiveActivity] Ending existing activity:', currentActivityId);
       endWorkoutLiveActivity();
     }
 
@@ -122,26 +134,38 @@ export function startWorkoutLiveActivity(
       ? buildActiveSetState(session, exercise, setIndex, progress)
       : { title: session.name, subtitle: 'Starting workout...' };
 
-    const activityId = module.startActivity(
-      {
-        title: state.title,
-        subtitle: state.subtitle,
-        progressBar: { progress: progress.total > 0 ? progress.completed / progress.total : 0 },
-      },
-      {
-        backgroundColor: '#1a1a1a',
-        titleColor: '#ffffff',
-        subtitleColor: '#a0a0a0',
-        progressViewTint: '#4CAF50',
-      }
-    );
+    const contentState = {
+      title: state.title,
+      subtitle: state.subtitle,
+      progressBar: { progress: progress.total > 0 ? progress.completed / progress.total : 0 },
+    };
+
+    const presentation = {
+      backgroundColor: '#1a1a1a',
+      titleColor: '#ffffff',
+      subtitleColor: '#a0a0a0',
+      progressViewTint: '#4CAF50',
+    };
+
+    console.log('[LiveActivity] Starting with content:', JSON.stringify(contentState));
+    console.log('[LiveActivity] Presentation:', JSON.stringify(presentation));
+
+    const activityId = module.startActivity(contentState, presentation);
 
     if (activityId) {
       currentActivityId = activityId;
-      console.log('LiveActivity: Started with ID:', activityId);
+      console.log('[LiveActivity] ✅ Started successfully with ID:', activityId);
+      console.log('[LiveActivity] Activity should now be visible on lock screen/Dynamic Island');
+    } else {
+      console.log('[LiveActivity] ⚠️ No activity ID returned from startActivity');
     }
   } catch (error) {
-    console.log('LiveActivity: Failed to start:', error);
+    console.error('[LiveActivity] ❌ Failed to start:', error);
+    if (error instanceof Error) {
+      console.error('[LiveActivity] Error name:', error.name);
+      console.error('[LiveActivity] Error message:', error.message);
+      console.error('[LiveActivity] Error stack:', error.stack);
+    }
   }
 }
 
@@ -155,38 +179,63 @@ export function updateWorkoutLiveActivity(
   progress: { completed: number; total: number },
   restTimer?: { remainingSeconds: number; nextExercise: SessionExercise | null }
 ): void {
-  if (!isLiveActivityAvailable() || !currentActivityId) return;
+  console.log('[LiveActivity] updateWorkoutLiveActivity called');
+  console.log('[LiveActivity] Current activity ID:', currentActivityId || 'none');
+
+  if (!isLiveActivityAvailable()) {
+    console.log('[LiveActivity] Not available, skipping update');
+    return;
+  }
+
+  if (!currentActivityId) {
+    console.log('[LiveActivity] No active activity to update');
+    return;
+  }
 
   const module = getLiveActivityModule();
-  if (!module) return;
+  if (!module) {
+    console.log('[LiveActivity] Module not loaded, skipping update');
+    return;
+  }
 
   try {
-    let state: { title: string; subtitle: string };
+    let updatePayload: any;
 
     if (restTimer && restTimer.remainingSeconds > 0) {
       // Rest state - show countdown
       const restState = buildRestState(restTimer.remainingSeconds, restTimer.nextExercise);
-      state = { title: restState.title, subtitle: restState.subtitle };
-
-      module.updateActivity(currentActivityId, {
-        title: state.title,
-        subtitle: state.subtitle,
+      updatePayload = {
+        title: restState.title,
+        subtitle: restState.subtitle,
         progressBar: { date: restState.timerEndDate },
-      });
+      };
+      console.log('[LiveActivity] Updating with REST state');
+      console.log('[LiveActivity] Rest seconds:', restTimer.remainingSeconds);
+      console.log('[LiveActivity] Next exercise:', restTimer.nextExercise?.exerciseName || 'none');
     } else if (exercise) {
       // Active set state
-      state = buildActiveSetState(session, exercise, setIndex, progress);
-
-      module.updateActivity(currentActivityId, {
+      const state = buildActiveSetState(session, exercise, setIndex, progress);
+      updatePayload = {
         title: state.title,
         subtitle: state.subtitle,
         progressBar: { progress: progress.total > 0 ? progress.completed / progress.total : 0 },
-      });
+      };
+      console.log('[LiveActivity] Updating with ACTIVE SET state');
+      console.log('[LiveActivity] Exercise:', exercise.exerciseName, '| Set:', setIndex + 1);
+    } else {
+      console.log('[LiveActivity] No valid state for update (no exercise, no rest timer)');
+      return;
     }
 
-    console.log('LiveActivity: Updated');
+    console.log('[LiveActivity] Update payload:', JSON.stringify(updatePayload));
+    module.updateActivity(currentActivityId, updatePayload);
+    console.log('[LiveActivity] ✅ Updated successfully');
   } catch (error) {
-    console.log('LiveActivity: Failed to update:', error);
+    console.error('[LiveActivity] ❌ Failed to update:', error);
+    if (error instanceof Error) {
+      console.error('[LiveActivity] Error name:', error.name);
+      console.error('[LiveActivity] Error message:', error.message);
+    }
   }
 }
 
@@ -194,20 +243,43 @@ export function updateWorkoutLiveActivity(
  * End the Live Activity with a completion message
  */
 export function endWorkoutLiveActivity(message?: string): void {
-  if (!isLiveActivityAvailable() || !currentActivityId) return;
+  console.log('[LiveActivity] endWorkoutLiveActivity called');
+  console.log('[LiveActivity] Current activity ID:', currentActivityId || 'none');
+  console.log('[LiveActivity] Message:', message || 'default');
+
+  if (!isLiveActivityAvailable()) {
+    console.log('[LiveActivity] Not available, skipping end');
+    return;
+  }
+
+  if (!currentActivityId) {
+    console.log('[LiveActivity] No active activity to end');
+    return;
+  }
 
   const module = getLiveActivityModule();
-  if (!module) return;
+  if (!module) {
+    console.log('[LiveActivity] Module not loaded, skipping end');
+    return;
+  }
 
   try {
-    module.stopActivity(currentActivityId, {
+    const endPayload = {
       title: message || 'Workout Complete',
       subtitle: 'Great job!',
-    });
+    };
 
-    console.log('LiveActivity: Ended');
+    console.log('[LiveActivity] Ending with payload:', JSON.stringify(endPayload));
+    module.stopActivity(currentActivityId, endPayload);
+
+    console.log('[LiveActivity] ✅ Ended successfully');
+    console.log('[LiveActivity] Activity ID', currentActivityId, 'should now be dismissed');
     currentActivityId = undefined;
   } catch (error) {
-    console.log('LiveActivity: Failed to end:', error);
+    console.error('[LiveActivity] ❌ Failed to end:', error);
+    if (error instanceof Error) {
+      console.error('[LiveActivity] Error name:', error.name);
+      console.error('[LiveActivity] Error message:', error.message);
+    }
   }
 }
