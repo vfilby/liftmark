@@ -204,6 +204,40 @@ describe('healthKitService', () => {
       const { isHealthKitAvailable } = require('../services/healthKitService');
       expect(isHealthKitAvailable()).toBe(false);
     });
+
+    it('returns false when HealthKit module fails to load', () => {
+      jest.resetModules();
+
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'ios' },
+      }));
+      jest.doMock('@kingstinct/react-native-healthkit', () => {
+        throw new Error('Module not found');
+      });
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const { isHealthKitAvailable } = require('../services/healthKitService');
+
+      expect(isHealthKitAvailable()).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith('HealthKit module not available:', expect.any(Error));
+      consoleSpy.mockRestore();
+    });
+
+    it('returns false when isHealthDataAvailable throws an error', () => {
+      jest.resetModules();
+
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'ios' },
+      }));
+      jest.doMock('@kingstinct/react-native-healthkit', () => ({
+        isHealthDataAvailable: jest.fn(() => {
+          throw new Error('HealthKit access error');
+        }),
+      }));
+
+      const { isHealthKitAvailable } = require('../services/healthKitService');
+      expect(isHealthKitAvailable()).toBe(false);
+    });
   });
 
   describe('isHealthKitAvailable (non-iOS)', () => {
@@ -485,6 +519,26 @@ describe('healthKitService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('HealthKit is not available on this device');
+    });
+
+    it('returns error when HealthKit module failed to load', async () => {
+      jest.resetModules();
+
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'ios' },
+      }));
+      jest.doMock('@kingstinct/react-native-healthkit', () => {
+        throw new Error('Module not found');
+      });
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const { saveWorkoutToHealthKit } = require('../services/healthKitService');
+      const result = await saveWorkoutToHealthKit(createWorkoutSession());
+
+      expect(result.success).toBe(false);
+      // When module fails to load, isHealthKitAvailable returns false
+      expect(result.error).toBe('HealthKit is not available on this device');
+      consoleSpy.mockRestore();
     });
   });
 });
