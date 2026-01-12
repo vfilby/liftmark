@@ -141,3 +141,40 @@ The `.refinery/` directory contains:
 ```
 
 See [`.refinery/README.md`](../.refinery/README.md) for complete documentation.
+
+## Troubleshooting
+
+### Xcode Duplicate LiveActivity Target Error
+
+**Problem:** `npx expo run:ios` fails with duplicate output errors:
+```
+❌ error: Multiple commands produce '/Users/.../LiveActivity.appex'
+❌ error: Multiple commands produce '.../LiveActivity.appex/LiveActivity.debug.dylib'
+❌ error: Multiple commands produce '.../LiveActivity.appex/LiveActivity'
+```
+
+**Root Cause:** Stale or corrupted Xcode project files from previous prebuild operations. The expo-live-activity plugin creates an app extension target, but duplicate targets may be created if the iOS project is not properly regenerated.
+
+**Solution:** Clean and regenerate the iOS project:
+```bash
+# Option 1: Using make command
+make rebuild-native
+
+# Option 2: Manual cleanup
+rm -rf ios/
+npx expo prebuild --clean
+```
+
+**Verification:**
+1. Check that only 2 native targets exist:
+   ```bash
+   grep -c "isa = PBXNativeTarget" ios/LiftMark.xcodeproj/project.pbxproj
+   # Should output: 2
+   ```
+2. Run the build:
+   ```bash
+   npx expo run:ios
+   ```
+3. Verify successful linking of LiveActivity files without errors
+
+**Expected Result:** Single LiveActivity target, successful build, all native modules (clipboard, live-activity, healthkit) included in development build.
