@@ -44,24 +44,11 @@ This POC demonstrates running Expo Metro bundler in Docker containers with dynam
 
 ### Testing the POC
 
-#### Step 1: Build iOS Dev Client for Docker Metro
+**IMPORTANT**: The correct order is critical - start Docker Metro FIRST, then build.
 
-Build the development client configured to connect to Metro on a specific host port:
+#### Step 1: Start Metro in Docker
 
-```bash
-./scripts/build-for-docker.sh 54100
-```
-
-This command:
-1. Sets `EXPO_PACKAGER_PROXY_URL=http://host.docker.internal:54100`
-2. Builds iOS dev client with that configuration
-3. Installs on simulator
-
-**Note**: You need to rebuild the dev client each time you change the port.
-
-#### Step 2: Start Metro in Docker
-
-In a separate terminal, start Metro in a Docker container:
+Start Metro in a Docker container BEFORE building:
 
 ```bash
 ./scripts/docker-metro.sh 54100
@@ -73,9 +60,28 @@ This command:
 3. Mounts the project directory as a volume
 4. Starts Metro bundler
 
+Leave this terminal running - Metro must stay active during the build and when running the app.
+
+#### Step 2: Build iOS Dev Client (in a new terminal)
+
+In a separate terminal, build the development client configured to connect to Docker Metro:
+
+```bash
+./scripts/build-for-docker.sh 54100
+```
+
+This command:
+1. Checks that Metro is running on port 54100 (warns if not detected)
+2. Sets `EXPO_PACKAGER_PROXY_URL=http://host.docker.internal:54100`
+3. Builds iOS dev client with `--no-bundler` flag (prevents starting its own Metro)
+4. Installs on simulator
+5. App connects to the Docker Metro started in Step 1
+
+**Note**: The script will warn you if Metro isn't detected and prompt before continuing.
+
 #### Step 3: Launch App
 
-The app should already be installed on the simulator from Step 1. Simply launch it from the simulator, and it should connect to the containerized Metro server.
+The app is now installed on the simulator. Launch it, and it will connect to the containerized Metro server running from Step 1.
 
 **Expected behavior:**
 - App connects to Metro on port 54100
@@ -87,31 +93,40 @@ The app should already be installed on the simulator from Step 1. Simply launch 
 
 To test multiple isolated Metro servers (e.g., for parallel development):
 
-### Terminal 1: Polecat 1
-```bash
-# Build dev client for port 54100
-./scripts/build-for-docker.sh 54100
+**Workflow**: Start ALL Metro servers first, then build each dev client in parallel.
 
-# Start Metro on port 54100
+### Step 1: Start all Metro servers (in separate terminals)
+
+#### Terminal 1: Polecat 1 Metro
+```bash
 ./scripts/docker-metro.sh 54100
 ```
 
-### Terminal 2: Polecat 2
+#### Terminal 2: Polecat 2 Metro
 ```bash
-# Build dev client for port 54101
-./scripts/build-for-docker.sh 54101
-
-# Start Metro on port 54101
 ./scripts/docker-metro.sh 54101
 ```
 
-### Terminal 3: Polecat 3
+#### Terminal 3: Polecat 3 Metro
 ```bash
-# Build dev client for port 54102
-./scripts/build-for-docker.sh 54102
-
-# Start Metro on port 54102
 ./scripts/docker-metro.sh 54102
+```
+
+### Step 2: Build dev clients (in separate terminals)
+
+#### Terminal 4: Build for Polecat 1
+```bash
+./scripts/build-for-docker.sh 54100
+```
+
+#### Terminal 5: Build for Polecat 2
+```bash
+./scripts/build-for-docker.sh 54101
+```
+
+#### Terminal 6: Build for Polecat 3
+```bash
+./scripts/build-for-docker.sh 54102
 ```
 
 Each Metro server runs in complete isolation without port conflicts.
@@ -219,6 +234,30 @@ This mounts the project directory into the container, allowing Metro to:
 ### Why host.docker.internal?
 
 On macOS, `host.docker.internal` is a special DNS name that resolves to the host machine's IP address from within a Docker container. This allows the iOS simulator (running on the host) to connect to Metro (running in Docker container).
+
+### The --no-bundler Flag (Critical Fix)
+
+**Problem**: By default, `npx expo run:ios` starts its own Metro bundler on the host machine, which defeats the purpose of Docker-isolated Metro.
+
+**Solution**: Use the `--no-bundler` flag:
+```bash
+npx expo run:ios --no-bundler
+```
+
+This flag:
+- Skips starting Metro during the build process
+- Allows the app to connect to the already-running Docker Metro
+- Enables true isolation - each dev client connects only to its designated Docker Metro
+
+**Workflow order is critical**:
+1. ✅ Start Docker Metro first: `./scripts/docker-metro.sh 54100`
+2. ✅ Build WITHOUT starting Metro: `./scripts/build-for-docker.sh 54100` (uses `--no-bundler`)
+3. ✅ App connects to Docker Metro
+
+**Wrong order** (broken):
+1. ❌ Build first: starts its own Metro on host
+2. ❌ Start Docker Metro: creates second Metro instance
+3. ❌ App connects to host Metro, not Docker Metro
 
 ## Limitations & Considerations
 
