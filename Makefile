@@ -151,16 +151,19 @@ ci:
 
 # Release commands
 release-alpha:
-	@echo "🚀 Creating alpha release..."
+	@echo "🚀 Creating alpha release and triggering TestFlight deployment..."
 	npm run release:alpha
+	gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-beta:
-	@echo "🚀 Creating beta release..."
+	@echo "🚀 Creating beta release and triggering TestFlight deployment..."
 	npm run release:beta
+	gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-production:
-	@echo "🚀 Creating production release..."
+	@echo "🚀 Creating production release and triggering TestFlight deployment..."
 	npm run release:production
+	gh workflow run "Deploy to TestFlight" --field profile=production
 
 # Additional useful targets
 logs:
