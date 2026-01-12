@@ -95,3 +95,49 @@ Always use `getDatabase()` to get the singleton instance:
 import { getDatabase } from '@/db';
 const db = await getDatabase();
 ```
+
+## Deployment & Versioning
+
+### Automated Version Bumping
+
+This project uses automated version bumping via the Refinery (Gas Town's merge queue processor). When PRs are merged to `main`:
+
+1. The Refinery automatically bumps the patch version in `package.json`
+2. The version increment is included in the merge commit
+3. No manual version management needed
+
+**Configuration:** See `.refinery/refinery.yml` for version bump settings.
+
+**Current Strategy:** Patch bump (1.0.24 → 1.0.25) on every merge.
+
+### Release Process
+
+After the Refinery merges your PR and bumps the version:
+
+```bash
+# Pull the latest main with version bump
+git checkout main
+git pull
+
+# Create a release (alpha/beta/production)
+make release-alpha
+```
+
+This creates a git tag and triggers deployment to TestFlight.
+
+**Full details:** See [`docs/release-process.md`](./release-process.md) for the complete release workflow.
+
+### Refinery Integration
+
+The `.refinery/` directory contains:
+- `bump-version.sh` - Script that performs version bumping
+- `refinery.yml` - Configuration for merge behavior
+- `test-bump.sh` - Test suite for version bumping logic
+- `README.md` - Detailed documentation
+
+**Testing version bump locally:**
+```bash
+.refinery/test-bump.sh
+```
+
+See [`.refinery/README.md`](../.refinery/README.md) for complete documentation.
