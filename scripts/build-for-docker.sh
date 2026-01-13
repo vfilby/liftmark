@@ -9,7 +9,7 @@
 PORT=${1:-54100}
 
 echo "📱 Building iOS development client for Docker Metro..."
-echo "   Metro should be running at: http://host.docker.internal:$PORT"
+echo "   Metro should be running at: http://localhost:$PORT"
 echo ""
 echo "⚠️  Make sure Docker Metro is already running!"
 echo "   If not, start it first: ./scripts/docker-metro.sh $PORT"
@@ -34,7 +34,7 @@ if ! curl -s http://localhost:$PORT/status > /dev/null 2>&1; then
 fi
 
 # Set environment variable for packager proxy
-export EXPO_PACKAGER_PROXY_URL=http://host.docker.internal:$PORT
+export EXPO_PACKAGER_PROXY_URL=http://localhost:$PORT
 
 # Build iOS dev client WITHOUT starting Metro bundler
 npx expo run:ios --no-bundler
