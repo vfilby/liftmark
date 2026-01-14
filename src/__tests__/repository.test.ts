@@ -92,6 +92,7 @@ function createTemplateSetRow(overrides: Partial<TemplateSetRow> = {}): Template
     tempo: null,
     is_dropset: 0,
     is_per_side: 0,
+    notes: null,
     ...overrides,
   };
 }

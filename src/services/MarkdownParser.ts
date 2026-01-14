@@ -68,6 +68,7 @@ interface ParsedSet {
   tempo?: string;
   isDropset?: boolean;
   isPerSide?: boolean;
+  notes?: string;
 }
 
 // ============================================================================
@@ -664,6 +665,7 @@ function parseSets(
           tempo: parsedSet.tempo,
           isDropset: parsedSet.isDropset,
           isPerSide: parsedSet.isPerSide,
+          notes: parsedSet.notes,
         });
         orderIndex++;
       }
@@ -693,6 +695,8 @@ function parseSets(
  * - 135 x AMRAP
  * With modifiers:
  * - 225 x 5 @rpe: 8 @rest: 180s @tempo: 3-0-1-0 @dropset
+ * With trailing text:
+ * - 225 x 5 @rpe: 8 Felt strong today!
  */
 function parseSetLine(content: string, context: ParseContext, lineNumber: number): ParsedSet | null {
   // Split on @ to separate main content from modifiers
@@ -700,32 +704,50 @@ function parseSetLine(content: string, context: ParseContext, lineNumber: number
   const mainPart = parts[0].trim();
   const modifierParts = parts.slice(1);
 
-  // Parse modifiers first
-  const modifiers = parseModifiers(modifierParts, context, lineNumber);
+  // Parse modifiers and extract trailing text from modifiers
+  const { modifiers, trailingText: modifierTrailingText } = parseModifiersAndTrailingText(
+    modifierParts,
+    context,
+    lineNumber
+  );
 
   // Parse main set content
-  const set = parseMainSetContent(mainPart, context, lineNumber);
-  if (!set) {
+  const result = parseMainSetContent(mainPart, context, lineNumber);
+  if (!result) {
     return null;
   }
 
-  // Merge modifiers into set
+  const { set, trailingText: mainTrailingText } = result;
+
+  // Combine trailing text from main content and modifiers
+  const combinedTrailingText = [mainTrailingText, modifierTrailingText].filter(Boolean).join(' ').trim();
+
+  // Merge modifiers and trailing text into set
   return {
     ...set,
     ...modifiers,
+    ...(combinedTrailingText ? { notes: combinedTrailingText } : {}),
   };
 }
 
 /**
  * Parse the main set content (before modifiers)
+ * Returns the parsed set and any trailing text that wasn't part of the set
  */
-function parseMainSetContent(content: string, context: ParseContext, lineNumber: number): ParsedSet | null {
-  const trimmed = content.trim().toLowerCase();
+function parseMainSetContent(
+  content: string,
+  context: ParseContext,
+  lineNumber: number
+): { set: ParsedSet; trailingText?: string } | null {
+  const original = content.trim();
+  const trimmed = original.toLowerCase();
 
   // Handle AMRAP only
   if (trimmed === 'amrap') {
     return {
-      isAmrap: true,
+      set: {
+        isAmrap: true,
+      },
     };
   }
 
@@ -734,23 +756,26 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
   // Examples: "225 lbs x 5", "100 kg x 8", "45 lbs x 60s", "45 lbs for 60s"
 
   // Regex patterns (case-insensitive, whitespace-tolerant)
+  // Note: Added (.*) at the end to capture any trailing text
 
   // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
-  const pattern1 = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?$/i;
+  const pattern1 = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?\s*(.*)$/i;
 
   // Pattern 2: bodyweight x reps/time (e.g., "x 10", "bw x 12")
-  const pattern2 = /^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?$/i;
+  const pattern2 = /^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?\s*(.*)$/i;
 
   // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
-  const pattern3 = /^(\d+)\s*(s|sec|m|min)?$/i;
+  const pattern3 = /^(\d+)\s*(s|sec|m|min)?\s*(.*)$/i;
 
   // Try pattern 1: weight unit x reps/time
-  let match = trimmed.match(pattern1);
+  // Match against the original (case-preserved) string
+  let match = original.match(pattern1);
   if (match) {
     const weight = parseFloat(match[1]);
     const weightUnit = normalizeWeightUnit(match[2]);
     const repsOrTime = match[3].toLowerCase();
     const repsUnit = match[4];
+    const trailing = match[5]?.trim();
 
     if (weight < 0) {
       context.errors.push({
@@ -764,9 +789,12 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
     // Check if it's AMRAP
     if (repsOrTime === 'amrap') {
       return {
-        weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-        weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
-        isAmrap: true,
+        set: {
+          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
+          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          isAmrap: true,
+        },
+        trailingText: trailing || undefined,
       };
     }
 
@@ -786,9 +814,12 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
     if (isTime) {
       const seconds = normalizeTimeToSeconds(value, repsUnit);
       return {
-        weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-        weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
-        time: seconds,
+        set: {
+          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
+          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          time: seconds,
+        },
+        trailingText: trailing || undefined,
       };
     } else {
       // Reps
@@ -800,22 +831,29 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
         });
       }
       return {
-        weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-        weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
-        reps: value,
+        set: {
+          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
+          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          reps: value,
+        },
+        trailingText: trailing || undefined,
       };
     }
   }
 
   // Try pattern 2: bodyweight x reps/time
-  match = trimmed.match(pattern2);
+  match = original.match(pattern2);
   if (match) {
     const repsOrTime = match[2].toLowerCase();
     const repsUnit = match[3];
+    const trailing = match[4]?.trim();
 
     if (repsOrTime === 'amrap') {
       return {
-        isAmrap: true,
+        set: {
+          isAmrap: true,
+        },
+        trailingText: trailing || undefined,
       };
     }
 
@@ -833,7 +871,10 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
 
     if (isTime) {
       const seconds = normalizeTimeToSeconds(value, repsUnit);
-      return { time: seconds };
+      return {
+        set: { time: seconds },
+        trailingText: trailing || undefined,
+      };
     } else {
       if (value > 100) {
         context.warnings.push({
@@ -842,15 +883,19 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
           code: 'HIGH_REPS',
         });
       }
-      return { reps: value };
+      return {
+        set: { reps: value },
+        trailingText: trailing || undefined,
+      };
     }
   }
 
   // Try pattern 3: single number
-  match = trimmed.match(pattern3);
+  match = original.match(pattern3);
   if (match) {
     const value = parseInt(match[1], 10);
     const unit = match[2];
+    const trailing = match[3]?.trim();
 
     if (value <= 0) {
       context.errors.push({
@@ -865,7 +910,10 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
 
     if (isTime) {
       const seconds = normalizeTimeToSeconds(value, unit);
-      return { time: seconds };
+      return {
+        set: { time: seconds },
+        trailingText: trailing || undefined,
+      };
     } else {
       // Single number = bodyweight reps
       if (value > 100) {
@@ -875,7 +923,10 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
           code: 'HIGH_REPS',
         });
       }
-      return { reps: value };
+      return {
+        set: { reps: value },
+        trailingText: trailing || undefined,
+      };
     }
   }
 
@@ -913,7 +964,170 @@ function normalizeTimeToSeconds(value: number, unit: string | undefined): number
 }
 
 /**
- * Parse modifiers from @ parts
+ * Parse modifiers and extract trailing text from @ parts
+ * Returns both parsed modifiers and any trailing text that isn't part of a modifier
+ */
+function parseModifiersAndTrailingText(
+  parts: string[],
+  context: ParseContext,
+  lineNumber: number
+): { modifiers: Partial<ParsedSet>; trailingText: string | undefined } {
+  const modifiers: Partial<ParsedSet> = {};
+  const trailingTextParts: string[] = [];
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Try to parse as flag modifier (dropset, perside)
+    const lowerTrimmed = trimmed.toLowerCase();
+
+    // Check if it starts with a flag keyword
+    if (lowerTrimmed.startsWith('dropset')) {
+      modifiers.isDropset = true;
+      // Extract any text after "dropset"
+      const trailing = trimmed.substring('dropset'.length).trim();
+      if (trailing) {
+        trailingTextParts.push(trailing);
+      }
+      continue;
+    }
+    if (lowerTrimmed.startsWith('perside')) {
+      modifiers.isPerSide = true;
+      // Extract any text after "perside"
+      const trailing = trimmed.substring('perside'.length).trim();
+      if (trailing) {
+        trailingTextParts.push(trailing);
+      }
+      continue;
+    }
+
+    // Try to parse as key: value modifier
+    const match = trimmed.match(/^(\w+):\s*(.+)$/);
+    if (!match) {
+      // Not a valid modifier format, treat as trailing text
+      trailingTextParts.push(trimmed);
+      continue;
+    }
+
+    const key = match[1].toLowerCase();
+    const value = match[2].trim();
+
+    // Try to parse based on modifier type
+    let parsed = false;
+    let remaining = '';
+
+    switch (key) {
+      case 'rpe':
+        // RPE should be a number (possibly decimal) between 1-10
+        const rpeMatch = value.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+        if (rpeMatch) {
+          const rpe = parseFloat(rpeMatch[1]);
+          remaining = rpeMatch[2].trim();
+          if (isNaN(rpe) || rpe < 1 || rpe > 10) {
+            context.errors.push({
+              line: lineNumber,
+              message: `RPE must be between 1-10, got: ${rpeMatch[1]}`,
+              code: 'INVALID_RPE',
+            });
+          } else {
+            modifiers.rpe = rpe;
+            parsed = true;
+          }
+        } else {
+          context.errors.push({
+            line: lineNumber,
+            message: `Invalid RPE format: ${value}`,
+            code: 'INVALID_RPE',
+          });
+        }
+        break;
+
+      case 'rest':
+        // Rest should be: number + optional unit (s/sec/m/min)
+        const restMatch = value.match(/^(\d+)\s*(s|sec|m|min)?\s*(.*)$/i);
+        if (restMatch) {
+          const restValue = `${restMatch[1]}${restMatch[2] || ''}`;
+          remaining = restMatch[3].trim();
+          const rest = parseRestTime(restValue);
+          if (rest === null) {
+            context.errors.push({
+              line: lineNumber,
+              message: `Invalid rest time format: ${restValue}. Expected format: "180s" or "3m"`,
+              code: 'INVALID_REST',
+            });
+          } else {
+            if (rest < 10) {
+              context.warnings.push({
+                line: lineNumber,
+                message: `Very short rest period (${rest}s). Double-check for typos.`,
+                code: 'SHORT_REST',
+              });
+            }
+            if (rest > 600) {
+              context.warnings.push({
+                line: lineNumber,
+                message: `Very long rest period (${rest}s). Double-check for typos.`,
+                code: 'LONG_REST',
+              });
+            }
+            modifiers.rest = rest;
+            parsed = true;
+          }
+        } else {
+          context.errors.push({
+            line: lineNumber,
+            message: `Invalid rest time format: ${value}. Expected format: "180s" or "3m"`,
+            code: 'INVALID_REST',
+          });
+        }
+        break;
+
+      case 'tempo':
+        // Tempo should be: X-X-X-X format
+        const tempoMatch = value.match(/^(\d-\d-\d-\d)\s*(.*)$/);
+        if (tempoMatch) {
+          modifiers.tempo = tempoMatch[1];
+          remaining = tempoMatch[2].trim();
+          parsed = true;
+        } else {
+          context.errors.push({
+            line: lineNumber,
+            message: `Invalid tempo format: ${value}. Expected format: "X-X-X-X" (e.g., "3-0-1-0")`,
+            code: 'INVALID_TEMPO',
+          });
+        }
+        break;
+
+      default:
+        // Unknown modifier, treat entire thing as warning and trailing text
+        context.warnings.push({
+          line: lineNumber,
+          message: `Unknown modifier: @${key}`,
+          code: 'UNKNOWN_MODIFIER',
+        });
+        trailingTextParts.push(trimmed);
+        continue;
+    }
+
+    // If there's remaining text after the modifier value, it's trailing text
+    if (parsed && remaining) {
+      trailingTextParts.push(remaining);
+    } else if (!parsed && !remaining) {
+      // If parsing failed and there's no remaining text, add the whole value as trailing
+      trailingTextParts.push(value);
+    }
+  }
+
+  return {
+    modifiers,
+    trailingText: trailingTextParts.length > 0 ? trailingTextParts.join(' ') : undefined,
+  };
+}
+
+/**
+ * Parse modifiers from @ parts (DEPRECATED - use parseModifiersAndTrailingText)
+ * Kept for reference, but no longer used
  * Formats:
  * - @rpe: 8
  * - @rest: 180s

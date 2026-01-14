@@ -245,5 +245,123 @@ without a proper workout`;
       expect(result.data?.exercises[0].sets[0].isDropset).toBeFalsy();
       expect(result.data?.exercises[0].sets[1].isDropset).toBe(true);
     });
+
+    it('parses trailing text without modifiers', () => {
+      const markdown = `# Workout
+## Bench Press
+- 225 x 5 Felt strong today!
+- 245 x 3 PR set!
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Felt strong today!');
+      expect(result.data?.exercises[0].sets[1].notes).toBe('PR set!');
+    });
+
+    it('parses trailing text after modifiers', () => {
+      const markdown = `# Workout
+## Squats
+- 315 x 5 @rpe: 8 Great depth today
+- 335 x 3 @rpe: 9 @rest: 180s Tough but doable
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Great depth today');
+      expect(result.data?.exercises[0].sets[1].targetRpe).toBe(9);
+      expect(result.data?.exercises[0].sets[1].restSeconds).toBe(180);
+      expect(result.data?.exercises[0].sets[1].notes).toBe('Tough but doable');
+    });
+
+    it('parses trailing text with tempo modifier', () => {
+      const markdown = `# Workout
+## Pause Squats
+- 225 x 5 @tempo: 3-2-1-0 @rest: 120s Really focused on the pause
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].tempo).toBe('3-2-1-0');
+      expect(result.data?.exercises[0].sets[0].restSeconds).toBe(120);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Really focused on the pause');
+    });
+
+    it('handles text that looks like modifier but is not', () => {
+      const markdown = `# Workout
+## Deadlift
+- 405 x 5 @rpe: 8.5 Back felt good, no issues
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Back felt good, no issues');
+    });
+
+    it('handles multiple @ symbols in trailing text', () => {
+      const markdown = `# Workout
+## Bench Press
+- 225 x 5 @rpe: 7 Hit the target @135 for warmup
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].targetRpe).toBe(7);
+      // The trailing text includes the @ from "Hit the target @135 for warmup"
+      expect(result.data?.exercises[0].sets[0].notes).toContain('Hit the target');
+    });
+
+    it('handles trailing text with only invalid modifiers', () => {
+      const markdown = `# Workout
+## Press
+- 135 x 8 @invalid: value Some note here
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      // Invalid modifier should generate a warning but trailing text should still be captured
+      expect(result.warnings?.length).toBeGreaterThan(0);
+      expect(result.data?.exercises[0].sets[0].notes).toContain('Some note here');
+    });
+
+    it('parses trailing text after flag modifiers', () => {
+      const markdown = `# Workout
+## Curls
+- 20 x 12 @dropset Burned out completely
+- 15 x 15 Great pump
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].isDropset).toBe(true);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Burned out completely');
+      expect(result.data?.exercises[0].sets[1].notes).toBe('Great pump');
+    });
+
+    it('preserves trailing text with special characters', () => {
+      const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8 Form was perfect! 💪 #PR
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].notes).toBe('Form was perfect! 💪 #PR');
+    });
+
+    it('handles empty trailing text gracefully', () => {
+      const markdown = `# Workout
+## Bench Press
+- 225 x 5 @rpe: 8
+- 245 x 3
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.exercises[0].sets[0].notes).toBeUndefined();
+      expect(result.data?.exercises[0].sets[1].notes).toBeUndefined();
+    });
   });
 });
