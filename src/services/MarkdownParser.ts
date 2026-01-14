@@ -68,6 +68,7 @@ interface ParsedSet {
   tempo?: string;
   isDropset?: boolean;
   isPerSide?: boolean;
+  notes?: string; // Trailing text from set line (e.g., "forward", "each side")
 }
 
 // ============================================================================
@@ -664,6 +665,7 @@ function parseSets(
           tempo: parsedSet.tempo,
           isDropset: parsedSet.isDropset,
           isPerSide: parsedSet.isPerSide,
+          notes: parsedSet.notes,
         });
         orderIndex++;
       }
@@ -734,15 +736,17 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
   // Examples: "225 lbs x 5", "100 kg x 8", "45 lbs x 60s", "45 lbs for 60s"
 
   // Regex patterns (case-insensitive, whitespace-tolerant)
+  // NOTE: Patterns no longer have $ anchor to allow trailing text (e.g., "30s forward", "12 each side")
+  //       Trailing text is captured and preserved as set notes
 
   // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
-  const pattern1 = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?$/i;
+  const pattern1 = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?/i;
 
   // Pattern 2: bodyweight x reps/time (e.g., "x 10", "bw x 12")
-  const pattern2 = /^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?$/i;
+  const pattern2 = /^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?/i;
 
   // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
-  const pattern3 = /^(\d+)\s*(s|sec|m|min)?$/i;
+  const pattern3 = /^(\d+)\s*(s|sec|m|min)?/i;
 
   // Try pattern 1: weight unit x reps/time
   let match = trimmed.match(pattern1);
@@ -751,6 +755,11 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
     const weightUnit = normalizeWeightUnit(match[2]);
     const repsOrTime = match[3].toLowerCase();
     const repsUnit = match[4];
+
+    // Extract trailing text after matched portion
+    const matchedLength = match[0].length;
+    const trailingText = trimmed.substring(matchedLength).trim();
+    const notes = trailingText || undefined;
 
     if (weight < 0) {
       context.errors.push({
@@ -767,6 +776,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
         weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
         weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
         isAmrap: true,
+        notes,
       };
     }
 
@@ -789,6 +799,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
         weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
         weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
         time: seconds,
+        notes,
       };
     } else {
       // Reps
@@ -803,6 +814,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
         weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
         weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
         reps: value,
+        notes,
       };
     }
   }
@@ -813,9 +825,15 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
     const repsOrTime = match[2].toLowerCase();
     const repsUnit = match[3];
 
+    // Extract trailing text after matched portion
+    const matchedLength = match[0].length;
+    const trailingText = trimmed.substring(matchedLength).trim();
+    const notes = trailingText || undefined;
+
     if (repsOrTime === 'amrap') {
       return {
         isAmrap: true,
+        notes,
       };
     }
 
@@ -833,7 +851,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
 
     if (isTime) {
       const seconds = normalizeTimeToSeconds(value, repsUnit);
-      return { time: seconds };
+      return { time: seconds, notes };
     } else {
       if (value > 100) {
         context.warnings.push({
@@ -842,7 +860,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
           code: 'HIGH_REPS',
         });
       }
-      return { reps: value };
+      return { reps: value, notes };
     }
   }
 
@@ -851,6 +869,11 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
   if (match) {
     const value = parseInt(match[1], 10);
     const unit = match[2];
+
+    // Extract trailing text after matched portion
+    const matchedLength = match[0].length;
+    const trailingText = trimmed.substring(matchedLength).trim();
+    const notes = trailingText || undefined;
 
     if (value <= 0) {
       context.errors.push({
@@ -865,7 +888,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
 
     if (isTime) {
       const seconds = normalizeTimeToSeconds(value, unit);
-      return { time: seconds };
+      return { time: seconds, notes };
     } else {
       // Single number = bodyweight reps
       if (value > 100) {
@@ -875,7 +898,7 @@ function parseMainSetContent(content: string, context: ParseContext, lineNumber:
           code: 'HIGH_REPS',
         });
       }
-      return { reps: value };
+      return { reps: value, notes };
     }
   }
 

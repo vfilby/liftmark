@@ -42,6 +42,7 @@ export interface TemplateSet {
   tempo?: string; // e.g., "3-0-1-0"
   isDropset?: boolean; // Drop set indicator
   isPerSide?: boolean; // Per side indicator (e.g., for unilateral exercises)
+  notes?: string; // Additional notes/instructions from set line (e.g., "forward", "each side")
 }
 
 // Workout Session Types (for future implementation)
