@@ -133,6 +133,16 @@ export interface UserSettings {
   updatedAt: string;
 }
 
+// Gym Equipment Availability
+export interface GymEquipment {
+  id: string;
+  name: string; // e.g., "barbell", "kettlebell", "cable machine"
+  isAvailable: boolean; // Whether this equipment is currently available at the gym
+  lastCheckedAt?: string; // ISO datetime when availability was last updated
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Parser Result Types
 export interface ParseResult<T> {
   success: boolean;
@@ -192,6 +202,15 @@ export interface UserSettingsRow {
   custom_prompt_addition: string | null;
   healthkit_enabled: number; // SQLite boolean
   live_activities_enabled: number; // SQLite boolean
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GymEquipmentRow {
+  id: string;
+  name: string;
+  is_available: number; // SQLite boolean (0 or 1)
+  last_checked_at: string | null;
   created_at: string;
   updated_at: string;
 }

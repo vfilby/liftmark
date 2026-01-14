@@ -10,7 +10,9 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
 import {
   isHealthKitAvailable,
@@ -22,10 +24,19 @@ export default function SettingsScreen() {
   const { colors } = useTheme();
   const { settings, loadSettings, updateSettings, error, clearError } =
     useSettingsStore();
+  const {
+    equipment,
+    loadEquipment,
+    addEquipment,
+    updateEquipmentAvailability,
+    removeEquipment,
+  } = useEquipmentStore();
   const [promptText, setPromptText] = useState('');
+  const [newEquipmentName, setNewEquipmentName] = useState('');
 
   useEffect(() => {
     loadSettings();
+    loadEquipment();
   }, []);
 
   // Sync local prompt state with settings
@@ -71,6 +82,41 @@ export default function SettingsScreen() {
     } else {
       updateSettings({ healthKitEnabled: false });
     }
+  };
+
+  const handleAddEquipment = async () => {
+    const trimmedName = newEquipmentName.trim();
+    if (!trimmedName) {
+      Alert.alert('Error', 'Please enter equipment name');
+      return;
+    }
+
+    // Check if equipment already exists
+    const exists = equipment.some(
+      (eq) => eq.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (exists) {
+      Alert.alert('Error', 'This equipment already exists');
+      return;
+    }
+
+    await addEquipment(trimmedName);
+    setNewEquipmentName('');
+  };
+
+  const handleRemoveEquipment = (id: string, name: string) => {
+    Alert.alert(
+      'Remove Equipment',
+      `Are you sure you want to remove "${name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeEquipment(id),
+        },
+      ]
+    );
   };
 
   const styles = StyleSheet.create({
@@ -170,6 +216,58 @@ export default function SettingsScreen() {
       color: colors.text,
       minHeight: 80,
       textAlignVertical: 'top',
+    },
+    equipmentRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    equipmentName: {
+      fontSize: 16,
+      color: colors.text,
+      flex: 1,
+    },
+    equipmentActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    addEquipmentRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 12,
+    },
+    addEquipmentInput: {
+      flex: 1,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 14,
+      color: colors.text,
+    },
+    addEquipmentButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addEquipmentButtonText: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    emptyEquipmentText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      paddingVertical: 12,
     },
   });
 
@@ -329,6 +427,63 @@ export default function SettingsScreen() {
             trackColor={{ false: colors.border, true: colors.primary }}
             testID="switch-auto-start-rest"
           />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Gym Equipment</Text>
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingDescription}>
+            Track which equipment is available at your gym
+          </Text>
+        </View>
+
+        {equipment.length === 0 ? (
+          <Text style={styles.emptyEquipmentText}>
+            No equipment added yet. Add your first equipment below.
+          </Text>
+        ) : (
+          equipment.map((item) => (
+            <View key={item.id} style={styles.equipmentRow}>
+              <Text style={styles.equipmentName}>{item.name}</Text>
+              <View style={styles.equipmentActions}>
+                <Switch
+                  value={item.isAvailable}
+                  onValueChange={(value) =>
+                    updateEquipmentAvailability(item.id, value)
+                  }
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  testID={`switch-equipment-${item.id}`}
+                />
+                <TouchableOpacity
+                  onPress={() => handleRemoveEquipment(item.id, item.name)}
+                  testID={`button-remove-equipment-${item.id}`}
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.error} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+
+        <View style={styles.addEquipmentRow}>
+          <TextInput
+            style={styles.addEquipmentInput}
+            placeholder="e.g., Barbell, Dumbbells, Cable Machine"
+            placeholderTextColor={colors.textMuted}
+            value={newEquipmentName}
+            onChangeText={setNewEquipmentName}
+            onSubmitEditing={handleAddEquipment}
+            returnKeyType="done"
+            testID="input-new-equipment"
+          />
+          <TouchableOpacity
+            style={styles.addEquipmentButton}
+            onPress={handleAddEquipment}
+            testID="button-add-equipment"
+          >
+            <Text style={styles.addEquipmentButtonText}>Add</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
