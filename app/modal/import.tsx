@@ -87,7 +87,7 @@ SETS FORMAT:
   • With weight: "weight x reps" → 225 x 5 or 225 lbs x 5
   • Bodyweight: "reps" → 10 or bw x 10
   • Time-based: "duration" → 60s or weight x 60s
-  • AMRAP: "weight x AMARP" or just "AMRAP"
+  • AMRAP: "weight x AMRAP" or just "AMRAP"
 
 SUPERSETS:
   • Use "### Superset: Name" as section header
