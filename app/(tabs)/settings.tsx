@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Alert,
   TextInput,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
+import { useGymStore } from '@/stores/gymStore';
 import { useTheme } from '@/theme';
+import { PRESET_EQUIPMENT, type Gym } from '@/types';
 import {
   isHealthKitAvailable,
   requestHealthKitAuthorization,
@@ -22,22 +25,61 @@ import { isLiveActivityAvailable } from '@/services/liveActivityService';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
-  const { settings, loadSettings, updateSettings, error, clearError } =
+  const { settings, loadSettings, updateSettings, error: settingsError, clearError: clearSettingsError } =
     useSettingsStore();
   const {
     equipment,
     loadEquipment,
     addEquipment,
+    addMultipleEquipment,
     updateEquipmentAvailability,
     removeEquipment,
+    hasEquipment,
+    error: equipmentError,
+    clearError: clearEquipmentError,
   } = useEquipmentStore();
+  const {
+    gyms,
+    defaultGym,
+    loadGyms,
+    addGym,
+    updateGym,
+    setDefaultGym,
+    removeGym,
+    error: gymError,
+    clearError: clearGymError,
+  } = useGymStore();
+
   const [promptText, setPromptText] = useState('');
   const [newEquipmentName, setNewEquipmentName] = useState('');
+  const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
+  const [showGymModal, setShowGymModal] = useState(false);
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [newGymName, setNewGymName] = useState('');
+  const [editingGym, setEditingGym] = useState<Gym | null>(null);
+  const [selectedPresets, setSelectedPresets] = useState<Set<string>>(new Set());
 
+  // Load data on mount
   useEffect(() => {
     loadSettings();
-    loadEquipment();
+    loadGyms();
   }, []);
+
+  // Set initial selected gym when gyms load
+  useEffect(() => {
+    if (defaultGym && !selectedGymId) {
+      setSelectedGymId(defaultGym.id);
+    } else if (gyms.length > 0 && !selectedGymId) {
+      setSelectedGymId(gyms[0].id);
+    }
+  }, [defaultGym, gyms, selectedGymId]);
+
+  // Load equipment when selected gym changes
+  useEffect(() => {
+    if (selectedGymId) {
+      loadEquipment(selectedGymId);
+    }
+  }, [selectedGymId]);
 
   // Sync local prompt state with settings
   useEffect(() => {
@@ -46,11 +88,20 @@ export default function SettingsScreen() {
     }
   }, [settings?.customPromptAddition]);
 
+  // Handle errors
   useEffect(() => {
+    const error = settingsError || equipmentError || gymError;
     if (error) {
-      Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
+      Alert.alert('Error', error, [{
+        text: 'OK',
+        onPress: () => {
+          clearSettingsError();
+          clearEquipmentError();
+          clearGymError();
+        }
+      }]);
     }
-  }, [error]);
+  }, [settingsError, equipmentError, gymError]);
 
   const handleWeightUnitChange = (unit: 'lbs' | 'kg') => {
     updateSettings({ defaultWeightUnit: unit });
@@ -68,7 +119,6 @@ export default function SettingsScreen() {
 
   const handleHealthKitToggle = async (enabled: boolean) => {
     if (enabled) {
-      // Request HealthKit authorization
       const authorized = await requestHealthKitAuthorization();
       if (authorized) {
         updateSettings({ healthKitEnabled: true });
@@ -84,23 +134,86 @@ export default function SettingsScreen() {
     }
   };
 
+  // Gym management
+  const handleAddGym = async () => {
+    const trimmedName = newGymName.trim();
+    if (!trimmedName) {
+      Alert.alert('Error', 'Please enter a gym name');
+      return;
+    }
+
+    const isFirst = gyms.length === 0;
+    const newGym = await addGym(trimmedName, isFirst);
+    setNewGymName('');
+    setShowGymModal(false);
+    setSelectedGymId(newGym.id);
+  };
+
+  const handleEditGym = async () => {
+    if (!editingGym) return;
+    const trimmedName = newGymName.trim();
+    if (!trimmedName) {
+      Alert.alert('Error', 'Please enter a gym name');
+      return;
+    }
+
+    await updateGym(editingGym.id, { name: trimmedName });
+    setNewGymName('');
+    setEditingGym(null);
+    setShowGymModal(false);
+  };
+
+  const handleDeleteGym = (gym: Gym) => {
+    if (gyms.length === 1) {
+      Alert.alert('Cannot Delete', 'You must have at least one gym.');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Gym',
+      `Are you sure you want to delete "${gym.name}"? All equipment associated with this gym will also be deleted.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await removeGym(gym.id);
+            if (selectedGymId === gym.id && gyms.length > 1) {
+              const remainingGym = gyms.find(g => g.id !== gym.id);
+              if (remainingGym) {
+                setSelectedGymId(remainingGym.id);
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSetDefaultGym = async (gymId: string) => {
+    await setDefaultGym(gymId);
+  };
+
+  // Equipment management
   const handleAddEquipment = async () => {
+    if (!selectedGymId) {
+      Alert.alert('Error', 'Please select a gym first');
+      return;
+    }
+
     const trimmedName = newEquipmentName.trim();
     if (!trimmedName) {
       Alert.alert('Error', 'Please enter equipment name');
       return;
     }
 
-    // Check if equipment already exists
-    const exists = equipment.some(
-      (eq) => eq.name.toLowerCase() === trimmedName.toLowerCase()
-    );
-    if (exists) {
-      Alert.alert('Error', 'This equipment already exists');
+    if (hasEquipment(selectedGymId, trimmedName)) {
+      Alert.alert('Error', 'This equipment already exists for this gym');
       return;
     }
 
-    await addEquipment(trimmedName);
+    await addEquipment(selectedGymId, trimmedName);
     setNewEquipmentName('');
   };
 
@@ -118,6 +231,84 @@ export default function SettingsScreen() {
       ]
     );
   };
+
+  // Preset equipment
+  const openPresetModal = () => {
+    if (!selectedGymId) {
+      Alert.alert('Error', 'Please select a gym first');
+      return;
+    }
+
+    // Pre-select equipment that already exists
+    const existingEquipment = new Set(
+      equipment
+        .filter(eq => eq.gymId === selectedGymId)
+        .map(eq => eq.name.toLowerCase())
+    );
+
+    const preselected = new Set<string>();
+    Object.values(PRESET_EQUIPMENT).flat().forEach(name => {
+      if (existingEquipment.has(name.toLowerCase())) {
+        preselected.add(name);
+      }
+    });
+
+    setSelectedPresets(preselected);
+    setShowPresetModal(true);
+  };
+
+  const togglePreset = (name: string) => {
+    setSelectedPresets(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(name)) {
+        newSet.delete(name);
+      } else {
+        newSet.add(name);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSavePresets = async () => {
+    if (!selectedGymId) return;
+
+    // Find equipment to add (selected but not yet in gym)
+    const existingNames = new Set(
+      equipment
+        .filter(eq => eq.gymId === selectedGymId)
+        .map(eq => eq.name.toLowerCase())
+    );
+
+    const toAdd = Array.from(selectedPresets).filter(
+      name => !existingNames.has(name.toLowerCase())
+    );
+
+    // Find equipment to remove (in gym but not selected)
+    const selectedLower = new Set(
+      Array.from(selectedPresets).map(n => n.toLowerCase())
+    );
+    const toRemove = equipment
+      .filter(eq =>
+        eq.gymId === selectedGymId &&
+        Object.values(PRESET_EQUIPMENT).flat().some(p => p.toLowerCase() === eq.name.toLowerCase()) &&
+        !selectedLower.has(eq.name.toLowerCase())
+      )
+      .map(eq => eq.id);
+
+    // Add new equipment
+    if (toAdd.length > 0) {
+      await addMultipleEquipment(selectedGymId, toAdd);
+    }
+
+    // Remove unselected equipment (only presets, not custom)
+    for (const id of toRemove) {
+      await removeEquipment(id);
+    }
+
+    setShowPresetModal(false);
+  };
+
+  const selectedGym = gyms.find(g => g.id === selectedGymId);
 
   const styles = StyleSheet.create({
     container: {
@@ -217,6 +408,70 @@ export default function SettingsScreen() {
       minHeight: 80,
       textAlignVertical: 'top',
     },
+    // Gym styles
+    gymSelector: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    gymSelectorText: {
+      fontSize: 16,
+      color: colors.text,
+      flex: 1,
+    },
+    gymSelectorActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    gymBadge: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    gymBadgeText: {
+      fontSize: 10,
+      color: '#fff',
+      fontWeight: '600',
+    },
+    gymListItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    gymListItemSelected: {
+      backgroundColor: colors.primaryLight,
+    },
+    gymListItemText: {
+      fontSize: 16,
+      color: colors.text,
+      flex: 1,
+    },
+    gymListItemActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    addGymButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      gap: 8,
+    },
+    addGymButtonText: {
+      fontSize: 16,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    // Equipment styles
     equipmentRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -268,6 +523,122 @@ export default function SettingsScreen() {
       color: colors.textSecondary,
       fontStyle: 'italic',
       paddingVertical: 12,
+    },
+    presetButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      marginTop: 8,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      gap: 8,
+    },
+    presetButtonText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      maxHeight: '80%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    modalBody: {
+      padding: 16,
+    },
+    modalInput: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text,
+      marginBottom: 16,
+    },
+    modalButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    modalButtonSecondary: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.error,
+      marginTop: 12,
+    },
+    modalButtonSecondaryText: {
+      color: colors.error,
+    },
+    // Preset modal styles
+    presetCategory: {
+      marginBottom: 20,
+    },
+    presetCategoryTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+    },
+    presetItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    presetCheckbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.border,
+      marginRight: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    presetCheckboxSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    presetItemText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    presetExisting: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginLeft: 8,
     },
   });
 
@@ -430,62 +801,140 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Gym Management Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Gym Equipment</Text>
-        <View style={styles.settingInfo}>
-          <Text style={styles.settingDescription}>
-            Track which equipment is available at your gym
-          </Text>
-        </View>
+        <Text style={styles.sectionTitle}>My Gyms</Text>
+        <Text style={styles.settingDescription}>
+          Manage your gym locations and their equipment
+        </Text>
 
-        {equipment.length === 0 ? (
-          <Text style={styles.emptyEquipmentText}>
-            No equipment added yet. Add your first equipment below.
-          </Text>
-        ) : (
-          equipment.map((item) => (
-            <View key={item.id} style={styles.equipmentRow}>
-              <Text style={styles.equipmentName}>{item.name}</Text>
-              <View style={styles.equipmentActions}>
-                <Switch
-                  value={item.isAvailable}
-                  onValueChange={(value) =>
-                    updateEquipmentAvailability(item.id, value)
-                  }
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  testID={`switch-equipment-${item.id}`}
-                />
+        {gyms.map((gym) => (
+          <TouchableOpacity
+            key={gym.id}
+            style={[
+              styles.gymListItem,
+              selectedGymId === gym.id && styles.gymListItemSelected,
+            ]}
+            onPress={() => setSelectedGymId(gym.id)}
+            testID={`gym-item-${gym.id}`}
+          >
+            <Text style={styles.gymListItemText}>{gym.name}</Text>
+            <View style={styles.gymListItemActions}>
+              {gym.isDefault && (
+                <View style={styles.gymBadge}>
+                  <Text style={styles.gymBadgeText}>DEFAULT</Text>
+                </View>
+              )}
+              {!gym.isDefault && (
                 <TouchableOpacity
-                  onPress={() => handleRemoveEquipment(item.id, item.name)}
-                  testID={`button-remove-equipment-${item.id}`}
+                  onPress={() => handleSetDefaultGym(gym.id)}
+                  testID={`set-default-${gym.id}`}
+                >
+                  <Ionicons name="star-outline" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => {
+                  setEditingGym(gym);
+                  setNewGymName(gym.name);
+                  setShowGymModal(true);
+                }}
+                testID={`edit-gym-${gym.id}`}
+              >
+                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+              {gyms.length > 1 && (
+                <TouchableOpacity
+                  onPress={() => handleDeleteGym(gym)}
+                  testID={`delete-gym-${gym.id}`}
                 >
                   <Ionicons name="trash-outline" size={20} color={colors.error} />
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
-          ))
-        )}
-
-        <View style={styles.addEquipmentRow}>
-          <TextInput
-            style={styles.addEquipmentInput}
-            placeholder="e.g., Barbell, Dumbbells, Cable Machine"
-            placeholderTextColor={colors.textMuted}
-            value={newEquipmentName}
-            onChangeText={setNewEquipmentName}
-            onSubmitEditing={handleAddEquipment}
-            returnKeyType="done"
-            testID="input-new-equipment"
-          />
-          <TouchableOpacity
-            style={styles.addEquipmentButton}
-            onPress={handleAddEquipment}
-            testID="button-add-equipment"
-          >
-            <Text style={styles.addEquipmentButtonText}>Add</Text>
           </TouchableOpacity>
-        </View>
+        ))}
+
+        <TouchableOpacity
+          style={styles.addGymButton}
+          onPress={() => {
+            setEditingGym(null);
+            setNewGymName('');
+            setShowGymModal(true);
+          }}
+          testID="add-gym-button"
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          <Text style={styles.addGymButtonText}>Add Gym</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Gym Equipment Section */}
+      {selectedGym && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{selectedGym.name} Equipment</Text>
+          <Text style={styles.settingDescription}>
+            Track which equipment is available at this gym
+          </Text>
+
+          {equipment.length === 0 ? (
+            <Text style={styles.emptyEquipmentText}>
+              No equipment added yet. Use presets or add custom equipment below.
+            </Text>
+          ) : (
+            equipment.map((item) => (
+              <View key={item.id} style={styles.equipmentRow}>
+                <Text style={styles.equipmentName}>{item.name}</Text>
+                <View style={styles.equipmentActions}>
+                  <Switch
+                    value={item.isAvailable}
+                    onValueChange={(value) =>
+                      updateEquipmentAvailability(item.id, value)
+                    }
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    testID={`switch-equipment-${item.id}`}
+                  />
+                  <TouchableOpacity
+                    onPress={() => handleRemoveEquipment(item.id, item.name)}
+                    testID={`button-remove-equipment-${item.id}`}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+
+          <TouchableOpacity
+            style={styles.presetButton}
+            onPress={openPresetModal}
+            testID="preset-equipment-button"
+          >
+            <Ionicons name="checkbox-outline" size={20} color={colors.primary} />
+            <Text style={styles.presetButtonText}>Select from Presets</Text>
+          </TouchableOpacity>
+
+          <View style={styles.addEquipmentRow}>
+            <TextInput
+              style={styles.addEquipmentInput}
+              placeholder="Add custom equipment..."
+              placeholderTextColor={colors.textMuted}
+              value={newEquipmentName}
+              onChangeText={setNewEquipmentName}
+              onSubmitEditing={handleAddEquipment}
+              returnKeyType="done"
+              testID="input-new-equipment"
+            />
+            <TouchableOpacity
+              style={styles.addEquipmentButton}
+              onPress={handleAddEquipment}
+              testID="button-add-equipment"
+            >
+              <Text style={styles.addEquipmentButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
@@ -588,6 +1037,122 @@ export default function SettingsScreen() {
           <Text style={styles.infoValue}>MVP</Text>
         </View>
       </View>
+
+      {/* Add/Edit Gym Modal */}
+      <Modal
+        visible={showGymModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowGymModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingGym ? 'Edit Gym' : 'Add Gym'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowGymModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Gym name (e.g., Home Gym, LA Fitness)"
+                placeholderTextColor={colors.textMuted}
+                value={newGymName}
+                onChangeText={setNewGymName}
+                autoFocus
+                testID="input-gym-name"
+              />
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={editingGym ? handleEditGym : handleAddGym}
+                testID="save-gym-button"
+              >
+                <Text style={styles.modalButtonText}>
+                  {editingGym ? 'Save Changes' : 'Add Gym'}
+                </Text>
+              </TouchableOpacity>
+              {editingGym && gyms.length > 1 && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={() => {
+                    setShowGymModal(false);
+                    handleDeleteGym(editingGym);
+                  }}
+                  testID="delete-gym-modal-button"
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonSecondaryText]}>
+                    Delete Gym
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Preset Equipment Modal */}
+      <Modal
+        visible={showPresetModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPresetModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Equipment</Text>
+              <TouchableOpacity onPress={() => setShowPresetModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {Object.entries(PRESET_EQUIPMENT).map(([category, items]) => (
+                <View key={category} style={styles.presetCategory}>
+                  <Text style={styles.presetCategoryTitle}>
+                    {category === 'freeWeights' ? 'Free Weights' :
+                     category === 'benchesAndRacks' ? 'Benches & Racks' :
+                     category === 'machines' ? 'Machines' :
+                     category === 'cardio' ? 'Cardio' : 'Other'}
+                  </Text>
+                  {items.map((item) => {
+                    const isSelected = selectedPresets.has(item);
+                    return (
+                      <TouchableOpacity
+                        key={item}
+                        style={styles.presetItem}
+                        onPress={() => togglePreset(item)}
+                        testID={`preset-${item}`}
+                      >
+                        <View style={[
+                          styles.presetCheckbox,
+                          isSelected && styles.presetCheckboxSelected
+                        ]}>
+                          {isSelected && (
+                            <Ionicons name="checkmark" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <Text style={styles.presetItemText}>{item}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+            <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={handleSavePresets}
+                testID="save-presets-button"
+              >
+                <Text style={styles.modalButtonText}>Save Selection</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

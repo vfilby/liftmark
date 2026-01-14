@@ -133,15 +133,79 @@ export interface UserSettings {
   updatedAt: string;
 }
 
+// Gym Location
+export interface Gym {
+  id: string;
+  name: string; // e.g., "Home Gym", "LA Fitness", "Hotel Gym"
+  isDefault: boolean; // Whether this is the default/active gym
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Gym Equipment Availability
 export interface GymEquipment {
   id: string;
+  gymId: string; // Reference to the gym this equipment belongs to
   name: string; // e.g., "barbell", "kettlebell", "cable machine"
   isAvailable: boolean; // Whether this equipment is currently available at the gym
   lastCheckedAt?: string; // ISO datetime when availability was last updated
   createdAt: string;
   updatedAt: string;
 }
+
+// Preset equipment categories for quick selection
+export const PRESET_EQUIPMENT = {
+  freeWeights: [
+    'Barbell',
+    'Dumbbells',
+    'Kettlebells',
+    'Weight Plates',
+    'EZ Curl Bar',
+  ],
+  benchesAndRacks: [
+    'Flat Bench',
+    'Incline Bench',
+    'Adjustable Bench',
+    'Squat Rack',
+    'Power Rack',
+    'Smith Machine',
+  ],
+  machines: [
+    'Cable Machine',
+    'Lat Pulldown',
+    'Leg Press',
+    'Leg Curl',
+    'Leg Extension',
+    'Chest Press Machine',
+    'Shoulder Press Machine',
+    'Row Machine',
+  ],
+  cardio: [
+    'Treadmill',
+    'Stationary Bike',
+    'Rowing Machine',
+    'Elliptical',
+    'Stair Climber',
+  ],
+  other: [
+    'Pull-up Bar',
+    'Dip Station',
+    'Resistance Bands',
+    'TRX/Suspension Trainer',
+    'Medicine Ball',
+    'Battle Ropes',
+    'Foam Roller',
+  ],
+} as const;
+
+// All preset equipment as a flat array
+export const ALL_PRESET_EQUIPMENT = [
+  ...PRESET_EQUIPMENT.freeWeights,
+  ...PRESET_EQUIPMENT.benchesAndRacks,
+  ...PRESET_EQUIPMENT.machines,
+  ...PRESET_EQUIPMENT.cardio,
+  ...PRESET_EQUIPMENT.other,
+] as const;
 
 // Parser Result Types
 export interface ParseResult<T> {
@@ -206,8 +270,17 @@ export interface UserSettingsRow {
   updated_at: string;
 }
 
+export interface GymRow {
+  id: string;
+  name: string;
+  is_default: number; // SQLite boolean (0 or 1)
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GymEquipmentRow {
   id: string;
+  gym_id: string;
   name: string;
   is_available: number; // SQLite boolean (0 or 1)
   last_checked_at: string | null;

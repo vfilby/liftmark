@@ -94,6 +94,15 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       updated_at TEXT NOT NULL
     );
 
+    -- Gym Locations
+    CREATE TABLE IF NOT EXISTS gyms (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      is_default INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     -- Gym Equipment Availability
     CREATE TABLE IF NOT EXISTS gym_equipment (
       id TEXT PRIMARY KEY,
@@ -110,6 +119,9 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_gym_equipment_name
       ON gym_equipment(name);
+
+    CREATE INDEX IF NOT EXISTS idx_gyms_default
+      ON gyms(is_default);
 
     CREATE INDEX IF NOT EXISTS idx_template_sets_exercise
       ON template_sets(template_exercise_id);
@@ -239,6 +251,59 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add gym_id column to gym_equipment if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE gym_equipment ADD COLUMN gym_id TEXT`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
+  // Migration: Create default gym and migrate existing equipment
+  try {
+    const { generateId } = await import('@/utils/id');
+    const existingGym = await database.getFirstAsync('SELECT id FROM gyms LIMIT 1');
+
+    if (!existingGym) {
+      // Check if there's any existing equipment without a gym_id
+      const orphanedEquipment = await database.getFirstAsync<{ count: number }>(
+        `SELECT COUNT(*) as count FROM gym_equipment WHERE gym_id IS NULL`
+      );
+
+      const now = new Date().toISOString();
+      const defaultGymId = generateId();
+
+      // Create default gym
+      await database.runAsync(
+        `INSERT INTO gyms (id, name, is_default, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [defaultGymId, 'My Gym', 1, now, now]
+      );
+      console.log('Default gym created');
+
+      // Migrate any existing equipment to the default gym
+      if (orphanedEquipment && orphanedEquipment.count > 0) {
+        await database.runAsync(
+          `UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL`,
+          [defaultGymId]
+        );
+        console.log(`Migrated ${orphanedEquipment.count} equipment items to default gym`);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to migrate gyms:', error);
+  }
+
+  // Migration: Add gym_equipment index on gym_id
+  try {
+    await database.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)`
+    );
+  } catch {
+    // Index might already exist
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
@@ -284,5 +349,6 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM template_exercises;
     DELETE FROM workout_templates;
     DELETE FROM gym_equipment;
+    DELETE FROM gyms;
   `);
 }

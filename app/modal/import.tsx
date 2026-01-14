@@ -15,6 +15,8 @@ import { parseWorkout } from '@/services/MarkdownParser';
 import { generateWorkoutHistoryContext } from '@/services/workoutHistoryService';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useGymStore } from '@/stores/gymStore';
+import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
 
 export default function ImportWorkoutModal() {
@@ -22,6 +24,8 @@ export default function ImportWorkoutModal() {
   const { colors } = useTheme();
   const { saveWorkout } = useWorkoutStore();
   const { settings, loadSettings } = useSettingsStore();
+  const { defaultGym, loadGyms } = useGymStore();
+  const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
   const [markdown, setMarkdown] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
@@ -29,9 +33,17 @@ export default function ImportWorkoutModal() {
 
   useEffect(() => {
     loadSettings();
+    loadGyms();
     // Load workout history for AI context
     generateWorkoutHistoryContext(5).then(setWorkoutHistory);
   }, []);
+
+  // Load equipment when default gym changes
+  useEffect(() => {
+    if (defaultGym) {
+      loadEquipment(defaultGym.id);
+    }
+  }, [defaultGym?.id]);
 
   const basePromptText = `Generate a workout using LiftMark Workout Format (LMWF).
 
@@ -110,9 +122,16 @@ MODIFIERS (optional, add after sets):
 
 Create a [workout type] workout with [specific requirements]. Follow LMWF format exactly as shown above.`;
 
-  // Combine base prompt with workout history and custom addition from settings
+  // Combine base prompt with workout history, equipment, and custom addition from settings
   const promptText = useMemo(() => {
     let prompt = basePromptText;
+
+    // Add available equipment context
+    const availableEquipment = getAvailableEquipmentNames();
+    if (availableEquipment.length > 0) {
+      const gymName = defaultGym?.name || 'my gym';
+      prompt += `\n\n--- AVAILABLE EQUIPMENT ---\nAt ${gymName}, I have access to: ${availableEquipment.join(', ')}.\nPlease only use exercises that work with this equipment. If suggesting alternatives, stay within these options.`;
+    }
 
     // Add workout history context if available
     if (workoutHistory) {
@@ -125,7 +144,7 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
     }
 
     return prompt;
-  }, [settings?.customPromptAddition, workoutHistory]);
+  }, [settings?.customPromptAddition, workoutHistory, equipment, defaultGym?.name]);
 
   const copyPrompt = async () => {
     try {
