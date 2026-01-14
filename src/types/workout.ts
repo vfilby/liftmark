@@ -42,6 +42,7 @@ export interface TemplateSet {
   tempo?: string; // e.g., "3-0-1-0"
   isDropset?: boolean; // Drop set indicator
   isPerSide?: boolean; // Per side indicator (e.g., for unilateral exercises)
+  isAmrap?: boolean; // AMRAP (as many reps as possible) indicator
   notes?: string; // Additional notes/instructions from set line (e.g., "forward", "each side")
 }
 
@@ -254,6 +255,8 @@ export interface TemplateSetRow {
   tempo: string | null;
   is_dropset: number; // SQLite boolean (0 or 1)
   is_per_side: number; // SQLite boolean (0 or 1)
+  is_amrap: number; // SQLite boolean (0 or 1)
+  notes: string | null; // Optional notes/comments for the set
 }
 
 export interface UserSettingsRow {

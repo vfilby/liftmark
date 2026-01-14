@@ -665,6 +665,7 @@ function parseSets(
           tempo: parsedSet.tempo,
           isDropset: parsedSet.isDropset,
           isPerSide: parsedSet.isPerSide,
+          isAmrap: parsedSet.isAmrap,
           notes: parsedSet.notes,
         });
         orderIndex++;
