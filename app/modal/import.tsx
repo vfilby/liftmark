@@ -33,66 +33,46 @@ export default function ImportWorkoutModal() {
     generateWorkoutHistoryContext(5).then(setWorkoutHistory);
   }, []);
 
-  const basePromptText = `Generate a workout in LiftMark Workout Format (LMWF). Use this exact format:
+  const basePromptText = `Generate a workout in LiftMark Workout Format (LMWF).
 
+**CRITICAL RULES:**
+1. Use ONLY numbers and valid units on set lines: 225 x 5, 30s, bw x 10
+2. DO NOT add descriptive text after set values (no "forward", "each side", etc.)
+3. Format modifiers exactly: @rpe: 8, @rest: 180s, @tempo: 3-0-1-0
+4. Units must be "lbs" or "kg" (not "pounds" or "kilograms")
+
+**Structure:**
 # Workout Name
 @tags: tag1, tag2
 @units: lbs
 
-## Section Name (e.g., Warmup, Workout, Cool Down)
-
+## Section (optional)
 ### Exercise Name
-- weight x reps @modifiers
-
-### Superset: Name
-#### Exercise A
 - weight x reps
-#### Exercise B
+- weight x reps @rpe: 8 @rest: 120s
+
+## Superset: Name
+### Exercise A
+- weight x reps
+### Exercise B
 - weight x reps
 
-Format rules:
-- # for workout name, @tags and @units for metadata
-- ## for sections (Warmup, Workout, Cool Down, etc.)
-- ### for exercises within sections
-- Supersets: section header containing "superset" with #### exercise headers
-- Sets: "weight x reps" (e.g., "225 x 5" or "225 lbs x 5")
-- Bodyweight: just reps (e.g., "10") or "bw x 10"
-- Time-based: "60s" or "weight x time"
-- Modifiers: @rpe:8, @rest:90s, @tempo:3-0-1-0, @dropset
-- AMRAP: "weight x AMRAP"
+**Set Formats:**
+- 225 x 5 (weight and reps)
+- 225 lbs x 5 (explicit units)
+- bw x 10 or x 10 (bodyweight)
+- 30s (time-based)
+- AMRAP (as many reps as possible)
 
-Example:
+**Example:**
 # Push Day
-@tags: push, chest
+@tags: push
 @units: lbs
 
-## Warmup
-### Arm Circles
-- 30s
-### Band Pull-Aparts
-- 15
-
-## Workout
-### Bench Press
+## Bench Press
 - 135 x 10
 - 185 x 8 @rpe: 7
 - 225 x 5 @rpe: 9 @rest: 180s
-
-### Superset: Chest & Triceps
-#### Incline Dumbbell Press
-- 50 x 12
-- 60 x 10
-#### Tricep Pushdowns
-- 40 x 15
-- 50 x 12
-
-### Push-ups
-- 15
-- AMRAP
-
-## Cool Down
-### Chest Stretch
-- 30s each side
 
 Generate a [workout type] workout with [specific requirements].`;
 

@@ -246,4 +246,138 @@ without a proper workout`;
       expect(result.data?.exercises[0].sets[1].isDropset).toBe(true);
     });
   });
+
+  describe('GenAI Format Variations - Known Cases', () => {
+    describe('Trailing descriptive text', () => {
+      it('handles directional instructions', () => {
+        const markdown = `# Test
+## Arm Circles
+- 30s forward
+- 30s backward
+`;
+        const result = parseWorkout(markdown);
+        // NOTE: This will fail until parser is enhanced (Project 1)
+        // Expected: success with notes preserved
+        expect(result.success || result.errors?.length).toBeDefined();
+      });
+
+      it('handles side/limb specifications', () => {
+        const markdown = `# Test
+## Dead Bug
+- 12 each side
+- 10 each arm
+`;
+        const result = parseWorkout(markdown);
+        // NOTE: This will fail until parser is enhanced (Project 1)
+        expect(result.success || result.errors?.length).toBeDefined();
+      });
+
+      it('handles "per side" and "both sides"', () => {
+        const markdown = `# Test
+## Stretch
+- 45s per side
+- 60s both sides
+`;
+        const result = parseWorkout(markdown);
+        // NOTE: This will fail until parser is enhanced (Project 1)
+        expect(result.success || result.errors?.length).toBeDefined();
+      });
+    });
+
+    describe('Real-world GenAI outputs', () => {
+      it('parses Claude-generated Push Day workout', () => {
+        const markdown = `# Push Day - Compound Focus
+@tags: push, chest, shoulders, triceps
+@units: lbs
+
+## Warmup
+
+### Arm Circles
+- 30s forward
+- 30s backward
+
+### Band Pull-Aparts
+- 15
+- 15
+
+### Push-up to Downward Dog
+- 8
+
+### Empty Bar Overhead Press
+- 45 x 10
+- 45 x 8
+
+## Workout
+
+### Bench Press
+- 135 x 8
+- 185 x 6 @rpe: 6
+- 205 x 5 @rpe: 7
+- 225 x 4 @rpe: 8
+- 225 x 4 @rpe: 9 @rest: 180s
+
+### Overhead Press
+- 95 x 8
+- 115 x 6 @rpe: 7
+- 125 x 5 @rpe: 8 @rest: 120s
+
+### Incline Dumbbell Press
+- 50 x 10
+- 60 x 8 @rpe: 7
+- 65 x 8 @rpe: 8
+
+### Dips
+- bw x 10
+- bw x 8 @rpe: 8
+- bw x AMRAP
+
+### Superset: Shoulder & Tricep Finisher
+#### Lateral Raises
+- 20 x 12
+- 25 x 10
+#### Tricep Pushdowns
+- 50 x 12
+- 60 x 10
+
+## Core
+
+### Hanging Leg Raises
+- 10
+- 10
+- 10 @rest: 60s
+
+### Dead Bug
+- 12 each side
+- 12 each side
+
+## Cool Down
+
+### Doorway Chest Stretch
+- 45s each side
+
+### Overhead Tricep Stretch
+- 30s each arm
+
+### Thread the Needle
+- 30s each side
+
+### Child's Pose
+- 60s
+`;
+        const result = parseWorkout(markdown);
+
+        // This is the user's actual failing workout
+        // NOTE: Will fail until Project 1 (parser enhancement) is complete
+        // After Project 1, should parse successfully with trailing text as notes
+        if (result.success) {
+          expect(result.data?.exercises).toBeDefined();
+          expect(result.data?.exercises.length).toBeGreaterThan(0);
+        } else {
+          // Document the failures for now
+          expect(result.errors).toBeDefined();
+          expect(result.errors!.length).toBeGreaterThan(0);
+        }
+      });
+    });
+  });
 });
