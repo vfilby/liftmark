@@ -33,35 +33,21 @@ export default function ImportWorkoutModal() {
     generateWorkoutHistoryContext(5).then(setWorkoutHistory);
   }, []);
 
-  const basePromptText = `Generate a workout in LiftMark Workout Format (LMWF). Use this exact format:
+  const basePromptText = `Generate a workout using LiftMark Workout Format (LMWF).
 
-# Workout Name
-@tags: tag1, tag2
-@units: lbs
+=== QUICK FORMAT OVERVIEW ===
 
-## Section Name (e.g., Warmup, Workout, Cool Down)
+Structure:
+  # Workout Name
+  @tags: tag1, tag2
+  @units: lbs or kg
 
-### Exercise Name
-- weight x reps @modifiers
+  ## Section Name
+  ### Exercise Name
+  - weight x reps @modifiers
 
-### Superset: Name
-#### Exercise A
-- weight x reps
-#### Exercise B
-- weight x reps
+=== COMPLETE EXAMPLE ===
 
-Format rules:
-- # for workout name, @tags and @units for metadata
-- ## for sections (Warmup, Workout, Cool Down, etc.)
-- ### for exercises within sections
-- Supersets: section header containing "superset" with #### exercise headers
-- Sets: "weight x reps" (e.g., "225 x 5" or "225 lbs x 5")
-- Bodyweight: just reps (e.g., "10") or "bw x 10"
-- Time-based: "60s" or "weight x time"
-- Modifiers: @rpe:8, @rest:90s, @tempo:3-0-1-0, @dropset
-- AMRAP: "weight x AMRAP"
-
-Example:
 # Push Day
 @tags: push, chest
 @units: lbs
@@ -94,7 +80,42 @@ Example:
 ### Chest Stretch
 - 30s each side
 
-Generate a [workout type] workout with [specific requirements].`;
+=== DETAILED FORMAT RULES ===
+
+STRUCTURE:
+  • # Workout Name (required, first line)
+  • @tags: tag1, tag2 (optional, after workout name)
+  • @units: lbs or kg (optional, default: lbs)
+  • ## Section headers (e.g., Warmup, Workout, Cool Down)
+  • ### Exercise headers (within sections)
+  • #### Superset exercise headers (within superset sections only)
+
+SETS FORMAT:
+  • With weight: "weight x reps" → 225 x 5 or 225 lbs x 5
+  • Bodyweight: "reps" → 10 or bw x 10
+  • Time-based: "duration" → 60s or weight x 60s
+  • AMRAP: "weight x AMRAP" or just "AMRAP"
+
+SUPERSETS:
+  • Use "### Superset: Name" as section header
+  • List exercises underneath with #### headers
+  • Example:
+      ### Superset: Chest & Triceps
+      #### Exercise A
+      - sets here
+      #### Exercise B
+      - sets here
+
+MODIFIERS (optional, add after sets):
+  • @rpe:8 (Rate of Perceived Exertion, 1-10)
+  • @rest:90s (Rest period)
+  • @tempo:3-0-1-0 (Eccentric-Pause-Concentric-Pause)
+  • @dropset (Indicates a drop set)
+  • Multiple modifiers: @rpe:8 @rest:120s
+
+=== YOUR TASK ===
+
+Create a [workout type] workout with [specific requirements]. Follow LMWF format exactly as shown above.`;
 
   // Combine base prompt with workout history and custom addition from settings
   const promptText = useMemo(() => {
