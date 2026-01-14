@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
 import type { WorkoutTemplate } from '@/types';
 
@@ -18,10 +20,13 @@ export default function WorkoutsScreen() {
   const { colors } = useTheme();
   const { workouts, loadWorkouts, removeWorkout, searchWorkouts, error, clearError } =
     useWorkoutStore();
+  const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterByEquipment, setFilterByEquipment] = useState(false);
 
   useEffect(() => {
     loadWorkouts();
+    loadEquipment();
   }, []);
 
   useEffect(() => {
@@ -50,6 +55,37 @@ export default function WorkoutsScreen() {
     );
   };
 
+  // Filter workouts based on available equipment
+  const filteredWorkouts = useMemo(() => {
+    if (!filterByEquipment) {
+      return workouts;
+    }
+
+    const availableEquipmentNames = getAvailableEquipmentNames();
+
+    // If no equipment is set up, show all workouts
+    if (equipment.length === 0) {
+      return workouts;
+    }
+
+    return workouts.filter((workout) => {
+      // Check if all exercises have available equipment
+      const allExercisesAvailable = workout.exercises.every((exercise) => {
+        // If exercise has no equipment type specified, it's available (bodyweight)
+        if (!exercise.equipmentType) {
+          return true;
+        }
+
+        // Check if the equipment is available
+        return availableEquipmentNames.includes(
+          exercise.equipmentType.toLowerCase()
+        );
+      });
+
+      return allExercisesAvailable;
+    });
+  }, [workouts, filterByEquipment, equipment]);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -69,6 +105,22 @@ export default function WorkoutsScreen() {
       padding: 12,
       fontSize: 16,
       color: colors.text,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 12,
+    },
+    filterLabel: {
+      fontSize: 14,
+      color: colors.text,
+      flex: 1,
+    },
+    filterDescription: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
     },
     list: {
       padding: 16,
@@ -245,19 +297,42 @@ export default function WorkoutsScreen() {
           onChangeText={handleSearch}
           testID="search-input"
         />
+
+        {equipment.length > 0 && (
+          <View style={styles.filterRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.filterLabel}>Show only available equipment</Text>
+              <Text style={styles.filterDescription}>
+                Filter workouts based on your gym equipment
+              </Text>
+            </View>
+            <Switch
+              value={filterByEquipment}
+              onValueChange={setFilterByEquipment}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              testID="switch-filter-equipment"
+            />
+          </View>
+        )}
       </View>
 
-      {workouts.length === 0 ? (
+      {filteredWorkouts.length === 0 ? (
         <View style={styles.emptyState} testID="empty-state">
           <Text style={styles.emptyText}>
-            {searchQuery ? 'No workouts found' : 'No workouts yet'}
+            {filterByEquipment
+              ? 'No workouts available'
+              : searchQuery
+              ? 'No workouts found'
+              : 'No workouts yet'}
           </Text>
           <Text style={styles.emptySubtext}>
-            {searchQuery
+            {filterByEquipment
+              ? 'All workouts require unavailable equipment. Try adding equipment in Settings or disable the filter.'
+              : searchQuery
               ? 'Try a different search term'
               : 'Import your first workout to get started'}
           </Text>
-          {!searchQuery && (
+          {!searchQuery && !filterByEquipment && (
             <TouchableOpacity
               style={styles.importButton}
               onPress={() => router.push('/modal/import')}
@@ -269,7 +344,7 @@ export default function WorkoutsScreen() {
         </View>
       ) : (
         <FlatList
-          data={workouts}
+          data={filteredWorkouts}
           renderItem={renderWorkout}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}

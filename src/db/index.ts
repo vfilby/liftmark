@@ -94,9 +94,22 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       updated_at TEXT NOT NULL
     );
 
+    -- Gym Equipment Availability
+    CREATE TABLE IF NOT EXISTS gym_equipment (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      is_available INTEGER DEFAULT 1,
+      last_checked_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_template_exercises_workout
       ON template_exercises(workout_template_id);
+
+    CREATE INDEX IF NOT EXISTS idx_gym_equipment_name
+      ON gym_equipment(name);
 
     CREATE INDEX IF NOT EXISTS idx_template_sets_exercise
       ON template_sets(template_exercise_id);
@@ -270,5 +283,6 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM template_sets;
     DELETE FROM template_exercises;
     DELETE FROM workout_templates;
+    DELETE FROM gym_equipment;
   `);
 }
