@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
+import { useGymStore } from '@/stores/gymStore';
 import { useTheme } from '@/theme';
 import type { WorkoutTemplate } from '@/types';
 
@@ -21,13 +22,21 @@ export default function WorkoutsScreen() {
   const { workouts, loadWorkouts, removeWorkout, searchWorkouts, error, clearError } =
     useWorkoutStore();
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
+  const { defaultGym, loadGyms } = useGymStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByEquipment, setFilterByEquipment] = useState(false);
 
   useEffect(() => {
     loadWorkouts();
-    loadEquipment();
+    loadGyms();
   }, []);
+
+  // Load equipment when default gym changes
+  useEffect(() => {
+    if (defaultGym) {
+      loadEquipment(defaultGym.id);
+    }
+  }, [defaultGym?.id]);
 
   useEffect(() => {
     if (error) {
