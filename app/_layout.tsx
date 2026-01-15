@@ -70,6 +70,13 @@ export default function RootLayout() {
           headerBackTitle: 'Back',
         }}
       />
+      <Stack.Screen
+        name="equipment/index"
+        options={{
+          title: 'Equipment',
+          headerBackTitle: 'Back',
+        }}
+      />
     </Stack>
   );
 }
