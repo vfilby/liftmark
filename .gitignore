@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# runtime
+.runtime/
+
 # Expo
 .expo/
 dist/
