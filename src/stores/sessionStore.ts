@@ -24,12 +24,20 @@ interface RestTimer {
   totalSeconds: number;
 }
 
+interface ExerciseTimer {
+  isRunning: boolean;
+  elapsedSeconds: number;
+  targetSeconds: number;
+  setId: string; // ID of the set being timed
+}
+
 interface SessionStore {
   // State
   activeSession: WorkoutSession | null;
   currentExerciseIndex: number;
   currentSetIndex: number;
   restTimer: RestTimer | null;
+  exerciseTimer: ExerciseTimer | null;
   isLoading: boolean;
   error: string | null;
 
@@ -55,6 +63,11 @@ interface SessionStore {
   startRestTimer: (seconds: number) => void;
   stopRestTimer: () => void;
   tickRestTimer: () => void;
+
+  // Exercise Timer
+  startExerciseTimer: (setId: string, targetSeconds: number) => void;
+  stopExerciseTimer: () => void;
+  tickExerciseTimer: () => void;
 
   // Utilities
   clearError: () => void;
@@ -118,6 +131,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   currentExerciseIndex: 0,
   currentSetIndex: 0,
   restTimer: null,
+  exerciseTimer: null,
   isLoading: false,
   error: null,
 
@@ -139,6 +153,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         currentExerciseIndex: 0,
         currentSetIndex: 0,
         restTimer: null,
+        exerciseTimer: null,
         isLoading: false,
       });
 
@@ -607,6 +622,36 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         },
       });
     }
+  },
+
+  // Start the exercise timer
+  startExerciseTimer: (setId: string, targetSeconds: number) => {
+    set({
+      exerciseTimer: {
+        isRunning: true,
+        elapsedSeconds: 0,
+        targetSeconds,
+        setId,
+      },
+    });
+  },
+
+  // Stop the exercise timer
+  stopExerciseTimer: () => {
+    set({ exerciseTimer: null });
+  },
+
+  // Tick the exercise timer (called every second)
+  tickExerciseTimer: () => {
+    const { exerciseTimer } = get();
+    if (!exerciseTimer || !exerciseTimer.isRunning) return;
+
+    set({
+      exerciseTimer: {
+        ...exerciseTimer,
+        elapsedSeconds: exerciseTimer.elapsedSeconds + 1,
+      },
+    });
   },
 
   // Clear error

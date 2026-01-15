@@ -22,6 +22,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
 import { audioService } from '@/services/audioService';
 import RestTimer from '@/components/RestTimer';
+import ExerciseTimer from '@/components/ExerciseTimer';
 import type { SessionExercise, SessionSet } from '@/types';
 
 // Represents either a single exercise or a superset group
@@ -59,6 +60,7 @@ export default function ActiveWorkoutScreen() {
   const {
     activeSession,
     restTimer,
+    exerciseTimer,
     isLoading,
     error,
     resumeSession,
@@ -70,6 +72,9 @@ export default function ActiveWorkoutScreen() {
     startRestTimer,
     stopRestTimer,
     tickRestTimer,
+    startExerciseTimer,
+    stopExerciseTimer,
+    tickExerciseTimer,
     clearError,
     getProgress,
     getTrackableExercises,
@@ -80,7 +85,7 @@ export default function ActiveWorkoutScreen() {
 
   // Track which non-current set is being edited (when user taps on another set)
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<Record<string, { weight: string; reps: string }>>({});
+  const [editValues, setEditValues] = useState<Record<string, { weight: string; reps: string; time: string }>>({});
   // Track suggested rest time from last completed set
   const [suggestedRestSeconds, setSuggestedRestSeconds] = useState<number | null>(null);
   // When true, show the current set as "Up Next" preview instead of full form
@@ -232,11 +237,15 @@ export default function ActiveWorkoutScreen() {
     const reps = set.status === 'completed'
       ? (set.actualReps ?? set.targetReps)
       : (set.actualReps ?? set.targetReps);
+    const time = set.status === 'completed'
+      ? (set.actualTime ?? set.targetTime)
+      : (set.actualTime ?? set.targetTime);
     setEditValues((prev) => ({
       ...prev,
       [set.id]: {
         weight: weight !== undefined ? String(weight) : '',
         reps: reps !== undefined ? String(reps) : '',
+        time: time !== undefined ? String(time) : '',
       },
     }));
   };
@@ -246,11 +255,13 @@ export default function ActiveWorkoutScreen() {
     const values = editValues[set.id];
     const weight = values?.weight ? parseFloat(values.weight) : undefined;
     const reps = values?.reps ? parseInt(values.reps, 10) : undefined;
+    const time = values?.time ? parseInt(values.time, 10) : undefined;
 
     // Update the set in the store
     await completeSet(set.id, {
       actualWeight: weight,
       actualReps: reps,
+      actualTime: time,
     });
 
     // Close the editing form
@@ -297,6 +308,21 @@ export default function ActiveWorkoutScreen() {
     }
   }, [restTimer]);
 
+  // Exercise timer tick
+  useEffect(() => {
+    if (exerciseTimer?.isRunning) {
+      const interval = setInterval(() => {
+        tickExerciseTimer();
+
+        // Play sound when target time is reached
+        if (exerciseTimer.elapsedSeconds + 1 === exerciseTimer.targetSeconds) {
+          audioService.playComplete();
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [exerciseTimer?.isRunning, exerciseTimer?.elapsedSeconds]);
+
   // Handle errors
   useEffect(() => {
     if (error) {
@@ -313,13 +339,16 @@ export default function ActiveWorkoutScreen() {
         {
           text: 'Pause',
           onPress: async () => {
+            if (exerciseTimer) {
+              stopExerciseTimer();
+            }
             await pauseSession();
             router.back();
           },
         },
       ]
     );
-  }, [pauseSession, router]);
+  }, [pauseSession, router, exerciseTimer, stopExerciseTimer]);
 
   const handleFinish = useCallback(() => {
     const { completed, total } = getProgress();
@@ -360,7 +389,16 @@ export default function ActiveWorkoutScreen() {
     const weight = values?.weight ? parseFloat(values.weight) : undefined;
     const reps = values?.reps ? parseInt(values.reps, 10) : undefined;
 
-    // Stop any existing timer before completing the set
+    // For timed exercises, use timer elapsed time if available, otherwise use manual input
+    let time: number | undefined;
+    if (exerciseTimer && exerciseTimer.setId === set.id) {
+      time = exerciseTimer.elapsedSeconds;
+      stopExerciseTimer();
+    } else {
+      time = values?.time ? parseInt(values.time, 10) : undefined;
+    }
+
+    // Stop any existing rest timer before completing the set
     if (restTimer) {
       stopRestTimer();
     }
@@ -373,6 +411,7 @@ export default function ActiveWorkoutScreen() {
     await completeSet(set.id, {
       actualWeight: weight,
       actualReps: reps,
+      actualTime: time,
     });
 
     // Check if workout is complete
@@ -397,9 +436,14 @@ export default function ActiveWorkoutScreen() {
       setShowUpNextPreview(false);
       setLastCompletedSetId(null);
     }
-  }, [editValues, completeSet, getProgress, handleFinish, restTimer, stopRestTimer, settings, startRestTimer, editingSetId]);
+  }, [editValues, completeSet, getProgress, handleFinish, restTimer, stopRestTimer, exerciseTimer, stopExerciseTimer, settings, startRestTimer, editingSetId]);
 
   const handleSkipSet = useCallback(async (set: SessionSet) => {
+    // Stop exercise timer if running for this set
+    if (exerciseTimer && exerciseTimer.setId === set.id) {
+      stopExerciseTimer();
+    }
+
     // Clear editing state if this was the set being edited
     if (editingSetId === set.id) {
       setEditingSetId(null);
@@ -412,7 +456,7 @@ export default function ActiveWorkoutScreen() {
     if (completed === total) {
       handleFinish();
     }
-  }, [skipSet, getProgress, handleFinish, editingSetId]);
+  }, [skipSet, getProgress, handleFinish, editingSetId, exerciseTimer, stopExerciseTimer]);
 
   const handleSetPress = useCallback((set: SessionSet) => {
     // Clear preview state when user taps any set, but keep timer running
@@ -439,7 +483,7 @@ export default function ActiveWorkoutScreen() {
     }
   }, [currentSetId, editingSetId, restTimer]);
 
-  const updateEditValue = (setId: string, field: 'weight' | 'reps', value: string) => {
+  const updateEditValue = (setId: string, field: 'weight' | 'reps' | 'time', value: string) => {
     setEditValues((prev) => ({
       ...prev,
       [setId]: {
@@ -1142,29 +1186,44 @@ export default function ActiveWorkoutScreen() {
                                     ) : isActiveForm ? (
                                       <View style={styles.activeSetContent}>
                                         <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
-                                        <View style={styles.inputRow}>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Weight</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.weight}
-                                              onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                            <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+
+                                        {/* Show exercise timer for timed exercises */}
+                                        {set.targetTime !== undefined && (
+                                          <ExerciseTimer
+                                            elapsedSeconds={exerciseTimer?.setId === set.id ? exerciseTimer.elapsedSeconds : 0}
+                                            targetSeconds={set.targetTime}
+                                            isRunning={exerciseTimer?.setId === set.id && exerciseTimer.isRunning}
+                                            onStart={() => startExerciseTimer(set.id, set.targetTime!)}
+                                            onStop={stopExerciseTimer}
+                                          />
+                                        )}
+
+                                        {/* Show weight/reps inputs for non-time-based exercises or mixed exercises */}
+                                        {(set.targetReps !== undefined || set.targetWeight !== undefined) && (
+                                          <View style={styles.inputRow}>
+                                            <View style={styles.inputGroup}>
+                                              <Text style={styles.inputLabel}>Weight</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.weight}
+                                                onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                              />
+                                              <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+                                            </View>
+                                            <View style={styles.inputGroup}>
+                                              <Text style={styles.inputLabel}>Reps</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.reps}
+                                                onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                              />
+                                            </View>
                                           </View>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Reps</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.reps}
-                                              onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                          </View>
-                                        </View>
+                                        )}
                                         <View style={styles.setActions}>
                                           {isPending ? (
                                             <>
@@ -1316,29 +1375,44 @@ export default function ActiveWorkoutScreen() {
                                   ) : isActiveForm ? (
                                     <View style={styles.activeSetContent}>
                                       <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
-                                      <View style={styles.inputRow}>
-                                        <View style={styles.inputGroup}>
-                                          <Text style={styles.inputLabel}>Weight</Text>
-                                          <TextInput
-                                            style={styles.input}
-                                            value={values.weight}
-                                            onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
-                                            keyboardType="numeric"
-                                            placeholder="0"
-                                          />
-                                          <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+
+                                      {/* Show exercise timer for timed exercises */}
+                                      {set.targetTime !== undefined && (
+                                        <ExerciseTimer
+                                          elapsedSeconds={exerciseTimer?.setId === set.id ? exerciseTimer.elapsedSeconds : 0}
+                                          targetSeconds={set.targetTime}
+                                          isRunning={exerciseTimer?.setId === set.id && exerciseTimer.isRunning}
+                                          onStart={() => startExerciseTimer(set.id, set.targetTime!)}
+                                          onStop={stopExerciseTimer}
+                                        />
+                                      )}
+
+                                      {/* Show weight/reps inputs for non-time-based exercises or mixed exercises */}
+                                      {(set.targetReps !== undefined || set.targetWeight !== undefined) && (
+                                        <View style={styles.inputRow}>
+                                          <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>Weight</Text>
+                                            <TextInput
+                                              style={styles.input}
+                                              value={values.weight}
+                                              onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
+                                              keyboardType="numeric"
+                                              placeholder="0"
+                                            />
+                                            <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+                                          </View>
+                                          <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>Reps</Text>
+                                            <TextInput
+                                              style={styles.input}
+                                              value={values.reps}
+                                              onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
+                                              keyboardType="numeric"
+                                              placeholder="0"
+                                            />
+                                          </View>
                                         </View>
-                                        <View style={styles.inputGroup}>
-                                          <Text style={styles.inputLabel}>Reps</Text>
-                                          <TextInput
-                                            style={styles.input}
-                                            value={values.reps}
-                                            onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
-                                            keyboardType="numeric"
-                                            placeholder="0"
-                                          />
-                                        </View>
-                                      </View>
+                                      )}
                                       <View style={styles.setActions}>
                                         {isPending ? (
                                           <>
