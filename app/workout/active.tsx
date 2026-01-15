@@ -230,24 +230,32 @@ export default function ActiveWorkoutScreen() {
 
   // Initialize edit values for a set
   const initializeSetValues = (set: SessionSet) => {
-    // For completed sets, use actual values; for pending, use target as default
-    const weight = set.status === 'completed'
-      ? (set.actualWeight ?? set.targetWeight)
-      : (set.actualWeight ?? set.targetWeight);
-    const reps = set.status === 'completed'
-      ? (set.actualReps ?? set.targetReps)
-      : (set.actualReps ?? set.targetReps);
-    const time = set.status === 'completed'
-      ? (set.actualTime ?? set.targetTime)
-      : (set.actualTime ?? set.targetTime);
-    setEditValues((prev) => ({
-      ...prev,
-      [set.id]: {
-        weight: weight !== undefined ? String(weight) : '',
-        reps: reps !== undefined ? String(reps) : '',
-        time: time !== undefined ? String(time) : '',
-      },
-    }));
+    setEditValues((prev) => {
+      // If this set already has edit values (from propagation), use them
+      if (prev[set.id]?.weight !== undefined) {
+        return prev;
+      }
+
+      // For completed sets, use actual values; for pending, use target as default
+      const weight = set.status === 'completed'
+        ? (set.actualWeight ?? set.targetWeight)
+        : (set.actualWeight ?? set.targetWeight);
+      const reps = set.status === 'completed'
+        ? (set.actualReps ?? set.targetReps)
+        : (set.actualReps ?? set.targetReps);
+      const time = set.status === 'completed'
+        ? (set.actualTime ?? set.targetTime)
+        : (set.actualTime ?? set.targetTime);
+
+      return {
+        ...prev,
+        [set.id]: {
+          weight: weight !== undefined ? String(weight) : '',
+          reps: reps !== undefined ? String(reps) : '',
+          time: time !== undefined ? String(time) : '',
+        },
+      };
+    });
   };
 
   // Update a completed set's values
@@ -484,13 +492,39 @@ export default function ActiveWorkoutScreen() {
   }, [currentSetId, editingSetId, restTimer]);
 
   const updateEditValue = (setId: string, field: 'weight' | 'reps' | 'time', value: string) => {
-    setEditValues((prev) => ({
-      ...prev,
-      [setId]: {
-        ...prev[setId],
-        [field]: value,
-      },
-    }));
+    setEditValues((prev) => {
+      const updated = {
+        ...prev,
+        [setId]: {
+          ...prev[setId],
+          [field]: value,
+        },
+      };
+
+      // Propagate weight changes to remaining sets in the same exercise
+      if (field === 'weight' && activeSession) {
+        // Find the exercise containing this set
+        for (const exercise of activeSession.exercises) {
+          const setIndex = exercise.sets.findIndex(s => s.id === setId);
+          if (setIndex !== -1) {
+            const currentSet = exercise.sets[setIndex];
+            // Update all remaining (pending) sets in this exercise
+            for (let i = setIndex + 1; i < exercise.sets.length; i++) {
+              const remainingSet = exercise.sets[i];
+              if (remainingSet.status === 'pending') {
+                updated[remainingSet.id] = {
+                  ...prev[remainingSet.id],
+                  weight: value,
+                };
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleStartRest = useCallback(() => {
