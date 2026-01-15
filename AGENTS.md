@@ -1,5 +1,20 @@
 # Agent Notes for LiftMark
 
+## Platform & Technology
+- **Platform**: iOS (iPhone), future Android support
+- **Framework**: React Native with TypeScript
+- **Testing**: High test coverage required
+
+## Core Features
+1. **Workout Import**: LLM-friendly text/Markdown format
+2. **In-Workout Tracking**: Set completion + timers (rest/duration)
+3. **History**: Track workouts and exercise progress
+
+## Development Standards
+- Support light/dark mode, mobile-first (no web), comprehensive tests with accessibility
+- Clean, modular code with proper error handling
+- GitHub Actions CI/CD, EAS Build, TestFlight distribution
+
 ## Development Environment
 
 ### Expo Logs
