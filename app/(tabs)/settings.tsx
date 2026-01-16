@@ -653,6 +653,23 @@ export default function SettingsScreen() {
             testID="switch-auto-start-rest"
           />
         </View>
+
+        <View style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Keep Screen Awake</Text>
+            <Text style={styles.settingDescription}>
+              Prevent screen from sleeping during active workouts
+            </Text>
+          </View>
+          <Switch
+            value={settings.keepScreenAwake}
+            onValueChange={(value) =>
+              updateSettings({ keepScreenAwake: value })
+            }
+            trackColor={{ false: colors.border, true: colors.primary }}
+            testID="switch-keep-screen-awake"
+          />
+        </View>
       </View>
 
       {/* Gym Management Section */}

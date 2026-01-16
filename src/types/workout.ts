@@ -130,6 +130,7 @@ export interface UserSettings {
   customPromptAddition?: string; // Custom text appended to AI workout prompts
   healthKitEnabled: boolean; // Whether to sync workouts to Apple Health
   liveActivitiesEnabled: boolean; // Whether to show Live Activities on lock screen
+  keepScreenAwake: boolean; // Whether to keep screen awake during active workouts
   createdAt: string;
   updatedAt: string;
 }
@@ -269,6 +270,7 @@ export interface UserSettingsRow {
   custom_prompt_addition: string | null;
   healthkit_enabled: number; // SQLite boolean
   live_activities_enabled: number; // SQLite boolean
+  keep_screen_awake: number; // SQLite boolean
   created_at: string;
   updated_at: string;
 }

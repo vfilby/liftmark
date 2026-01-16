@@ -251,6 +251,15 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add keep_screen_awake column to user_settings if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE user_settings ADD COLUMN keep_screen_awake INTEGER DEFAULT 1`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
   // Migration: Add gym_id column to gym_equipment if it doesn't exist
   try {
     await database.runAsync(

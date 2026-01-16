@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useKeepAwake } from 'expo-keep-awake';
 
 const openYouTubeSearch = (exerciseName: string) => {
   const query = encodeURIComponent(exerciseName + ' exercise');
@@ -82,6 +83,11 @@ export default function ActiveWorkoutScreen() {
 
   const { settings } = useSettingsStore();
   const { colors } = useTheme();
+
+  // Keep screen awake during workout if setting is enabled
+  if (settings?.keepScreenAwake) {
+    useKeepAwake();
+  }
 
   // Track which non-current set is being edited (when user taps on another set)
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
