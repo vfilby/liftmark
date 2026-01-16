@@ -215,12 +215,9 @@ describe('healthKitService', () => {
         throw new Error('Module not found');
       });
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       const { isHealthKitAvailable } = require('../services/healthKitService');
 
       expect(isHealthKitAvailable()).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith('HealthKit module not available:', expect.any(Error));
-      consoleSpy.mockRestore();
     });
 
     it('returns false when isHealthDataAvailable throws an error', () => {

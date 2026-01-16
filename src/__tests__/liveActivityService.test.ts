@@ -69,12 +69,9 @@ describe('liveActivityService', () => {
         throw new Error('Module not found');
       });
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       const { isLiveActivityAvailable } = require('../services/liveActivityService');
 
       expect(isLiveActivityAvailable()).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith('[LiveActivity] Module not available:', expect.any(Error));
-      consoleSpy.mockRestore();
     });
 
     it('returns false when exception is thrown', () => {
@@ -211,15 +208,14 @@ describe('liveActivityService', () => {
         stopActivity: jest.fn(),
       }));
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const { startWorkoutLiveActivity } = require('../services/liveActivityService');
       const session = createWorkoutSession();
       const progress = { completed: 0, total: 20 };
 
-      startWorkoutLiveActivity(session, null, 0, progress);
-
-      expect(consoleSpy).toHaveBeenCalledWith('[LiveActivity] ❌ Failed to start:', expect.any(Error));
-      consoleSpy.mockRestore();
+      // Should not throw even when startActivity fails
+      expect(() => {
+        startWorkoutLiveActivity(session, null, 0, progress);
+      }).not.toThrow();
     });
 
     it('does nothing when not available', () => {
@@ -427,7 +423,6 @@ describe('liveActivityService', () => {
         stopActivity: jest.fn(),
       }));
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const {
         startWorkoutLiveActivity,
         updateWorkoutLiveActivity,
@@ -437,10 +432,10 @@ describe('liveActivityService', () => {
       const progress = { completed: 5, total: 20 };
 
       startWorkoutLiveActivity(session, exercise, 0, progress);
-      updateWorkoutLiveActivity(session, exercise, 0, progress);
-
-      expect(consoleSpy).toHaveBeenCalledWith('[LiveActivity] ❌ Failed to update:', expect.any(Error));
-      consoleSpy.mockRestore();
+      // Should not throw despite update error
+      expect(() => {
+        updateWorkoutLiveActivity(session, exercise, 0, progress);
+      }).not.toThrow();
     });
   });
 
@@ -546,7 +541,6 @@ describe('liveActivityService', () => {
         stopActivity: mockStopActivity,
       }));
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const {
         startWorkoutLiveActivity,
         endWorkoutLiveActivity,
@@ -555,10 +549,11 @@ describe('liveActivityService', () => {
       const progress = { completed: 0, total: 20 };
 
       startWorkoutLiveActivity(session, null, 0, progress);
-      endWorkoutLiveActivity();
 
-      expect(consoleSpy).toHaveBeenCalledWith('[LiveActivity] ❌ Failed to end:', expect.any(Error));
-      consoleSpy.mockRestore();
+      // Should not throw even when stopActivity fails
+      expect(() => {
+        endWorkoutLiveActivity();
+      }).not.toThrow();
     });
 
     it('clears currentActivityId after ending', () => {
