@@ -1,8 +1,9 @@
 # LiftMark Development Makefile
 
 # Dynamic port allocation for parallel workers (range: 54100-54199)
-EXPO_PORT := $(shell for p in $$(seq 54100 54199); do \
-  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
+#EXPO_PORT := $(shell for p in $$(seq 54100 54199); do \
+#  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
+EXPO_PORT := 8081
 
 .PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims
 

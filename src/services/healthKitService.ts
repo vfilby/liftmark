@@ -10,9 +10,8 @@ function getHealthKit() {
     moduleLoadAttempted = true;
     try {
       HealthKit = require('@kingstinct/react-native-healthkit');
-      console.log('HealthKit: Module loaded successfully');
     } catch (e) {
-      console.log('HealthKit module not available:', e);
+      // Module not available - silently continue
     }
   }
   return HealthKit;
@@ -49,10 +48,8 @@ export async function requestHealthKitAuthorization(): Promise<boolean> {
       toShare: [hk.WorkoutTypeIdentifier],
       toRead: [],
     });
-    console.log('HealthKit authorization result:', result);
     return result;
   } catch (error) {
-    console.log('HealthKit authorization error:', error);
     return false;
   }
 }
@@ -119,10 +116,8 @@ export async function saveWorkoutToHealthKit(
       metadata
     );
 
-    console.log('Workout saved to HealthKit:', result, 'Volume:', totalVolume);
     return { success: true, healthKitId: result?.uuid };
   } catch (error) {
-    console.log('Error saving workout to HealthKit:', error);
     return { success: false, error: String(error) };
   }
 }

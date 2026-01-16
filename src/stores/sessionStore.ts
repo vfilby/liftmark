@@ -246,13 +246,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       // Save to HealthKit if enabled
       const settings = useSettingsStore.getState().settings;
       if (settings?.healthKitEnabled && isHealthKitAvailable()) {
-        const result = await saveWorkoutToHealthKit(updatedSession);
-        if (result.success) {
-          console.log('Workout saved to HealthKit:', result.healthKitId);
-        } else {
-          console.warn('Failed to save workout to HealthKit:', result.error);
-          // Don't fail the workout completion if HealthKit fails
-        }
+        // Don't fail the workout completion if HealthKit fails
+        await saveWorkoutToHealthKit(updatedSession);
       }
 
       // End Live Activity

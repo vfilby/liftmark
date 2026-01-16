@@ -28,6 +28,7 @@
         "NSSupportsLiveActivitiesFrequentUpdates": true
       },
       "entitlements": {
+        "com.apple.developer.activity-kit": true,
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [],
         "aps-environment": "production",
