@@ -281,15 +281,16 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (restTimer?.isRunning) {
       const interval = setInterval(() => {
+        const currentTimer = useSessionStore.getState().restTimer;
         // Play countdown beeps at 3, 2, 1 seconds
-        if (restTimer.remainingSeconds <= 3 && restTimer.remainingSeconds > 0) {
+        if (currentTimer && currentTimer.remainingSeconds <= 3 && currentTimer.remainingSeconds > 0) {
           audioService.playTick();
         }
         tickRestTimer();
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [restTimer?.isRunning, restTimer?.remainingSeconds]);
+  }, [restTimer?.isRunning, tickRestTimer]);
 
   // Track if timer was running to detect when it finishes
   const wasTimerRunning = useRef(false);
@@ -312,16 +313,17 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (exerciseTimer?.isRunning) {
       const interval = setInterval(() => {
+        const currentTimer = useSessionStore.getState().exerciseTimer;
         tickExerciseTimer();
 
         // Play sound when target time is reached
-        if (exerciseTimer.elapsedSeconds + 1 === exerciseTimer.targetSeconds) {
+        if (currentTimer && currentTimer.elapsedSeconds + 1 === currentTimer.targetSeconds) {
           audioService.playComplete();
         }
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [exerciseTimer?.isRunning, exerciseTimer?.elapsedSeconds]);
+  }, [exerciseTimer?.isRunning, tickExerciseTimer]);
 
   // Handle errors
   useEffect(() => {
