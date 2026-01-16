@@ -49,3 +49,17 @@ logs/
 
 # coverage reports
 coverage/
+
+# AI/Claude Code directories
+.beads/
+.claude/
+
+# Local working directories
+deacon/
+mayor/
+settings/
+
+# Local state and config files
+state.json
+.gitattributes
+push-day-corrected.md
