@@ -9,15 +9,12 @@ import {
   Alert,
   TextInput,
   Platform,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useTheme } from '@/theme';
-import { type Gym } from '@/types';
 import {
   isHealthKitAvailable,
   requestHealthKitAuthorization,
@@ -30,50 +27,21 @@ export default function SettingsScreen() {
   const { settings, loadSettings, updateSettings, error: settingsError, clearError: clearSettingsError } =
     useSettingsStore();
   const {
-    equipment,
-    loadEquipment,
-    error: equipmentError,
-    clearError: clearEquipmentError,
-  } = useEquipmentStore();
-  const {
     gyms,
-    defaultGym,
     loadGyms,
     addGym,
-    updateGym,
     setDefaultGym,
-    removeGym,
     error: gymError,
     clearError: clearGymError,
   } = useGymStore();
 
   const [promptText, setPromptText] = useState('');
-  const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
-  const [showGymModal, setShowGymModal] = useState(false);
-  const [newGymName, setNewGymName] = useState('');
-  const [editingGym, setEditingGym] = useState<Gym | null>(null);
 
   // Load data on mount
   useEffect(() => {
     loadSettings();
     loadGyms();
   }, []);
-
-  // Set initial selected gym when gyms load
-  useEffect(() => {
-    if (defaultGym && !selectedGymId) {
-      setSelectedGymId(defaultGym.id);
-    } else if (gyms.length > 0 && !selectedGymId) {
-      setSelectedGymId(gyms[0].id);
-    }
-  }, [defaultGym, gyms, selectedGymId]);
-
-  // Load equipment when selected gym changes (for equipment count)
-  useEffect(() => {
-    if (selectedGymId) {
-      loadEquipment(selectedGymId);
-    }
-  }, [selectedGymId]);
 
   // Sync local prompt state with settings
   useEffect(() => {
@@ -84,22 +52,17 @@ export default function SettingsScreen() {
 
   // Handle errors
   useEffect(() => {
-    const error = settingsError || equipmentError || gymError;
+    const error = settingsError || gymError;
     if (error) {
       Alert.alert('Error', error, [{
         text: 'OK',
         onPress: () => {
           clearSettingsError();
-          clearEquipmentError();
           clearGymError();
         }
       }]);
     }
-  }, [settingsError, equipmentError, gymError]);
-
-  const handleWeightUnitChange = (unit: 'lbs' | 'kg') => {
-    updateSettings({ defaultWeightUnit: unit });
-  };
+  }, [settingsError, gymError]);
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
     updateSettings({ theme });
@@ -129,59 +92,28 @@ export default function SettingsScreen() {
   };
 
   // Gym management
-  const handleAddGym = async () => {
-    const trimmedName = newGymName.trim();
-    if (!trimmedName) {
-      Alert.alert('Error', 'Please enter a gym name');
-      return;
-    }
-
-    const isFirst = gyms.length === 0;
-    const newGym = await addGym(trimmedName, isFirst);
-    setNewGymName('');
-    setShowGymModal(false);
-    setSelectedGymId(newGym.id);
-  };
-
-  const handleEditGym = async () => {
-    if (!editingGym) return;
-    const trimmedName = newGymName.trim();
-    if (!trimmedName) {
-      Alert.alert('Error', 'Please enter a gym name');
-      return;
-    }
-
-    await updateGym(editingGym.id, { name: trimmedName });
-    setNewGymName('');
-    setEditingGym(null);
-    setShowGymModal(false);
-  };
-
-  const handleDeleteGym = (gym: Gym) => {
-    if (gyms.length === 1) {
-      Alert.alert('Cannot Delete', 'You must have at least one gym.');
-      return;
-    }
-
-    Alert.alert(
-      'Delete Gym',
-      `Are you sure you want to delete "${gym.name}"? All equipment associated with this gym will also be deleted.`,
+  const handleAddGym = () => {
+    Alert.prompt(
+      'Add Gym',
+      'Enter a name for your new gym',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await removeGym(gym.id);
-            if (selectedGymId === gym.id && gyms.length > 1) {
-              const remainingGym = gyms.find(g => g.id !== gym.id);
-              if (remainingGym) {
-                setSelectedGymId(remainingGym.id);
-              }
+          text: 'Add',
+          onPress: async (gymName) => {
+            const trimmedName = gymName?.trim();
+            if (!trimmedName) {
+              Alert.alert('Error', 'Please enter a gym name');
+              return;
             }
+
+            const isFirst = gyms.length === 0;
+            const newGym = await addGym(trimmedName, isFirst);
+            router.push(`/gym/${newGym.id}`);
           },
         },
-      ]
+      ],
+      'plain-text'
     );
   };
 
@@ -189,12 +121,10 @@ export default function SettingsScreen() {
     await setDefaultGym(gymId);
   };
 
-  const selectedGym = gyms.find(g => g.id === selectedGymId);
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.background,
     },
     loadingText: {
       fontSize: 16,
@@ -206,7 +136,7 @@ export default function SettingsScreen() {
       paddingHorizontal: 20,
       paddingTop: 60,
       paddingBottom: 24,
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.background,
     },
     headerTitle: {
       fontSize: 32,
@@ -218,18 +148,38 @@ export default function SettingsScreen() {
       fontSize: 15,
       color: colors.textSecondary,
     },
+    sectionGroup: {
+      marginTop: 32,
+    },
+    sectionGroupHeader: {
+      paddingHorizontal: 20,
+      paddingBottom: 8,
+      marginTop: 8,
+    },
+    sectionGroupTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
     section: {
       backgroundColor: colors.card,
-      marginTop: 16,
+      marginTop: 8,
       marginHorizontal: 16,
       paddingHorizontal: 16,
       paddingVertical: 16,
       borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 3,
       elevation: 2,
+    },
+    sectionFirst: {
+      marginTop: 12,
     },
     sectionHeader: {
       flexDirection: 'row',
@@ -271,9 +221,11 @@ export default function SettingsScreen() {
     },
     segmentedControl: {
       flexDirection: 'row',
-      backgroundColor: colors.backgroundSecondary,
+      backgroundColor: colors.backgroundTertiary,
       borderRadius: 10,
       padding: 3,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     segment: {
       paddingHorizontal: 18,
@@ -319,8 +271,8 @@ export default function SettingsScreen() {
       color: colors.textSecondary,
     },
     textInput: {
-      backgroundColor: colors.background,
-      borderWidth: 1,
+      backgroundColor: colors.backgroundSecondary,
+      borderWidth: 1.5,
       borderColor: colors.border,
       borderRadius: 8,
       padding: 12,
@@ -368,11 +320,13 @@ export default function SettingsScreen() {
       backgroundColor: colors.backgroundSecondary,
       borderRadius: 8,
       marginBottom: 8,
-    },
-    gymListItemSelected: {
-      backgroundColor: colors.primaryLight,
-      borderWidth: 2,
-      borderColor: colors.primary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
     },
     gymListItemText: {
       fontSize: 16,
@@ -390,90 +344,48 @@ export default function SettingsScreen() {
       justifyContent: 'center',
       paddingVertical: 12,
       gap: 8,
+      marginTop: 4,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
     },
     addGymButtonText: {
       fontSize: 16,
       color: colors.primary,
       fontWeight: '600',
     },
-    // Navigation styles
-    navigationRow: {
+    // Navigation section styles
+    navigationSection: {
+      paddingVertical: 0,
+    },
+    navigationContent: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
       paddingVertical: 16,
-      paddingHorizontal: 12,
-      backgroundColor: colors.backgroundSecondary,
+      gap: 12,
+    },
+    navigationIcon: {
+      width: 40,
+      height: 40,
       borderRadius: 8,
-      marginTop: 12,
+      backgroundColor: colors.backgroundSecondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    navigationInfo: {
+      flex: 1,
     },
     navigationLabel: {
       fontSize: 16,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    navigationMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    // Modal styles
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'flex-end',
-    },
-    modalContent: {
-      backgroundColor: colors.card,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      maxHeight: '80%',
-    },
-    modalHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    modalTitle: {
-      fontSize: 18,
       fontWeight: '600',
       color: colors.text,
+      marginBottom: 2,
     },
-    modalBody: {
-      padding: 16,
-    },
-    modalInput: {
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 16,
-      color: colors.text,
-      marginBottom: 16,
-    },
-    modalButton: {
-      backgroundColor: colors.primary,
-      paddingVertical: 14,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    modalButtonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    modalButtonSecondary: {
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: colors.error,
-      marginTop: 12,
-    },
-    modalButtonSecondaryText: {
-      color: colors.error,
+    navigationDescription: {
+      fontSize: 13,
+      color: colors.textSecondary,
     },
   });
 
@@ -489,7 +401,7 @@ export default function SettingsScreen() {
     <ScrollView
       style={styles.container}
       testID="settings-screen"
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: 60 }}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -497,62 +409,17 @@ export default function SettingsScreen() {
         <Text style={styles.headerSubtitle}>Customize your workout experience</Text>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="barbell-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>Units</Text>
+      {/* Preferences Group */}
+      <View style={styles.sectionGroup}>
+        <View style={styles.sectionGroupHeader}>
+          <Text style={styles.sectionGroupTitle}>Preferences</Text>
         </View>
 
-        <View style={[styles.settingRow, styles.settingRowLast]}>
-          <Text style={styles.settingLabel}>Default Weight Unit</Text>
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[
-                styles.segment,
-                styles.segmentLeft,
-                settings.defaultWeightUnit === 'lbs' && styles.segmentActive,
-              ]}
-              onPress={() => handleWeightUnitChange('lbs')}
-              testID="button-unit-lbs"
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  settings.defaultWeightUnit === 'lbs' &&
-                    styles.segmentTextActive,
-                ]}
-              >
-                LBS
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.segment,
-                styles.segmentRight,
-                settings.defaultWeightUnit === 'kg' && styles.segmentActive,
-              ]}
-              onPress={() => handleWeightUnitChange('kg')}
-              testID="button-unit-kg"
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  settings.defaultWeightUnit === 'kg' &&
-                    styles.segmentTextActive,
-                ]}
-              >
-                KG
-              </Text>
-            </TouchableOpacity>
+        <View style={[styles.section, styles.sectionFirst]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="color-palette-outline" size={20} color="#9B59B6" />
+            <Text style={styles.sectionTitle}>Appearance</Text>
           </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>Appearance</Text>
-        </View>
 
         <View style={[styles.settingRow, styles.settingRowLast]}>
           <Text style={styles.settingLabel}>Theme</Text>
@@ -612,72 +479,40 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="timer-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>Workout</Text>
-        </View>
-
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Workout Timer</Text>
-            <Text style={styles.settingDescription}>
-              Show rest timer during workouts
-            </Text>
-          </View>
-          <Switch
-            value={settings.enableWorkoutTimer}
-            onValueChange={(value) =>
-              updateSettings({ enableWorkoutTimer: value })
-            }
-            trackColor={{ false: colors.border, true: colors.primary }}
-            testID="switch-workout-timer"
-          />
-        </View>
-
-        <View style={[styles.settingRow, styles.settingRowLast]}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Auto-Start Rest Timer</Text>
-            <Text style={styles.settingDescription}>
-              Automatically start rest timer after completing a set
-            </Text>
-          </View>
-          <Switch
-            value={settings.autoStartRestTimer}
-            onValueChange={(value) =>
-              updateSettings({ autoStartRestTimer: value })
-            }
-            trackColor={{ false: colors.border, true: colors.primary }}
-            testID="switch-auto-start-rest"
-          />
-        </View>
-
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Keep Screen Awake</Text>
-            <Text style={styles.settingDescription}>
-              Prevent screen from sleeping during active workouts
-            </Text>
-          </View>
-          <Switch
-            value={settings.keepScreenAwake}
-            onValueChange={(value) =>
-              updateSettings({ keepScreenAwake: value })
-            }
-            trackColor={{ false: colors.border, true: colors.primary }}
-            testID="switch-keep-screen-awake"
-          />
         </View>
       </View>
 
-      {/* Gym Management Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="business-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>My Gyms</Text>
+      {/* Workout Group */}
+      <View style={styles.sectionGroup}>
+        <View style={styles.sectionGroupHeader}>
+          <Text style={styles.sectionGroupTitle}>Workout</Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.section, styles.sectionFirst, styles.navigationSection]}
+          onPress={() => router.push('/settings/workout')}
+          testID="workout-settings-button"
+        >
+          <View style={styles.navigationContent}>
+            <View style={styles.navigationIcon}>
+              <Ionicons name="barbell-outline" size={24} color="#FF6B35" />
+            </View>
+            <View style={styles.navigationInfo}>
+              <Text style={styles.navigationLabel}>Workout Settings</Text>
+              <Text style={styles.navigationDescription}>
+                Units, timers, and screen preferences
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Gym Management Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="business-outline" size={20} color="#E67E22" />
+            <Text style={styles.sectionTitle}>My Gyms</Text>
+          </View>
         <Text style={styles.settingDescription}>
           Manage your gym locations and their equipment
         </Text>
@@ -685,11 +520,8 @@ export default function SettingsScreen() {
         {gyms.map((gym) => (
           <TouchableOpacity
             key={gym.id}
-            style={[
-              styles.gymListItem,
-              selectedGymId === gym.id && styles.gymListItemSelected,
-            ]}
-            onPress={() => setSelectedGymId(gym.id)}
+            style={styles.gymListItem}
+            onPress={() => router.push(`/gym/${gym.id}`)}
             testID={`gym-item-${gym.id}`}
           >
             <Text style={styles.gymListItemText}>{gym.name}</Text>
@@ -701,90 +533,45 @@ export default function SettingsScreen() {
               )}
               {!gym.isDefault && (
                 <TouchableOpacity
-                  onPress={() => handleSetDefaultGym(gym.id)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleSetDefaultGym(gym.id);
+                  }}
                   testID={`set-default-${gym.id}`}
                 >
                   <Ionicons name="star-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                onPress={() => {
-                  setEditingGym(gym);
-                  setNewGymName(gym.name);
-                  setShowGymModal(true);
-                }}
-                testID={`edit-gym-${gym.id}`}
-              >
-                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-              {gyms.length > 1 && (
-                <TouchableOpacity
-                  onPress={() => handleDeleteGym(gym)}
-                  testID={`delete-gym-${gym.id}`}
-                >
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
-                </TouchableOpacity>
-              )}
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
         ))}
 
         <TouchableOpacity
           style={styles.addGymButton}
-          onPress={() => {
-            setEditingGym(null);
-            setNewGymName('');
-            setShowGymModal(true);
-          }}
+          onPress={handleAddGym}
           testID="add-gym-button"
         >
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
           <Text style={styles.addGymButtonText}>Add Gym</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navigationRow}
-          onPress={() => router.push('/equipment')}
-          testID="manage-equipment-button"
-        >
-          <Text style={styles.navigationLabel}>Manage Equipment</Text>
-          <View style={styles.navigationMeta}>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>Notifications</Text>
-        </View>
-
-        <View style={[styles.settingRow, styles.settingRowLast]}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Enable Notifications</Text>
-            <Text style={styles.settingDescription}>
-              Receive workout reminders and rest alerts
-            </Text>
-          </View>
-          <Switch
-            value={settings.notificationsEnabled}
-            onValueChange={(value) =>
-              updateSettings({ notificationsEnabled: value })
-            }
-            trackColor={{ false: colors.border, true: colors.primary }}
-            testID="switch-notifications"
-          />
         </View>
       </View>
 
-      {/* Only show HealthKit settings on iOS */}
-      {Platform.OS === 'ios' && isHealthKitAvailable() && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="heart-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Apple Health</Text>
+      {/* Integrations Group */}
+      {(Platform.OS === 'ios' && (isHealthKitAvailable() || isLiveActivityAvailable())) && (
+        <View style={styles.sectionGroup}>
+          <View style={styles.sectionGroupHeader}>
+            <Text style={styles.sectionGroupTitle}>Integrations</Text>
           </View>
+
+          {/* Only show HealthKit settings on iOS */}
+          {isHealthKitAvailable() && (
+          <View style={[styles.section, styles.sectionFirst]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="heart-outline" size={20} color="#E74C3C" />
+              <Text style={styles.sectionTitle}>Apple Health</Text>
+            </View>
 
           <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingInfo}>
@@ -800,16 +587,16 @@ export default function SettingsScreen() {
               testID="switch-healthkit"
             />
           </View>
-        </View>
-      )}
-
-      {/* Only show Live Activities settings on iOS */}
-      {Platform.OS === 'ios' && isLiveActivityAvailable() && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Live Activities</Text>
           </View>
+          )}
+
+          {/* Only show Live Activities settings on iOS */}
+          {isLiveActivityAvailable() && (
+          <View style={[styles.section, !isHealthKitAvailable() && styles.sectionFirst]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="phone-portrait-outline" size={20} color="#3498DB" />
+              <Text style={styles.sectionTitle}>Live Activities</Text>
+            </View>
 
           <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingInfo}>
@@ -827,14 +614,22 @@ export default function SettingsScreen() {
               testID="switch-live-activities"
             />
           </View>
+          </View>
+          )}
         </View>
       )}
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="sparkles-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>AI Workout Prompts</Text>
+      {/* AI Group */}
+      <View style={styles.sectionGroup}>
+        <View style={styles.sectionGroupHeader}>
+          <Text style={styles.sectionGroupTitle}>AI Assistance</Text>
         </View>
+
+        <View style={[styles.section, styles.sectionFirst]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="sparkles-outline" size={20} color="#9B59B6" />
+            <Text style={styles.sectionTitle}>Workout Prompts</Text>
+          </View>
 
         <View style={styles.settingInfo}>
           <Text style={styles.settingLabel}>Custom Prompt Addition</Text>
@@ -852,13 +647,20 @@ export default function SettingsScreen() {
           onBlur={handlePromptBlur}
           testID="input-custom-prompt"
         />
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>About</Text>
+      {/* About Group */}
+      <View style={styles.sectionGroup}>
+        <View style={styles.sectionGroupHeader}>
+          <Text style={styles.sectionGroupTitle}>About</Text>
         </View>
+
+        <View style={[styles.section, styles.sectionFirst]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="information-circle-outline" size={20} color="#95A5A6" />
+            <Text style={styles.sectionTitle}>App Information</Text>
+          </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Version</Text>
@@ -869,62 +671,9 @@ export default function SettingsScreen() {
           <Text style={styles.infoLabel}>Build</Text>
           <Text style={styles.infoValue}>MVP</Text>
         </View>
+        </View>
       </View>
 
-      {/* Add/Edit Gym Modal */}
-      <Modal
-        visible={showGymModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowGymModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingGym ? 'Edit Gym' : 'Add Gym'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowGymModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Gym name (e.g., Home Gym, LA Fitness)"
-                placeholderTextColor={colors.textMuted}
-                value={newGymName}
-                onChangeText={setNewGymName}
-                autoFocus
-                testID="input-gym-name"
-              />
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={editingGym ? handleEditGym : handleAddGym}
-                testID="save-gym-button"
-              >
-                <Text style={styles.modalButtonText}>
-                  {editingGym ? 'Save Changes' : 'Add Gym'}
-                </Text>
-              </TouchableOpacity>
-              {editingGym && gyms.length > 1 && (
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonSecondary]}
-                  onPress={() => {
-                    setShowGymModal(false);
-                    handleDeleteGym(editingGym);
-                  }}
-                  testID="delete-gym-modal-button"
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonSecondaryText]}>
-                    Delete Gym
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }

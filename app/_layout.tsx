@@ -71,10 +71,19 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="equipment/index"
+        name="gym/[id]"
         options={{
-          title: 'Equipment',
-          headerBackTitle: 'Back',
+          title: 'Gym Details',
+          headerBackTitle: 'Settings',
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="settings/workout"
+        options={{
+          title: 'Workout Settings',
+          headerBackTitle: 'Settings',
+          presentation: 'card',
         }}
       />
     </Stack>
