@@ -238,20 +238,20 @@ Focus on driving through the floor.
    - Number (integer or decimal)
    - Can be omitted for bodyweight exercises
 
-2. **Unit**:
+2. **Weight Unit**:
    - `lbs` - Pounds
    - `kg` - Kilograms
    - `bw` - Bodyweight (can be omitted if no weight specified)
 
-3. **Reps**:
+3. **Reps** (optional for time-based):
    - Number (integer)
    - `AMRAP` - As Many Reps As Possible
    - Can be omitted for time-based exercises
 
-4. **Reps Unit** (optional):
+4. **Time/Rep Unit** (optional):
    - `reps` - Repetitions (default, can be omitted)
-   - `s` or `sec` - Seconds (for time-based)
-   - `m` or `min` - Minutes
+   - `s` or `sec` - Seconds (for time-based exercises)
+   - `m` or `min` - Minutes (for time-based exercises)
 
 ### Flexible Formats
 
@@ -291,43 +291,55 @@ All of these are valid:
 
 ## Modifiers
 
-Modifiers provide additional context for each set. They use `@key: value` format at the end of the set line.
+Modifiers provide functional metadata that affects how the app behaves. They use `@key: value` format at the end of the set line.
+
+**Design Philosophy**: Only include modifiers that change app behavior. Descriptive information (tempo, effort level, etc.) should be written as freeform notes since the app displays them anyway.
 
 ### Available Modifiers
 
 | Modifier | Values | Description | Example |
 |----------|--------|-------------|---------|
-| `@rpe` | 1-10 | Rate of Perceived Exertion (10 = max effort) | `@rpe: 8` |
-| `@rest` | Number + `s`/`m` | Rest period after set | `@rest: 180s` or `@rest: 3m` |
-| `@tempo` | X-X-X-X | Tempo (eccentric-pause-concentric-pause) in seconds | `@tempo: 3-0-1-0` |
-| `@dropset` | flag | Drop set indicator (presence = true) | `@dropset` |
+| `@rest` | Number + `s`/`m` | Rest timer after set (triggers countdown in app) | `@rest: 180s` or `@rest: 3m` |
+| `@dropset` | flag | Drop set indicator (changes UI tracking) | `@dropset` |
 
 ### Examples
 
 ```markdown
-# RPE tracking
-- 225 lbs x 5 reps @rpe: 7
-- 245 lbs x 5 reps @rpe: 9
-- 265 lbs x 3 reps @rpe: 10  # Max effort
-
-# Rest periods
+# Rest periods (triggers timer in app)
 - 315 lbs x 3 reps @rest: 3m
 - 315 lbs x 3 reps @rest: 180s
 
-# Tempo
-- 185 lbs x 8 reps @tempo: 3-0-1-0 @rest: 90s
-
-# Multiple modifiers
-- 225 lbs x 5 reps @rpe: 8 @rest: 180s
-
-# AMRAP (to failure implied)
-- 135 lbs x AMRAP
-- bw x AMRAP @rpe: 10
-
-# Drop set
+# Drop set (UI shows connected sets)
 - 100 lbs x 12 reps
 - 70 lbs x 10 reps @dropset
 - 50 lbs x 8 reps @dropset
+
+# Multiple modifiers
+- 225 lbs x 5 reps @rest: 180s
+
+# AMRAP (to failure implied)
+- 135 lbs x AMRAP
+- bw x AMRAP
+
+## Descriptive Information (Use Freeform Notes)
+
+For tempo, RPE, and other descriptive data, use freeform notes:
+
+## Bench Press
+
+Going for slow tempo today - 3-0-1-0 on all sets.
+Felt really strong, first set was maybe a 7, last set was a hard 9.
+
+- 185 lbs x 8 reps @rest: 90s
+- 205 lbs x 6 reps @rest: 90s
+- 225 lbs x 4 reps @rest: 90s
+
+## Pause Squat
+
+2 second pause at bottom, really focusing on staying tight.
+
+- 315 lbs x 3 reps @rest: 180s
+- 315 lbs x 3 reps @rest: 180s
 ```
 
 ---
@@ -369,22 +381,23 @@ Competition prep, 4 weeks out. Feeling good, bodyweight at 220.
 ## Low Bar Squat
 
 Competition depth, belt on work sets starting at 315.
+Warmups felt easy (RPE 4-5), working sets got tough (8-9.5).
 
-- 135 lbs x 5 reps @rpe: 4 @rest: 60s
-- 225 lbs x 5 reps @rpe: 5 @rest: 90s
-- 315 lbs x 3 reps @rpe: 6 @rest: 120s
-- 365 lbs x 1 reps @rpe: 7 @rest: 180s
-- 405 lbs x 3 reps @rpe: 8 @rest: 300s
-- 405 lbs x 3 reps @rpe: 9 @rest: 300s
-- 405 lbs x 3 reps @rpe: 9.5 @rest: 300s
+- 135 lbs x 5 reps @rest: 60s
+- 225 lbs x 5 reps @rest: 90s
+- 315 lbs x 3 reps @rest: 120s
+- 365 lbs x 1 reps @rest: 180s
+- 405 lbs x 3 reps @rest: 300s
+- 405 lbs x 3 reps @rest: 300s
+- 405 lbs x 3 reps @rest: 300s
 
 ## Pause Squat
 
-2 second pause at bottom, no belt.
+2 second pause at bottom, 3-2-3-0 tempo, no belt.
 
-- 315 lbs x 3 reps @tempo: 3-2-3-0 @rest: 180s
-- 315 lbs x 3 reps @tempo: 3-2-3-0 @rest: 180s
-- 315 lbs x 3 reps @tempo: 3-2-3-0 @rest: 180s
+- 315 lbs x 3 reps @rest: 180s
+- 315 lbs x 3 reps @rest: 180s
+- 315 lbs x 3 reps @rest: 180s
 
 ## Front Squat
 - 225 lbs x 5 reps @rest: 120s
@@ -509,7 +522,9 @@ Adding weight on last two sets.
 
 ## Snatch
 @type: barbell
-@notes: Focus on third pull, fast elbows
+
+Focus on third pull, fast elbows.
+
 - 45 lbs x 5 reps @rest: 90s
 - 75 lbs x 3 reps @rest: 90s
 - 95 lbs x 2 reps @rest: 120s
@@ -604,15 +619,21 @@ Quick conditioning session.
 - 95 lbs x 5
 
 ## Bench Press
+
+Last two sets felt hard - 8/10 and 9/10 effort.
+
 - 135 lbs x 5 @rest: 120s
 - 185 lbs x 5 @rest: 180s
-- 225 lbs x 5 @rpe: 8 @rest: 180s
-- 245 lbs x 3 @rpe: 9
+- 225 lbs x 5 @rest: 180s
+- 245 lbs x 3
 
 ## Overhead Press
+
+Final set was tough, really close to failure.
+
 - 95 lbs x 8 @rest: 90s
 - 115 lbs x 8 @rest: 90s
-- 135 lbs x 6 @rpe: 8
+- 135 lbs x 6
 
 ## Cooldown
 
@@ -672,11 +693,9 @@ Eyes closed on last set.
 6. ✅ Sets must start with `-` (list item)
 7. ✅ Weight must be positive number (if provided)
 8. ✅ Reps must be positive number or "AMRAP" (if provided)
-9. ✅ Time must be positive number with valid unit (s/sec/m/min)
-10. ✅ RPE must be between 1-10 (if provided)
-11. ✅ Rest time must be positive number (if provided)
-12. ✅ Tempo must be X-X-X-X format with single digits (if provided)
-13. ✅ Default units must be "lbs" or "kg" (if provided)
+9. ✅ Time must be positive number with valid unit (s/sec/m/min) (if provided)
+10. ✅ Rest time must be positive number with valid unit (s/sec/m/min) (if provided)
+11. ✅ Default units must be "lbs" or "kg" (if provided)
 
 ### Warnings (non-blocking)
 - ⚠️ Duplicate exercise names (suggests merge or rename)
@@ -717,13 +736,13 @@ Some notes but no exercises.
 ```
 ❌ Error: Weight cannot be negative
 
-**Invalid - Invalid RPE:**
+**Invalid - Invalid rest time:**
 ```markdown
 # Workout: Test
 ## Bench Press
-- 225 x 5 @rpe: 11
+- 225 x 5 @rest: -30s
 ```
-❌ Error: RPE must be between 1-10
+❌ Error: Rest time must be positive
 
 **Invalid - Invalid units:**
 ```markdown
@@ -972,7 +991,8 @@ Format requirements:
 - Exercise notes are freeform text after exercise header
 - Sets format: - [weight] [unit] x [reps] or - [weight] [unit] for [time]
 - If @units is set, weight units can be omitted: - [weight] x [reps]
-- Optional modifiers: @rpe (1-10), @rest (time), @tempo (X-X-X-X), @dropset (flag)
+- Functional modifiers: @rest (triggers timer), @dropset (UI behavior)
+- Descriptive data (tempo, RPE, etc.) goes in freeform notes
 - For supersets, use nested headers (e.g., ## Superset: Arms, then ### Exercise1, ### Exercise2)
 - AMRAP implies to failure (no need for separate failure flag)
 
@@ -986,10 +1006,11 @@ Feeling good today, going for PRs.
 ## Bench Press
 
 Focus on bar path and leg drive.
+Last set felt like an 8/10 effort.
 
 - 135 x 5 @rest: 120s
 - 185 x 5 @rest: 180s
-- 225 x 5 @rpe: 8
+- 225 x 5
 
 ## Plank
 - 45 for 60s
@@ -1000,11 +1021,17 @@ Focus on bar path and leg drive.
 
 ## Changelog
 
+### Version 1.1 (2026-01-16)
+- Simplified modifiers to only functional ones: `@rest`, `@dropset`
+- Removed `@rpe` and `@tempo` - use freeform notes instead
+- Clarified time units in set format components
+- Updated examples to use freeform notes for descriptive data
+
 ### Version 1.0 (2026-01-03)
 - Initial specification
 - Basic workout structure
 - Exercise and set format
-- Modifiers: rpe, rest, tempo, failure, dropset, rir
+- Modifiers: rpe, rest, tempo, dropset
 - Superset and circuit support
 
 ---
@@ -1027,9 +1054,10 @@ Based on user feedback, the following design decisions were implemented:
 6. ✅ **Name = Header**: Header text is the name, no prefix needed
 7. ✅ **Superset Support**: Uses nested headers (e.g., `## Superset: Arms` with `### Exercise` children)
 8. ✅ **Simplified Modifiers**:
-   - Only `@rpe` (removed `@rir` - redundant with RPE)
+   - Only functional modifiers: `@rest` (triggers timer), `@dropset` (changes UI)
+   - Removed `@rpe` and `@tempo` - use freeform notes instead
    - `@dropset` is a flag, not `@dropset: true`
-   - AMRAP implies failure, no `@failure` flag needed
+   - AMRAP implies failure, no separate flag needed
 
 ## Open Questions for Review
 
@@ -1040,6 +1068,6 @@ Based on user feedback, the following design decisions were implemented:
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-01-03
+**Document Version:** 1.1
+**Last Updated:** 2026-01-16
 **Status:** Draft - Ready for Review
