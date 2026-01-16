@@ -43,6 +43,7 @@ function createSettingsRow(overrides: Partial<{
   notifications_enabled: number;
   custom_prompt_addition: string | null;
   healthkit_enabled: number;
+  keep_screen_awake: number;
   created_at: string;
   updated_at: string;
 }> = {}) {
@@ -55,6 +56,7 @@ function createSettingsRow(overrides: Partial<{
     notifications_enabled: 1,
     custom_prompt_addition: null,
     healthkit_enabled: 0,
+    keep_screen_awake: 0,
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     ...overrides,
@@ -154,6 +156,7 @@ describe('settingsStore', () => {
         notificationsEnabled: false,
         customPromptAddition: 'Custom AI prompt',
         healthKitEnabled: true,
+        keepScreenAwake: false,
         liveActivitiesEnabled: false,
         createdAt: '2024-01-15T10:00:00Z',
         updatedAt: '2024-01-15T10:00:00Z',
