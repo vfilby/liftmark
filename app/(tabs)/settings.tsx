@@ -100,7 +100,7 @@ export default function SettingsScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Add',
-          onPress: async (gymName) => {
+          onPress: async (gymName: string | undefined) => {
             const trimmedName = gymName?.trim();
             if (!trimmedName) {
               Alert.alert('Error', 'Please enter a gym name');
