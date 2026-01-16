@@ -5,7 +5,7 @@
 #  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
 EXPO_PORT := 8081
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims
+.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production
 
 # Default target
 help:
@@ -55,9 +55,12 @@ help:
 	@echo "  make logs-clean - Clean all log files"
 	@echo ""
 	@echo "Release commands:"
-	@echo "  make release-alpha      - Create alpha release"
-	@echo "  make release-beta       - Create beta release" 
-	@echo "  make release-production - Create production release"
+	@echo "  make release-alpha             - Create alpha release (auto-cleanup on conflict)"
+	@echo "  make release-beta              - Create beta release (auto-cleanup on conflict)"
+	@echo "  make release-production        - Create production release (auto-cleanup on conflict)"
+	@echo "  make release-cleanup-alpha     - Manually cleanup failed alpha release"
+	@echo "  make release-cleanup-beta      - Manually cleanup failed beta release"
+	@echo "  make release-cleanup-production - Manually cleanup failed production release"
 
 # Development servers
 server:
@@ -153,18 +156,34 @@ ci:
 # Release commands
 release-alpha:
 	@echo "🚀 Creating alpha release and triggering TestFlight deployment..."
-	npm run release:alpha
-	gh workflow run "Deploy to TestFlight" --field profile=preview
+	@npm run release:alpha
+	@echo "📲 Triggering TestFlight deployment..."
+	@gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-beta:
 	@echo "🚀 Creating beta release and triggering TestFlight deployment..."
-	npm run release:beta
-	gh workflow run "Deploy to TestFlight" --field profile=preview
+	@npm run release:beta
+	@echo "📲 Triggering TestFlight deployment..."
+	@gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-production:
 	@echo "🚀 Creating production release and triggering TestFlight deployment..."
-	npm run release:production
-	gh workflow run "Deploy to TestFlight" --field profile=production
+	@npm run release:production
+	@echo "📲 Triggering TestFlight deployment..."
+	@gh workflow run "Deploy to TestFlight" --field profile=production
+
+# Release cleanup commands
+release-cleanup-alpha:
+	@echo "🗑️  Cleaning up failed alpha release..."
+	@npm run release:cleanup:alpha
+
+release-cleanup-beta:
+	@echo "🗑️  Cleaning up failed beta release..."
+	@npm run release:cleanup:beta
+
+release-cleanup-production:
+	@echo "🗑️  Cleaning up failed production release..."
+	@npm run release:cleanup:production
 
 # Additional useful targets
 logs:
