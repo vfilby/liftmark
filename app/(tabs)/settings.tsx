@@ -194,7 +194,7 @@ export default function SettingsScreen() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colors.backgroundSecondary,
     },
     loadingText: {
       fontSize: 16,
@@ -202,25 +202,57 @@ export default function SettingsScreen() {
       textAlign: 'center',
       marginTop: 100,
     },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 24,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    headerTitle: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    headerSubtitle: {
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
     section: {
       backgroundColor: colors.card,
-      marginTop: 24,
+      marginTop: 16,
+      marginHorizontal: 16,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 16,
+      borderRadius: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 16,
     },
     sectionTitle: {
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: '600',
-      color: colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginBottom: 12,
+      color: colors.text,
     },
     settingRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+    },
+    settingRowLast: {
+      borderBottomWidth: 0,
     },
     settingInfo: {
       flex: 1,
@@ -234,16 +266,18 @@ export default function SettingsScreen() {
     settingDescription: {
       fontSize: 13,
       color: colors.textSecondary,
+      lineHeight: 18,
+      marginBottom: 12,
     },
     segmentedControl: {
       flexDirection: 'row',
-      backgroundColor: colors.borderLight,
-      borderRadius: 8,
-      padding: 2,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 10,
+      padding: 3,
     },
     segment: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
     },
     segmentLeft: {
       borderTopLeftRadius: 6,
@@ -268,7 +302,13 @@ export default function SettingsScreen() {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+    },
+    infoRowLast: {
+      borderBottomWidth: 0,
     },
     infoLabel: {
       fontSize: 16,
@@ -323,12 +363,16 @@ export default function SettingsScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      paddingVertical: 14,
+      paddingHorizontal: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      marginBottom: 8,
     },
     gymListItemSelected: {
       backgroundColor: colors.primaryLight,
+      borderWidth: 2,
+      borderColor: colors.primary,
     },
     gymListItemText: {
       fontSize: 16,
@@ -358,8 +402,9 @@ export default function SettingsScreen() {
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingVertical: 16,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      paddingHorizontal: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
       marginTop: 12,
     },
     navigationLabel: {
@@ -441,11 +486,24 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} testID="settings-screen">
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Units</Text>
+    <ScrollView
+      style={styles.container}
+      testID="settings-screen"
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerSubtitle}>Customize your workout experience</Text>
+      </View>
 
-        <View style={styles.settingRow}>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="barbell-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Units</Text>
+        </View>
+
+        <View style={[styles.settingRow, styles.settingRowLast]}>
           <Text style={styles.settingLabel}>Default Weight Unit</Text>
           <View style={styles.segmentedControl}>
             <TouchableOpacity
@@ -491,9 +549,12 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Appearance</Text>
+        </View>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, styles.settingRowLast]}>
           <Text style={styles.settingLabel}>Theme</Text>
           <View style={styles.segmentedControl}>
             <TouchableOpacity
@@ -554,7 +615,10 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Workout</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="timer-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Workout</Text>
+        </View>
 
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
@@ -573,7 +637,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, styles.settingRowLast]}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Auto-Start Rest Timer</Text>
             <Text style={styles.settingDescription}>
@@ -593,7 +657,10 @@ export default function SettingsScreen() {
 
       {/* Gym Management Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Gyms</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="business-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>My Gyms</Text>
+        </View>
         <Text style={styles.settingDescription}>
           Manage your gym locations and their equipment
         </Text>
@@ -671,9 +738,12 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Notifications</Text>
+        </View>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, styles.settingRowLast]}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Enable Notifications</Text>
             <Text style={styles.settingDescription}>
@@ -694,9 +764,12 @@ export default function SettingsScreen() {
       {/* Only show HealthKit settings on iOS */}
       {Platform.OS === 'ios' && isHealthKitAvailable() && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Apple Health</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="heart-outline" size={20} color={colors.primary} />
+            <Text style={styles.sectionTitle}>Apple Health</Text>
+          </View>
 
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Sync to Apple Health</Text>
               <Text style={styles.settingDescription}>
@@ -716,9 +789,12 @@ export default function SettingsScreen() {
       {/* Only show Live Activities settings on iOS */}
       {Platform.OS === 'ios' && isLiveActivityAvailable() && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Live Activities</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
+            <Text style={styles.sectionTitle}>Live Activities</Text>
+          </View>
 
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Lock Screen Widget</Text>
               <Text style={styles.settingDescription}>
@@ -738,7 +814,10 @@ export default function SettingsScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>AI Prompt</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="sparkles-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>AI Workout Prompts</Text>
+        </View>
 
         <View style={styles.settingInfo}>
           <Text style={styles.settingLabel}>Custom Prompt Addition</Text>
@@ -759,14 +838,17 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>About</Text>
+        </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Version</Text>
           <Text style={styles.infoValue}>1.0.0</Text>
         </View>
 
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, styles.infoRowLast]}>
           <Text style={styles.infoLabel}>Build</Text>
           <Text style={styles.infoValue}>MVP</Text>
         </View>
