@@ -19,9 +19,9 @@
     "release:alpha": "npm run prerelease:check && node scripts/release-helper.js alpha",
     "release:beta": "npm run prerelease:check && node scripts/release-helper.js beta",
     "release:production": "npm run prerelease:check && node scripts/release-helper.js production",
-    "release:cleanup:alpha": "node -e \"const { execSync } = require('child_process'); const v = require('./package.json').version; const tag = 'alpha-v' + v; try { execSync('gh release delete ' + tag + ' --yes', {stdio: 'inherit'}); } catch(e) {} try { execSync('git tag -d ' + tag, {stdio: 'inherit'}); } catch(e) {} try { execSync('git push origin :refs/tags/' + tag, {stdio: 'inherit'}); } catch(e) {} console.log('✅ Cleaned up alpha release artifacts');\"",
-    "release:cleanup:beta": "node -e \"const { execSync } = require('child_process'); const v = require('./package.json').version; const tag = 'beta-v' + v; try { execSync('gh release delete ' + tag + ' --yes', {stdio: 'inherit'}); } catch(e) {} try { execSync('git tag -d ' + tag, {stdio: 'inherit'}); } catch(e) {} try { execSync('git push origin :refs/tags/' + tag, {stdio: 'inherit'}); } catch(e) {} console.log('✅ Cleaned up beta release artifacts');\"",
-    "release:cleanup:production": "node -e \"const { execSync } = require('child_process'); const v = require('./package.json').version; const tag = 'v' + v; try { execSync('gh release delete ' + tag + ' --yes', {stdio: 'inherit'}); } catch(e) {} try { execSync('git tag -d ' + tag, {stdio: 'inherit'}); } catch(e) {} try { execSync('git push origin :refs/tags/' + tag, {stdio: 'inherit'}); } catch(e) {} console.log('✅ Cleaned up production release artifacts');\"
+    "release:cleanup:alpha": "node scripts/cleanup-release.js alpha",
+    "release:cleanup:beta": "node scripts/cleanup-release.js beta",
+    "release:cleanup:production": "node scripts/cleanup-release.js production"
   },
   "dependencies": {
     "@kingstinct/react-native-healthkit": "^13.1.0",
