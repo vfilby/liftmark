@@ -269,6 +269,51 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Create sync tables for CloudKit synchronization
+  await database.execAsync(`
+    -- Sync Metadata (stores sync state and tokens)
+    CREATE TABLE IF NOT EXISTS sync_metadata (
+      id TEXT PRIMARY KEY,
+      device_id TEXT NOT NULL,
+      last_sync_date TEXT,
+      server_change_token TEXT,
+      sync_enabled INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Sync Queue (pending operations to sync)
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id TEXT PRIMARY KEY,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      operation TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      last_attempt_at TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    -- Sync Conflicts (for debugging conflict resolution)
+    CREATE TABLE IF NOT EXISTS sync_conflicts (
+      id TEXT PRIMARY KEY,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      local_data TEXT NOT NULL,
+      remote_data TEXT NOT NULL,
+      resolution TEXT NOT NULL,
+      resolved_at TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    -- Indexes for sync tables
+    CREATE INDEX IF NOT EXISTS idx_sync_queue_entity
+      ON sync_queue(entity_type, entity_id);
+
+    CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity
+      ON sync_conflicts(entity_type, entity_id);
+  `);
+
   // Migration: Create default gym and migrate existing equipment
   try {
     const { generateId } = await import('@/utils/id');

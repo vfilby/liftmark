@@ -168,6 +168,9 @@ export async function createSessionFromTemplate(
     }
 
     await db.execAsync('COMMIT');
+
+    // Sync hook: Add to sync queue
+    await afterCreateSessionHook(session);
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
@@ -236,6 +239,9 @@ export async function updateSession(session: WorkoutSession): Promise<void> {
       session.id,
     ]
   );
+
+  // Sync hook: Add to sync queue
+  await afterUpdateSessionHook(session);
 }
 
 /**
@@ -285,6 +291,9 @@ export async function updateSessionExercise(
 export async function deleteSession(id: string): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM workout_sessions WHERE id = ?', [id]);
+
+  // Sync hook: Add to sync queue
+  await afterDeleteSessionHook(id);
 }
 
 /**
@@ -485,4 +494,53 @@ function rowToSessionSet(row: SessionSetRow): SessionSet {
     isDropset: row.is_dropset === 1,
     isPerSide: row.is_per_side === 1,
   };
+}
+
+// ============================================================================
+// Sync Hooks
+// ============================================================================
+
+/**
+ * Hook called after creating a session
+ */
+async function afterCreateSessionHook(session: WorkoutSession): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue('WorkoutSession', session.id, 'create', session);
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (create session):', error);
+  }
+}
+
+/**
+ * Hook called after updating a session
+ */
+async function afterUpdateSessionHook(session: WorkoutSession): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue('WorkoutSession', session.id, 'update', session);
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (update session):', error);
+  }
+}
+
+/**
+ * Hook called after deleting a session
+ */
+async function afterDeleteSessionHook(sessionId: string): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue('WorkoutSession', sessionId, 'delete', { id: sessionId });
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (delete session):', error);
+  }
 }

@@ -95,6 +95,9 @@ export async function createWorkoutTemplate(
     }
 
     await db.execAsync('COMMIT');
+
+    // Sync hook: Add to sync queue
+    await afterCreateHook('WorkoutTemplate', template);
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
@@ -145,6 +148,9 @@ export async function updateWorkoutTemplate(
     }
 
     await db.execAsync('COMMIT');
+
+    // Sync hook: Add to sync queue
+    await afterUpdateHook('WorkoutTemplate', template);
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
@@ -157,6 +163,9 @@ export async function updateWorkoutTemplate(
 export async function deleteWorkoutTemplate(id: string): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM workout_templates WHERE id = ?', [id]);
+
+  // Sync hook: Add to sync queue
+  await afterDeleteHook('WorkoutTemplate', id);
 }
 
 /**
@@ -366,4 +375,62 @@ function rowToTemplateSet(row: TemplateSetRow): TemplateSet {
     isDropset: row.is_dropset === 1,
     isPerSide: row.is_per_side === 1,
   };
+}
+
+// ============================================================================
+// Sync Hooks
+// ============================================================================
+
+/**
+ * Hook called after creating a template
+ */
+async function afterCreateHook(
+  entityType: 'WorkoutTemplate',
+  entity: WorkoutTemplate
+): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue(entityType, entity.id, 'create', entity);
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (create):', error);
+  }
+}
+
+/**
+ * Hook called after updating a template
+ */
+async function afterUpdateHook(
+  entityType: 'WorkoutTemplate',
+  entity: WorkoutTemplate
+): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue(entityType, entity.id, 'update', entity);
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (update):', error);
+  }
+}
+
+/**
+ * Hook called after deleting a template
+ */
+async function afterDeleteHook(
+  entityType: 'WorkoutTemplate',
+  entityId: string
+): Promise<void> {
+  try {
+    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    await addToSyncQueue(entityType, entityId, 'delete', { id: entityId });
+    triggerSyncAfterChange();
+  } catch (error) {
+    console.error('Sync hook failed (delete):', error);
+  }
 }

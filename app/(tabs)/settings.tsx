@@ -559,15 +559,35 @@ export default function SettingsScreen() {
       </View>
 
       {/* Integrations Group */}
-      {(Platform.OS === 'ios' && (isHealthKitAvailable() || isLiveActivityAvailable())) && (
+      {Platform.OS === 'ios' && (
         <View style={styles.sectionGroup}>
           <View style={styles.sectionGroupHeader}>
             <Text style={styles.sectionGroupTitle}>Integrations</Text>
           </View>
 
+          {/* iCloud Sync */}
+          <TouchableOpacity
+            style={[styles.section, styles.sectionFirst, styles.navigationSection]}
+            onPress={() => router.push('/settings/sync')}
+            testID="sync-settings-button"
+          >
+            <View style={styles.navigationContent}>
+              <View style={styles.navigationIcon}>
+                <Ionicons name="cloud-outline" size={24} color="#007AFF" />
+              </View>
+              <View style={styles.navigationInfo}>
+                <Text style={styles.navigationLabel}>iCloud Sync</Text>
+                <Text style={styles.navigationDescription}>
+                  Sync workouts across all your devices
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </View>
+          </TouchableOpacity>
+
           {/* Only show HealthKit settings on iOS */}
           {isHealthKitAvailable() && (
-          <View style={[styles.section, styles.sectionFirst]}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="heart-outline" size={20} color="#E74C3C" />
               <Text style={styles.sectionTitle}>Apple Health</Text>
@@ -592,7 +612,7 @@ export default function SettingsScreen() {
 
           {/* Only show Live Activities settings on iOS */}
           {isLiveActivityAvailable() && (
-          <View style={[styles.section, !isHealthKitAvailable() && styles.sectionFirst]}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="phone-portrait-outline" size={20} color="#3498DB" />
               <Text style={styles.sectionTitle}>Live Activities</Text>
