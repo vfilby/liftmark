@@ -791,8 +791,8 @@ function parseMainSetContent(
     if (repsOrTime === 'amrap') {
       return {
         set: {
-          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          weight: weightUnit === 'bw' ? undefined : weight,
+          weightUnit: weightUnit === 'bw' ? undefined : weightUnit,
           isAmrap: true,
         },
         trailingText: trailing || undefined,
@@ -816,8 +816,8 @@ function parseMainSetContent(
       const seconds = normalizeTimeToSeconds(value, repsUnit);
       return {
         set: {
-          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          weight: weightUnit === 'bw' ? undefined : weight,
+          weightUnit: weightUnit === 'bw' ? undefined : weightUnit,
           time: seconds,
         },
         trailingText: trailing || undefined,
@@ -833,8 +833,8 @@ function parseMainSetContent(
       }
       return {
         set: {
-          weight: weightUnit === 'bw' || !weightUnit ? undefined : weight,
-          weightUnit: weightUnit === 'bw' || !weightUnit ? undefined : weightUnit,
+          weight: weightUnit === 'bw' ? undefined : weight,
+          weightUnit: weightUnit === 'bw' ? undefined : weightUnit,
           reps: value,
         },
         trailingText: trailing || undefined,
