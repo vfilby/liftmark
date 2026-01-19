@@ -44,6 +44,7 @@ Every workout follows this hierarchical structure:
 ```
 
 **Key Principles:**
+- **One Workout Per File**: Each markdown file contains a single workout
 - **Flexible Headers**: Workout can be any header level (H1-H6), exercise must be one level below
 - **Freeform Notes**: Any text between headers is treated as notes
 - **Minimal Metadata**: No required `@` metadata, keep it simple
@@ -108,33 +109,26 @@ Prefer using kilograms - easier for tracking.
 - 55 x 8        # Uses kg (from @units)
 ```
 
-**Multiple workouts in one document:**
+**Flexible header levels for document organization:**
 ```markdown
 # My Training Log
 
-## Week 1
+Weekly notes: Focusing on progressive overload this month.
 
-### Day 1: Push
+## Week 1 - Day 1: Push
 @tags: push
 
 Great session, felt strong.
 
-#### Bench Press
+### Bench Press
 - 225 x 5
 - 245 x 3
 
-#### Overhead Press
+### Overhead Press
 - 135 x 8
-
-### Day 2: Pull
-@tags: pull
-
-Tired but got through it.
-
-#### Deadlift
-- 315 x 5
-- 365 x 3
 ```
+
+Note: The workout is "Week 1 - Day 1: Push" (the first header with exercises). Headers above it are for document organization.
 
 ---
 
@@ -548,59 +542,7 @@ Focus on third pull, fast elbows.
 - 135 lbs x 3 reps @rest: 90s
 ```
 
-### Example 7: Multiple Workouts in One Document
-
-```markdown
-# My Training Log - January 2026
-
-## Week 1
-
-### Monday: Upper Body
-@tags: push, upper
-
-Great session today!
-
-#### Bench Press
-- 225 x 5
-- 245 x 3
-- 265 x 1
-
-#### Rows
-- 135 x 10
-- 155 x 8
-- 175 x 6
-
-### Wednesday: Lower Body
-@tags: legs, squat
-
-Legs still sore from Monday.
-
-#### Squat
-- 315 x 5
-- 335 x 5
-- 355 x 3
-
-#### Romanian Deadlift
-- 225 x 10
-- 225 x 10
-
-### Friday: Full Body
-@tags: conditioning
-
-Quick conditioning session.
-
-#### Kettlebell Swings
-- 53 lbs x 20
-- 53 lbs x 20
-- 53 lbs x 15
-
-#### Burpees
-- 10
-- 10
-- 8
-```
-
-### Example 8: Workout with Warmup and Cooldown
+### Example 7: Workout with Warmup and Cooldown
 
 ```markdown
 # Push Day
@@ -647,7 +589,7 @@ Final set was tough, really close to failure.
 - 2m
 ```
 
-### Example 9: Rehabilitation/Physical Therapy
+### Example 8: Rehabilitation/Physical Therapy
 
 ```markdown
 # Knee Rehab - Day 3
@@ -844,10 +786,9 @@ Some notes but no exercises.
 ### Parsing Steps
 
 1. **Split into lines** and normalize line endings
-2. **Identify workout header(s)**:
-   - If user selects specific header → that's the workout
-   - If importing whole document → find all headers that have sub-headers with sets
-   - Headers with child headers containing list items (sets) are workouts
+2. **Identify workout header**:
+   - Find the first header that has child headers containing list items (sets)
+   - That's the workout (one workout per file)
 3. **Extract workout metadata**:
    - Lines starting with `@` immediately after header
    - All other text until next header = freeform notes
@@ -862,28 +803,45 @@ Some notes but no exercises.
 
 ### Header Level Detection
 
-**Strategy**: Flexible header detection based on document structure
+**Strategy**: One workout per file with flexible header levels for document organization
+
+**Simple Rule**: First header (any level H1-H6) = workout name, next level down = exercises
 
 ```markdown
-# Training Log              ← Not a workout (no sets under it)
+# My Training Notes         ← Document organization (ignored)
 
-## Week 1                   ← Not a workout (no sets under it)
+Notes about my training program and goals.
 
-### Day 1: Push             ← WORKOUT (has exercises with sets)
-#### Bench Press            ← Exercise (has sets)
+## Push Day                 ← WORKOUT (first header with exercises)
+@tags: strength, push
+
+### Bench Press             ← Exercise (one level below workout)
 - 225 x 5
 
-### Day 2: Pull             ← WORKOUT
-#### Deadlift               ← Exercise
-- 315 x 5
+### Overhead Press          ← Exercise
+- 135 x 8
+```
+
+Or with deeper nesting:
+
+```markdown
+# 2026 Training Log         ← Document organization
+
+## January                  ← Document organization
+
+### Week 1                  ← Document organization
+
+#### Push Day A             ← WORKOUT (first header with exercises)
+
+##### Bench Press           ← Exercise (one level below workout)
+- 225 x 5
 ```
 
 **Detection Logic**:
-1. A header is a workout if it has child headers that contain list items (sets)
-2. A header is an exercise if it's one level below a workout and has list items
-3. A header containing "superset" (case-insensitive) with child exercises = superset
-4. A header with child exercises but no "superset" in name = section grouping (warmup, cooldown, etc.)
-5. This allows workouts to be embedded in any document structure
+1. Find the first header that has child headers containing list items (sets) - that's the workout
+2. All headers one level below the workout header = exercises
+3. Headers containing "superset" (case-insensitive) with child exercises = superset grouping
+4. Other nested headers under exercises = section grouping (warmup, cooldown, etc.)
 
 **Superset vs Section Grouping Example**:
 ```markdown
@@ -1022,10 +980,12 @@ Last set felt like an 8/10 effort.
 ## Changelog
 
 ### Version 1.1 (2026-01-16)
-- Simplified modifiers to only functional ones: `@rest`, `@dropset`
+- **Simplified to one workout per file** - removed multi-workout support for cleaner mental model
+- **Simplified modifiers** to only functional ones: `@rest`, `@dropset`
 - Removed `@rpe` and `@tempo` - use freeform notes instead
 - Clarified time units in set format components
 - Updated examples to use freeform notes for descriptive data
+- Simplified header detection logic (first header with exercises = workout)
 
 ### Version 1.0 (2026-01-03)
 - Initial specification
