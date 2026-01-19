@@ -43,8 +43,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const pendingCount = await getPendingSyncCount();
 
       set({
-        syncEnabled: metadata.sync_enabled === 1,
-        lastSyncDate: metadata.last_sync_date ? new Date(metadata.last_sync_date) : null,
+        syncEnabled: metadata.syncEnabled,
+        lastSyncDate: metadata.lastSyncDate ? new Date(metadata.lastSyncDate) : null,
         pendingChanges: pendingCount,
       });
     } catch (error) {

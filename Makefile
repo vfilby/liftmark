@@ -35,12 +35,12 @@ help:
 	@echo "  make rebuild-native - Clean and regenerate native projects"
 	@echo "  make rebuild-ios    - Prebuild and run on iOS simulator"
 	@echo ""
-	@echo "  make test              - Run test suite"
+	@echo "  make test              - Run full test suite (audit + typecheck + tests)"
 	@echo "  make test-watch        - Run tests in watch mode"
 	@echo "  make test-coverage     - Run tests with coverage report"
 	@echo "  make test-coverage-open - Run coverage tests and open HTML report"
 	@echo "  make test-coverage-watch - Run coverage tests in watch mode"
-	@echo "  make typecheck  - Run TypeScript type checking"
+	@echo "  make typecheck  - Run TypeScript type checking only"
 	@echo ""
 	@echo "  make install    - Install dependencies"
 	@echo "  make clean      - Clean cache and dependencies"
@@ -102,8 +102,8 @@ web:
 
 # Testing
 test:
-	@echo "🧪 Running tests..."
-	npm run test
+	@echo "🧪 Running full test suite (audit + typecheck + tests)..."
+	npm run ci
 
 test-watch:
 	@echo "👀 Running tests in watch mode..."

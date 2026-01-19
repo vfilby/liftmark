@@ -45,28 +45,45 @@ export interface SyncConflict {
 export async function getSyncMetadata(): Promise<SyncMetadata> {
   const db = await getDatabase();
 
-  let metadata = await db.getFirstAsync<SyncMetadata>(
+  let row = await db.getFirstAsync<any>(
     'SELECT * FROM sync_metadata LIMIT 1'
   );
 
-  if (!metadata) {
+  if (!row) {
     // Create default metadata
     const { generateId } = await import('@/utils/id');
     const deviceId = generateId(); // Unique device ID
     const now = new Date().toISOString();
+    const metadataId = generateId();
 
     await db.runAsync(
       `INSERT INTO sync_metadata (id, device_id, last_sync_date, server_change_token, sync_enabled, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [generateId(), deviceId, null, null, 0, now, now]
+      [metadataId, deviceId, null, null, 0, now, now]
     );
 
-    metadata = await db.getFirstAsync<SyncMetadata>(
-      'SELECT * FROM sync_metadata LIMIT 1'
-    );
+    // Return the newly created metadata
+    return {
+      id: metadataId,
+      deviceId,
+      lastSyncDate: null,
+      serverChangeToken: null,
+      syncEnabled: false,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 
-  return metadata!;
+  // Map snake_case to camelCase
+  return {
+    id: row.id,
+    deviceId: row.device_id,
+    lastSyncDate: row.last_sync_date,
+    serverChangeToken: row.server_change_token,
+    syncEnabled: row.sync_enabled === 1,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 /**
@@ -162,11 +179,21 @@ export async function addToSyncQueue(
 export async function getPendingSyncQueue(): Promise<SyncQueueItem[]> {
   const db = await getDatabase();
 
-  const rows = await db.getAllAsync<SyncQueueItem>(
+  const rows = await db.getAllAsync<any>(
     `SELECT * FROM sync_queue ORDER BY created_at ASC`
   );
 
-  return rows;
+  // Map snake_case to camelCase
+  return rows.map((row) => ({
+    id: row.id,
+    entityType: row.entity_type as 'WorkoutTemplate' | 'WorkoutSession',
+    entityId: row.entity_id,
+    operation: row.operation as 'create' | 'update' | 'delete',
+    payload: row.payload,
+    attempts: row.attempts,
+    lastAttemptAt: row.last_attempt_at,
+    createdAt: row.created_at,
+  }));
 }
 
 /**
@@ -249,11 +276,21 @@ export async function logSyncConflict(
 export async function getAllSyncConflicts(): Promise<SyncConflict[]> {
   const db = await getDatabase();
 
-  const rows = await db.getAllAsync<SyncConflict>(
+  const rows = await db.getAllAsync<any>(
     'SELECT * FROM sync_conflicts ORDER BY created_at DESC LIMIT 100'
   );
 
-  return rows;
+  // Map snake_case to camelCase
+  return rows.map((row) => ({
+    id: row.id,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    localData: row.local_data,
+    remoteData: row.remote_data,
+    resolution: row.resolution as 'local' | 'remote' | 'pending',
+    resolvedAt: row.resolved_at,
+    createdAt: row.created_at,
+  }));
 }
 
 /**

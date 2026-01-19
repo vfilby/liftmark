@@ -505,8 +505,14 @@ function rowToSessionSet(row: SessionSetRow): SessionSet {
  */
 async function afterCreateSessionHook(session: WorkoutSession): Promise<void> {
   try {
-    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
     const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    // Only queue if sync is enabled
+    const metadata = await getSyncMetadata();
+    if (!metadata.syncEnabled) {
+      return;
+    }
 
     await addToSyncQueue('WorkoutSession', session.id, 'create', session);
     triggerSyncAfterChange();
@@ -520,8 +526,14 @@ async function afterCreateSessionHook(session: WorkoutSession): Promise<void> {
  */
 async function afterUpdateSessionHook(session: WorkoutSession): Promise<void> {
   try {
-    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
     const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    // Only queue if sync is enabled
+    const metadata = await getSyncMetadata();
+    if (!metadata.syncEnabled) {
+      return;
+    }
 
     await addToSyncQueue('WorkoutSession', session.id, 'update', session);
     triggerSyncAfterChange();
@@ -535,8 +547,14 @@ async function afterUpdateSessionHook(session: WorkoutSession): Promise<void> {
  */
 async function afterDeleteSessionHook(sessionId: string): Promise<void> {
   try {
-    const { addToSyncQueue } = await import('./syncMetadataRepository');
+    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
     const { triggerSyncAfterChange } = await import('@/services/syncService');
+
+    // Only queue if sync is enabled
+    const metadata = await getSyncMetadata();
+    if (!metadata.syncEnabled) {
+      return;
+    }
 
     await addToSyncQueue('WorkoutSession', sessionId, 'delete', { id: sessionId });
     triggerSyncAfterChange();

@@ -203,7 +203,7 @@ export default function SyncConflictsScreen() {
           conflicts.map((conflict) => (
             <View key={conflict.id} style={styles.conflictItem}>
               <View style={styles.conflictHeader}>
-                <Text style={styles.conflictType}>{conflict.entity_type}</Text>
+                <Text style={styles.conflictType}>{conflict.entityType}</Text>
                 <View
                   style={[
                     styles.resolutionBadge,
@@ -211,7 +211,7 @@ export default function SyncConflictsScreen() {
                       backgroundColor:
                         conflict.resolution === 'local'
                           ? colors.primaryLight
-                          : colors.secondaryLight || colors.border,
+                          : colors.border,
                     },
                   ]}
                 >
@@ -222,16 +222,16 @@ export default function SyncConflictsScreen() {
               </View>
 
               <Text style={styles.conflictId} numberOfLines={1}>
-                ID: {conflict.entity_id}
+                ID: {conflict.entityId}
               </Text>
               <Text style={styles.conflictDate}>
-                {new Date(conflict.created_at).toLocaleString()}
+                {new Date(conflict.createdAt).toLocaleString()}
               </Text>
 
               <View style={styles.dataSection}>
                 <Text style={styles.dataTitle}>Local Data:</Text>
                 <Text style={styles.dataText} numberOfLines={3}>
-                  {JSON.stringify(JSON.parse(conflict.local_data), null, 2).substring(
+                  {JSON.stringify(JSON.parse(conflict.localData), null, 2).substring(
                     0,
                     200
                   )}
@@ -242,7 +242,7 @@ export default function SyncConflictsScreen() {
               <View style={styles.dataSection}>
                 <Text style={styles.dataTitle}>Remote Data:</Text>
                 <Text style={styles.dataText} numberOfLines={3}>
-                  {JSON.stringify(JSON.parse(conflict.remote_data), null, 2).substring(
+                  {JSON.stringify(JSON.parse(conflict.remoteData), null, 2).substring(
                     0,
                     200
                   )}

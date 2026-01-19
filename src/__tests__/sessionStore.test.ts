@@ -157,6 +157,7 @@ describe('sessionStore', () => {
       currentExerciseIndex: 0,
       currentSetIndex: 0,
       restTimer: null,
+      exerciseTimer: null,
       isLoading: false,
       error: null,
     });
@@ -726,6 +727,54 @@ describe('sessionStore', () => {
 
       expect(useSessionStore.getState().error).toBe('Update failed');
     });
+
+    it('completes a time-based set with actual time value', async () => {
+      const set = createSessionSet({ id: 'set-1', targetTime: 60 });
+      const exercise = createSessionExercise({ sets: [set] });
+      const session = createWorkoutSession({ exercises: [exercise] });
+
+      useSessionStore.setState({ activeSession: session });
+      mockedUpdateSessionSet.mockResolvedValue(undefined);
+
+      await useSessionStore.getState().completeSet('set-1', { actualTime: 75 });
+
+      expect(mockedUpdateSessionSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'set-1',
+          actualTime: 75,
+          status: 'completed',
+          completedAt: expect.any(String),
+        })
+      );
+
+      const state = useSessionStore.getState();
+      expect(state.activeSession?.exercises[0].sets[0].status).toBe('completed');
+    });
+
+    it('can update time value for a completed time-based set', async () => {
+      const set = createSessionSet({
+        id: 'set-1',
+        targetTime: 60,
+        actualTime: 75,
+        status: 'completed'
+      });
+      const exercise = createSessionExercise({ sets: [set] });
+      const session = createWorkoutSession({ exercises: [exercise] });
+
+      useSessionStore.setState({ activeSession: session });
+      mockedUpdateSessionSet.mockResolvedValue(undefined);
+
+      // User edits the completed set to change time from 75 to 90
+      await useSessionStore.getState().completeSet('set-1', { actualTime: 90 });
+
+      expect(mockedUpdateSessionSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'set-1',
+          actualTime: 90,
+          status: 'completed',
+        })
+      );
+    });
   });
 
   // ============================================================================
@@ -1095,6 +1144,307 @@ describe('sessionStore', () => {
       useSessionStore.getState().tickRestTimer();
 
       expect(useSessionStore.getState().restTimer).toBeNull();
+    });
+  });
+
+  // ============================================================================
+  // Exercise Timer Tests
+  // ============================================================================
+
+  describe('startExerciseTimer', () => {
+    it('starts timer with specified target seconds', () => {
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: true,
+        elapsedSeconds: 0,
+        targetSeconds: 60,
+        setId: 'set-1',
+      });
+    });
+
+    it('resumes paused timer for the same set', () => {
+      // Start timer
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      // Simulate some elapsed time
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: false,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // Resume timer
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: true,
+        elapsedSeconds: 30, // Preserved from before
+        targetSeconds: 60,
+        setId: 'set-1',
+      });
+    });
+
+    it('starts new timer when set ID changes', () => {
+      // Start timer for set-1
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      // Simulate some elapsed time
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: false,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // Start timer for different set
+      useSessionStore.getState().startExerciseTimer('set-2', 45);
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: true,
+        elapsedSeconds: 0, // Reset for new set
+        targetSeconds: 45,
+        setId: 'set-2',
+      });
+    });
+
+    it('starts new timer when previous timer was running', () => {
+      // Start timer for set-1
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      // Simulate some elapsed time while running
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // Start again (shouldn't happen in normal flow, but test it)
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: true,
+        elapsedSeconds: 0, // Reset because it was running
+        targetSeconds: 60,
+        setId: 'set-1',
+      });
+    });
+  });
+
+  describe('stopExerciseTimer', () => {
+    it('pauses the timer and preserves elapsed time', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().stopExerciseTimer();
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: false,
+        elapsedSeconds: 30, // Preserved
+        targetSeconds: 60,
+        setId: 'set-1',
+      });
+    });
+
+    it('does nothing when no timer exists', () => {
+      useSessionStore.setState({ exerciseTimer: null });
+
+      useSessionStore.getState().stopExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer).toBeNull();
+    });
+
+    it('can be called multiple times without issue', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().stopExerciseTimer();
+      useSessionStore.getState().stopExerciseTimer();
+
+      const state = useSessionStore.getState();
+      expect(state.exerciseTimer).toEqual({
+        isRunning: false,
+        elapsedSeconds: 30,
+        targetSeconds: 60,
+        setId: 'set-1',
+      });
+    });
+  });
+
+  describe('clearExerciseTimer', () => {
+    it('clears the exercise timer completely', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().clearExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer).toBeNull();
+    });
+
+    it('does nothing when no timer exists', () => {
+      useSessionStore.setState({ exerciseTimer: null });
+
+      useSessionStore.getState().clearExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer).toBeNull();
+    });
+  });
+
+  describe('tickExerciseTimer', () => {
+    it('increments elapsed seconds', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().tickExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(31);
+    });
+
+    it('continues counting past target time', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 60,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().tickExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(61);
+    });
+
+    it('does nothing when timer is not running', () => {
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: false,
+          elapsedSeconds: 30,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      useSessionStore.getState().tickExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(30);
+    });
+
+    it('does nothing when no timer exists', () => {
+      useSessionStore.getState().tickExerciseTimer();
+
+      expect(useSessionStore.getState().exerciseTimer).toBeNull();
+    });
+  });
+
+  describe('exercise timer pause/resume workflow', () => {
+    it('supports full pause and resume cycle', () => {
+      // Start timer
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+      expect(useSessionStore.getState().exerciseTimer?.isRunning).toBe(true);
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(0);
+
+      // Simulate 15 seconds elapsed
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 15,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // Pause timer
+      useSessionStore.getState().stopExerciseTimer();
+      expect(useSessionStore.getState().exerciseTimer?.isRunning).toBe(false);
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(15);
+
+      // Resume timer
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+      expect(useSessionStore.getState().exerciseTimer?.isRunning).toBe(true);
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(15); // Preserved
+
+      // Continue ticking
+      useSessionStore.getState().tickExerciseTimer();
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(16);
+    });
+
+    it('supports multiple pause/resume cycles', () => {
+      // Start timer
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+
+      // Tick to 10 seconds
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 10,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // First pause
+      useSessionStore.getState().stopExerciseTimer();
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(10);
+
+      // First resume
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(10);
+
+      // Tick to 20 seconds
+      useSessionStore.setState({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 20,
+          targetSeconds: 60,
+          setId: 'set-1',
+        },
+      });
+
+      // Second pause
+      useSessionStore.getState().stopExerciseTimer();
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(20);
+
+      // Second resume
+      useSessionStore.getState().startExerciseTimer('set-1', 60);
+      expect(useSessionStore.getState().exerciseTimer?.elapsedSeconds).toBe(20);
     });
   });
 

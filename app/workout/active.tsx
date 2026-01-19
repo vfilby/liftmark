@@ -75,6 +75,7 @@ export default function ActiveWorkoutScreen() {
     tickRestTimer,
     startExerciseTimer,
     stopExerciseTimer,
+    clearExerciseTimer,
     tickExerciseTimer,
     clearError,
     getProgress,
@@ -267,16 +268,27 @@ export default function ActiveWorkoutScreen() {
   // Update a completed set's values
   const handleUpdateSet = useCallback(async (set: SessionSet) => {
     const values = editValues[set.id];
-    const weight = values?.weight ? parseFloat(values.weight) : undefined;
-    const reps = values?.reps ? parseInt(values.reps, 10) : undefined;
-    const time = values?.time ? parseInt(values.time, 10) : undefined;
+
+    // Parse values, falling back to undefined if invalid or empty
+    const parsedWeight = values?.weight ? parseFloat(values.weight) : NaN;
+    const parsedReps = values?.reps ? parseInt(values.reps, 10) : NaN;
+    const parsedTime = values?.time ? parseInt(values.time, 10) : NaN;
+
+    // Only update fields that have valid parsed values
+    // This prevents data loss when editing individual fields
+    const updates: Partial<SessionSet> = {};
+    if (!isNaN(parsedWeight)) {
+      updates.actualWeight = parsedWeight;
+    }
+    if (!isNaN(parsedReps)) {
+      updates.actualReps = parsedReps;
+    }
+    if (!isNaN(parsedTime)) {
+      updates.actualTime = parsedTime;
+    }
 
     // Update the set in the store
-    await completeSet(set.id, {
-      actualWeight: weight,
-      actualReps: reps,
-      actualTime: time,
-    });
+    await completeSet(set.id, updates);
 
     // Close the editing form
     setEditingSetId(null);
@@ -356,7 +368,7 @@ export default function ActiveWorkoutScreen() {
           text: 'Pause',
           onPress: async () => {
             if (exerciseTimer) {
-              stopExerciseTimer();
+              clearExerciseTimer();
             }
             await pauseSession();
             router.back();
@@ -364,7 +376,7 @@ export default function ActiveWorkoutScreen() {
         },
       ]
     );
-  }, [pauseSession, router, exerciseTimer, stopExerciseTimer]);
+  }, [pauseSession, router, exerciseTimer, clearExerciseTimer]);
 
   const handleFinish = useCallback(() => {
     const { completed, total } = getProgress();
@@ -409,7 +421,7 @@ export default function ActiveWorkoutScreen() {
     let time: number | undefined;
     if (exerciseTimer && exerciseTimer.setId === set.id) {
       time = exerciseTimer.elapsedSeconds;
-      stopExerciseTimer();
+      clearExerciseTimer();
     } else {
       time = values?.time ? parseInt(values.time, 10) : undefined;
     }
@@ -452,12 +464,12 @@ export default function ActiveWorkoutScreen() {
       setShowUpNextPreview(false);
       setLastCompletedSetId(null);
     }
-  }, [editValues, completeSet, getProgress, handleFinish, restTimer, stopRestTimer, exerciseTimer, stopExerciseTimer, settings, startRestTimer, editingSetId]);
+  }, [editValues, completeSet, getProgress, handleFinish, restTimer, stopRestTimer, exerciseTimer, clearExerciseTimer, settings, startRestTimer, editingSetId]);
 
   const handleSkipSet = useCallback(async (set: SessionSet) => {
-    // Stop exercise timer if running for this set
+    // Clear exercise timer if running for this set
     if (exerciseTimer && exerciseTimer.setId === set.id) {
-      stopExerciseTimer();
+      clearExerciseTimer();
     }
 
     // Clear editing state if this was the set being edited
@@ -472,7 +484,7 @@ export default function ActiveWorkoutScreen() {
     if (completed === total) {
       handleFinish();
     }
-  }, [skipSet, getProgress, handleFinish, editingSetId, exerciseTimer, stopExerciseTimer]);
+  }, [skipSet, getProgress, handleFinish, editingSetId, exerciseTimer, clearExerciseTimer]);
 
   const handleSetPress = useCallback((set: SessionSet) => {
     // Clear preview state when user taps any set, but keep timer running
@@ -501,10 +513,13 @@ export default function ActiveWorkoutScreen() {
 
   const updateEditValue = (setId: string, field: 'weight' | 'reps' | 'time', value: string) => {
     setEditValues((prev) => {
+      // Ensure we always have a complete object with all fields, defaulting to empty strings
+      const currentValues = prev[setId] || { weight: '', reps: '', time: '' };
+
       const updated = {
         ...prev,
         [setId]: {
-          ...prev[setId],
+          ...currentValues,
           [field]: value,
         },
       };
@@ -520,8 +535,10 @@ export default function ActiveWorkoutScreen() {
             for (let i = setIndex + 1; i < exercise.sets.length; i++) {
               const remainingSet = exercise.sets[i];
               if (remainingSet.status === 'pending') {
+                // Ensure remaining sets also have all fields preserved
+                const remainingValues = prev[remainingSet.id] || { weight: '', reps: '', time: '' };
                 updated[remainingSet.id] = {
-                  ...prev[remainingSet.id],
+                  ...remainingValues,
                   weight: value,
                 };
               }
@@ -1173,7 +1190,7 @@ export default function ActiveWorkoutScreen() {
                             const isCompleted = set.status === 'completed';
                             const isSkipped = set.status === 'skipped';
                             const isPending = set.status === 'pending';
-                            const values = editValues[set.id] || { weight: '', reps: '' };
+                            const values = editValues[set.id] || { weight: '', reps: '', time: '' };
 
                             const isUpNext = isCurrentSet && showUpNextPreview;
                             const isActiveForm = (isCurrentSet && !showUpNextPreview) || isEditing;
@@ -1263,6 +1280,23 @@ export default function ActiveWorkoutScreen() {
                                                 keyboardType="numeric"
                                                 placeholder="0"
                                               />
+                                            </View>
+                                          </View>
+                                        )}
+
+                                        {/* Manual time input for time-based exercises when editing completed sets */}
+                                        {set.targetTime !== undefined && isEditing && (
+                                          <View style={styles.inputRow}>
+                                            <View style={styles.inputGroup}>
+                                              <Text style={styles.inputLabel}>Time</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.time}
+                                                onChangeText={(v) => updateEditValue(set.id, 'time', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                              />
+                                              <Text style={styles.inputUnit}>seconds</Text>
                                             </View>
                                           </View>
                                         )}
@@ -1364,7 +1398,7 @@ export default function ActiveWorkoutScreen() {
                           const isCompleted = set.status === 'completed';
                           const isSkipped = set.status === 'skipped';
                           const isPending = set.status === 'pending';
-                          const values = editValues[set.id] || { weight: '', reps: '' };
+                          const values = editValues[set.id] || { weight: '', reps: '', time: '' };
 
                           const isUpNext = isCurrentSet && showUpNextPreview;
                           const isActiveForm = (isCurrentSet && !showUpNextPreview) || isEditing;
@@ -1452,6 +1486,23 @@ export default function ActiveWorkoutScreen() {
                                               keyboardType="numeric"
                                               placeholder="0"
                                             />
+                                          </View>
+                                        </View>
+                                      )}
+
+                                      {/* Manual time input for time-based exercises when editing completed sets */}
+                                      {set.targetTime !== undefined && isEditing && (
+                                        <View style={styles.inputRow}>
+                                          <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>Time</Text>
+                                            <TextInput
+                                              style={styles.input}
+                                              value={values.time}
+                                              onChangeText={(v) => updateEditValue(set.id, 'time', v)}
+                                              keyboardType="numeric"
+                                              placeholder="0"
+                                            />
+                                            <Text style={styles.inputUnit}>seconds</Text>
                                           </View>
                                         </View>
                                       )}

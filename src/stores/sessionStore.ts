@@ -67,6 +67,7 @@ interface SessionStore {
   // Exercise Timer
   startExerciseTimer: (setId: string, targetSeconds: number) => void;
   stopExerciseTimer: () => void;
+  clearExerciseTimer: () => void;
   tickExerciseTimer: () => void;
 
   // Utilities
@@ -621,18 +622,44 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   // Start the exercise timer
   startExerciseTimer: (setId: string, targetSeconds: number) => {
-    set({
-      exerciseTimer: {
-        isRunning: true,
-        elapsedSeconds: 0,
-        targetSeconds,
-        setId,
-      },
-    });
+    const { exerciseTimer } = get();
+
+    // Resume existing timer if it's for the same set and was paused
+    if (exerciseTimer && exerciseTimer.setId === setId && !exerciseTimer.isRunning) {
+      set({
+        exerciseTimer: {
+          ...exerciseTimer,
+          isRunning: true,
+        },
+      });
+    } else {
+      // Start new timer
+      set({
+        exerciseTimer: {
+          isRunning: true,
+          elapsedSeconds: 0,
+          targetSeconds,
+          setId,
+        },
+      });
+    }
   },
 
-  // Stop the exercise timer
+  // Stop the exercise timer (pause it, preserving elapsed time)
   stopExerciseTimer: () => {
+    const { exerciseTimer } = get();
+    if (exerciseTimer) {
+      set({
+        exerciseTimer: {
+          ...exerciseTimer,
+          isRunning: false,
+        },
+      });
+    }
+  },
+
+  // Clear the exercise timer completely (used when completing/skipping sets)
+  clearExerciseTimer: () => {
     set({ exerciseTimer: null });
   },
 

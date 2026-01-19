@@ -56,7 +56,7 @@ export async function performFullSync(): Promise<SyncResult> {
 
   // Check if sync is enabled
   const metadata = await getSyncMetadata();
-  if (!metadata.sync_enabled) {
+  if (!metadata.syncEnabled) {
     return { success: false, error: 'Sync is not enabled' };
   }
 
@@ -123,12 +123,12 @@ export async function pushChanges(): Promise<SyncResult> {
         switch (item.operation) {
           case 'create':
           case 'update':
-            await syncEntityToCloudKit(item.entity_type, payload);
+            await syncEntityToCloudKit(item.entityType, payload);
             successCount++;
             break;
 
           case 'delete':
-            const deleted = await deleteCloudKitRecord(item.entity_id);
+            const deleted = await deleteCloudKitRecord(item.entityId);
             if (deleted) successCount++;
             break;
         }
@@ -165,7 +165,7 @@ export async function pushChanges(): Promise<SyncResult> {
 export async function pullChanges(): Promise<SyncResult> {
   try {
     const metadata = await getSyncMetadata();
-    const result = await fetchCloudKitChanges(metadata.server_change_token || undefined);
+    const result = await fetchCloudKitChanges(metadata.serverChangeToken || undefined);
 
     if (!result) {
       return { success: false, error: 'Failed to fetch changes from CloudKit' };
@@ -433,7 +433,7 @@ async function processRemoteRecord(record: any): Promise<boolean> {
 
     // Within 5 seconds: use device ID tiebreaker
     const metadata = await getSyncMetadata();
-    const localDeviceId = metadata.device_id;
+    const localDeviceId = metadata.deviceId;
     const remoteDeviceId = fields.deviceId || '';
 
     if (remoteDeviceId > localDeviceId) {
@@ -545,7 +545,7 @@ export function triggerSyncAfterChange(): void {
   const metadata = getSyncMetadata();
 
   metadata.then((m) => {
-    if (m.sync_enabled) {
+    if (m.syncEnabled) {
       scheduleDebouncedSync();
 
       // Update pending count

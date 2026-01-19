@@ -9,6 +9,12 @@ interface ExerciseGroup {
   type: 'single' | 'superset';
   exercises: SessionExercise[];
   groupName?: string;
+  sectionName?: string;
+}
+
+interface WorkoutSection {
+  name: string | null;
+  exerciseGroups: ExerciseGroup[];
 }
 
 interface InterleavedSet {
@@ -143,19 +149,33 @@ export default function HistoryDetailScreen() {
     return { completedSets, skippedSets, totalSets, totalVolume, totalReps };
   };
 
-  // Group exercises: combine superset children, keep singles separate
-  const exerciseGroups = useMemo((): ExerciseGroup[] => {
+  // Group exercises into sections, handling both supersets and sections
+  const workoutSections = useMemo((): WorkoutSection[] => {
     if (!session) return [];
 
-    const groups: ExerciseGroup[] = [];
+    const sections: WorkoutSection[] = [];
     const processedIds = new Set<string>();
     const exercises = session.exercises;
+
+    // Track current section as we iterate
+    let currentSectionName: string | null = null;
+    let currentSection: WorkoutSection | null = null;
 
     for (const exercise of exercises) {
       if (processedIds.has(exercise.id)) continue;
 
-      // Check if this is a superset parent (has groupType 'superset', no parent, and no sets)
-      if (exercise.groupType === 'superset' && !exercise.parentExerciseId && exercise.sets.length === 0) {
+      // Check if this is a section parent (groupType 'section', no parent, no sets)
+      if (exercise.groupType === 'section' && !exercise.parentExerciseId && exercise.sets.length === 0) {
+        // This is a section header - start a new section
+        processedIds.add(exercise.id);
+        currentSectionName = exercise.groupName || exercise.exerciseName;
+        currentSection = { name: currentSectionName, exerciseGroups: [] };
+        sections.push(currentSection);
+        continue;
+      }
+
+      // Check if this is a superset parent (has groupType 'superset' and no sets)
+      if (exercise.groupType === 'superset' && exercise.sets.length === 0) {
         // Find all children of this superset
         const children = exercises.filter(
           (ex) => ex.parentExerciseId === exercise.id
@@ -167,24 +187,57 @@ export default function HistoryDetailScreen() {
 
         // Only add if there are actual child exercises with sets
         if (children.length > 0) {
-          groups.push({
+          const group: ExerciseGroup = {
             type: 'superset',
             exercises: children,
             groupName: exercise.groupName || exercise.exerciseName,
-          });
+            sectionName: currentSectionName || undefined,
+          };
+
+          if (currentSection) {
+            currentSection.exerciseGroups.push(group);
+          } else {
+            // No section yet - create a default section
+            if (sections.length === 0 || sections[sections.length - 1].name !== null) {
+              sections.push({ name: null, exerciseGroups: [] });
+            }
+            sections[sections.length - 1].exerciseGroups.push(group);
+          }
         }
-      } else if (!exercise.parentExerciseId) {
-        // Regular exercise (not a superset child)
+      } else {
+        // Check if this is a superset child (skip - handled when processing superset parent)
+        if (exercise.parentExerciseId) {
+          const parent = exercises.find(ex => ex.id === exercise.parentExerciseId);
+          if (parent?.groupType === 'superset') {
+            // Skip superset children - they're handled when we process the parent
+            continue;
+          }
+        }
+
+        // Regular exercise or section child
         processedIds.add(exercise.id);
-        groups.push({
+
+        const exerciseSectionName = exercise.groupType === 'section' ? exercise.groupName : currentSectionName;
+
+        const group: ExerciseGroup = {
           type: 'single',
           exercises: [exercise],
-        });
+          sectionName: exerciseSectionName || undefined,
+        };
+
+        if (currentSection) {
+          currentSection.exerciseGroups.push(group);
+        } else {
+          // No section yet - create a default section
+          if (sections.length === 0 || sections[sections.length - 1].name !== null) {
+            sections.push({ name: null, exerciseGroups: [] });
+          }
+          sections[sections.length - 1].exerciseGroups.push(group);
+        }
       }
-      // Skip superset children - they're handled when we process the parent
     }
 
-    return groups;
+    return sections;
   }, [session]);
 
   // Interleave sets from multiple exercises in a superset
@@ -312,6 +365,27 @@ export default function HistoryDetailScreen() {
       fontWeight: '600',
       color: colors.textSecondary,
       marginBottom: 12,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      marginTop: 8,
+    },
+    sectionHeaderLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.primary,
+    },
+    sectionHeaderTextContainer: {
+      paddingHorizontal: 12,
+    },
+    sectionHeaderText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     exerciseCard: {
       backgroundColor: colors.card,
@@ -497,105 +571,134 @@ export default function HistoryDetailScreen() {
         <View style={styles.exercisesSection}>
           <Text style={styles.sectionTitle}>Exercises</Text>
 
-          {exerciseGroups.map((group, groupIndex) => (
-            <View key={group.exercises[0].id} style={styles.exerciseCard}>
-              {group.type === 'superset' ? (
-                <>
-                  {/* Superset Header */}
-                  <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseNumber}>{groupIndex + 1}</Text>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{group.groupName}</Text>
-                      <Text style={styles.equipmentType}>
-                        {group.exercises.map(ex => ex.exerciseName).join(' + ')}
+          {workoutSections.map((section, sectionIndex) => {
+            // Calculate global exercise index for numbering
+            let globalIndexOffset = 0;
+            for (let i = 0; i < sectionIndex; i++) {
+              globalIndexOffset += workoutSections[i].exerciseGroups.length;
+            }
+
+            return (
+              <View key={`section-${sectionIndex}`}>
+                {/* Section header - only show if section has a name */}
+                {section.name && (
+                  <View style={styles.sectionHeader}>
+                    <View style={styles.sectionHeaderLine} />
+                    <View style={styles.sectionHeaderTextContainer}>
+                      <Text style={styles.sectionHeaderText}>
+                        {section.name}
                       </Text>
                     </View>
+                    <View style={styles.sectionHeaderLine} />
                   </View>
+                )}
 
-                  {/* Interleaved Sets */}
-                  <View style={styles.setsContainer}>
-                    {interleaveSets(group.exercises).map((item, idx) => (
-                      <View
-                        key={`${item.set.id}-${idx}`}
-                        style={[
-                          styles.setRow,
-                          item.set.status === 'skipped' && styles.setRowSkipped,
-                        ]}
-                      >
-                        <View style={[
-                          styles.setNumber,
-                          item.set.status === 'completed' && styles.setNumberCompleted,
-                          item.set.status === 'skipped' && styles.setNumberSkipped,
-                        ]}>
-                          <Text style={[
-                            styles.setNumberText,
-                            item.set.status === 'completed' && styles.setNumberTextCompleted,
-                            item.set.status === 'skipped' && styles.setNumberTextSkipped,
-                          ]}>
-                            {item.set.status === 'completed' ? '✓' : item.set.status === 'skipped' ? '−' : item.setIndex + 1}
-                          </Text>
-                        </View>
-                        <View style={styles.setResultContainer}>
-                          <Text style={styles.setExerciseName}>{item.exerciseName}</Text>
-                          <Text style={[
-                            styles.setResult,
-                            item.set.status === 'skipped' && styles.setResultSkipped,
-                          ]}>
-                            {item.set.status === 'skipped' ? 'Skipped' : formatSetResult(item.set)}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <>
-                  {/* Single Exercise */}
-                  <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseNumber}>{groupIndex + 1}</Text>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{group.exercises[0].exerciseName}</Text>
-                      {group.exercises[0].equipmentType && (
-                        <Text style={styles.equipmentType}>{group.exercises[0].equipmentType}</Text>
+                {section.exerciseGroups.map((group, groupIndex) => {
+                  const globalIndex = globalIndexOffset + groupIndex;
+
+                  return (
+                    <View key={group.exercises[0].id} style={styles.exerciseCard}>
+                      {group.type === 'superset' ? (
+                        <>
+                          {/* Superset Header */}
+                          <View style={styles.exerciseHeader}>
+                            <Text style={styles.exerciseNumber}>{globalIndex + 1}</Text>
+                            <View style={styles.exerciseInfo}>
+                              <Text style={styles.exerciseName}>{group.groupName}</Text>
+                              <Text style={styles.equipmentType}>
+                                {group.exercises.map(ex => ex.exerciseName).join(' + ')}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Interleaved Sets */}
+                          <View style={styles.setsContainer}>
+                            {interleaveSets(group.exercises).map((item, idx) => (
+                              <View
+                                key={`${item.set.id}-${idx}`}
+                                style={[
+                                  styles.setRow,
+                                  item.set.status === 'skipped' && styles.setRowSkipped,
+                                ]}
+                              >
+                                <View style={[
+                                  styles.setNumber,
+                                  item.set.status === 'completed' && styles.setNumberCompleted,
+                                  item.set.status === 'skipped' && styles.setNumberSkipped,
+                                ]}>
+                                  <Text style={[
+                                    styles.setNumberText,
+                                    item.set.status === 'completed' && styles.setNumberTextCompleted,
+                                    item.set.status === 'skipped' && styles.setNumberTextSkipped,
+                                  ]}>
+                                    {item.set.status === 'completed' ? '✓' : item.set.status === 'skipped' ? '−' : item.setIndex + 1}
+                                  </Text>
+                                </View>
+                                <View style={styles.setResultContainer}>
+                                  <Text style={styles.setExerciseName}>{item.exerciseName}</Text>
+                                  <Text style={[
+                                    styles.setResult,
+                                    item.set.status === 'skipped' && styles.setResultSkipped,
+                                  ]}>
+                                    {item.set.status === 'skipped' ? 'Skipped' : formatSetResult(item.set)}
+                                  </Text>
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          {/* Single Exercise */}
+                          <View style={styles.exerciseHeader}>
+                            <Text style={styles.exerciseNumber}>{globalIndex + 1}</Text>
+                            <View style={styles.exerciseInfo}>
+                              <Text style={styles.exerciseName}>{group.exercises[0].exerciseName}</Text>
+                              {group.exercises[0].equipmentType && (
+                                <Text style={styles.equipmentType}>{group.exercises[0].equipmentType}</Text>
+                              )}
+                            </View>
+                          </View>
+
+                          <View style={styles.setsContainer}>
+                            {group.exercises[0].sets.map((set, setIndex) => (
+                              <View
+                                key={set.id}
+                                style={[
+                                  styles.setRow,
+                                  set.status === 'skipped' && styles.setRowSkipped,
+                                ]}
+                              >
+                                <View style={[
+                                  styles.setNumber,
+                                  set.status === 'completed' && styles.setNumberCompleted,
+                                  set.status === 'skipped' && styles.setNumberSkipped,
+                                ]}>
+                                  <Text style={[
+                                    styles.setNumberText,
+                                    set.status === 'completed' && styles.setNumberTextCompleted,
+                                    set.status === 'skipped' && styles.setNumberTextSkipped,
+                                  ]}>
+                                    {set.status === 'completed' ? '✓' : set.status === 'skipped' ? '−' : setIndex + 1}
+                                  </Text>
+                                </View>
+                                <Text style={[
+                                  styles.setResult,
+                                  set.status === 'skipped' && styles.setResultSkipped,
+                                ]}>
+                                  {set.status === 'skipped' ? 'Skipped' : formatSetResult(set)}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </>
                       )}
                     </View>
-                  </View>
-
-                  <View style={styles.setsContainer}>
-                    {group.exercises[0].sets.map((set, setIndex) => (
-                      <View
-                        key={set.id}
-                        style={[
-                          styles.setRow,
-                          set.status === 'skipped' && styles.setRowSkipped,
-                        ]}
-                      >
-                        <View style={[
-                          styles.setNumber,
-                          set.status === 'completed' && styles.setNumberCompleted,
-                          set.status === 'skipped' && styles.setNumberSkipped,
-                        ]}>
-                          <Text style={[
-                            styles.setNumberText,
-                            set.status === 'completed' && styles.setNumberTextCompleted,
-                            set.status === 'skipped' && styles.setNumberTextSkipped,
-                          ]}>
-                            {set.status === 'completed' ? '✓' : set.status === 'skipped' ? '−' : setIndex + 1}
-                          </Text>
-                        </View>
-                        <Text style={[
-                          styles.setResult,
-                          set.status === 'skipped' && styles.setResultSkipped,
-                        ]}>
-                          {set.status === 'skipped' ? 'Skipped' : formatSetResult(set)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
-            </View>
-          ))}
+                  );
+                })}
+              </View>
+            );
+          })}
         </View>
 
         {/* Notes */}
