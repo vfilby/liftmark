@@ -594,8 +594,8 @@ describe('createWorkoutTemplate', () => {
 
     await createWorkoutTemplateInDb(template);
 
-    // Count runAsync calls: 1 template + 2 exercises + 3 sets + 1 sync_metadata = 7
-    expect(mockDb.runAsync).toHaveBeenCalledTimes(7);
+    // Count runAsync calls: 1 template + 2 exercises + 3 sets = 6 (sync_metadata removed)
+    expect(mockDb.runAsync).toHaveBeenCalledTimes(6);
   });
 });
 
