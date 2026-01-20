@@ -86,6 +86,22 @@ export default function RootLayout() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="settings/sync"
+        options={{
+          title: 'iCloud Sync',
+          headerBackTitle: 'Settings',
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="cloudkit-test"
+        options={{
+          title: 'CloudKit Test',
+          headerBackTitle: 'Back',
+          presentation: 'card',
+        }}
+      />
     </Stack>
   );
 }
