@@ -8,16 +8,22 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { getCompletedSessions } from '@/db/sessionRepository';
+import { getCompletedSessions, getWorkoutSessionById } from '@/db/sessionRepository';
 import { useTheme } from '@/theme';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { SplitView } from '@/components/SplitView';
+import { HistoryDetailView } from '@/components/HistoryDetailView';
 import type { WorkoutSession } from '@/types';
 
 export default function HistoryScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { isTablet } = useDeviceLayout();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -42,6 +48,24 @@ export default function HistoryScreen() {
       loadSessions();
     }, [loadSessions])
   );
+
+  // Load selected session when ID changes (for tablet split view)
+  useEffect(() => {
+    async function loadSelectedSession() {
+      if (selectedSessionId && isTablet) {
+        try {
+          const session = await getWorkoutSessionById(selectedSessionId);
+          setSelectedSession(session);
+        } catch (error) {
+          console.error('Failed to load selected session:', error);
+          setSelectedSession(null);
+        }
+      } else {
+        setSelectedSession(null);
+      }
+    }
+    loadSelectedSession();
+  }, [selectedSessionId, isTablet]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -209,15 +233,27 @@ export default function HistoryScreen() {
       height: 24,
       backgroundColor: colors.border,
     },
+    sessionCardSelected: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
   });
 
   const renderSession = ({ item: session }: { item: WorkoutSession }) => {
     const stats = getSessionStats(session);
+    const isSelected = isTablet && selectedSessionId === session.id;
+    const handlePress = () => {
+      if (isTablet) {
+        setSelectedSessionId(session.id);
+      } else {
+        router.push(`/history/${session.id}`);
+      }
+    };
 
     return (
       <TouchableOpacity
-        style={styles.sessionCard}
-        onPress={() => router.push(`/history/${session.id}`)}
+        style={[styles.sessionCard, isSelected && styles.sessionCardSelected]}
+        onPress={handlePress}
         activeOpacity={0.7}
       >
         <View style={styles.sessionHeader}>
@@ -271,8 +307,8 @@ export default function HistoryScreen() {
     );
   }
 
-  return (
-    <View style={styles.container}>
+  const listContent = (
+    <>
       {sessions.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No Workouts Yet</Text>
@@ -292,6 +328,29 @@ export default function HistoryScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
+    </>
+  );
+
+  if (isTablet) {
+    return (
+      <View style={styles.container}>
+        <SplitView
+          leftPane={listContent}
+          rightPane={
+            selectedSession ? (
+              <HistoryDetailView session={selectedSession} />
+            ) : null
+          }
+          selectedId={selectedSessionId}
+          emptyStateMessage="Select a workout to view details"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {listContent}
     </View>
   );
 }

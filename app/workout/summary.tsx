@@ -9,10 +9,13 @@ const openYouTubeSearch = (exerciseName: string) => {
 };
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
+import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const padding = useResponsivePadding();
+  const fonts = useResponsiveFontSizes();
   const { activeSession, pauseSession, getProgress, getTrackableExercises } = useSessionStore();
 
   // If no session, go back
@@ -46,16 +49,16 @@ export default function WorkoutSummaryScreen() {
       flex: 1,
     },
     contentContainer: {
-      padding: 16,
+      padding: padding.container,
       paddingBottom: 100,
     },
     // Success Header
     successHeader: {
       alignItems: 'center',
-      paddingVertical: 32,
+      paddingVertical: padding.large,
       backgroundColor: colors.card,
       borderRadius: 16,
-      marginBottom: 16,
+      marginBottom: padding.container,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,

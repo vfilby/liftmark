@@ -5,10 +5,14 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
+import { useResponsivePadding, useResponsiveFontSizes, useDeviceLayout } from '@/utils/responsive';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const padding = useResponsivePadding();
+  const fonts = useResponsiveFontSizes();
+  const { isTablet } = useDeviceLayout();
   const { workouts, loadWorkouts } = useWorkoutStore();
   const { loadSettings } = useSettingsStore();
   const { activeSession, resumeSession, getProgress } = useSessionStore();
@@ -43,13 +47,13 @@ export default function HomeScreen() {
     },
     stats: {
       flexDirection: 'row',
-      padding: 16,
-      gap: 16,
+      padding: padding.container,
+      gap: padding.container,
     },
     statCard: {
       flex: 1,
       backgroundColor: colors.card,
-      padding: 20,
+      padding: padding.card,
       borderRadius: 12,
       alignItems: 'center',
       shadowColor: '#000',
@@ -59,21 +63,23 @@ export default function HomeScreen() {
       elevation: 3,
     },
     statNumber: {
-      fontSize: 36,
+      fontSize: isTablet ? 42 : 36,
       fontWeight: 'bold',
       color: colors.primary,
       marginBottom: 4,
     },
     statLabel: {
-      fontSize: 14,
+      fontSize: fonts.sm,
       color: colors.textSecondary,
     },
     actions: {
-      padding: 16,
-      gap: 12,
+      padding: padding.container,
+      gap: padding.small,
+      flexDirection: isTablet ? 'row' : 'column',
     },
     button: {
-      padding: 16,
+      flex: isTablet ? 1 : undefined,
+      padding: padding.container,
       borderRadius: 12,
       alignItems: 'center',
     },
@@ -86,7 +92,7 @@ export default function HomeScreen() {
       elevation: 3,
     },
     primaryButtonText: {
-      fontSize: 16,
+      fontSize: fonts.md,
       fontWeight: '600',
       color: '#ffffff',
     },
@@ -96,19 +102,19 @@ export default function HomeScreen() {
       borderColor: colors.primary,
     },
     secondaryButtonText: {
-      fontSize: 16,
+      fontSize: fonts.md,
       fontWeight: '600',
       color: colors.primary,
     },
     recentSection: {
       flex: 1,
-      padding: 16,
+      padding: padding.container,
     },
     sectionTitle: {
-      fontSize: 20,
+      fontSize: fonts.lg,
       fontWeight: 'bold',
       color: colors.text,
-      marginBottom: 12,
+      marginBottom: padding.small,
     },
     emptyState: {
       flex: 1,
@@ -129,9 +135,9 @@ export default function HomeScreen() {
     },
     workoutCard: {
       backgroundColor: colors.card,
-      padding: 16,
+      padding: padding.container,
       borderRadius: 12,
-      marginBottom: 12,
+      marginBottom: padding.small,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,

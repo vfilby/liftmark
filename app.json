@@ -3,7 +3,7 @@
     "name": "LiftMark",
     "slug": "liftmark",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,8 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
-          "remote-notification"
+          "remote-notification",
+          "fetch"
         ],
         "NSHealthShareUsageDescription": "LiftMark uses HealthKit to read your workout history.",
         "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts.",
@@ -58,7 +59,8 @@
           "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
         }
       ],
-      ["expo-live-activity", { "enablePushNotifications": false }]
+      ["expo-live-activity", { "enablePushNotifications": false }],
+      "expo-task-manager"
     ],
     "extra": {
       "router": {},

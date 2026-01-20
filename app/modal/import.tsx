@@ -18,10 +18,13 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
+import { useResponsivePadding, useMaxContentWidth } from '@/utils/responsive';
 
 export default function ImportWorkoutModal() {
   const router = useRouter();
   const { colors } = useTheme();
+  const padding = useResponsivePadding();
+  const maxWidth = useMaxContentWidth();
   const { saveWorkout } = useWorkoutStore();
   const { settings, loadSettings } = useSettingsStore();
   const { defaultGym, loadGyms } = useGymStore();
@@ -242,13 +245,16 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
     container: {
       flex: 1,
       backgroundColor: colors.card,
+      maxWidth: maxWidth,
+      alignSelf: 'center',
+      width: '100%',
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: padding.container,
+      paddingVertical: padding.small,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },

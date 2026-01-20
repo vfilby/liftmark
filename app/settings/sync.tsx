@@ -1,6 +1,6 @@
 /**
- * Sync Settings Screen
- * Main CloudKit sync configuration and status
+ * Simple iCloud Sync Settings Screen
+ * Basic CloudKit sync configuration
  */
 
 import { useEffect, useState } from 'react';
@@ -17,123 +17,81 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router } from 'expo-router';
 import { useTheme } from '@/theme';
-import { useSyncStore } from '@/stores/syncStore';
-import { performFullSync } from '@/services/syncService';
-import { setSyncEnabled, getSyncMetadata } from '@/db/syncMetadataRepository';
-import { initializeCloudKit } from '@/services/cloudKitService';
-import {
-  startBackgroundSync,
-  stopBackgroundSync,
-} from '@/services/backgroundSyncService';
+import { cloudKitService } from '@/services/cloudKitService';
 
 export default function SyncSettingsScreen() {
   const { colors } = useTheme();
-  const {
-    syncEnabled,
-    isSyncing,
-    lastSyncDate,
-    syncError,
-    pendingChanges,
-    loadSyncState,
-    setSyncEnabled: updateSyncEnabled,
-  } = useSyncStore();
-
-  const [cloudKitAvailable, setCloudKitAvailable] = useState<boolean | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [accountStatus, setAccountStatus] = useState<string>('unknown');
+  const [isLoading, setIsLoading] = useState(true);
+  const [syncEnabled, setSyncEnabled] = useState(false);
 
   useEffect(() => {
     initializeScreen();
   }, []);
 
   const initializeScreen = async () => {
-    setIsInitializing(true);
+    setIsLoading(true);
     try {
-      // Check CloudKit availability
-      const result = await initializeCloudKit();
-      setCloudKitAvailable(result?.isAvailable ?? false);
-
-      // Load sync state
-      await loadSyncState();
+      // Check CloudKit account status
+      const status = await cloudKitService.getAccountStatus();
+      setAccountStatus(status || 'unknown');
+      
+      // For now, sync is always disabled since we have a basic implementation
+      setSyncEnabled(false);
     } catch (error) {
       console.error('Failed to initialize sync screen:', error);
-      setCloudKitAvailable(false);
+      setAccountStatus('error');
     } finally {
-      setIsInitializing(false);
+      setIsLoading(false);
     }
   };
 
   const handleToggleSync = async (enabled: boolean) => {
-    try {
-      if (enabled && !cloudKitAvailable) {
-        Alert.alert(
-          'CloudKit Not Available',
-          'Please ensure you are signed in to iCloud and have a network connection.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      await setSyncEnabled(enabled);
-      updateSyncEnabled(enabled);
-
-      if (enabled) {
-        // Start background sync
-        await startBackgroundSync();
-
-        // Trigger initial sync
-        Alert.alert(
-          'Enable Sync',
-          'Would you like to sync your data now?',
-          [
-            { text: 'Later', style: 'cancel' },
-            {
-              text: 'Sync Now',
-              onPress: () => performFullSync(),
-            },
-          ]
-        );
-      } else {
-        // Stop background sync
-        await stopBackgroundSync();
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to toggle sync');
-      console.error('Toggle sync error:', error);
-    }
-  };
-
-  const handleManualSync = async () => {
-    if (isSyncing) return;
-
-    const result = await performFullSync();
-
-    if (result.success) {
+    if (enabled) {
       Alert.alert(
-        'Sync Complete',
-        `Pushed ${result.pushedCount || 0} changes, pulled ${result.pulledCount || 0} changes.`
+        'CloudKit Sync',
+        'CloudKit sync is available but not fully implemented yet. This is a basic CloudKit module for testing.',
+        [{ text: 'OK' }]
       );
-    } else {
-      Alert.alert('Sync Failed', result.error || 'Unknown error');
+    }
+    // Keep it disabled for now
+    setSyncEnabled(false);
+  };
+
+  const handleTestCloudKit = () => {
+    router.push('/cloudkit-test');
+  };
+
+  const getStatusColor = () => {
+    switch (accountStatus) {
+      case 'available':
+        return '#2e7d32';
+      case 'noAccount':
+      case 'restricted':
+      case 'error':
+        return '#d32f2f';
+      case 'couldNotDetermine':
+      case 'unknown':
+      default:
+        return colors.textSecondary;
     }
   };
 
-  const handleViewConflicts = () => {
-    router.push('/settings/sync-conflicts');
-  };
-
-  const formatLastSync = (): string => {
-    if (!lastSyncDate) return 'Never';
-
-    const now = new Date();
-    const diff = now.getTime() - lastSyncDate.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+  const getStatusText = () => {
+    switch (accountStatus) {
+      case 'available':
+        return 'iCloud Available';
+      case 'noAccount':
+        return 'No iCloud Account';
+      case 'restricted':
+        return 'iCloud Restricted';
+      case 'couldNotDetermine':
+        return 'Status Unknown';
+      case 'error':
+        return 'Error';
+      default:
+        return 'Checking...';
+    }
   };
 
   const styles = StyleSheet.create({
@@ -188,12 +146,13 @@ export default function SyncSettingsScreen() {
       paddingVertical: 4,
       paddingHorizontal: 8,
       borderRadius: 4,
+      backgroundColor: '#f5f5f5',
     },
     statusText: {
       fontSize: 12,
       fontWeight: '600',
     },
-    syncButton: {
+    testButton: {
       marginHorizontal: 16,
       marginTop: 16,
       paddingVertical: 12,
@@ -204,32 +163,29 @@ export default function SyncSettingsScreen() {
       justifyContent: 'center',
       gap: 8,
     },
-    syncButtonDisabled: {
-      opacity: 0.5,
-    },
-    syncButtonText: {
+    testButtonText: {
       color: '#ffffff',
       fontSize: 16,
       fontWeight: '600',
     },
-    chevron: {
-      marginLeft: 8,
-    },
-    warningBox: {
-      backgroundColor: colors.error || '#ff4444',
+    infoBox: {
+      backgroundColor: colors.primaryLight || '#e3f2fd',
       marginHorizontal: 16,
       marginTop: 16,
       padding: 12,
       borderRadius: 8,
     },
-    warningText: {
-      color: '#ffffff',
+    infoText: {
+      color: colors.primary,
       fontSize: 14,
       lineHeight: 20,
     },
+    chevron: {
+      marginLeft: 8,
+    },
   });
 
-  if (isInitializing) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
         <Stack.Screen options={{ title: 'iCloud Sync' }} />
@@ -245,21 +201,44 @@ export default function SyncSettingsScreen() {
       <Stack.Screen options={{ title: 'iCloud Sync' }} />
 
       <ScrollView>
-        {/* CloudKit Status Warning */}
-        {!cloudKitAvailable && (
-          <View style={styles.warningBox}>
-            <Text style={styles.warningText}>
-              iCloud is not available. Please ensure you are signed in to iCloud and have
-              an internet connection.
-            </Text>
-          </View>
-        )}
+        {/* Info Box */}
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
+          </Text>
+        </View>
 
-        {/* Enable/Disable Sync */}
+        {/* CloudKit Status */}
+        <Text style={styles.sectionTitle}>iCloud Status</Text>
         <View style={styles.section}>
           <View style={styles.row}>
             <View style={styles.rowContent}>
-              <Text style={styles.rowTitle}>Enable iCloud Sync</Text>
+              <Text style={styles.rowTitle}>Account Status</Text>
+              <Text style={styles.rowSubtitle}>
+                {accountStatus === 'available' 
+                  ? 'Signed in to iCloud' 
+                  : 'iCloud account required for sync'}
+              </Text>
+            </View>
+            <View style={styles.statusBadge}>
+              <Text 
+                style={[
+                  styles.statusText, 
+                  { color: getStatusColor() }
+                ]}
+              >
+                {getStatusText()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Sync Settings */}
+        <Text style={styles.sectionTitle}>Sync Settings</Text>
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>Enable Sync</Text>
               <Text style={styles.rowSubtitle}>
                 Sync workouts across all your devices
               </Text>
@@ -267,104 +246,19 @@ export default function SyncSettingsScreen() {
             <Switch
               value={syncEnabled}
               onValueChange={handleToggleSync}
-              disabled={!cloudKitAvailable}
+              disabled={accountStatus !== 'available'}
             />
           </View>
         </View>
 
-        {/* Sync Status */}
-        {syncEnabled && (
-          <>
-            <Text style={styles.sectionTitle}>Status</Text>
-            <View style={styles.section}>
-              {/* Sync Status */}
-              <View style={styles.row}>
-                <View style={styles.rowContent}>
-                  <Text style={styles.rowTitle}>Sync Status</Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor: isSyncing
-                        ? colors.primaryLight
-                        : syncError
-                        ? '#ffebee'
-                        : '#e8f5e9',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      {
-                        color: isSyncing
-                          ? colors.primary
-                          : syncError
-                          ? '#d32f2f'
-                          : '#2e7d32',
-                      },
-                    ]}
-                  >
-                    {isSyncing ? 'Syncing...' : syncError ? 'Error' : 'Up to date'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Last Sync */}
-              <View style={styles.row}>
-                <View style={styles.rowContent}>
-                  <Text style={styles.rowTitle}>Last Synced</Text>
-                </View>
-                <Text style={styles.rowSubtitle}>{formatLastSync()}</Text>
-              </View>
-
-              {/* Pending Changes */}
-              <View style={styles.row}>
-                <View style={styles.rowContent}>
-                  <Text style={styles.rowTitle}>Pending Changes</Text>
-                </View>
-                <Text style={styles.rowSubtitle}>{pendingChanges}</Text>
-              </View>
-
-              {/* View Conflicts */}
-              <TouchableOpacity
-                style={[styles.row, styles.rowLast]}
-                onPress={handleViewConflicts}
-              >
-                <Text style={styles.rowTitle}>Sync Conflicts</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={colors.textSecondary}
-                  style={styles.chevron}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Manual Sync Button */}
-            <TouchableOpacity
-              style={[
-                styles.syncButton,
-                (isSyncing || !cloudKitAvailable) && styles.syncButtonDisabled,
-              ]}
-              onPress={handleManualSync}
-              disabled={isSyncing || !cloudKitAvailable}
-            >
-              {isSyncing ? (
-                <>
-                  <ActivityIndicator size="small" color="#ffffff" />
-                  <Text style={styles.syncButtonText}>Syncing...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="cloud-upload" size={20} color="#ffffff" />
-                  <Text style={styles.syncButtonText}>Sync Now</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </>
-        )}
+        {/* Test CloudKit */}
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={handleTestCloudKit}
+        >
+          <Ionicons name="flask" size={20} color="#ffffff" />
+          <Text style={styles.testButtonText}>Test CloudKit Module</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

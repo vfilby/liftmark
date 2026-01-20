@@ -388,21 +388,7 @@ async function afterCreateHook(
   entityType: 'WorkoutTemplate',
   entity: WorkoutTemplate
 ): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue(entityType, entity.id, 'create', entity);
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (create):', error);
-  }
+  // Sync functionality removed
 }
 
 /**
@@ -412,21 +398,7 @@ async function afterUpdateHook(
   entityType: 'WorkoutTemplate',
   entity: WorkoutTemplate
 ): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue(entityType, entity.id, 'update', entity);
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (update):', error);
-  }
+  // Sync functionality removed
 }
 
 /**
@@ -436,19 +408,5 @@ async function afterDeleteHook(
   entityType: 'WorkoutTemplate',
   entityId: string
 ): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue(entityType, entityId, 'delete', { id: entityId });
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (delete):', error);
-  }
+  // Sync functionality removed
 }

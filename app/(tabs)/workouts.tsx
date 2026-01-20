@@ -13,18 +13,27 @@ import { useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useGymStore } from '@/stores/gymStore';
+import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { SplitView } from '@/components/SplitView';
+import { WorkoutDetailView } from '@/components/WorkoutDetailView';
 import type { WorkoutTemplate } from '@/types';
 
 export default function WorkoutsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { workouts, loadWorkouts, removeWorkout, searchWorkouts, error, clearError } =
+  const { workouts, loadWorkouts, removeWorkout, searchWorkouts, selectedWorkout, loadWorkout, reprocessWorkout, error, clearError } =
     useWorkoutStore();
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
   const { defaultGym, loadGyms } = useGymStore();
+  const { startWorkout, checkForActiveSession } = useSessionStore();
+  const { isTablet } = useDeviceLayout();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByEquipment, setFilterByEquipment] = useState(false);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
   useEffect(() => {
     loadWorkouts();
@@ -44,6 +53,13 @@ export default function WorkoutsScreen() {
     }
   }, [error]);
 
+  // Load selected workout when ID changes (for tablet split view)
+  useEffect(() => {
+    if (selectedWorkoutId && isTablet) {
+      loadWorkout(selectedWorkoutId);
+    }
+  }, [selectedWorkoutId, isTablet]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     searchWorkouts(query);
@@ -58,7 +74,70 @@ export default function WorkoutsScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => removeWorkout(workout.id),
+          onPress: () => {
+            removeWorkout(workout.id);
+            // Clear selection if deleted workout was selected
+            if (selectedWorkoutId === workout.id) {
+              setSelectedWorkoutId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleStartWorkout = async () => {
+    if (!selectedWorkout || isStarting) return;
+
+    // Check for existing active session
+    const hasActive = await checkForActiveSession();
+    if (hasActive) {
+      Alert.alert(
+        'Workout In Progress',
+        'You have another workout in progress. Please finish or cancel it first.',
+        [
+          { text: 'OK', style: 'cancel' },
+          {
+            text: 'Resume Workout',
+            onPress: () => router.push('/workout/active'),
+          },
+        ]
+      );
+      return;
+    }
+
+    setIsStarting(true);
+    try {
+      await startWorkout(selectedWorkout);
+      router.push('/workout/active');
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to start workout');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleReprocess = async () => {
+    if (!selectedWorkoutId || isReprocessing) return;
+
+    Alert.alert(
+      'Reprocess Workout',
+      'This will re-parse the workout from its original markdown. Any manual edits will be lost.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reprocess',
+          onPress: async () => {
+            setIsReprocessing(true);
+            const result = await reprocessWorkout(selectedWorkoutId);
+            setIsReprocessing(false);
+
+            if (result.success) {
+              Alert.alert('Success', 'Workout has been reprocessed.');
+            } else {
+              Alert.alert('Error', result.errors?.join('\n') || 'Failed to reprocess workout');
+            }
+          },
         },
       ]
     );
@@ -144,6 +223,10 @@ export default function WorkoutsScreen() {
       shadowRadius: 4,
       elevation: 3,
       overflow: 'hidden',
+    },
+    workoutCardSelected: {
+      borderWidth: 2,
+      borderColor: colors.primary,
     },
     workoutContent: {
       padding: 16,
@@ -239,13 +322,29 @@ export default function WorkoutsScreen() {
     },
   });
 
-  const renderWorkout = ({ item }: { item: WorkoutTemplate }) => (
-    <View style={styles.workoutCard} testID={`workout-${item.id}`}>
-      <TouchableOpacity
-        style={styles.workoutContent}
-        onPress={() => router.push(`/workout/${item.id}`)}
-        testID={`workout-card-${item.id}`}
+  const renderWorkout = ({ item }: { item: WorkoutTemplate }) => {
+    const isSelected = isTablet && selectedWorkoutId === item.id;
+    const handlePress = () => {
+      if (isTablet) {
+        setSelectedWorkoutId(item.id);
+      } else {
+        router.push(`/workout/${item.id}`);
+      }
+    };
+
+    return (
+      <View
+        style={[
+          styles.workoutCard,
+          isSelected && styles.workoutCardSelected,
+        ]}
+        testID={`workout-${item.id}`}
       >
+        <TouchableOpacity
+          style={styles.workoutContent}
+          onPress={handlePress}
+          testID={`workout-card-${item.id}`}
+        >
         <View style={styles.workoutHeader}>
           <Text style={styles.workoutName}>{item.name}</Text>
           {item.tags.length > 0 && (
@@ -293,10 +392,11 @@ export default function WorkoutsScreen() {
         <Text style={styles.deleteButtonText}>Delete</Text>
       </TouchableOpacity>
     </View>
-  );
+    );
+  };
 
-  return (
-    <View style={styles.container} testID="workouts-screen">
+  const listContent = (
+    <>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -360,6 +460,35 @@ export default function WorkoutsScreen() {
           testID="workout-list"
         />
       )}
+    </>
+  );
+
+  if (isTablet) {
+    return (
+      <View style={styles.container} testID="workouts-screen">
+        <SplitView
+          leftPane={listContent}
+          rightPane={
+            selectedWorkout ? (
+              <WorkoutDetailView
+                workout={selectedWorkout}
+                onStartWorkout={handleStartWorkout}
+                onReprocess={handleReprocess}
+                isStarting={isStarting}
+                isReprocessing={isReprocessing}
+              />
+            ) : null
+          }
+          selectedId={selectedWorkoutId}
+          emptyStateMessage="Select a workout to view details"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container} testID="workouts-screen">
+      {listContent}
     </View>
   );
 }

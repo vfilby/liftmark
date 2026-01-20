@@ -1,6 +1,25 @@
 {
   "name": "expo-cloudkit",
   "version": "1.0.0",
+  "description": "A simple Expo module for CloudKit integration",
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "scripts": {},
+  "keywords": [
+    "expo",
+    "cloudkit",
+    "icloud",
+    "react-native"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/expo/expo.git",
+    "directory": "packages/expo-cloudkit"
+  },
+  "author": "Expo Team <expo-team@expo.dev>",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "peerDependencies": {
+    "expo": "*"
+  }
 }

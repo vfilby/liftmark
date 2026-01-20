@@ -504,61 +504,19 @@ function rowToSessionSet(row: SessionSetRow): SessionSet {
  * Hook called after creating a session
  */
 async function afterCreateSessionHook(session: WorkoutSession): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue('WorkoutSession', session.id, 'create', session);
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (create session):', error);
-  }
+  // Sync functionality removed
 }
 
 /**
  * Hook called after updating a session
  */
 async function afterUpdateSessionHook(session: WorkoutSession): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue('WorkoutSession', session.id, 'update', session);
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (update session):', error);
-  }
+  // Sync functionality removed
 }
 
 /**
  * Hook called after deleting a session
  */
 async function afterDeleteSessionHook(sessionId: string): Promise<void> {
-  try {
-    const { getSyncMetadata, addToSyncQueue } = await import('./syncMetadataRepository');
-    const { triggerSyncAfterChange } = await import('@/services/syncService');
-
-    // Only queue if sync is enabled
-    const metadata = await getSyncMetadata();
-    if (!metadata.syncEnabled) {
-      return;
-    }
-
-    await addToSyncQueue('WorkoutSession', sessionId, 'delete', { id: sessionId });
-    triggerSyncAfterChange();
-  } catch (error) {
-    console.error('Sync hook failed (delete session):', error);
-  }
+  // Sync functionality removed
 }

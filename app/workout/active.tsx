@@ -21,6 +21,7 @@ const openYouTubeSearch = (exerciseName: string) => {
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
+import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 import { audioService } from '@/services/audioService';
 import RestTimer from '@/components/RestTimer';
 import ExerciseTimer from '@/components/ExerciseTimer';
@@ -84,6 +85,8 @@ export default function ActiveWorkoutScreen() {
 
   const { settings } = useSettingsStore();
   const { colors } = useTheme();
+  const padding = useResponsivePadding();
+  const fonts = useResponsiveFontSizes();
 
   // Keep screen awake during workout if setting is enabled
   if (settings?.keepScreenAwake) {
@@ -590,9 +593,9 @@ export default function ActiveWorkoutScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
+      paddingHorizontal: padding.horizontal,
       paddingTop: 50,
-      paddingBottom: 12,
+      paddingBottom: padding.small,
       backgroundColor: colors.card,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
@@ -620,8 +623,8 @@ export default function ActiveWorkoutScreen() {
     // Progress
     progressContainer: {
       backgroundColor: colors.card,
-      paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingHorizontal: padding.horizontal,
+      paddingBottom: padding.small,
     },
     progressBar: {
       height: 6,
@@ -693,7 +696,7 @@ export default function ActiveWorkoutScreen() {
       flex: 1,
     },
     contentContainer: {
-      padding: 16,
+      padding: padding.container,
     },
     // Section header styles
     sectionHeader: {

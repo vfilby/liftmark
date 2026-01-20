@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useTheme } from '@/theme';
+import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 import {
   isHealthKitAvailable,
   requestHealthKitAuthorization,
@@ -23,6 +24,8 @@ import { isLiveActivityAvailable } from '@/services/liveActivityService';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
+  const padding = useResponsivePadding();
+  const fonts = useResponsiveFontSizes();
   const router = useRouter();
   const { settings, loadSettings, updateSettings, error: settingsError, clearError: clearSettingsError } =
     useSettingsStore();
@@ -133,19 +136,19 @@ export default function SettingsScreen() {
       marginTop: 100,
     },
     header: {
-      paddingHorizontal: 20,
+      paddingHorizontal: padding.container,
       paddingTop: 60,
-      paddingBottom: 24,
+      paddingBottom: padding.large,
       backgroundColor: colors.background,
     },
     headerTitle: {
-      fontSize: 32,
+      fontSize: fonts.xxl,
       fontWeight: 'bold',
       color: colors.text,
       marginBottom: 4,
     },
     headerSubtitle: {
-      fontSize: 15,
+      fontSize: fonts.md,
       color: colors.textSecondary,
     },
     sectionGroup: {
