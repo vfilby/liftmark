@@ -10,8 +10,28 @@ if (!['alpha', 'beta', 'production'].includes(releaseType)) {
   process.exit(1);
 }
 
-// Get version from package.json
-const version = require('../package.json').version;
+// Automatically bump patch version for releases
+console.log('🔄 Automatically bumping patch version...');
+try {
+  const currentVersion = require('../package.json').version;
+  console.log(`Current version: ${currentVersion}`);
+  
+  execSync('npm version patch --no-git-tag-version', { stdio: 'inherit' });
+  
+  // Re-read the version after bumping
+  delete require.cache[require.resolve('../package.json')];
+  const newVersion = require('../package.json').version;
+  console.log(`✅ Version bumped to: ${newVersion}\n`);
+  
+  // Commit the version bump
+  execSync(`git add package.json package-lock.json`, { stdio: 'inherit' });
+  execSync(`git commit -m "chore: bump version to ${newVersion} [skip ci]"`, { stdio: 'inherit' });
+  
+  var version = newVersion;
+} catch (error) {
+  console.error('❌ Failed to bump version:', error.message);
+  process.exit(1);
+}
 
 // Build tag name based on release type
 const tagName = releaseType === 'production' ? `v${version}` : `${releaseType}-v${version}`;
