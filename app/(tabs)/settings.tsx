@@ -12,8 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { shareAsync } from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 import {
@@ -21,6 +25,11 @@ import {
   requestHealthKitAuthorization,
 } from '@/services/healthKitService';
 import { isLiveActivityAvailable } from '@/services/liveActivityService';
+import {
+  exportDatabase,
+  importDatabase,
+  validateDatabaseFile,
+} from '@/services/databaseBackupService';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
@@ -31,14 +40,19 @@ export default function SettingsScreen() {
     useSettingsStore();
   const {
     gyms,
+    defaultGym,
     loadGyms,
     addGym,
     setDefaultGym,
     error: gymError,
     clearError: clearGymError,
   } = useGymStore();
+  const { loadWorkouts } = useWorkoutStore();
+  const { loadEquipment } = useEquipmentStore();
 
   const [promptText, setPromptText] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -122,6 +136,83 @@ export default function SettingsScreen() {
 
   const handleSetDefaultGym = async (gymId: string) => {
     await setDefaultGym(gymId);
+  };
+
+  // Database backup/restore handlers
+  const handleExportDatabase = async () => {
+    setIsExporting(true);
+    try {
+      const exportPath = await exportDatabase();
+      await shareAsync(exportPath);
+      Alert.alert('Export Successful', 'Database exported successfully');
+    } catch (error) {
+      Alert.alert(
+        'Export Failed',
+        error instanceof Error ? error.message : 'Failed to export database'
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportDatabase = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/octet-stream',
+        copyToCacheDirectory: true
+      });
+
+      if (result.canceled) return;
+
+      const isValid = await validateDatabaseFile(result.assets[0].uri);
+      if (!isValid) {
+        Alert.alert('Invalid File', 'Selected file is not a valid LiftMark database');
+        return;
+      }
+
+      Alert.alert(
+        'Import Database?',
+        'This will replace all current data. This action cannot be undone. Continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Import',
+            style: 'destructive',
+            onPress: async () => {
+              setIsImporting(true);
+              try {
+                await importDatabase(result.assets[0].uri);
+                await reloadAllStores();
+                Alert.alert('Success', 'Database imported successfully');
+              } catch (error) {
+                Alert.alert(
+                  'Import Failed',
+                  error instanceof Error ? error.message : 'Failed to import database'
+                );
+              } finally {
+                setIsImporting(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'An error occurred'
+      );
+    }
+  };
+
+  const reloadAllStores = async () => {
+    await Promise.all([
+      loadSettings(),
+      loadGyms(),
+      loadWorkouts(),
+    ]);
+    if (defaultGym) {
+      await loadEquipment(defaultGym.id);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -389,6 +480,40 @@ export default function SettingsScreen() {
     navigationDescription: {
       fontSize: 13,
       color: colors.textSecondary,
+    },
+    exportButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: padding.card,
+      marginTop: padding.small,
+      backgroundColor: colors.card,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#16A085',
+      gap: 8,
+    },
+    exportButtonText: {
+      fontSize: fonts.md,
+      color: '#16A085',
+      fontWeight: '500',
+    },
+    importButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: padding.card,
+      marginTop: padding.small,
+      backgroundColor: colors.card,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.error,
+      gap: 8,
+    },
+    importButtonText: {
+      fontSize: fonts.md,
+      color: colors.error,
+      fontWeight: '500',
     },
   });
 
@@ -670,6 +795,46 @@ export default function SettingsScreen() {
           onBlur={handlePromptBlur}
           testID="input-custom-prompt"
         />
+        </View>
+      </View>
+
+      {/* Data Management Section */}
+      <View style={styles.sectionGroup}>
+        <View style={styles.sectionGroupHeader}>
+          <Text style={styles.sectionGroupTitle}>DATA MANAGEMENT</Text>
+        </View>
+
+        <View style={[styles.section, styles.sectionFirst]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="save-outline" size={20} color="#16A085" />
+            <Text style={styles.sectionTitle}>Backup & Restore</Text>
+          </View>
+
+          <Text style={styles.settingDescription}>
+            Export your workout data to backup or transfer to another device
+          </Text>
+
+          <TouchableOpacity
+            style={styles.exportButton}
+            onPress={handleExportDatabase}
+            disabled={isExporting}
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+            <Text style={styles.exportButtonText}>
+              {isExporting ? 'Exporting...' : 'Export Database'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.importButton}
+            onPress={handleImportDatabase}
+            disabled={isImporting}
+          >
+            <Ionicons name="cloud-download-outline" size={20} color={colors.error} />
+            <Text style={styles.importButtonText}>
+              {isImporting ? 'Importing...' : 'Import Database'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
