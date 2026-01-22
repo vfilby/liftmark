@@ -36,11 +36,19 @@ export class CloudKitService {
         return result.data || null;
       } else {
         console.error('Failed to get account status:', result.error);
-        return null;
+        // Return error status instead of null so UI can show appropriate message
+        return 'error';
       }
     } catch (error) {
       console.error('Account status error:', error);
-      return null;
+      // Handle specific simulator/development errors
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as Error).message;
+        if (errorMessage.includes('simulator') || errorMessage.includes('development')) {
+          return 'noAccount'; // Treat simulator as no account available
+        }
+      }
+      return 'error';
     }
   }
 

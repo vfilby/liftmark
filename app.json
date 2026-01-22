@@ -32,8 +32,12 @@
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [],
         "aps-environment": "production",
-        "com.apple.developer.icloud-services": ["CloudKit"],
-        "com.apple.developer.icloud-container-identifiers": ["iCloud.com.eff3.liftmark"],
+        "com.apple.developer.icloud-services": [
+          "CloudKit"
+        ],
+        "com.apple.developer.icloud-container-identifiers": [
+          "iCloud.com.eff3.liftmark"
+        ],
         "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)com.eff3.liftmark"
       },
       "usesIcloudStorage": true
@@ -59,11 +63,16 @@
           "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts."
         }
       ],
-      ["expo-live-activity", { "enablePushNotifications": false }],
-      "expo-task-manager"
+      [
+        "expo-live-activity",
+        {
+          "enablePushNotifications": false
+        }
+      ],
+      "expo-task-manager",
+      "expo-asset"
     ],
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "d1ba6917-1e66-4e9b-9e0a-e4025bd892bc"
       }

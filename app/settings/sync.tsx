@@ -13,17 +13,22 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router } from 'expo-router';
 import { useTheme } from '@/theme';
 import { cloudKitService } from '@/services/cloudKitService';
+import Constants from 'expo-constants';
 
 export default function SyncSettingsScreen() {
   const { colors } = useTheme();
   const [accountStatus, setAccountStatus] = useState<string>('unknown');
   const [isLoading, setIsLoading] = useState(true);
   const [syncEnabled, setSyncEnabled] = useState(false);
+  
+  // Check if running in simulator
+  const isSimulator = Platform.OS === 'ios' && Constants.appOwnership === null;
 
   useEffect(() => {
     initializeScreen();
@@ -32,8 +37,13 @@ export default function SyncSettingsScreen() {
   const initializeScreen = async () => {
     setIsLoading(true);
     try {
-      // Check CloudKit account status
-      const status = await cloudKitService.getAccountStatus();
+      // Check CloudKit account status with timeout to prevent hanging
+      const statusPromise = cloudKitService.getAccountStatus();
+      const timeoutPromise = new Promise<string>((resolve) => {
+        setTimeout(() => resolve('error'), 10000); // 10 second timeout
+      });
+      
+      const status = await Promise.race([statusPromise, timeoutPromise]);
       setAccountStatus(status || 'unknown');
       
       // For now, sync is always disabled since we have a basic implementation
@@ -70,6 +80,8 @@ export default function SyncSettingsScreen() {
       case 'restricted':
       case 'error':
         return '#d32f2f';
+      case 'temporarilyUnavailable':
+        return '#ff9800';
       case 'couldNotDetermine':
       case 'unknown':
       default:
@@ -85,6 +97,8 @@ export default function SyncSettingsScreen() {
         return 'No iCloud Account';
       case 'restricted':
         return 'iCloud Restricted';
+      case 'temporarilyUnavailable':
+        return 'Temporarily Unavailable';
       case 'couldNotDetermine':
         return 'Status Unknown';
       case 'error':
@@ -207,6 +221,18 @@ export default function SyncSettingsScreen() {
             This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
           </Text>
         </View>
+
+        {/* Simulator Warning */}
+        {isSimulator && (
+          <View style={[styles.infoBox, { backgroundColor: '#fff3cd', borderColor: '#f39c12' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="warning" size={16} color="#f39c12" />
+              <Text style={[styles.infoText, { color: '#856404' }]}>
+                CloudKit features are limited in iOS Simulator. Test on a physical device for full functionality.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* CloudKit Status */}
         <Text style={styles.sectionTitle}>iCloud Status</Text>

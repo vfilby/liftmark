@@ -63,3 +63,6 @@ settings/
 state.json
 .gitattributes
 push-day-corrected.md
+
+# Gas Town (added by gt)
+.logs/

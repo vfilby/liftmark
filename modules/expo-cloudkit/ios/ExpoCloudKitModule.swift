@@ -32,6 +32,8 @@ public class ExpoCloudKitModule: Module {
             promise.reject("CLOUDKIT_RESTRICTED", "CloudKit access is restricted")
           case .couldNotDetermine:
             promise.reject("CLOUDKIT_UNKNOWN", "Could not determine CloudKit account status")
+          case .temporarilyUnavailable:
+            promise.reject("CLOUDKIT_TEMPORARILY_UNAVAILABLE", "CloudKit is temporarily unavailable")
           @unknown default:
             promise.reject("CLOUDKIT_UNKNOWN", "Unknown CloudKit account status")
           }
@@ -57,6 +59,8 @@ public class ExpoCloudKitModule: Module {
             statusString = "restricted"
           case .couldNotDetermine:
             statusString = "couldNotDetermine"
+          case .temporarilyUnavailable:
+            statusString = "temporarilyUnavailable"
           @unknown default:
             statusString = "unknown"
           }
