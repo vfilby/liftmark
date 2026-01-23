@@ -86,11 +86,26 @@ export async function validateDatabaseFile(fileUri: string): Promise<boolean> {
     }
 
     // Read first 16 bytes to check SQLite magic header
-    const content = await file.text();
+    // SQLite files are binary, so we need to read as bytes, not text
+    const fileHandle = file.open();
+    const headerBytes = fileHandle.readBytes(16);
+    fileHandle.close();
 
-    // SQLite files start with "SQLite format 3" in ASCII
-    if (!content.startsWith('SQLite format 3')) {
-      throw new Error('Invalid database file format - not a SQLite database');
+    // SQLite files start with "SQLite format 3\0" (hex: 53 51 4c 69 74 65 20 66 6f 72 6d 61 74 20 33 00)
+    const expectedHeader = new Uint8Array([
+      0x53, 0x51, 0x4c, 0x69, 0x74, 0x65, 0x20, 0x66,
+      0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00
+    ]);
+
+    // Check if the header matches
+    if (headerBytes.length < 16) {
+      throw new Error('File is too small to be a valid database');
+    }
+
+    for (let i = 0; i < 16; i++) {
+      if (headerBytes[i] !== expectedHeader[i]) {
+        throw new Error('Invalid database file format - not a SQLite database');
+      }
     }
 
     // Basic validation passed
