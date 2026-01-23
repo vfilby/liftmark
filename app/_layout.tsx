@@ -1,3 +1,5 @@
+import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -15,93 +17,95 @@ export default function RootLayout() {
   }, [loadSettings]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: colors?.card || '#FFFFFF',
-        },
-        headerTintColor: colors?.text || '#000000',
-        contentStyle: {
-          backgroundColor: colors?.background || '#F5F5F5',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="(tabs)"
-        options={{
-          headerShown: false,
-          headerBackTitle: 'Back',
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors?.card || '#FFFFFF',
+          },
+          headerTintColor: colors?.text || '#000000',
+          contentStyle: {
+            backgroundColor: colors?.background || '#F5F5F5',
+          },
         }}
-      />
-      <Stack.Screen
-        name="modal/import"
-        options={{
-          presentation: 'modal',
-          title: 'Import Workout',
-        }}
-      />
-      <Stack.Screen
-        name="workout/[id]"
-        options={{
-          title: 'Workout Details',
-          headerBackTitle: 'Back',
-        }}
-      />
-      <Stack.Screen
-        name="workout/active"
-        options={{
-          title: 'Active Workout',
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="workout/summary"
-        options={{
-          title: 'Workout Complete',
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="history/[id]"
-        options={{
-          title: 'Workout Details',
-          headerBackTitle: 'Back',
-        }}
-      />
-      <Stack.Screen
-        name="gym/[id]"
-        options={{
-          title: 'Gym Details',
-          headerBackTitle: 'Settings',
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen
-        name="settings/workout"
-        options={{
-          title: 'Workout Settings',
-          headerBackTitle: 'Settings',
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen
-        name="settings/sync"
-        options={{
-          title: 'iCloud Sync',
-          headerBackTitle: 'Settings',
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen
-        name="cloudkit-test"
-        options={{
-          title: 'CloudKit Test',
-          headerBackTitle: 'Back',
-          presentation: 'card',
-        }}
-      />
-    </Stack>
+      >
+        <Stack.Screen
+          name="(tabs)"
+          options={{
+            headerShown: false,
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="modal/import"
+          options={{
+            presentation: 'modal',
+            title: 'Import Workout',
+          }}
+        />
+        <Stack.Screen
+          name="workout/[id]"
+          options={{
+            title: 'Workout Details',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="workout/active"
+          options={{
+            title: 'Active Workout',
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="workout/summary"
+          options={{
+            title: 'Workout Complete',
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="history/[id]"
+          options={{
+            title: 'Workout Details',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="gym/[id]"
+          options={{
+            title: 'Gym Details',
+            headerBackTitle: 'Settings',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="settings/workout"
+          options={{
+            title: 'Workout Settings',
+            headerBackTitle: 'Settings',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="settings/sync"
+          options={{
+            title: 'iCloud Sync',
+            headerBackTitle: 'Settings',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="cloudkit-test"
+          options={{
+            title: 'CloudKit Test',
+            headerBackTitle: 'Back',
+            presentation: 'card',
+          }}
+        />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }

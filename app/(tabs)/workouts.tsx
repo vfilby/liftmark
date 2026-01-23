@@ -68,24 +68,11 @@ export default function WorkoutsScreen() {
   };
 
   const handleDelete = (workout: WorkoutTemplate) => {
-    Alert.alert(
-      'Delete Workout',
-      `Are you sure you want to delete "${workout.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            removeWorkout(workout.id);
-            // Clear selection if deleted workout was selected
-            if (selectedWorkoutId === workout.id) {
-              setSelectedWorkoutId(null);
-            }
-          },
-        },
-      ]
-    );
+    removeWorkout(workout.id);
+    // Clear selection if deleted workout was selected
+    if (selectedWorkoutId === workout.id) {
+      setSelectedWorkoutId(null);
+    }
   };
 
   const handleStartWorkout = async () => {
@@ -292,8 +279,7 @@ export default function WorkoutsScreen() {
       alignItems: 'center',
       width: 80,
       height: '100%',
-      borderTopRightRadius: 12,
-      borderBottomRightRadius: 12,
+      borderRadius: 12,
     },
     swipeDeleteText: {
       color: '#ffffff',
