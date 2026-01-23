@@ -220,6 +220,43 @@ without a proper workout`;
       expect(child2.sets).toHaveLength(1);
     });
 
+    it('parses supersets with non-adjacent header levels', () => {
+      // Test that superset parsing works regardless of header level difference
+      // H2 superset -> H4 exercises (skipping H3)
+      const markdown = `# Workout
+
+## Superset: Arms
+#### Bicep Curls
+- 20 x 10
+#### Tricep Extensions
+- 20 x 10
+`;
+      const result = parseWorkout(markdown);
+
+      expect(result.success).toBe(true);
+      const exercises = result.data?.exercises || [];
+
+      // Should have: Superset parent + 2 superset children
+      expect(exercises.length).toBe(3);
+
+      // First should be superset parent
+      const supersetParent = exercises[0];
+      expect(supersetParent.groupType).toBe('superset');
+      expect(supersetParent.exerciseName).toBe('Superset: Arms');
+      expect(supersetParent.sets).toHaveLength(0);
+
+      // Superset children should be recognized even though they are H4 (2 levels below H2)
+      const child1 = exercises[1];
+      expect(child1.exerciseName).toBe('Bicep Curls');
+      expect(child1.parentExerciseId).toBe(supersetParent.id);
+      expect(child1.sets).toHaveLength(1);
+
+      const child2 = exercises[2];
+      expect(child2.exerciseName).toBe('Tricep Extensions');
+      expect(child2.parentExerciseId).toBe(supersetParent.id);
+      expect(child2.sets).toHaveLength(1);
+    });
+
     it('parses @perside modifier', () => {
       const markdown = `# Workout
 ## Stretches

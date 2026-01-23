@@ -73,6 +73,9 @@
 
 ##### Supersets
 - ✅ Nested headers containing "superset" (case-insensitive)
+- ✅ **Flexible header levels**: Child exercises can be at ANY level below superset header
+  - Example: H2 Superset → H4 Exercises (skipping H3)
+  - Not limited to strict parent+1 hierarchy
 - ✅ Parent exercise created as grouping container
 - ✅ Child exercises linked via `parentExerciseId`
 - ✅ `groupType: 'superset'` for all members

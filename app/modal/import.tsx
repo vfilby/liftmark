@@ -105,14 +105,15 @@ SETS FORMAT:
   • AMRAP: "weight x AMRAP" or just "AMRAP"
 
 SUPERSETS:
-  • Use "### Superset: Name" as section header
-  • List exercises underneath with #### headers
-  • Example:
+  • Any header containing "superset" (case-insensitive) creates a superset
+  • List exercises underneath with any deeper header level
+  • Example with H3 -> H4:
       ### Superset: Chest & Triceps
       #### Exercise A
       - sets here
       #### Exercise B
       - sets here
+  • Also works with other levels (H2 -> H4, H1 -> H3, etc.)
 
 MODIFIERS (optional, add after sets):
   • @rpe:8 (Rate of Perceived Exertion, 1-10)

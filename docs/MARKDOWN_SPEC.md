@@ -841,6 +841,8 @@ Or with deeper nesting:
 1. Find the first header that has child headers containing list items (sets) - that's the workout
 2. All headers one level below the workout header = exercises
 3. Headers containing "superset" (case-insensitive) with child exercises = superset grouping
+   - Child exercises can be at ANY header level below the superset (not limited to parent+1)
+   - Example: H2 superset can have H3, H4, or H5 exercises
 4. Other nested headers under exercises = section grouping (warmup, cooldown, etc.)
 
 **Superset vs Section Grouping Example**:
@@ -866,7 +868,12 @@ Or with deeper nesting:
 - 60s
 ```
 
-**Key Rule**: If header name contains "superset" (case-insensitive), it's a superset. Otherwise, it's a section grouping.
+**Key Rules**:
+- If header name contains "superset" (case-insensitive), it's a superset. Otherwise, it's a section grouping.
+- Superset exercises can be at ANY header level below the superset header (not limited to parent+1)
+  - Valid: H2 Superset → H4 Exercises (skipping H3)
+  - Valid: H1 Superset → H3 Exercises (skipping H2)
+  - Valid: H3 Superset → H4 Exercises (standard parent+1)
 
 ### Parse Result Structure
 
@@ -951,7 +958,11 @@ Format requirements:
 - If @units is set, weight units can be omitted: - [weight] x [reps]
 - Functional modifiers: @rest (triggers timer), @dropset (UI behavior)
 - Descriptive data (tempo, RPE, etc.) goes in freeform notes
-- For supersets, use nested headers (e.g., ## Superset: Arms, then ### Exercise1, ### Exercise2)
+- For supersets, use nested headers with "superset" in the name
+  - Header containing "superset" (case-insensitive) becomes the superset parent
+  - Child exercises can be at any deeper header level (not limited to parent+1)
+  - Example: ## Superset: Arms, then ### Exercise1, ### Exercise2
+  - Also valid: ## Superset: Arms, then #### Exercise1, #### Exercise2
 - AMRAP implies to failure (no need for separate failure flag)
 
 Example:

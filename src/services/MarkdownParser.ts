@@ -11,7 +11,8 @@
  * - Exercise metadata (@type, superset detection)
  * - Full set parsing: weight x reps, time-based, AMRAP, modifiers
  * - Set modifiers: @rpe, @rest, @tempo, @dropset, @perside
- * - Supersets via nested headers containing "superset"
+ * - Supersets via nested headers containing "superset" (case-insensitive)
+ *   - Child exercises can be at ANY header level below superset (not limited to parent+1)
  * - Section grouping (nested headers without "superset")
  * - Comprehensive validation with clear error messages
  */
@@ -490,6 +491,7 @@ function parseExerciseBlock(
 
 /**
  * Check if there are nested headers below current header
+ * Accepts ANY header level greater than the parent (not just parent+1)
  */
 function checkForNestedHeaders(context: ParseContext, headerIndex: number, headerLevel: number): boolean {
   for (let i = headerIndex + 1; i < context.lines.length; i++) {
@@ -500,8 +502,8 @@ function checkForNestedHeaders(context: ParseContext, headerIndex: number, heade
       break;
     }
 
-    // Found nested header
-    if (line.headerLevel && line.headerLevel === headerLevel + 1) {
+    // Found nested header at any level below parent
+    if (line.headerLevel && line.headerLevel > headerLevel) {
       return true;
     }
   }
@@ -509,8 +511,37 @@ function checkForNestedHeaders(context: ParseContext, headerIndex: number, heade
 }
 
 /**
+ * Find the header level of child exercises within a group (superset/section)
+ * Returns the first header level (> parentLevel) that contains sets
+ * This allows for flexible header hierarchies (not limited to parent+1)
+ */
+function findChildExerciseLevel(
+  context: ParseContext,
+  startIndex: number,
+  parentLevel: number
+): number | null {
+  for (let i = startIndex; i < context.lines.length; i++) {
+    const line = context.lines[i];
+
+    // Stop at same or higher level header
+    if (line.headerLevel && line.headerLevel <= parentLevel) {
+      break;
+    }
+
+    // Check if this header has sets below it
+    if (line.headerLevel && line.headerLevel > parentLevel) {
+      if (hasSetsBelowHeader(context, i, line.headerLevel)) {
+        return line.headerLevel;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Parse grouped exercises (superset or section)
  * Returns an array: [parent, ...children]
+ * Dynamically determines child exercise header level (not limited to parent+1)
  */
 function parseGroupedExercises(
   context: ParseContext,
@@ -536,6 +567,9 @@ function parseGroupedExercises(
 
   context.currentIndex++;
 
+  // Find the first child header level that contains exercises (sets)
+  const childExerciseLevel = findChildExerciseLevel(context, context.currentIndex, headerLine.headerLevel!);
+
   // Parse child exercises
   const childExercises: TemplateExercise[] = [];
   let childOrderIndex = 0;
@@ -548,8 +582,8 @@ function parseGroupedExercises(
       break;
     }
 
-    // Parse child exercise (one level below parent)
-    if (line.headerLevel === headerLine.headerLevel! + 1) {
+    // Parse child exercise at the determined child level
+    if (childExerciseLevel && line.headerLevel === childExerciseLevel) {
       const result = parseExerciseBlock(context, workoutTemplateId, orderIndex + childOrderIndex + 1);
       if (result) {
         // Handle both single exercise and nested arrays (e.g., superset inside section)
