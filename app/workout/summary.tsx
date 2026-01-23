@@ -21,14 +21,14 @@ export default function WorkoutSummaryScreen() {
   // If no session, go back
   useEffect(() => {
     if (!activeSession) {
-      router.replace('/');
+      router.replace('/(tabs)');
     }
   }, [activeSession]);
 
   const handleDone = async () => {
     // Clear session from store (it's already saved as completed in DB)
     await pauseSession();
-    router.replace('/');
+    router.replace('/(tabs)');
   };
 
   const styles = StyleSheet.create({
