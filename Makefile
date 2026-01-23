@@ -5,7 +5,7 @@
 #  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
 EXPO_PORT := 8081
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient
+.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient load-db
 
 # Internal target to ensure dependencies are installed
 check-deps:
@@ -79,6 +79,9 @@ help:
 	@echo "  make logs-tail  - Follow logs in real time"
 	@echo "  make logs-view  - View current log file contents"
 	@echo "  make logs-clean - Clean all log files"
+	@echo ""
+	@echo "Database utilities:"
+	@echo "  make load-db DB=<path> - Load database into booted simulator"
 	@echo ""
 	@echo "Release commands:"
 	@echo "  make release-alpha             - Create alpha release (auto-cleanup on conflict)"
@@ -370,3 +373,14 @@ pull:
 status:
 	@echo "📊 Git status..."
 	git status --short
+
+# Database utilities
+load-db:
+	@if [ -z "$(DB)" ]; then \
+		echo "Usage: make load-db DB=<path-to-database>"; \
+		echo ""; \
+		echo "Example:"; \
+		echo "  make load-db DB=~/Downloads/liftmark.db"; \
+		exit 1; \
+	fi
+	@bash scripts/load-db.sh "$(DB)"
