@@ -8,7 +8,9 @@ import {
   TextInput,
   Alert,
   Switch,
+  Animated,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
@@ -279,17 +281,24 @@ export default function WorkoutsScreen() {
       color: colors.border,
       marginHorizontal: 8,
     },
-    deleteButton: {
-      backgroundColor: colors.errorLight,
-      padding: 12,
-      alignItems: 'center',
-      borderTopWidth: 1,
-      borderTopColor: colors.errorLight,
+    swipeDeleteAction: {
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+      marginBottom: 12,
     },
-    deleteButtonText: {
+    swipeDeleteButton: {
+      backgroundColor: colors.error,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 80,
+      height: '100%',
+      borderTopRightRadius: 12,
+      borderBottomRightRadius: 12,
+    },
+    swipeDeleteText: {
+      color: '#ffffff',
       fontSize: 14,
       fontWeight: '600',
-      color: colors.error,
     },
     emptyState: {
       flex: 1,
@@ -322,6 +331,35 @@ export default function WorkoutsScreen() {
     },
   });
 
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+    item: WorkoutTemplate
+  ) => {
+    const translateX = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0, 80],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.swipeDeleteAction,
+          { transform: [{ translateX }] },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.swipeDeleteButton}
+          onPress={() => handleDelete(item)}
+          testID={`delete-${item.id}`}
+        >
+          <Text style={styles.swipeDeleteText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   const renderWorkout = ({ item }: { item: WorkoutTemplate }) => {
     const isSelected = isTablet && selectedWorkoutId === item.id;
     const handlePress = () => {
@@ -333,65 +371,63 @@ export default function WorkoutsScreen() {
     };
 
     return (
-      <View
-        style={[
-          styles.workoutCard,
-          isSelected && styles.workoutCardSelected,
-        ]}
-        testID={`workout-${item.id}`}
+      <Swipeable
+        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+        overshootRight={false}
+        rightThreshold={40}
       >
-        <TouchableOpacity
-          style={styles.workoutContent}
-          onPress={handlePress}
-          testID={`workout-card-${item.id}`}
+        <View
+          style={[
+            styles.workoutCard,
+            isSelected && styles.workoutCardSelected,
+          ]}
+          testID={`workout-${item.id}`}
         >
-        <View style={styles.workoutHeader}>
-          <Text style={styles.workoutName}>{item.name}</Text>
-          {item.tags.length > 0 && (
-            <View style={styles.tagContainer}>
-              {item.tags.slice(0, 2).map((tag) => (
-                <View key={tag} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
+          <TouchableOpacity
+            style={styles.workoutContent}
+            onPress={handlePress}
+            testID={`workout-card-${item.id}`}
+          >
+            <View style={styles.workoutHeader}>
+              <Text style={styles.workoutName}>{item.name}</Text>
+              {item.tags.length > 0 && (
+                <View style={styles.tagContainer}>
+                  {item.tags.slice(0, 2).map((tag) => (
+                    <View key={tag} style={styles.tag}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                  {item.tags.length > 2 && (
+                    <Text style={styles.tagMore}>+{item.tags.length - 2}</Text>
+                  )}
                 </View>
-              ))}
-              {item.tags.length > 2 && (
-                <Text style={styles.tagMore}>+{item.tags.length - 2}</Text>
               )}
             </View>
-          )}
-        </View>
 
-        {item.description && (
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
+            {item.description && (
+              <Text style={styles.description} numberOfLines={2}>
+                {item.description}
+              </Text>
+            )}
 
-        <View style={styles.workoutMeta}>
-          <Text style={styles.metaText}>
-            {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
-          </Text>
-          <Text style={styles.metaSeparator}>•</Text>
-          <Text style={styles.metaText}>
-            {item.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets
-          </Text>
-          {item.defaultWeightUnit && (
-            <>
+            <View style={styles.workoutMeta}>
+              <Text style={styles.metaText}>
+                {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
+              </Text>
               <Text style={styles.metaSeparator}>•</Text>
-              <Text style={styles.metaText}>{item.defaultWeightUnit}</Text>
-            </>
-          )}
+              <Text style={styles.metaText}>
+                {item.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets
+              </Text>
+              {item.defaultWeightUnit && (
+                <>
+                  <Text style={styles.metaSeparator}>•</Text>
+                  <Text style={styles.metaText}>{item.defaultWeightUnit}</Text>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item)}
-        testID={`delete-${item.id}`}
-      >
-        <Text style={styles.deleteButtonText}>Delete</Text>
-      </TouchableOpacity>
-    </View>
+      </Swipeable>
     );
   };
 
