@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { shareAsync } from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import Constants from 'expo-constants';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -852,7 +853,7 @@ export default function SettingsScreen() {
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Version</Text>
-          <Text style={styles.infoValue}>1.0.0</Text>
+          <Text style={styles.infoValue}>{Constants.expoConfig?.version || '1.0.0'}</Text>
         </View>
 
         <View style={[styles.infoRow, styles.infoRowLast]}>

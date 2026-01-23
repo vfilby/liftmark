@@ -2,6 +2,8 @@
 
 const { execSync } = require('child_process');
 const readline = require('readline');
+const fs = require('fs');
+const path = require('path');
 
 // Get release type from command line args
 const releaseType = process.argv[2]; // 'alpha', 'beta', or 'production'
@@ -22,11 +24,19 @@ try {
   delete require.cache[require.resolve('../package.json')];
   const newVersion = require('../package.json').version;
   console.log(`✅ Version bumped to: ${newVersion}\n`);
-  
+
+  // Update app.json version to match
+  console.log('🔄 Updating app.json version...');
+  const appJsonPath = path.join(__dirname, '../app.json');
+  const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+  appJson.expo.version = newVersion;
+  fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + '\n');
+  console.log(`✅ app.json version updated to: ${newVersion}\n`);
+
   // Commit the version bump
-  execSync(`git add package.json package-lock.json`, { stdio: 'inherit' });
+  execSync(`git add package.json package-lock.json app.json`, { stdio: 'inherit' });
   execSync(`git commit -m "chore: bump version to ${newVersion} [skip ci]"`, { stdio: 'inherit' });
-  
+
   var version = newVersion;
 } catch (error) {
   console.error('❌ Failed to bump version:', error.message);
