@@ -272,7 +272,7 @@ export default function WorkoutsScreen() {
       justifyContent: 'center',
       alignItems: 'flex-end',
       marginBottom: 12,
-      paddingRight: 12,
+      paddingLeft: 12,
     },
     swipeDeleteButton: {
       backgroundColor: colors.error,
