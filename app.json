@@ -2,7 +2,7 @@
   "expo": {
     "name": "LiftMark",
     "slug": "liftmark",
-    "version": "1.0.31",
+    "version": "1.0.32",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
