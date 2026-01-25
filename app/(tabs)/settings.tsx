@@ -52,6 +52,8 @@ export default function SettingsScreen() {
   const { loadEquipment } = useEquipmentStore();
 
   const [promptText, setPromptText] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -67,6 +69,13 @@ export default function SettingsScreen() {
       setPromptText(settings.customPromptAddition || '');
     }
   }, [settings?.customPromptAddition]);
+
+  // Sync local API key state with settings
+  useEffect(() => {
+    if (settings?.anthropicApiKey !== undefined) {
+      setApiKey(settings.anthropicApiKey || '');
+    }
+  }, [settings?.anthropicApiKey]);
 
   // Handle errors
   useEffect(() => {
@@ -90,6 +99,61 @@ export default function SettingsScreen() {
     if (promptText !== (settings?.customPromptAddition || '')) {
       updateSettings({ customPromptAddition: promptText });
     }
+  };
+
+  const handleApiKeySave = async () => {
+    const trimmedKey = apiKey.trim();
+
+    if (!trimmedKey) {
+      // Remove API key if empty
+      try {
+        await updateSettings({ anthropicApiKey: undefined });
+        Alert.alert('Success', 'API key removed successfully');
+      } catch (error) {
+        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to remove API key');
+      }
+      return;
+    }
+
+    // Validate API key format
+    if (!trimmedKey.startsWith('sk-ant-')) {
+      Alert.alert(
+        'Invalid API Key',
+        'Anthropic API keys must start with "sk-ant-". Please check your key and try again.'
+      );
+      return;
+    }
+
+    try {
+      await updateSettings({ anthropicApiKey: trimmedKey });
+      Alert.alert('Success', 'API key saved securely');
+      setShowApiKey(false); // Hide the key after saving
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save API key');
+    }
+  };
+
+  const handleApiKeyRemove = () => {
+    Alert.alert(
+      'Remove API Key',
+      'Are you sure you want to remove your Anthropic API key? You will need to enter it again to use AI workout generation.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await updateSettings({ anthropicApiKey: undefined });
+              setApiKey('');
+              Alert.alert('Success', 'API key removed successfully');
+            } catch (error) {
+              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to remove API key');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleHealthKitToggle = async (enabled: boolean) => {
@@ -516,6 +580,62 @@ export default function SettingsScreen() {
       color: colors.error,
       fontWeight: '500',
     },
+    // API Key styles
+    iconButton: {
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    apiKeyButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      gap: 8,
+      borderRadius: 8,
+      borderWidth: 1.5,
+    },
+    apiKeyButtonPrimary: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    apiKeyButtonSecondary: {
+      backgroundColor: colors.card,
+      borderColor: colors.error,
+    },
+    apiKeyButtonTextPrimary: {
+      fontSize: 16,
+      color: '#ffffff',
+      fontWeight: '600',
+    },
+    apiKeyButtonTextSecondary: {
+      fontSize: 16,
+      color: colors.error,
+      fontWeight: '600',
+    },
+    apiKeyStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#16A085',
+    },
+    apiKeyStatusText: {
+      fontSize: 14,
+      color: '#16A085',
+      fontWeight: '500',
+    },
   });
 
   if (!settings) {
@@ -796,6 +916,75 @@ export default function SettingsScreen() {
           onBlur={handlePromptBlur}
           testID="input-custom-prompt"
         />
+        </View>
+
+        {/* API Key Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="key-outline" size={20} color="#3498DB" />
+            <Text style={styles.sectionTitle}>Anthropic API Key</Text>
+          </View>
+
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingLabel}>API Key</Text>
+          <Text style={styles.settingDescription}>
+            Enter your Anthropic API key to enable AI-powered workout generation. Your key is stored securely and never transmitted except to Anthropic's servers.
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+          <TextInput
+            style={[styles.textInput, { flex: 1, minHeight: 44 }]}
+            placeholder="sk-ant-..."
+            placeholderTextColor={colors.textMuted}
+            value={apiKey}
+            onChangeText={setApiKey}
+            secureTextEntry={!showApiKey}
+            autoCapitalize="none"
+            autoCorrect={false}
+            testID="input-api-key"
+          />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowApiKey(!showApiKey)}
+            testID="toggle-api-key-visibility"
+          >
+            <Ionicons
+              name={showApiKey ? 'eye-off-outline' : 'eye-outline'}
+              size={24}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+          <TouchableOpacity
+            style={[styles.apiKeyButton, styles.apiKeyButtonPrimary]}
+            onPress={handleApiKeySave}
+            testID="save-api-key-button"
+          >
+            <Ionicons name="checkmark-outline" size={20} color="#fff" />
+            <Text style={styles.apiKeyButtonTextPrimary}>Save Key</Text>
+          </TouchableOpacity>
+
+          {settings?.anthropicApiKey && (
+            <TouchableOpacity
+              style={[styles.apiKeyButton, styles.apiKeyButtonSecondary]}
+              onPress={handleApiKeyRemove}
+              testID="remove-api-key-button"
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+              <Text style={styles.apiKeyButtonTextSecondary}>Remove</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {settings?.anthropicApiKey && (
+          <View style={styles.apiKeyStatus}>
+            <Ionicons name="checkmark-circle" size={16} color="#16A085" />
+            <Text style={styles.apiKeyStatusText}>API key is set</Text>
+          </View>
+        )}
         </View>
       </View>
 

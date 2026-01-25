@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { UserSettings } from '@/types';
 import { getDatabase } from '@/db';
+import { getApiKey, storeApiKey, removeApiKey } from '@/services/secureStorage';
 
 interface SettingsStore {
   // State
@@ -42,6 +43,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }>('SELECT * FROM user_settings LIMIT 1');
 
       if (row) {
+        // Load API key from secure storage instead of database
+        const secureApiKey = await getApiKey();
+
         const settings: UserSettings = {
           id: row.id,
           defaultWeightUnit: row.default_weight_unit as 'lbs' | 'kg',
@@ -53,7 +57,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
-          anthropicApiKey: row.anthropic_api_key ?? undefined,
+          anthropicApiKey: secureApiKey ?? undefined,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -123,9 +127,19 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         updateFields.push('keep_screen_awake = ?');
         values.push(updates.keepScreenAwake ? 1 : 0);
       }
+
+      // Handle API key separately - store in secure storage, not database
       if (updates.anthropicApiKey !== undefined) {
+        if (updates.anthropicApiKey) {
+          // Store in secure storage
+          await storeApiKey(updates.anthropicApiKey);
+        } else {
+          // Remove from secure storage
+          await removeApiKey();
+        }
+        // Always set database field to null (we don't store the actual key in DB)
         updateFields.push('anthropic_api_key = ?');
-        values.push(updates.anthropicApiKey || null);
+        values.push(null);
       }
 
       // Always update updated_at
