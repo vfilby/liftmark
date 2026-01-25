@@ -139,7 +139,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }
 
       // Handle API key separately - store in secure storage, not database
-      if (updates.anthropicApiKey !== undefined) {
+      if ('anthropicApiKey' in updates) {
         let apiKeyStatus: 'verified' | 'invalid' | 'not_set' = 'not_set';
 
         if (updates.anthropicApiKey) {
