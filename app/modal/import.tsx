@@ -162,6 +162,29 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
     }
   };
 
+  const openInClaude = async () => {
+    try {
+      // Copy prompt to clipboard first
+      Clipboard.setString(promptText);
+
+      // Open Claude.ai in browser
+      const claudeUrl = 'https://claude.ai/new';
+      const canOpen = await Linking.canOpenURL(claudeUrl);
+
+      if (canOpen) {
+        await Linking.openURL(claudeUrl);
+        Alert.alert(
+          'Prompt Copied',
+          'The prompt has been copied to your clipboard. Paste it in the Claude chat that just opened.'
+        );
+      } else {
+        Alert.alert('Error', 'Unable to open Claude.ai. Please copy the prompt and visit claude.ai manually.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open Claude.ai');
+    }
+  };
+
   const handleGenerate = async () => {
     console.log('[ImportModal] handleGenerate called');
     console.log('[ImportModal] API key exists:', !!settings?.anthropicApiKey);
@@ -534,24 +557,41 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
             </View>
           )}
 
-          <TouchableOpacity
-            style={[
-              styles.generateButton,
-              isGenerating && styles.generateButtonDisabled,
-            ]}
-            onPress={handleGenerate}
-            disabled={isGenerating}
-            testID="button-generate"
-          >
-            <Ionicons
-              name={isGenerating ? 'hourglass' : 'sparkles'}
-              size={18}
-              color="#ffffff"
-            />
-            <Text style={styles.generateButtonText}>
-              {isGenerating ? 'Generating...' : 'Generate with Claude'}
-            </Text>
-          </TouchableOpacity>
+          {settings?.anthropicApiKey ? (
+            <TouchableOpacity
+              style={[
+                styles.generateButton,
+                isGenerating && styles.generateButtonDisabled,
+              ]}
+              onPress={handleGenerate}
+              disabled={isGenerating}
+              testID="button-generate"
+            >
+              <Ionicons
+                name={isGenerating ? 'hourglass' : 'sparkles'}
+                size={18}
+                color="#ffffff"
+              />
+              <Text style={styles.generateButtonText}>
+                {isGenerating ? 'Generating...' : 'Generate with Claude'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.generateButton}
+              onPress={openInClaude}
+              testID="button-open-claude"
+            >
+              <Ionicons
+                name="open-outline"
+                size={18}
+                color="#ffffff"
+              />
+              <Text style={styles.generateButtonText}>
+                Open in Claude
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={styles.label}>Workout Markdown</Text>
