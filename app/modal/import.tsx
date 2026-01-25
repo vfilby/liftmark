@@ -512,7 +512,11 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
                 color={colors.primary}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.copyButton} onPress={copyPrompt}>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={copyPrompt}
+              testID="button-copy-prompt"
+            >
               <Text style={styles.copyButtonText}>Copy</Text>
             </TouchableOpacity>
           </View>
