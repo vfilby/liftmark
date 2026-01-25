@@ -5,7 +5,17 @@
 #  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
 EXPO_PORT := 8081
 
-.PHONY: help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient load-db
+.PHONY: all help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient load-db
+
+# Default target - rebuild everything
+all: install check-native
+	@echo "✅ All dependencies and native projects are ready!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  make server    - Start development server"
+	@echo "  make ios       - Run on iOS simulator"
+	@echo "  make android   - Run on Android emulator"
+	@echo "  make help      - Show all available commands"
 
 # Internal target to ensure dependencies are installed
 check-deps:
@@ -32,9 +42,14 @@ check-native: check-deps
 		echo ""; \
 	fi
 
-# Default target
+# Help target
 help:
 	@echo "LiftMark Development Commands:"
+	@echo ""
+	@echo "Quick start:"
+	@echo "  make           - Rebuild everything (deps + native)"
+	@echo "  make all       - Same as 'make' (explicit)"
+	@echo "  make clean     - Clean everything (then run 'make' to rebuild)"
 	@echo ""
 	@echo "Development servers:"
 	@echo "  make server     - Start Expo dev server (interactive + file logging)"
@@ -171,8 +186,10 @@ clean:
 	rm -rf ios
 	rm -rf android
 	rm -rf logs
+	rm -rf .expo
+	rm -rf ~/Library/Developer/Xcode/DerivedData/LiftMark-*
 	npm cache clean --force
-	@echo "✅ Clean complete. Run 'make server' or 'make ios' to rebuild everything."
+	@echo "✅ Clean complete. Run 'make' to rebuild everything."
 
 build: check-deps
 	@echo "🏗️ Building for production..."
