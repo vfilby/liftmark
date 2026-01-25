@@ -67,6 +67,7 @@ function createSettingsRow(overrides: Partial<{
   healthkit_enabled: number;
   keep_screen_awake: number;
   live_activities_enabled: number;
+  show_open_in_claude_button: number;
   created_at: string;
   updated_at: string;
 }> = {}) {
@@ -83,6 +84,7 @@ function createSettingsRow(overrides: Partial<{
     healthkit_enabled: 0,
     keep_screen_awake: 0,
     live_activities_enabled: 1,
+    show_open_in_claude_button: 0,
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     ...overrides,
@@ -190,6 +192,7 @@ describe('settingsStore', () => {
         healthKitEnabled: true,
         keepScreenAwake: false,
         liveActivitiesEnabled: true,
+        showOpenInClaudeButton: false,
         createdAt: '2024-01-15T10:00:00Z',
         updatedAt: '2024-01-15T10:00:00Z',
       });
