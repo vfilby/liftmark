@@ -25,6 +25,7 @@ export interface AnthropicError {
 export interface GenerateWorkoutParams {
   apiKey: string;
   prompt: string;
+  model?: string; // Optional: defaults to Haiku 4.5
 }
 
 export interface GenerateWorkoutResult {
@@ -35,7 +36,23 @@ export interface GenerateWorkoutResult {
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const MODEL = 'claude-3-5-sonnet-20240620';
+
+// Default to Haiku 4.5 - fastest and cheapest at $1/$5 per million tokens
+// Users can override this in settings to use Sonnet 4.5 ($3/$15) if they want higher quality
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+
+export const AVAILABLE_MODELS = {
+  'haiku-4.5': {
+    id: 'claude-haiku-4-5-20251001',
+    name: 'Claude Haiku 4.5',
+    description: 'Fastest & cheapest - $1/$5 per million tokens',
+  },
+  'sonnet-4.5': {
+    id: 'claude-sonnet-4-5-20250929',
+    name: 'Claude Sonnet 4.5',
+    description: 'More capable - $3/$15 per million tokens',
+  },
+} as const;
 
 // Jasper's SDK-based service class
 export class AnthropicService {
@@ -80,7 +97,7 @@ export class AnthropicService {
       const userPrompt = this.buildUserPrompt(params);
 
       const message = await this.client!.messages.create({
-        model: MODEL,
+        model: DEFAULT_MODEL,
         max_tokens: 4096,
         messages: [
           {
@@ -212,7 +229,7 @@ Generate complete, practical workouts based on the user's request.`;
 export async function generateWorkout(
   params: GenerateWorkoutParams
 ): Promise<GenerateWorkoutResult> {
-  const { apiKey, prompt } = params;
+  const { apiKey, prompt, model = DEFAULT_MODEL } = params;
 
   if (!apiKey || !apiKey.trim()) {
     return {
@@ -228,9 +245,10 @@ export async function generateWorkout(
     console.log('[AnthropicService] Starting workout generation');
     console.log('[AnthropicService] API Key length:', apiKey.length);
     console.log('[AnthropicService] API Key prefix:', apiKey.substring(0, 10) + '...');
+    console.log('[AnthropicService] Using model:', model);
 
     const requestBody = {
-      model: MODEL,
+      model: model,
       max_tokens: 4096,
       messages: [
         {
