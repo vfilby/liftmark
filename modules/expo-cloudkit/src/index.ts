@@ -1,8 +1,26 @@
 import { NativeModulesProxy, requireNativeModule } from 'expo-modules-core';
 
 // Import the native module. On web, it will be resolved to ExpoCloudKit.web.ts
-// and on native platforms to ExpoCloudKit.ts  
-const ExpoCloudKitModule = requireNativeModule('ExpoCloudKit');
+// and on native platforms to ExpoCloudKit.ts
+console.log('[CloudKit Module] Attempting to load native module');
+let ExpoCloudKitModule: any;
+try {
+  ExpoCloudKitModule = requireNativeModule('ExpoCloudKit');
+  console.log('[CloudKit Module] Native module loaded successfully:', !!ExpoCloudKitModule);
+  console.log('[CloudKit Module] Available methods:', Object.keys(ExpoCloudKitModule || {}));
+} catch (error) {
+  console.warn('[CloudKit Module] Failed to load native module:', error);
+  // Create a mock module that returns errors
+  ExpoCloudKitModule = {
+    initialize: () => Promise.reject(new Error('CloudKit module not available')),
+    getAccountStatus: () => Promise.reject(new Error('CloudKit module not available')),
+    saveRecord: () => Promise.reject(new Error('CloudKit module not available')),
+    fetchRecord: () => Promise.reject(new Error('CloudKit module not available')),
+    fetchRecords: () => Promise.reject(new Error('CloudKit module not available')),
+    deleteRecord: () => Promise.reject(new Error('CloudKit module not available')),
+  };
+  console.log('[CloudKit Module] Using mock module');
+}
 
 export interface CloudKitRecord {
   id?: string;
@@ -79,12 +97,33 @@ export async function deleteRecord(recordId: string, recordType: string): Promis
 
 export async function getAccountStatus(): Promise<CloudKitResult<string>> {
   try {
-    const result = await ExpoCloudKitModule.getAccountStatus();
+    console.log('[CloudKit JS] getAccountStatus called');
+    console.log('[CloudKit JS] ExpoCloudKitModule:', ExpoCloudKitModule);
+    console.log('[CloudKit JS] ExpoCloudKitModule.getAccountStatus:', typeof ExpoCloudKitModule.getAccountStatus);
+
+    // Add a timeout to prevent hanging forever
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        console.log('[CloudKit JS] Timeout triggered after 5 seconds');
+        reject(new Error('CloudKit account status check timed out'));
+      }, 5000);
+    });
+
+    console.log('[CloudKit JS] Calling ExpoCloudKitModule.getAccountStatus()');
+    const statusPromise = ExpoCloudKitModule.getAccountStatus();
+    console.log('[CloudKit JS] Status promise created, racing with timeout');
+
+    const result = await Promise.race([statusPromise, timeoutPromise]);
+    console.log('[CloudKit JS] Got result:', result);
     return { success: true, data: result };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    console.log('[CloudKit JS] getAccountStatus error:', error);
+    console.log('[CloudKit JS] Error type:', typeof error);
+    console.log('[CloudKit JS] Error details:', JSON.stringify(error, null, 2));
+    // Ensure we always return a valid result object, never throw
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }

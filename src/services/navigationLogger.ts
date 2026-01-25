@@ -120,7 +120,17 @@ class NavigationLogger {
     });
 
     // Check for unregistered routes
-    if (!this.registeredRoutes.has(currentRoute.name)) {
+    // Note: Expo Router uses '__root' as INTERNAL_SLOT_NAME for the root container
+    // See: expo-router/build/constants.js
+    const knownInternalRoutes = ['__root'];
+    const isInternalRoute = knownInternalRoutes.includes(currentRoute.name);
+
+    if (isInternalRoute) {
+      // Log internal routes at debug level for visibility
+      logger.debug('routing', `Internal route in navigation state: ${currentRoute.name}`, {
+        route: currentRoute.name,
+      });
+    } else if (!this.registeredRoutes.has(currentRoute.name)) {
       logger.warn('routing', `Navigating to unregistered route: ${currentRoute.name}`, {
         route: currentRoute.name,
         params: currentRoute.params,

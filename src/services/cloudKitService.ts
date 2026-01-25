@@ -29,26 +29,43 @@ export class CloudKitService {
     }
   }
 
-  async getAccountStatus(): Promise<string | null> {
+  async getAccountStatus(): Promise<string> {
+    console.log('[CloudKitService] getAccountStatus called');
     try {
+      console.log('[CloudKitService] Calling getAccountStatus() from module');
       const result = await getAccountStatus();
+      console.log('[CloudKitService] Got result:', JSON.stringify(result));
+
       if (result.success) {
-        return result.data || null;
+        console.log('[CloudKitService] Success, returning:', result.data);
+        return result.data || 'unknown';
       } else {
-        console.error('Failed to get account status:', result.error);
-        // Return error status instead of null so UI can show appropriate message
+        console.error('[CloudKitService] Failed to get account status:', result.error);
+        // Return error status instead of throwing
         return 'error';
       }
     } catch (error) {
-      console.error('Account status error:', error);
+      console.error('[CloudKitService] Account status error caught:', error);
+      console.error('[CloudKitService] Error type:', typeof error);
+      console.error('[CloudKitService] Error stringified:', JSON.stringify(error, null, 2));
+
       // Handle specific simulator/development errors
       if (error && typeof error === 'object' && 'message' in error) {
         const errorMessage = (error as Error).message;
+        console.log('[CloudKitService] Error message:', errorMessage);
+
         if (errorMessage.includes('simulator') || errorMessage.includes('development')) {
+          console.log('[CloudKitService] Detected simulator error, returning noAccount');
           return 'noAccount'; // Treat simulator as no account available
         }
+        if (errorMessage.includes('restricted') || errorMessage.includes('RESTRICTED')) {
+          console.log('[CloudKitService] Detected restricted error');
+          return 'restricted';
+        }
       }
-      return 'error';
+      // Never throw - always return a valid status
+      console.log('[CloudKitService] Returning couldNotDetermine');
+      return 'couldNotDetermine';
     }
   }
 

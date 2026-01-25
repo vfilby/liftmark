@@ -42,31 +42,48 @@ public class ExpoCloudKitModule: Module {
     }
 
     AsyncFunction("getAccountStatus") { (promise: Promise) in
-      DispatchQueue.main.async {
-        CKContainer.default().accountStatus { (accountStatus, error) in
-          if let error = error {
-            promise.reject("CLOUDKIT_ERROR", "Failed to check CloudKit account status: \(error.localizedDescription)")
-            return
+      NSLog("[CloudKit Swift] getAccountStatus called")
+
+      // Wrap everything to prevent crashes
+      do {
+        NSLog("[CloudKit Swift] Getting CKContainer.default()")
+        let container = CKContainer.default()
+        NSLog("[CloudKit Swift] Got container: %@", container.containerIdentifier ?? "unknown")
+
+        DispatchQueue.main.async {
+          NSLog("[CloudKit Swift] Calling container.accountStatus")
+          container.accountStatus { (accountStatus, error) in
+            NSLog("[CloudKit Swift] accountStatus callback received")
+
+            if let error = error {
+              NSLog("[CloudKit Swift] Error in accountStatus: %@", error.localizedDescription)
+              promise.reject("CLOUDKIT_ERROR", "Failed to check CloudKit account status: \(error.localizedDescription)")
+              return
+            }
+
+            let statusString: String
+            switch accountStatus {
+            case .available:
+              statusString = "available"
+            case .noAccount:
+              statusString = "noAccount"
+            case .restricted:
+              statusString = "restricted"
+            case .couldNotDetermine:
+              statusString = "couldNotDetermine"
+            case .temporarilyUnavailable:
+              statusString = "temporarilyUnavailable"
+            @unknown default:
+              statusString = "unknown"
+            }
+
+            NSLog("[CloudKit Swift] Resolved status: %@", statusString)
+            promise.resolve(statusString)
           }
-          
-          let statusString: String
-          switch accountStatus {
-          case .available:
-            statusString = "available"
-          case .noAccount:
-            statusString = "noAccount"
-          case .restricted:
-            statusString = "restricted"
-          case .couldNotDetermine:
-            statusString = "couldNotDetermine"
-          case .temporarilyUnavailable:
-            statusString = "temporarilyUnavailable"
-          @unknown default:
-            statusString = "unknown"
-          }
-          
-          promise.resolve(statusString)
         }
+      } catch {
+        NSLog("[CloudKit Swift] Exception caught: %@", error.localizedDescription)
+        promise.reject("CLOUDKIT_INIT_ERROR", "Failed to initialize CloudKit: \(error.localizedDescription)")
       }
     }
 
