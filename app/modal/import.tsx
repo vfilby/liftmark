@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
 import { generateWorkoutHistoryContext } from '@/services/workoutHistoryService';
+import { generateWorkout } from '@/services/anthropicService';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
@@ -31,6 +32,7 @@ export default function ImportWorkoutModal() {
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
   const [markdown, setMarkdown] = useState('');
   const [isParsing, setIsParsing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [workoutHistory, setWorkoutHistory] = useState<string>('');
 
@@ -156,6 +158,57 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
       Alert.alert('Copied!', 'Prompt copied to clipboard');
     } catch (error) {
       Alert.alert('Error', 'Failed to copy prompt');
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!settings?.anthropicApiKey) {
+      Alert.alert(
+        'API Key Required',
+        'Please add your Anthropic API key in Settings to use workout generation.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Go to Settings',
+            onPress: () => {
+              router.back();
+              router.push('/settings/workout');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const result = await generateWorkout({
+        apiKey: settings.anthropicApiKey,
+        prompt: promptText,
+      });
+
+      if (!result.success || !result.workout) {
+        Alert.alert('Generation Failed', result.error?.message || 'Failed to generate workout');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Populate the markdown field with the generated workout
+      setMarkdown(result.workout);
+
+      // Show success message
+      Alert.alert(
+        'Workout Generated',
+        'Review the generated workout below and tap Import when ready.'
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to generate workout'
+      );
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -384,6 +437,26 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
       fontWeight: '600',
       color: '#ffffff',
     },
+    generateButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 12,
+    },
+    generateButtonDisabled: {
+      backgroundColor: colors.textMuted,
+      opacity: 0.6,
+    },
+    generateButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#ffffff',
+      marginLeft: 8,
+    },
   });
 
   return (
@@ -395,13 +468,13 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
         <Text style={styles.title}>Import Workout</Text>
         <TouchableOpacity
           onPress={handleImport}
-          disabled={isParsing || !markdown.trim()}
+          disabled={isParsing || isGenerating || !markdown.trim()}
           testID="button-import"
         >
           <Text
             style={[
               styles.importButton,
-              (isParsing || !markdown.trim()) && styles.importButtonDisabled,
+              (isParsing || isGenerating || !markdown.trim()) && styles.importButtonDisabled,
             ]}
           >
             {isParsing ? 'Parsing...' : 'Import'}
@@ -442,6 +515,25 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
               </View>
             </View>
           )}
+
+          <TouchableOpacity
+            style={[
+              styles.generateButton,
+              isGenerating && styles.generateButtonDisabled,
+            ]}
+            onPress={handleGenerate}
+            disabled={isGenerating}
+            testID="button-generate"
+          >
+            <Ionicons
+              name={isGenerating ? 'hourglass' : 'sparkles'}
+              size={18}
+              color="#ffffff"
+            />
+            <Text style={styles.generateButtonText}>
+              {isGenerating ? 'Generating...' : 'Generate with Claude'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.label}>Workout Markdown</Text>

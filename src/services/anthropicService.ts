@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+// Jasper's interfaces for SDK-based service
 export interface WorkoutGenerationParams {
   prompt: string;
   customPrompt?: string;
@@ -14,6 +15,29 @@ export interface WorkoutGenerationResult {
   error?: string;
 }
 
+// Quartz's interfaces for fetch-based service
+export interface AnthropicError {
+  message: string;
+  type?: string;
+  status?: number;
+}
+
+export interface GenerateWorkoutParams {
+  apiKey: string;
+  prompt: string;
+}
+
+export interface GenerateWorkoutResult {
+  success: boolean;
+  workout?: string;
+  error?: AnthropicError;
+}
+
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
+const MODEL = 'claude-3-5-sonnet-20241022';
+
+// Jasper's SDK-based service class
 export class AnthropicService {
   private client: Anthropic | null = null;
   private apiKey: string | null = null;
@@ -56,7 +80,7 @@ export class AnthropicService {
       const userPrompt = this.buildUserPrompt(params);
 
       const message = await this.client!.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: MODEL,
         max_tokens: 4096,
         messages: [
           {
@@ -178,6 +202,113 @@ Generate complete, practical workouts based on the user's request.`;
   clear(): void {
     this.apiKey = null;
     this.client = null;
+  }
+}
+
+// Quartz's fetch-based workout generation function
+/**
+ * Generate a workout using Claude (fetch-based implementation)
+ */
+export async function generateWorkout(
+  params: GenerateWorkoutParams
+): Promise<GenerateWorkoutResult> {
+  const { apiKey, prompt } = params;
+
+  if (!apiKey || !apiKey.trim()) {
+    return {
+      success: false,
+      error: {
+        message: 'API key is required. Please add your Anthropic API key in Settings.',
+        type: 'missing_api_key',
+      },
+    };
+  }
+
+  try {
+    const response = await fetch(ANTHROPIC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': ANTHROPIC_VERSION,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4096,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+
+      let errorMessage = 'Failed to generate workout';
+      let errorType = 'api_error';
+
+      if (response.status === 401) {
+        errorMessage = 'Invalid API key. Please check your Anthropic API key in Settings.';
+        errorType = 'invalid_api_key';
+      } else if (response.status === 429) {
+        errorMessage = 'Rate limit exceeded. Please try again in a moment.';
+        errorType = 'rate_limit';
+      } else if (response.status === 400) {
+        errorMessage = errorData.error?.message || 'Invalid request. Please try again.';
+        errorType = 'bad_request';
+      } else if (response.status >= 500) {
+        errorMessage = 'Anthropic API is currently unavailable. Please try again later.';
+        errorType = 'server_error';
+      }
+
+      return {
+        success: false,
+        error: {
+          message: errorMessage,
+          type: errorType,
+          status: response.status,
+        },
+      };
+    }
+
+    const data = await response.json();
+
+    // Extract the generated workout text from Claude's response
+    const workout = data.content?.[0]?.text;
+
+    if (!workout) {
+      return {
+        success: false,
+        error: {
+          message: 'No workout generated. Please try again.',
+          type: 'empty_response',
+        },
+      };
+    }
+
+    return {
+      success: true,
+      workout,
+    };
+  } catch (error) {
+    console.error('Failed to generate workout:', error);
+
+    let errorMessage = 'Network error. Please check your connection and try again.';
+
+    if (error instanceof TypeError && error.message.includes('network')) {
+      errorMessage = 'Unable to connect to Anthropic API. Please check your internet connection.';
+    }
+
+    return {
+      success: false,
+      error: {
+        message: errorMessage,
+        type: 'network_error',
+      },
+    };
   }
 }
 

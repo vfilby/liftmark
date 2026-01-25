@@ -34,6 +34,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         theme: string;
         notifications_enabled: number;
         custom_prompt_addition: string | null;
+        anthropic_api_key: string | null;
         healthkit_enabled: number;
         live_activities_enabled: number;
         keep_screen_awake: number;
@@ -54,6 +55,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           theme: row.theme as 'light' | 'dark' | 'auto',
           notificationsEnabled: row.notifications_enabled === 1,
           customPromptAddition: row.custom_prompt_addition ?? undefined,
+          anthropicApiKey: row.anthropic_api_key ?? undefined,
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
@@ -114,6 +116,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.customPromptAddition !== undefined) {
         updateFields.push('custom_prompt_addition = ?');
         values.push(updates.customPromptAddition || null);
+      }
+      if (updates.anthropicApiKey !== undefined) {
+        updateFields.push('anthropic_api_key = ?');
+        values.push(updates.anthropicApiKey || null);
       }
       if (updates.healthKitEnabled !== undefined) {
         updateFields.push('healthkit_enabled = ?');
