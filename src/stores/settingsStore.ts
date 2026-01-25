@@ -36,6 +36,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         healthkit_enabled: number;
         live_activities_enabled: number;
         keep_screen_awake: number;
+        anthropic_api_key: string | null;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -52,6 +53,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
+          anthropicApiKey: row.anthropic_api_key ?? undefined,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -120,6 +122,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.keepScreenAwake !== undefined) {
         updateFields.push('keep_screen_awake = ?');
         values.push(updates.keepScreenAwake ? 1 : 0);
+      }
+      if (updates.anthropicApiKey !== undefined) {
+        updateFields.push('anthropic_api_key = ?');
+        values.push(updates.anthropicApiKey || null);
       }
 
       // Always update updated_at
