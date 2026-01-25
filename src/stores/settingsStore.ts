@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { UserSettings } from '@/types';
 import { getDatabase } from '@/db';
 import { getApiKey, storeApiKey, removeApiKey } from '@/services/secureStorage';
+import { anthropicService } from '@/services/anthropicService';
 
 interface SettingsStore {
   // State
@@ -35,6 +36,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         notifications_enabled: number;
         custom_prompt_addition: string | null;
         anthropic_api_key: string | null;
+        anthropic_api_key_status: string | null;
         healthkit_enabled: number;
         live_activities_enabled: number;
         keep_screen_awake: number;
@@ -55,6 +57,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           notificationsEnabled: row.notifications_enabled === 1,
           customPromptAddition: row.custom_prompt_addition ?? undefined,
           anthropicApiKey: secureApiKey ?? undefined,
+          anthropicApiKeyStatus:
+            (row.anthropic_api_key_status as 'verified' | 'invalid' | 'not_set') ?? 'not_set',
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
@@ -130,16 +134,34 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
       // Handle API key separately - store in secure storage, not database
       if (updates.anthropicApiKey !== undefined) {
+        let apiKeyStatus: 'verified' | 'invalid' | 'not_set' = 'not_set';
+
         if (updates.anthropicApiKey) {
-          // Store in secure storage
-          await storeApiKey(updates.anthropicApiKey);
+          // Verify the API key before storing
+          const verification = await anthropicService.verifyApiKey(updates.anthropicApiKey);
+
+          if (verification.valid) {
+            // Store in secure storage
+            await storeApiKey(updates.anthropicApiKey);
+            apiKeyStatus = 'verified';
+          } else {
+            // Still store it, but mark as invalid
+            await storeApiKey(updates.anthropicApiKey);
+            apiKeyStatus = 'invalid';
+          }
         } else {
           // Remove from secure storage
           await removeApiKey();
+          apiKeyStatus = 'not_set';
         }
+
         // Always set database field to null (we don't store the actual key in DB)
         updateFields.push('anthropic_api_key = ?');
         values.push(null);
+
+        // Update the verification status
+        updateFields.push('anthropic_api_key_status = ?');
+        values.push(apiKeyStatus);
       }
 
       // Always update updated_at

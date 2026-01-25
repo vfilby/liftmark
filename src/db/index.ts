@@ -376,6 +376,15 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add anthropic_api_key_status column to user_settings if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE user_settings ADD COLUMN anthropic_api_key_status TEXT DEFAULT 'not_set'`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
