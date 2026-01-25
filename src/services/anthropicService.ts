@@ -35,7 +35,7 @@ export interface GenerateWorkoutResult {
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const MODEL = 'claude-3-5-sonnet-20241022';
+const MODEL = 'claude-3-5-sonnet-20240620';
 
 // Jasper's SDK-based service class
 export class AnthropicService {
