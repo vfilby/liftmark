@@ -162,6 +162,9 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
   };
 
   const handleGenerate = async () => {
+    console.log('[ImportModal] handleGenerate called');
+    console.log('[ImportModal] API key exists:', !!settings?.anthropicApiKey);
+
     if (!settings?.anthropicApiKey) {
       Alert.alert(
         'API Key Required',
@@ -181,6 +184,7 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
     }
 
     setIsGenerating(true);
+    console.log('[ImportModal] Starting generation with prompt length:', promptText.length);
 
     try {
       const result = await generateWorkout({
@@ -188,10 +192,16 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
         prompt: promptText,
       });
 
+      console.log('[ImportModal] Generation result:', JSON.stringify(result, null, 2));
+
       if (!result.success || !result.workout) {
-        Alert.alert('Generation Failed', result.error?.message || 'Failed to generate workout');
+        const errorMsg = result.error?.message || 'Failed to generate workout';
+        console.log('[ImportModal] Generation failed:', errorMsg);
+        Alert.alert('Generation Failed', errorMsg);
         return;
       }
+
+      console.log('[ImportModal] Generation successful, workout length:', result.workout.length);
 
       // Populate the markdown field with the generated workout
       setMarkdown(result.workout);

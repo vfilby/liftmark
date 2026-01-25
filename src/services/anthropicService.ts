@@ -225,6 +225,23 @@ export async function generateWorkout(
   }
 
   try {
+    console.log('[AnthropicService] Starting workout generation');
+    console.log('[AnthropicService] API Key length:', apiKey.length);
+    console.log('[AnthropicService] API Key prefix:', apiKey.substring(0, 10) + '...');
+
+    const requestBody = {
+      model: MODEL,
+      max_tokens: 4096,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    };
+
+    console.log('[AnthropicService] Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(ANTHROPIC_API_URL, {
       method: 'POST',
       headers: {
@@ -232,20 +249,15 @@ export async function generateWorkout(
         'x-api-key': apiKey,
         'anthropic-version': ANTHROPIC_VERSION,
       },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4096,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log('[AnthropicService] Response status:', response.status);
+    console.log('[AnthropicService] Response ok:', response.ok);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.log('[AnthropicService] Error response:', JSON.stringify(errorData, null, 2));
 
       let errorMessage = 'Failed to generate workout';
       let errorType = 'api_error';
@@ -275,11 +287,13 @@ export async function generateWorkout(
     }
 
     const data = await response.json();
+    console.log('[AnthropicService] Response data:', JSON.stringify(data, null, 2));
 
     // Extract the generated workout text from Claude's response
     const workout = data.content?.[0]?.text;
 
     if (!workout) {
+      console.log('[AnthropicService] No workout text in response');
       return {
         success: false,
         error: {
@@ -289,12 +303,15 @@ export async function generateWorkout(
       };
     }
 
+    console.log('[AnthropicService] Successfully generated workout, length:', workout.length);
     return {
       success: true,
       workout,
     };
   } catch (error) {
-    console.error('Failed to generate workout:', error);
+    console.error('[AnthropicService] Failed to generate workout:', error);
+    console.error('[AnthropicService] Error type:', typeof error);
+    console.error('[AnthropicService] Error details:', JSON.stringify(error, null, 2));
 
     let errorMessage = 'Network error. Please check your connection and try again.';
 
