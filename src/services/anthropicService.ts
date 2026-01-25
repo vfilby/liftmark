@@ -169,7 +169,7 @@ Optional description of the workout here.
 
 1. 3x10 @ 135lbs (rest: 90s)
 2. 3x8 @ 155lbs (rest: 2min)
-3. 3x6 @ 175lbs (rest: 2min) - AMRAP on last set
+3. 3x6 @ 175lbs (rest: 2min)
 
 Important formatting rules:
 1. Use # for workout title
@@ -180,6 +180,11 @@ Important formatting rules:
 6. Include rest periods in parentheses
 7. You can use sections like "### Warmup" or "### Cool Down"
 8. For supersets, group exercises together under a section
+9. NEVER use @rpe - RPE is not supported in the workout format
+10. For AMRAP (As Many Reps As Possible) sets, write them as "AMRAP @ weight" (e.g., "1. AMRAP @ 135lbs")
+    - Example: "1. AMRAP @ 135lbs (rest: 2min)" means do as many reps as possible at 135lbs
+    - Example: "1. AMRAP" (for bodyweight) means do as many reps as possible with no weight
+    - Do NOT write "3x10 - AMRAP on last set" - instead write the AMRAP set as its own line
 
 Generate complete, practical workouts based on the user's request.`;
   }
