@@ -225,7 +225,7 @@ Generate complete, practical workouts based on the user's request.`;
 
       // Make a minimal API call to verify the key
       await testClient.messages.create({
-        model: MODEL,
+        model: DEFAULT_MODEL,
         max_tokens: 10,
         messages: [
           {
