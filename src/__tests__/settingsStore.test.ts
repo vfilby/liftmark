@@ -477,6 +477,103 @@ describe('settingsStore', () => {
       expect(error).toBe('Failed to update settings');
     });
 
+    it('stores valid API key in secure storage and sets status to verified', async () => {
+      const settingsRow = createSettingsRow();
+      mockDb.getFirstAsync.mockResolvedValue(settingsRow);
+      mockedVerifyApiKey.mockResolvedValue({ valid: true });
+
+      await useSettingsStore.getState().loadSettings();
+      await useSettingsStore.getState().updateSettings({ anthropicApiKey: 'sk-ant-valid-key' });
+
+      // Verify API key was stored
+      expect(mockedStoreApiKey).toHaveBeenCalledWith('sk-ant-valid-key');
+
+      // Verify status was set to verified in database
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key_status'),
+        expect.arrayContaining(['verified'])
+      );
+
+      // Verify actual API key is not stored in database (always null)
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key'),
+        expect.arrayContaining([null])
+      );
+    });
+
+    it('stores invalid API key in secure storage and sets status to invalid', async () => {
+      const settingsRow = createSettingsRow();
+      mockDb.getFirstAsync.mockResolvedValue(settingsRow);
+      mockedVerifyApiKey.mockResolvedValue({ valid: false });
+
+      await useSettingsStore.getState().loadSettings();
+      await useSettingsStore.getState().updateSettings({ anthropicApiKey: 'sk-ant-invalid-key' });
+
+      // Verify API key was still stored (even though invalid)
+      expect(mockedStoreApiKey).toHaveBeenCalledWith('sk-ant-invalid-key');
+
+      // Verify status was set to invalid in database
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key_status'),
+        expect.arrayContaining(['invalid'])
+      );
+    });
+
+    it('removes API key from secure storage when set to undefined', async () => {
+      const settingsRow = createSettingsRow();
+      mockDb.getFirstAsync.mockResolvedValue(settingsRow);
+
+      await useSettingsStore.getState().loadSettings();
+      await useSettingsStore.getState().updateSettings({ anthropicApiKey: undefined });
+
+      // Verify removeApiKey was called
+      expect(mockedRemoveApiKey).toHaveBeenCalled();
+
+      // Verify status was set to not_set in database
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key_status'),
+        expect.arrayContaining(['not_set'])
+      );
+
+      // Verify actual API key is set to null in database
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key'),
+        expect.arrayContaining([null])
+      );
+    });
+
+    it('removes API key from secure storage when set to empty string', async () => {
+      const settingsRow = createSettingsRow();
+      mockDb.getFirstAsync.mockResolvedValue(settingsRow);
+
+      await useSettingsStore.getState().loadSettings();
+      await useSettingsStore.getState().updateSettings({ anthropicApiKey: '' });
+
+      // Verify removeApiKey was called (empty string is falsy)
+      expect(mockedRemoveApiKey).toHaveBeenCalled();
+
+      // Verify status was set to not_set in database
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        expect.stringContaining('anthropic_api_key_status'),
+        expect.arrayContaining(['not_set'])
+      );
+    });
+
+    it('loads API key from secure storage on loadSettings', async () => {
+      const settingsRow = createSettingsRow({ anthropic_api_key_status: 'verified' });
+      mockDb.getFirstAsync.mockResolvedValue(settingsRow);
+      mockedGetApiKey.mockResolvedValue('sk-ant-stored-key');
+
+      await useSettingsStore.getState().loadSettings();
+
+      const { settings } = useSettingsStore.getState();
+
+      // Verify API key was loaded from secure storage
+      expect(mockedGetApiKey).toHaveBeenCalled();
+      expect(settings?.anthropicApiKey).toBe('sk-ant-stored-key');
+      expect(settings?.anthropicApiKeyStatus).toBe('verified');
+    });
+
     it('updates multiple fields at once', async () => {
       const settingsRow = createSettingsRow();
       mockDb.getFirstAsync.mockResolvedValue(settingsRow);
