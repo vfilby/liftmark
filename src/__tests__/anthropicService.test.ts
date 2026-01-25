@@ -287,6 +287,76 @@ describe('anthropicService', () => {
     });
   });
 
+  describe('verifyApiKey', () => {
+    it('returns valid for a working API key', async () => {
+      const Anthropic = require('@anthropic-ai/sdk');
+      const mockCreate = jest.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'test' }],
+      });
+
+      Anthropic.mockImplementation(() => ({
+        messages: {
+          create: mockCreate,
+        },
+      }));
+
+      const result = await anthropicService.verifyApiKey('valid-api-key');
+
+      expect(result.valid).toBe(true);
+      expect(result.error).toBeUndefined();
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'test' }],
+        })
+      );
+    });
+
+    it('returns invalid for an unauthorized API key (401)', async () => {
+      const Anthropic = require('@anthropic-ai/sdk');
+      const mockCreate = jest.fn().mockRejectedValue({
+        status: 401,
+        message: 'Invalid API key',
+      });
+
+      Anthropic.mockImplementation(() => ({
+        messages: {
+          create: mockCreate,
+        },
+      }));
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const result = await anthropicService.verifyApiKey('invalid-api-key');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid API key');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('returns invalid for network errors', async () => {
+      const Anthropic = require('@anthropic-ai/sdk');
+      const mockCreate = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      Anthropic.mockImplementation(() => ({
+        messages: {
+          create: mockCreate,
+        },
+      }));
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const result = await anthropicService.verifyApiKey('test-api-key');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Network error');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
   describe('clear', () => {
     it('clears the API key and client', () => {
       anthropicService.initialize('test-api-key');

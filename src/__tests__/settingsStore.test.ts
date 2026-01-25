@@ -6,9 +6,29 @@ jest.mock('@/db/index', () => ({
   getDatabase: jest.fn(),
 }));
 
+// Mock the secure storage module
+jest.mock('@/services/secureStorage', () => ({
+  getApiKey: jest.fn(),
+  storeApiKey: jest.fn(),
+  removeApiKey: jest.fn(),
+}));
+
+// Mock the anthropicService module
+jest.mock('@/services/anthropicService', () => ({
+  anthropicService: {
+    verifyApiKey: jest.fn(),
+  },
+}));
+
 import { getDatabase } from '@/db/index';
+import { getApiKey, storeApiKey, removeApiKey } from '@/services/secureStorage';
+import { anthropicService } from '@/services/anthropicService';
 
 const mockedGetDatabase = getDatabase as jest.MockedFunction<typeof getDatabase>;
+const mockedGetApiKey = getApiKey as jest.MockedFunction<typeof getApiKey>;
+const mockedStoreApiKey = storeApiKey as jest.MockedFunction<typeof storeApiKey>;
+const mockedRemoveApiKey = removeApiKey as jest.MockedFunction<typeof removeApiKey>;
+const mockedVerifyApiKey = anthropicService.verifyApiKey as jest.MockedFunction<typeof anthropicService.verifyApiKey>;
 
 // ============================================================================
 // Mock Database Setup
@@ -42,8 +62,11 @@ function createSettingsRow(overrides: Partial<{
   theme: string;
   notifications_enabled: number;
   custom_prompt_addition: string | null;
+  anthropic_api_key: string | null;
+  anthropic_api_key_status: string | null;
   healthkit_enabled: number;
   keep_screen_awake: number;
+  live_activities_enabled: number;
   created_at: string;
   updated_at: string;
 }> = {}) {
@@ -55,8 +78,11 @@ function createSettingsRow(overrides: Partial<{
     theme: 'auto',
     notifications_enabled: 1,
     custom_prompt_addition: null,
+    anthropic_api_key: null,
+    anthropic_api_key_status: 'not_set',
     healthkit_enabled: 0,
     keep_screen_awake: 0,
+    live_activities_enabled: 1,
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     ...overrides,
@@ -74,6 +100,10 @@ describe('settingsStore', () => {
     jest.clearAllMocks();
     mockDb = createMockDatabase();
     mockedGetDatabase.mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDatabase>>);
+    mockedGetApiKey.mockResolvedValue(null);
+    mockedStoreApiKey.mockResolvedValue(undefined);
+    mockedRemoveApiKey.mockResolvedValue(undefined);
+    mockedVerifyApiKey.mockResolvedValue({ valid: true });
 
     // Reset the store state before each test
     useSettingsStore.setState({
@@ -155,9 +185,11 @@ describe('settingsStore', () => {
         theme: 'dark',
         notificationsEnabled: false,
         customPromptAddition: 'Custom AI prompt',
+        anthropicApiKey: undefined,
+        anthropicApiKeyStatus: 'not_set',
         healthKitEnabled: true,
         keepScreenAwake: false,
-        liveActivitiesEnabled: false,
+        liveActivitiesEnabled: true,
         createdAt: '2024-01-15T10:00:00Z',
         updatedAt: '2024-01-15T10:00:00Z',
       });

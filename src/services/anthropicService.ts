@@ -214,6 +214,50 @@ Generate complete, practical workouts based on the user's request.`;
   }
 
   /**
+   * Verify that the API key is valid by making a minimal API call
+   */
+  async verifyApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      // Create a temporary client for verification
+      const testClient = new Anthropic({
+        apiKey: apiKey,
+      });
+
+      // Make a minimal API call to verify the key
+      await testClient.messages.create({
+        model: MODEL,
+        max_tokens: 10,
+        messages: [
+          {
+            role: 'user',
+            content: 'test',
+          },
+        ],
+      });
+
+      return { valid: true };
+    } catch (error) {
+      console.error('API key verification failed:', error);
+
+      // Handle specific error types
+      if (error && typeof error === 'object' && 'status' in error) {
+        const status = (error as { status: number }).status;
+        if (status === 401) {
+          return {
+            valid: false,
+            error: 'Invalid API key',
+          };
+        }
+      }
+
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : 'Failed to verify API key',
+      };
+    }
+  }
+
+  /**
    * Clear the API key and reset the client
    */
   clear(): void {

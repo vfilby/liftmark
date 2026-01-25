@@ -129,6 +129,7 @@ export interface UserSettings {
   notificationsEnabled: boolean;
   customPromptAddition?: string; // Custom text appended to AI workout prompts
   anthropicApiKey?: string; // Anthropic API key for workout generation
+  anthropicApiKeyStatus?: 'verified' | 'invalid' | 'not_set'; // Status of API key verification
   healthKitEnabled: boolean; // Whether to sync workouts to Apple Health
   liveActivitiesEnabled: boolean; // Whether to show Live Activities on lock screen
   keepScreenAwake: boolean; // Whether to keep screen awake during active workouts
@@ -270,6 +271,7 @@ export interface UserSettingsRow {
   notifications_enabled: number; // SQLite boolean
   custom_prompt_addition: string | null;
   anthropic_api_key: string | null;
+  anthropic_api_key_status: string | null;
   healthkit_enabled: number; // SQLite boolean
   live_activities_enabled: number; // SQLite boolean
   keep_screen_awake: number; // SQLite boolean
