@@ -190,7 +190,6 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
 
       if (!result.success || !result.workout) {
         Alert.alert('Generation Failed', result.error?.message || 'Failed to generate workout');
-        setIsGenerating(false);
         return;
       }
 
