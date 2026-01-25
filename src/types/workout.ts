@@ -133,6 +133,7 @@ export interface UserSettings {
   healthKitEnabled: boolean; // Whether to sync workouts to Apple Health
   liveActivitiesEnabled: boolean; // Whether to show Live Activities on lock screen
   keepScreenAwake: boolean; // Whether to keep screen awake during active workouts
+  showOpenInClaudeButton: boolean; // Whether to always show 'Open in Claude' button
   createdAt: string;
   updatedAt: string;
 }
@@ -275,6 +276,7 @@ export interface UserSettingsRow {
   healthkit_enabled: number; // SQLite boolean
   live_activities_enabled: number; // SQLite boolean
   keep_screen_awake: number; // SQLite boolean
+  show_open_in_claude_button: number; // SQLite boolean
   created_at: string;
   updated_at: string;
 }

@@ -1016,6 +1016,32 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         )}
         </View>
+
+        {settings?.anthropicApiKey && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="options-outline" size={20} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>Button Options</Text>
+            </View>
+
+          <View style={[styles.settingRow, styles.settingRowLast]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Always Show 'Open in Claude' Button</Text>
+              <Text style={styles.settingDescription}>
+                Show the 'Open in Claude' button even when API key is configured
+              </Text>
+            </View>
+            <Switch
+              value={settings.showOpenInClaudeButton}
+              onValueChange={(value) =>
+                updateSettings({ showOpenInClaudeButton: value })
+              }
+              trackColor={{ false: colors.border, true: colors.primary }}
+              testID="switch-show-open-in-claude"
+            />
+          </View>
+          </View>
+        )}
       </View>
 
       {/* Data Management Section */}

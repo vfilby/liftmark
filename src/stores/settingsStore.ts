@@ -40,6 +40,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         healthkit_enabled: number;
         live_activities_enabled: number;
         keep_screen_awake: number;
+        show_open_in_claude_button: number;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -62,6 +63,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
+          showOpenInClaudeButton: row.show_open_in_claude_button === 1,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -130,6 +132,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.keepScreenAwake !== undefined) {
         updateFields.push('keep_screen_awake = ?');
         values.push(updates.keepScreenAwake ? 1 : 0);
+      }
+      if (updates.showOpenInClaudeButton !== undefined) {
+        updateFields.push('show_open_in_claude_button = ?');
+        values.push(updates.showOpenInClaudeButton ? 1 : 0);
       }
 
       // Handle API key separately - store in secure storage, not database

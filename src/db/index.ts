@@ -385,6 +385,15 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add show_open_in_claude_button column to user_settings if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0`
+    );
+  } catch {
+    // Column already exists, ignore error
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');

@@ -557,7 +557,7 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
             </View>
           )}
 
-          {settings?.anthropicApiKey ? (
+          {settings?.anthropicApiKey && (
             <TouchableOpacity
               style={[
                 styles.generateButton,
@@ -576,7 +576,9 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
                 {isGenerating ? 'Generating...' : 'Generate with Claude'}
               </Text>
             </TouchableOpacity>
-          ) : (
+          )}
+
+          {(!settings?.anthropicApiKey || settings?.showOpenInClaudeButton) && (
             <TouchableOpacity
               style={styles.generateButton}
               onPress={openInClaude}
