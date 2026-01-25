@@ -57,7 +57,7 @@ coverage/
 # Local working directories
 deacon/
 mayor/
-settings/
+/settings/
 
 # Local state and config files
 state.json

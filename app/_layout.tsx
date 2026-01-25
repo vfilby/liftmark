@@ -1,34 +1,100 @@
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack } from 'expo-router';
+import { Stack, useNavigationContainerRef, usePathname } from 'expo-router';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useEffect } from 'react';
+import NavigationErrorBoundary from '@/components/NavigationErrorBoundary';
+import { logger } from '@/services/logger';
+import { navigationLogger } from '@/services/navigationLogger';
 
 export default function RootLayout() {
   const { colors } = useTheme();
   const { loadSettings } = useSettingsStore();
+  const navigationRef = useNavigationContainerRef();
+  const pathname = usePathname();
 
   // Load settings when the app starts
   useEffect(() => {
     loadSettings().catch((error) => {
       console.error('Failed to load settings on app start:', error);
+      logger.error('app', 'Failed to load settings on app start', error);
     });
   }, [loadSettings]);
 
+  // Log app initialization
+  useEffect(() => {
+    logger.info('app', 'App initialized', {
+      pathname,
+    });
+  }, []);
+
+  // Register routes
+  useEffect(() => {
+    const routes = [
+      '(tabs)',
+      'modal/import',
+      'workout/[id]',
+      'workout/active',
+      'workout/summary',
+      'history/[id]',
+      'gym/[id]',
+      'settings/workout',
+      'settings/sync',
+      'settings/debug-logs',
+      'cloudkit-test',
+    ];
+
+    routes.forEach((route) => {
+      navigationLogger.registerRoute(route);
+    });
+
+    navigationLogger.logRouteRegistrationSummary();
+  }, []);
+
+  // Track navigation state changes
+  useEffect(() => {
+    if (!navigationRef.current) return;
+
+    const state = navigationRef.current.getRootState();
+    if (state) {
+      navigationLogger.logStateChange(state);
+    }
+  }, [pathname, navigationRef]);
+
+  // Track unhandled errors
+  useEffect(() => {
+    const errorHandler = (error: Error, isFatal?: boolean) => {
+      logger.error('app', 'Unhandled error', error, { isFatal });
+    };
+
+    // Note: In React Native, you'd use ErrorUtils.setGlobalHandler
+    // For now, we'll just log
+    if (typeof ErrorUtils !== 'undefined') {
+      ErrorUtils.setGlobalHandler(errorHandler);
+    }
+
+    return () => {
+      if (typeof ErrorUtils !== 'undefined') {
+        ErrorUtils.setGlobalHandler(() => {});
+      }
+    };
+  }, []);
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors?.card || '#FFFFFF',
-          },
-          headerTintColor: colors?.text || '#000000',
-          contentStyle: {
-            backgroundColor: colors?.background || '#F5F5F5',
-          },
-        }}
-      >
+    <NavigationErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: colors?.card || '#FFFFFF',
+            },
+            headerTintColor: colors?.text || '#000000',
+            contentStyle: {
+              backgroundColor: colors?.background || '#F5F5F5',
+            },
+          }}
+        >
         <Stack.Screen
           name="(tabs)"
           options={{
@@ -82,19 +148,9 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="settings/workout"
+          name="settings"
           options={{
-            title: 'Workout Settings',
-            headerBackTitle: 'Settings',
-            presentation: 'card',
-          }}
-        />
-        <Stack.Screen
-          name="settings/sync"
-          options={{
-            title: 'iCloud Sync',
-            headerBackTitle: 'Settings',
-            presentation: 'card',
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -105,7 +161,8 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
-      </Stack>
-    </GestureHandlerRootView>
+        </Stack>
+      </GestureHandlerRootView>
+    </NavigationErrorBoundary>
   );
 }

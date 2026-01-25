@@ -839,6 +839,34 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Developer/Debug Section */}
+      {!__DEV__ && (
+        <View style={styles.sectionGroup}>
+          <View style={styles.sectionGroupHeader}>
+            <Text style={styles.sectionGroupTitle}>DEVELOPER</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.section, styles.sectionFirst, styles.navigationSection]}
+            onPress={() => router.push('/settings/debug-logs')}
+            testID="debug-logs-button"
+          >
+            <View style={styles.navigationContent}>
+              <View style={styles.navigationIcon}>
+                <Ionicons name="bug-outline" size={24} color="#E67E22" />
+              </View>
+              <View style={styles.navigationInfo}>
+                <Text style={styles.navigationLabel}>Debug Logs</Text>
+                <Text style={styles.navigationDescription}>
+                  View and export debug logs for troubleshooting
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* About Group */}
       <View style={styles.sectionGroup}>
         <View style={styles.sectionGroupHeader}>
