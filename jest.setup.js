@@ -6,6 +6,22 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid-' + Math.random().toString(36).substr(2, 9)),
 }));
 
+// Mock expo-secure-store for secure API key storage
+const secureStoreMock = new Map();
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: jest.fn((key, value) => {
+    secureStoreMock.set(key, value);
+    return Promise.resolve();
+  }),
+  getItemAsync: jest.fn((key) => {
+    return Promise.resolve(secureStoreMock.get(key) || null);
+  }),
+  deleteItemAsync: jest.fn((key) => {
+    secureStoreMock.delete(key);
+    return Promise.resolve();
+  }),
+}));
+
 // Mock react-native Platform
 jest.mock('react-native', () => ({
   Platform: {
