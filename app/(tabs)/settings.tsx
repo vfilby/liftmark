@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -636,6 +637,24 @@ export default function SettingsScreen() {
       color: '#16A085',
       fontWeight: '500',
     },
+    openClaudeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: '#3498DB',
+    },
+    openClaudeButtonText: {
+      fontSize: 15,
+      color: '#3498DB',
+      fontWeight: '600',
+    },
   });
 
   if (!settings) {
@@ -984,6 +1003,17 @@ export default function SettingsScreen() {
             <Ionicons name="checkmark-circle" size={16} color="#16A085" />
             <Text style={styles.apiKeyStatusText}>API key is set</Text>
           </View>
+        )}
+
+        {!settings?.anthropicApiKey && (
+          <TouchableOpacity
+            style={styles.openClaudeButton}
+            onPress={() => Linking.openURL('https://console.anthropic.com')}
+            testID="open-claude-button"
+          >
+            <Ionicons name="open-outline" size={20} color="#3498DB" />
+            <Text style={styles.openClaudeButtonText}>Open in Claude to get API key</Text>
+          </TouchableOpacity>
         )}
         </View>
       </View>

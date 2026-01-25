@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -168,6 +169,10 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
         'Please add your Anthropic API key in Settings to use workout generation.',
         [
           { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open in Claude',
+            onPress: () => Linking.openURL('https://console.anthropic.com'),
+          },
           {
             text: 'Go to Settings',
             onPress: () => {
