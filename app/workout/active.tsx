@@ -27,6 +27,11 @@ import { audioService } from '@/services/audioService';
 import RestTimer from '@/components/RestTimer';
 import ExerciseTimer from '@/components/ExerciseTimer';
 import type { SessionExercise, SessionSet } from '@/types';
+import {
+  isBarbellExercise,
+  calculatePlates,
+  formatCompletePlateSetup,
+} from '@/utils/plateCalculator';
 
 // Represents either a single exercise or a superset group
 interface ExerciseGroup {
@@ -989,6 +994,20 @@ export default function ActiveWorkoutScreen() {
       color: colors.textSecondary,
       marginBottom: 12,
     },
+    plateInfo: {
+      backgroundColor: colors.primaryLight,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 6,
+      marginBottom: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+    },
+    plateInfoText: {
+      fontSize: 13,
+      color: colors.text,
+      fontWeight: '500',
+    },
     inputRow: {
       flexDirection: 'row',
       gap: 16,
@@ -1410,6 +1429,20 @@ export default function ActiveWorkoutScreen() {
                                       <View style={styles.activeSetContent}>
                                         <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
 
+                                        {/* Show plate calculator for barbell exercises */}
+                                        {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
+                                          <View style={styles.plateInfo}>
+                                            <Text style={styles.plateInfoText}>
+                                              {formatCompletePlateSetup(
+                                                calculatePlates(
+                                                  parseFloat(values.weight) || set.targetWeight || 0,
+                                                  (set.targetWeightUnit || 'lbs') as 'lbs' | 'kg'
+                                                )
+                                              )}
+                                            </Text>
+                                          </View>
+                                        )}
+
                                         {/* Show exercise timer for timed exercises */}
                                         {set.targetTime !== undefined && (
                                           <ExerciseTimer
@@ -1618,6 +1651,20 @@ export default function ActiveWorkoutScreen() {
                                   ) : isActiveForm ? (
                                     <View style={styles.activeSetContent}>
                                       <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
+
+                                      {/* Show plate calculator for barbell exercises */}
+                                      {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
+                                        <View style={styles.plateInfo}>
+                                          <Text style={styles.plateInfoText}>
+                                            {formatCompletePlateSetup(
+                                              calculatePlates(
+                                                parseFloat(values.weight) || set.targetWeight || 0,
+                                                (set.targetWeightUnit || 'lbs') as 'lbs' | 'kg'
+                                              )
+                                            )}
+                                          </Text>
+                                        </View>
+                                      )}
 
                                       {/* Show exercise timer for timed exercises */}
                                       {set.targetTime !== undefined && (
