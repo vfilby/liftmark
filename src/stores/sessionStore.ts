@@ -6,8 +6,10 @@ import {
   getWorkoutSessionById,
   updateSession,
   updateSessionSet,
+  updateSessionSetTarget,
   updateSessionExercise,
   deleteSession,
+  deleteSessionSet,
   insertSessionExercise,
   insertSessionSet,
 } from '@/db/sessionRepository';
@@ -59,6 +61,11 @@ interface SessionStore {
   // Exercise Actions
   updateExercise: (exerciseId: string, updates: Partial<Pick<SessionExercise, 'exerciseName' | 'equipmentType' | 'notes'>>) => Promise<void>;
   addExercise: (exercise: { exerciseName: string; equipmentType?: string; notes?: string; sets: Array<Omit<SessionSet, 'id' | 'sessionExerciseId'>> }) => Promise<void>;
+
+  // Set Management Actions
+  addSetToExercise: (exerciseId: string, setData?: Partial<Omit<SessionSet, 'id' | 'sessionExerciseId'>>) => Promise<void>;
+  deleteSetFromExercise: (setId: string) => Promise<void>;
+  updateSetTarget: (setId: string, updates: Partial<Pick<SessionSet, 'targetWeight' | 'targetWeightUnit' | 'targetReps' | 'targetTime' | 'targetRpe' | 'restSeconds' | 'notes'>>) => Promise<void>;
 
   // Navigation
   goToNextSet: () => void;
@@ -586,6 +593,125 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to add exercise',
+      });
+    }
+  },
+
+  // Add a new set to an existing exercise
+  addSetToExercise: async (
+    exerciseId: string,
+    setData?: Partial<Omit<SessionSet, 'id' | 'sessionExerciseId'>>
+  ) => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+
+    try {
+      // Find the target exercise
+      const targetExercise = activeSession.exercises.find((e) => e.id === exerciseId);
+      if (!targetExercise) return;
+
+      // Calculate the next order index
+      const maxOrderIndex = Math.max(
+        ...targetExercise.sets.map((s) => s.orderIndex),
+        -1
+      );
+
+      // Create new set with defaults from the last set if available
+      const lastSet = targetExercise.sets[targetExercise.sets.length - 1];
+      const newSetData: Omit<SessionSet, 'id' | 'sessionExerciseId'> = {
+        orderIndex: maxOrderIndex + 1,
+        status: 'pending' as const,
+        // Copy target values from last set or use provided data
+        targetWeight: setData?.targetWeight ?? lastSet?.targetWeight,
+        targetWeightUnit: setData?.targetWeightUnit ?? lastSet?.targetWeightUnit,
+        targetReps: setData?.targetReps ?? lastSet?.targetReps,
+        targetTime: setData?.targetTime ?? lastSet?.targetTime,
+        targetRpe: setData?.targetRpe ?? lastSet?.targetRpe,
+        restSeconds: setData?.restSeconds ?? lastSet?.restSeconds,
+        notes: setData?.notes,
+        ...setData,
+      };
+
+      // Insert into database
+      const newSet = await insertSessionSet(exerciseId, newSetData);
+
+      // Update local state
+      const updatedExercises = activeSession.exercises.map((exercise) =>
+        exercise.id === exerciseId
+          ? { ...exercise, sets: [...exercise.sets, newSet] }
+          : exercise
+      );
+
+      set({
+        activeSession: {
+          ...activeSession,
+          exercises: updatedExercises,
+        },
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to add set',
+      });
+    }
+  },
+
+  // Delete a set from an exercise
+  deleteSetFromExercise: async (setId: string) => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+
+    try {
+      // Delete from database
+      await deleteSessionSet(setId);
+
+      // Update local state
+      const updatedExercises = activeSession.exercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.filter((s) => s.id !== setId),
+      }));
+
+      set({
+        activeSession: {
+          ...activeSession,
+          exercises: updatedExercises,
+        },
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to delete set',
+      });
+    }
+  },
+
+  // Update target values for a set
+  updateSetTarget: async (
+    setId: string,
+    updates: Partial<Pick<SessionSet, 'targetWeight' | 'targetWeightUnit' | 'targetReps' | 'targetTime' | 'targetRpe' | 'restSeconds' | 'notes'>>
+  ) => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+
+    try {
+      // Update in database
+      await updateSessionSetTarget(setId, updates);
+
+      // Update local state
+      const updatedExercises = activeSession.exercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((s) =>
+          s.id === setId ? { ...s, ...updates } : s
+        ),
+      }));
+
+      set({
+        activeSession: {
+          ...activeSession,
+          exercises: updatedExercises,
+        },
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update set',
       });
     }
   },

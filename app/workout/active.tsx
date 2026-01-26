@@ -89,6 +89,9 @@ export default function ActiveWorkoutScreen() {
     getTrackableExercises,
     updateExercise,
     addExercise,
+    addSetToExercise,
+    deleteSetFromExercise,
+    updateSetTarget,
   } = useSessionStore();
 
   const { settings } = useSettingsStore();
@@ -114,6 +117,8 @@ export default function ActiveWorkoutScreen() {
     equipmentType: string;
     notes: string;
   }>({ exerciseName: '', equipmentType: '', notes: '' });
+  // Track set edits within the exercise edit modal
+  const [editingExerciseSets, setEditingExerciseSets] = useState<SessionSet[]>([]);
 
   // Track add exercise modal
   const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
@@ -602,23 +607,109 @@ export default function ActiveWorkoutScreen() {
       equipmentType: exercise.equipmentType || '',
       notes: exercise.notes || '',
     });
+    // Load sets for editing
+    setEditingExerciseSets([...exercise.sets]);
   }, []);
 
   const handleSaveExercise = useCallback(async () => {
     if (!editingExerciseId) return;
 
-    await updateExercise(editingExerciseId, {
-      exerciseName: editExerciseValues.exerciseName,
-      equipmentType: editExerciseValues.equipmentType || undefined,
-      notes: editExerciseValues.notes || undefined,
-    });
+    try {
+      // Update exercise details
+      await updateExercise(editingExerciseId, {
+        exerciseName: editExerciseValues.exerciseName,
+        equipmentType: editExerciseValues.equipmentType || undefined,
+        notes: editExerciseValues.notes || undefined,
+      });
 
-    setEditingExerciseId(null);
-  }, [editingExerciseId, editExerciseValues, updateExercise]);
+      // Get the original exercise to find which sets were added/deleted
+      const originalExercise = activeSession?.exercises.find((e) => e.id === editingExerciseId);
+      if (!originalExercise) return;
+
+      const originalSetIds = new Set(originalExercise.sets.map((s) => s.id));
+      const editedSetIds = new Set(editingExerciseSets.map((s) => s.id));
+
+      // Delete removed sets
+      for (const originalSet of originalExercise.sets) {
+        if (!editedSetIds.has(originalSet.id)) {
+          await deleteSetFromExercise(originalSet.id);
+        }
+      }
+
+      // Add new sets (those with temp IDs)
+      for (const set of editingExerciseSets) {
+        if (set.id.startsWith('temp-')) {
+          await addSetToExercise(editingExerciseId, {
+            orderIndex: set.orderIndex,
+            status: 'pending',
+            targetWeight: set.targetWeight,
+            targetWeightUnit: set.targetWeightUnit,
+            targetReps: set.targetReps,
+            targetTime: set.targetTime,
+            targetRpe: set.targetRpe,
+            restSeconds: set.restSeconds,
+            notes: set.notes,
+          });
+        } else {
+          // Update existing set
+          await updateSetTarget(set.id, {
+            targetWeight: set.targetWeight,
+            targetWeightUnit: set.targetWeightUnit,
+            targetReps: set.targetReps,
+            targetTime: set.targetTime,
+            targetRpe: set.targetRpe,
+            restSeconds: set.restSeconds,
+            notes: set.notes,
+          });
+        }
+      }
+
+      setEditingExerciseId(null);
+      setEditingExerciseSets([]);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save exercise changes');
+    }
+  }, [editingExerciseId, editExerciseValues, editingExerciseSets, activeSession, updateExercise, updateSetTarget, addSetToExercise, deleteSetFromExercise]);
 
   const handleCancelEditExercise = useCallback(() => {
     setEditingExerciseId(null);
+    setEditingExerciseSets([]);
   }, []);
+
+  const handleAddSetInModal = useCallback(() => {
+    if (!editingExerciseId) return;
+
+    // Create a new set based on the last set's values
+    const lastSet = editingExerciseSets[editingExerciseSets.length - 1];
+    const newSet: SessionSet = {
+      id: `temp-${Date.now()}`, // Temporary ID, will be replaced when saved
+      sessionExerciseId: editingExerciseId,
+      orderIndex: editingExerciseSets.length,
+      status: 'pending',
+      targetWeight: lastSet?.targetWeight,
+      targetWeightUnit: lastSet?.targetWeightUnit,
+      targetReps: lastSet?.targetReps,
+      targetTime: lastSet?.targetTime,
+      targetRpe: lastSet?.targetRpe,
+      restSeconds: lastSet?.restSeconds,
+    };
+
+    setEditingExerciseSets([...editingExerciseSets, newSet]);
+  }, [editingExerciseId, editingExerciseSets]);
+
+  const handleDeleteSetInModal = useCallback((setId: string) => {
+    if (editingExerciseSets.length <= 1) {
+      Alert.alert('Cannot Delete', 'An exercise must have at least one set');
+      return;
+    }
+    setEditingExerciseSets(editingExerciseSets.filter((s) => s.id !== setId));
+  }, [editingExerciseSets]);
+
+  const handleUpdateSetInModal = useCallback((setId: string, field: keyof SessionSet, value: any) => {
+    setEditingExerciseSets(editingExerciseSets.map((s) =>
+      s.id === setId ? { ...s, [field]: value } : s
+    ));
+  }, [editingExerciseSets]);
 
   const handleAddExercisePress = useCallback(() => {
     setShowAddExerciseModal(true);
@@ -1212,6 +1303,70 @@ export default function ActiveWorkoutScreen() {
     exerciseEditButton: {
       padding: 8,
       marginLeft: 8,
+    },
+    // Set editing styles
+    setEditContainer: {
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    setEditHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    setEditNumber: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    setDeleteButton: {
+      padding: 4,
+    },
+    setEditRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 8,
+    },
+    setEditInput: {
+      flex: 1,
+    },
+    setEditLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    setEditTextInput: {
+      backgroundColor: colors.background,
+      borderRadius: 6,
+      padding: 8,
+      fontSize: 14,
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.border,
+      textAlign: 'center',
+    },
+    addSetButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+      backgroundColor: colors.backgroundTertiary,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginTop: 8,
+      marginBottom: 16,
+      gap: 8,
+    },
+    addSetButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
     },
   });
 
@@ -1820,33 +1975,129 @@ export default function ActiveWorkoutScreen() {
         onRequestClose={handleCancelEditExercise}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
             <Text style={styles.modalTitle}>Edit Exercise</Text>
 
-            <TextInput
-              style={styles.modalInput}
-              value={editExerciseValues.exerciseName}
-              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, exerciseName: text }))}
-              placeholder="Exercise Name"
-              placeholderTextColor={colors.textMuted}
-            />
+            <ScrollView style={{ maxHeight: 500 }}>
+              <TextInput
+                style={styles.modalInput}
+                value={editExerciseValues.exerciseName}
+                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, exerciseName: text }))}
+                placeholder="Exercise Name"
+                placeholderTextColor={colors.textMuted}
+              />
 
-            <TextInput
-              style={styles.modalInput}
-              value={editExerciseValues.equipmentType}
-              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, equipmentType: text }))}
-              placeholder="Equipment Type (optional)"
-              placeholderTextColor={colors.textMuted}
-            />
+              <TextInput
+                style={styles.modalInput}
+                value={editExerciseValues.equipmentType}
+                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, equipmentType: text }))}
+                placeholder="Equipment Type (optional)"
+                placeholderTextColor={colors.textMuted}
+              />
 
-            <TextInput
-              style={[styles.modalInput, styles.modalInputMultiline]}
-              value={editExerciseValues.notes}
-              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, notes: text }))}
-              placeholder="Notes (optional)"
-              placeholderTextColor={colors.textMuted}
-              multiline
-            />
+              <TextInput
+                style={[styles.modalInput, styles.modalInputMultiline]}
+                value={editExerciseValues.notes}
+                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, notes: text }))}
+                placeholder="Notes (optional)"
+                placeholderTextColor={colors.textMuted}
+                multiline
+              />
+
+              {/* Sets Section */}
+              <Text style={[styles.modalTitle, { fontSize: 16, marginTop: 16, marginBottom: 8 }]}>Sets</Text>
+
+              {editingExerciseSets.map((set, index) => (
+                <View key={set.id} style={styles.setEditContainer}>
+                  <View style={styles.setEditHeader}>
+                    <Text style={styles.setEditNumber}>Set {index + 1}</Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteSetInModal(set.id)}
+                      style={styles.setDeleteButton}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.setEditRow}>
+                    <View style={styles.setEditInput}>
+                      <Text style={styles.setEditLabel}>Weight</Text>
+                      <TextInput
+                        style={styles.setEditTextInput}
+                        value={set.targetWeight !== undefined ? String(set.targetWeight) : ''}
+                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetWeight', text ? parseFloat(text) : undefined)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                    <View style={styles.setEditInput}>
+                      <Text style={styles.setEditLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.setEditTextInput}
+                        value={set.targetReps !== undefined ? String(set.targetReps) : ''}
+                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetReps', text ? parseInt(text, 10) : undefined)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                    <View style={styles.setEditInput}>
+                      <Text style={styles.setEditLabel}>RPE</Text>
+                      <TextInput
+                        style={styles.setEditTextInput}
+                        value={set.targetRpe !== undefined ? String(set.targetRpe) : ''}
+                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetRpe', text ? parseFloat(text) : undefined)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.setEditRow}>
+                    <View style={styles.setEditInput}>
+                      <Text style={styles.setEditLabel}>Rest (s)</Text>
+                      <TextInput
+                        style={styles.setEditTextInput}
+                        value={set.restSeconds !== undefined ? String(set.restSeconds) : ''}
+                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'restSeconds', text ? parseInt(text, 10) : undefined)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                    <View style={styles.setEditInput}>
+                      <Text style={styles.setEditLabel}>Time (s)</Text>
+                      <TextInput
+                        style={styles.setEditTextInput}
+                        value={set.targetTime !== undefined ? String(set.targetTime) : ''}
+                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetTime', text ? parseInt(text, 10) : undefined)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                  </View>
+
+                  <TextInput
+                    style={[styles.modalInput, { marginTop: 8 }]}
+                    value={set.notes || ''}
+                    onChangeText={(text) => handleUpdateSetInModal(set.id, 'notes', text || undefined)}
+                    placeholder="Set notes (optional)"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.addSetButton}
+                onPress={handleAddSetInModal}
+              >
+                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                <Text style={styles.addSetButtonText}>Add Set</Text>
+              </TouchableOpacity>
+            </ScrollView>
 
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
