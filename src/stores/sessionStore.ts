@@ -605,18 +605,32 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   // Tick the rest timer (called every second)
   tickRestTimer: () => {
-    const { restTimer } = get();
+    const { restTimer, activeSession, currentExerciseIndex } = get();
     if (!restTimer || !restTimer.isRunning) return;
 
     if (restTimer.remainingSeconds <= 1) {
       set({ restTimer: null });
     } else {
+      const newRemainingSeconds = restTimer.remainingSeconds - 1;
       set({
         restTimer: {
           ...restTimer,
-          remainingSeconds: restTimer.remainingSeconds - 1,
+          remainingSeconds: newRemainingSeconds,
         },
       });
+
+      // Update Live Activity with updated countdown
+      const settings = useSettingsStore.getState().settings;
+      if (settings?.liveActivitiesEnabled && isLiveActivityAvailable() && activeSession) {
+        const trackable = getTrackableExercisesFromSession(activeSession);
+        const currentExercise = trackable[currentExerciseIndex] || null;
+        const nextExercise = trackable[currentExerciseIndex + 1] || null;
+        const progress = calculateProgress(activeSession);
+        updateWorkoutLiveActivity(activeSession, currentExercise, 0, progress, {
+          remainingSeconds: newRemainingSeconds,
+          nextExercise,
+        });
+      }
     }
   },
 
