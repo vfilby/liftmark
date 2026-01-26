@@ -16,6 +16,8 @@ export interface PlateBreakdown {
   isAchievable: boolean;
   /** Remainder if target is not exactly achievable */
   remainder?: number;
+  /** Bar weight used in calculation */
+  barWeight: number;
 }
 
 // Standard plate weights in pounds
@@ -99,6 +101,7 @@ export function calculatePlates(
       plates: [],
       isAchievable: false,
       remainder: weightPerSide,
+      barWeight: bar,
     };
   }
 
@@ -126,6 +129,7 @@ export function calculatePlates(
     plates,
     isAchievable,
     remainder: isAchievable ? undefined : remaining,
+    barWeight: bar,
   };
 }
 
@@ -158,6 +162,9 @@ export function formatCompletePlateSetup(breakdown: PlateBreakdown): string {
     return 'Bar only';
   }
 
-  const perSide = formatPlateBreakdown(breakdown);
-  return `${perSide} per side`;
+  // Format: "45lb bar + 90lbs per side"
+  const unitSingular = breakdown.unit === 'lbs' ? 'lb' : 'kg';
+  const unitPlural = breakdown.unit;
+
+  return `${breakdown.barWeight}${unitSingular} bar + ${breakdown.weightPerSide}${unitPlural} per side`;
 }

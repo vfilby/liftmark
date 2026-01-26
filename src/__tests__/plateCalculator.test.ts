@@ -43,6 +43,7 @@ describe('plateCalculator', () => {
       const result = calculatePlates(95, 'lbs');
       expect(result.weightPerSide).toBe(25); // (95 - 45) / 2
       expect(result.unit).toBe('lbs');
+      expect(result.barWeight).toBe(45);
       expect(result.isAchievable).toBe(true);
       expect(result.plates).toEqual([{ weight: 25, count: 1 }]);
     });
@@ -127,6 +128,7 @@ describe('plateCalculator', () => {
       const result = calculatePlates(60, 'kg');
       expect(result.weightPerSide).toBe(20); // (60 - 20) / 2
       expect(result.unit).toBe('kg');
+      expect(result.barWeight).toBe(20);
       expect(result.plates).toEqual([{ weight: 20, count: 1 }]);
       expect(result.isAchievable).toBe(true);
     });
@@ -163,6 +165,7 @@ describe('plateCalculator', () => {
     it('should handle custom bar weight (35 lbs)', () => {
       const result = calculatePlates(135, 'lbs', 35);
       expect(result.weightPerSide).toBe(50); // (135 - 35) / 2
+      expect(result.barWeight).toBe(35);
       expect(result.plates).toEqual([
         { weight: 45, count: 1 },
         { weight: 5, count: 1 },
@@ -216,14 +219,39 @@ describe('plateCalculator', () => {
   });
 
   describe('formatCompletePlateSetup', () => {
-    it('should format complete setup with per side label', () => {
+    it('should format complete setup with bar weight and per side label', () => {
       const breakdown = calculatePlates(95, 'lbs');
-      expect(formatCompletePlateSetup(breakdown)).toBe('25lbs per side');
+      expect(formatCompletePlateSetup(breakdown)).toBe('45lb bar + 25lbs per side');
+    });
+
+    it('should format 135 lbs correctly', () => {
+      const breakdown = calculatePlates(135, 'lbs');
+      expect(formatCompletePlateSetup(breakdown)).toBe('45lb bar + 45lbs per side');
+    });
+
+    it('should format 155 lbs correctly', () => {
+      const breakdown = calculatePlates(155, 'lbs');
+      expect(formatCompletePlateSetup(breakdown)).toBe('45lb bar + 55lbs per side');
+    });
+
+    it('should format 225 lbs correctly', () => {
+      const breakdown = calculatePlates(225, 'lbs');
+      expect(formatCompletePlateSetup(breakdown)).toBe('45lb bar + 90lbs per side');
+    });
+
+    it('should format kilograms correctly', () => {
+      const breakdown = calculatePlates(100, 'kg');
+      expect(formatCompletePlateSetup(breakdown)).toBe('20kg bar + 40kg per side');
     });
 
     it('should format bar only', () => {
       const breakdown = calculatePlates(45, 'lbs');
       expect(formatCompletePlateSetup(breakdown)).toBe('Bar only');
+    });
+
+    it('should handle custom bar weight', () => {
+      const breakdown = calculatePlates(135, 'lbs', 35);
+      expect(formatCompletePlateSetup(breakdown)).toBe('35lb bar + 50lbs per side');
     });
   });
 });
