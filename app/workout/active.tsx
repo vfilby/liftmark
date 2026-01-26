@@ -297,14 +297,14 @@ export default function ActiveWorkoutScreen() {
     setEditingSetId(null);
   }, [editValues, completeSet]);
 
-  // Handle back button
+  // Handle back button - allow navigation without pausing
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      handlePause();
+      router.back();
       return true;
     });
     return () => backHandler.remove();
-  }, []);
+  }, [router]);
 
   // Rest timer tick with audio cues
   useEffect(() => {

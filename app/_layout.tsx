@@ -1,10 +1,12 @@
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useNavigationContainerRef, usePathname } from 'expo-router';
+import { View } from 'react-native';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useEffect } from 'react';
 import NavigationErrorBoundary from '@/components/NavigationErrorBoundary';
+import { ActiveWorkoutBanner } from '@/components/ActiveWorkoutBanner';
 import { logger } from '@/services/logger';
 import { navigationLogger } from '@/services/navigationLogger';
 
@@ -84,17 +86,19 @@ export default function RootLayout() {
   return (
     <NavigationErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors?.card || '#FFFFFF',
-            },
-            headerTintColor: colors?.text || '#000000',
-            contentStyle: {
-              backgroundColor: colors?.background || '#F5F5F5',
-            },
-          }}
-        >
+        <View style={{ flex: 1 }}>
+          <ActiveWorkoutBanner />
+          <Stack
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: colors?.card || '#FFFFFF',
+              },
+              headerTintColor: colors?.text || '#000000',
+              contentStyle: {
+                backgroundColor: colors?.background || '#F5F5F5',
+              },
+            }}
+          >
         <Stack.Screen
           name="(tabs)"
           options={{
@@ -161,7 +165,8 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
-        </Stack>
+          </Stack>
+        </View>
       </GestureHandlerRootView>
     </NavigationErrorBoundary>
   );
