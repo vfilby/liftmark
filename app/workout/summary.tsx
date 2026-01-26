@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,8 @@ const openYouTubeSearch = (exerciseName: string) => {
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
+import WorkoutHighlights from '@/components/WorkoutHighlights';
+import { calculateWorkoutHighlights, type WorkoutHighlight } from '@/services/workoutHighlightsService';
 
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
@@ -17,11 +19,30 @@ export default function WorkoutSummaryScreen() {
   const padding = useResponsivePadding();
   const fonts = useResponsiveFontSizes();
   const { activeSession, pauseSession, getProgress, getTrackableExercises } = useSessionStore();
+  const [highlights, setHighlights] = useState<WorkoutHighlight[]>([]);
+  const [loadingHighlights, setLoadingHighlights] = useState(true);
 
   // If no session, go back
   useEffect(() => {
     if (!activeSession) {
       router.replace('/(tabs)');
+    }
+  }, [activeSession]);
+
+  // Load workout highlights
+  useEffect(() => {
+    if (activeSession) {
+      calculateWorkoutHighlights(activeSession)
+        .then((calculatedHighlights) => {
+          setHighlights(calculatedHighlights);
+        })
+        .catch((error) => {
+          console.error('Error calculating highlights:', error);
+          setHighlights([]);
+        })
+        .finally(() => {
+          setLoadingHighlights(false);
+        });
     }
   }, [activeSession]);
 
@@ -275,6 +296,11 @@ export default function WorkoutSummaryScreen() {
           <Text style={styles.successTitle}>Workout Complete!</Text>
           <Text style={styles.workoutName}>{activeSession.name}</Text>
         </View>
+
+        {/* Workout Highlights */}
+        {!loadingHighlights && highlights.length > 0 && (
+          <WorkoutHighlights highlights={highlights} />
+        )}
 
         {/* Summary Stats */}
         <View style={styles.statsGrid}>
