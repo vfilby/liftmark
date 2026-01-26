@@ -390,8 +390,23 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     await database.runAsync(
       `ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0`
     );
-  } catch {
-    // Column already exists, ignore error
+    console.log('[Migration] Added show_open_in_claude_button column');
+  } catch (error) {
+    console.log('[Migration] show_open_in_claude_button column already exists or error:', error);
+  }
+
+  // Verify the column exists by checking the table schema
+  try {
+    const tableInfo = await database.getAllAsync<{ name: string; type: string }>(
+      `PRAGMA table_info(user_settings)`
+    );
+    const hasColumn = tableInfo.some(col => col.name === 'show_open_in_claude_button');
+    console.log('[Migration] Verification - show_open_in_claude_button column exists:', hasColumn);
+    if (!hasColumn) {
+      console.error('[Migration] WARNING: show_open_in_claude_button column is missing!');
+    }
+  } catch (error) {
+    console.error('[Migration] Failed to verify column:', error);
   }
 
   // Initialize default user settings if they don't exist

@@ -64,6 +64,18 @@ export default function SettingsScreen() {
     loadGyms();
   }, []);
 
+  // Debug logging for Button Options visibility
+  useEffect(() => {
+    if (settings) {
+      console.log('[Settings Screen] Settings updated:', {
+        hasApiKey: !!settings.anthropicApiKey,
+        apiKeyLength: settings.anthropicApiKey?.length,
+        showOpenInClaudeButton: settings.showOpenInClaudeButton,
+        shouldShowButtonOptions: !!settings.anthropicApiKey,
+      });
+    }
+  }, [settings]);
+
   // Sync local prompt state with settings
   useEffect(() => {
     if (settings?.customPromptAddition !== undefined) {
@@ -1018,7 +1030,7 @@ export default function SettingsScreen() {
         </View>
 
         {settings?.anthropicApiKey && (
-          <View style={styles.section}>
+          <View style={styles.section} testID="button-options-section">
             <View style={styles.sectionHeader}>
               <Ionicons name="options-outline" size={20} color="#FF6B35" />
               <Text style={styles.sectionTitle}>Button Options</Text>
