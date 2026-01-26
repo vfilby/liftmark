@@ -18,7 +18,7 @@ export function ActiveWorkoutBanner() {
   }
 
   const currentExercise = activeSession.exercises[currentExerciseIndex];
-  const completedExercises = activeSession.exercises.filter((e) => e.isComplete).length;
+  const completedExercises = activeSession.exercises.filter((e) => e.status === 'completed').length;
   const totalExercises = activeSession.exercises.length;
 
   return (
@@ -33,10 +33,10 @@ export function ActiveWorkoutBanner() {
       <View style={styles.content}>
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1}>
-            {activeSession.workoutName}
+            {activeSession.name}
           </Text>
           <Text style={styles.subtitle}>
-            {currentExercise?.name || 'In Progress'} • {completedExercises}/{totalExercises} exercises
+            {currentExercise?.exerciseName || 'In Progress'} • {completedExercises}/{totalExercises} exercises
           </Text>
         </View>
         <View style={styles.button}>
