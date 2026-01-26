@@ -67,12 +67,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
-        console.log('[SettingsStore] Loaded settings:', {
-          hasApiKey: !!secureApiKey,
-          apiKeyStatus: settings.anthropicApiKeyStatus,
-          showOpenInClaudeButton: settings.showOpenInClaudeButton,
-          rawDbValue: row.show_open_in_claude_button,
-        });
         set({ settings, isLoading: false });
       } else {
         console.warn('No settings found in database, using defaults');

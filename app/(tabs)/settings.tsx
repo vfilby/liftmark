@@ -64,18 +64,6 @@ export default function SettingsScreen() {
     loadGyms();
   }, []);
 
-  // Debug logging for Button Options visibility
-  useEffect(() => {
-    if (settings) {
-      console.log('[Settings Screen] Settings updated:', {
-        hasApiKey: !!settings.anthropicApiKey,
-        apiKeyLength: settings.anthropicApiKey?.length,
-        showOpenInClaudeButton: settings.showOpenInClaudeButton,
-        shouldShowButtonOptions: !!settings.anthropicApiKey,
-      });
-    }
-  }, [settings]);
-
   // Sync local prompt state with settings
   useEffect(() => {
     if (settings?.customPromptAddition !== undefined) {
