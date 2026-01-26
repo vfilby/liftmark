@@ -466,6 +466,97 @@ export async function getExerciseBestWeights(): Promise<Map<string, { weight: nu
   return bestWeights;
 }
 
+/**
+ * Get historical performance data for a specific exercise
+ * Returns the last N completed sessions where this exercise was performed
+ */
+export async function getExerciseHistory(
+  exerciseName: string,
+  limit: number = 10
+): Promise<Array<{
+  sessionId: string;
+  sessionDate: string;
+  workoutName: string;
+  sets: Array<{
+    weight: number | null;
+    reps: number | null;
+    time: number | null;
+    rpe: number | null;
+    unit: string;
+  }>;
+}>> {
+  const db = await getDatabase();
+
+  // Get all completed sessions where this exercise was performed
+  const rows = await db.getAllAsync<{
+    session_id: string;
+    session_date: string;
+    workout_name: string;
+    set_id: string;
+    actual_weight: number | null;
+    actual_reps: number | null;
+    actual_time: number | null;
+    actual_rpe: number | null;
+    weight_unit: string;
+    order_index: number;
+  }>(`
+    SELECT
+      ws.id as session_id,
+      ws.date as session_date,
+      ws.name as workout_name,
+      ss.id as set_id,
+      ss.actual_weight,
+      ss.actual_reps,
+      ss.actual_time,
+      ss.actual_rpe,
+      COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as weight_unit,
+      ss.order_index
+    FROM workout_sessions ws
+    JOIN session_exercises se ON se.workout_session_id = ws.id
+    JOIN session_sets ss ON ss.session_exercise_id = se.id
+    WHERE ws.status = 'completed'
+      AND ss.status = 'completed'
+      AND se.exercise_name = ?
+    ORDER BY ws.date DESC, ws.start_time DESC, ss.order_index ASC
+  `, [exerciseName]);
+
+  // Group sets by session
+  const sessionMap = new Map<string, {
+    sessionId: string;
+    sessionDate: string;
+    workoutName: string;
+    sets: Array<{
+      weight: number | null;
+      reps: number | null;
+      time: number | null;
+      rpe: number | null;
+      unit: string;
+    }>;
+  }>();
+
+  for (const row of rows) {
+    if (!sessionMap.has(row.session_id)) {
+      sessionMap.set(row.session_id, {
+        sessionId: row.session_id,
+        sessionDate: row.session_date,
+        workoutName: row.workout_name,
+        sets: [],
+      });
+    }
+
+    sessionMap.get(row.session_id)!.sets.push({
+      weight: row.actual_weight,
+      reps: row.actual_reps,
+      time: row.actual_time,
+      rpe: row.actual_rpe,
+      unit: row.weight_unit,
+    });
+  }
+
+  // Convert to array and limit
+  return Array.from(sessionMap.values()).slice(0, limit);
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '@/theme';
 import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
+import { ExerciseTrendView } from './ExerciseTrendView';
 
 interface ExerciseGroup {
   type: 'single' | 'superset';
@@ -519,6 +520,13 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
                             </View>
                           ))}
                         </View>
+
+                        {group.exercises.map((exercise) => (
+                          <ExerciseTrendView
+                            key={`trend-${exercise.id}`}
+                            exerciseName={exercise.exerciseName}
+                          />
+                        ))}
                       </>
                     ) : (
                       <>
@@ -563,6 +571,8 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
                             </View>
                           ))}
                         </View>
+
+                        <ExerciseTrendView exerciseName={group.exercises[0].exerciseName} />
                       </>
                     )}
                   </View>

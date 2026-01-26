@@ -9,6 +9,7 @@ import {
   getCompletedSessions,
   getRecentSessions,
   getExerciseBestWeights,
+  getExerciseHistory,
 } from '../db/sessionRepository';
 import type {
   WorkoutTemplate,
@@ -1178,6 +1179,181 @@ describe('getExerciseBestWeights', () => {
     const result = await getExerciseBestWeights();
 
     expect(result.get('Bench Press')?.unit).toBe('kg');
+  });
+});
+
+describe('getExerciseHistory', () => {
+  let mockDb: MockDatabase;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDb = createMockDatabase();
+    mockedGetDatabase.mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDatabase>>);
+  });
+
+  it('returns exercise history grouped by session', async () => {
+    const rows = [
+      {
+        session_id: 'session-1',
+        session_date: '2024-01-15',
+        workout_name: 'Push Day',
+        set_id: 'set-1',
+        actual_weight: 185,
+        actual_reps: 8,
+        actual_time: null,
+        actual_rpe: 7,
+        weight_unit: 'lbs',
+        order_index: 0,
+      },
+      {
+        session_id: 'session-1',
+        session_date: '2024-01-15',
+        workout_name: 'Push Day',
+        set_id: 'set-2',
+        actual_weight: 185,
+        actual_reps: 7,
+        actual_time: null,
+        actual_rpe: 8,
+        weight_unit: 'lbs',
+        order_index: 1,
+      },
+      {
+        session_id: 'session-2',
+        session_date: '2024-01-10',
+        workout_name: 'Push Day',
+        set_id: 'set-3',
+        actual_weight: 175,
+        actual_reps: 8,
+        actual_time: null,
+        actual_rpe: 7,
+        weight_unit: 'lbs',
+        order_index: 0,
+      },
+    ];
+
+    mockDb.getAllAsync.mockResolvedValueOnce(rows);
+
+    const result = await getExerciseHistory('Bench Press', 10);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].sessionId).toBe('session-1');
+    expect(result[0].sessionDate).toBe('2024-01-15');
+    expect(result[0].workoutName).toBe('Push Day');
+    expect(result[0].sets).toHaveLength(2);
+    expect(result[0].sets[0]).toEqual({
+      weight: 185,
+      reps: 8,
+      time: null,
+      rpe: 7,
+      unit: 'lbs',
+    });
+
+    expect(result[1].sessionId).toBe('session-2');
+    expect(result[1].sets).toHaveLength(1);
+  });
+
+  it('limits results to specified limit', async () => {
+    const rows = Array.from({ length: 15 }, (_, i) => ({
+      session_id: `session-${i}`,
+      session_date: `2024-01-${i + 1}`,
+      workout_name: 'Push Day',
+      set_id: `set-${i}`,
+      actual_weight: 185,
+      actual_reps: 8,
+      actual_time: null,
+      actual_rpe: 7,
+      weight_unit: 'lbs',
+      order_index: 0,
+    }));
+
+    mockDb.getAllAsync.mockResolvedValueOnce(rows);
+
+    const result = await getExerciseHistory('Bench Press', 5);
+
+    expect(result).toHaveLength(5);
+  });
+
+  it('queries only completed sessions and sets', async () => {
+    mockDb.getAllAsync.mockResolvedValueOnce([]);
+
+    await getExerciseHistory('Bench Press', 10);
+
+    expect(mockDb.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE ws.status = 'completed'"),
+      expect.any(Array)
+    );
+    expect(mockDb.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining("AND ss.status = 'completed'"),
+      expect.any(Array)
+    );
+  });
+
+  it('filters by exercise name', async () => {
+    mockDb.getAllAsync.mockResolvedValueOnce([]);
+
+    await getExerciseHistory('Squat', 10);
+
+    expect(mockDb.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining('AND se.exercise_name = ?'),
+      ['Squat']
+    );
+  });
+
+  it('returns empty array when no history found', async () => {
+    mockDb.getAllAsync.mockResolvedValueOnce([]);
+
+    const result = await getExerciseHistory('Bench Press', 10);
+
+    expect(result).toEqual([]);
+  });
+
+  it('handles bodyweight exercises with null weight', async () => {
+    const rows = [
+      {
+        session_id: 'session-1',
+        session_date: '2024-01-15',
+        workout_name: 'Pull Day',
+        set_id: 'set-1',
+        actual_weight: null,
+        actual_reps: 10,
+        actual_time: null,
+        actual_rpe: 7,
+        weight_unit: 'lbs',
+        order_index: 0,
+      },
+    ];
+
+    mockDb.getAllAsync.mockResolvedValueOnce(rows);
+
+    const result = await getExerciseHistory('Pull-ups', 10);
+
+    expect(result[0].sets[0].weight).toBeNull();
+    expect(result[0].sets[0].reps).toBe(10);
+  });
+
+  it('handles time-based exercises', async () => {
+    const rows = [
+      {
+        session_id: 'session-1',
+        session_date: '2024-01-15',
+        workout_name: 'Core',
+        set_id: 'set-1',
+        actual_weight: null,
+        actual_reps: null,
+        actual_time: 60,
+        actual_rpe: 8,
+        weight_unit: 'lbs',
+        order_index: 0,
+      },
+    ];
+
+    mockDb.getAllAsync.mockResolvedValueOnce(rows);
+
+    const result = await getExerciseHistory('Plank', 10);
+
+    expect(result[0].sets[0].time).toBe(60);
+    expect(result[0].sets[0].weight).toBeNull();
+    expect(result[0].sets[0].reps).toBeNull();
   });
 });
 
