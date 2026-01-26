@@ -901,7 +901,7 @@ describe('updateSessionExercise', () => {
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE session_exercises'),
-      ['completed', 'All sets done', 'exercise-123']
+      ['completed', 'All sets done', 'Bench Press', null, 'exercise-123']
     );
   });
 
@@ -916,7 +916,7 @@ describe('updateSessionExercise', () => {
 
       expect(mockDb.runAsync).toHaveBeenCalledWith(
         expect.any(String),
-        [status, null, 'ex-1']
+        [status, null, 'Bench Press', null, 'ex-1']
       );
     }
   });
@@ -932,7 +932,7 @@ describe('updateSessionExercise', () => {
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE session_exercises'),
-      ['pending', null, 'exercise-123']
+      ['pending', null, 'Bench Press', null, 'exercise-123']
     );
   });
 });

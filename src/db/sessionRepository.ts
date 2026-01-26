@@ -279,10 +279,97 @@ export async function updateSessionExercise(
 
   await db.runAsync(
     `UPDATE session_exercises
-     SET status = ?, notes = ?
+     SET status = ?, notes = ?, exercise_name = ?, equipment_type = ?
      WHERE id = ?`,
-    [exercise.status, exercise.notes || null, exercise.id]
+    [exercise.status, exercise.notes || null, exercise.exerciseName, exercise.equipmentType || null, exercise.id]
   );
+}
+
+/**
+ * Insert a new exercise into an active workout session
+ */
+export async function insertSessionExercise(
+  sessionId: string,
+  exercise: Omit<SessionExercise, 'id' | 'workoutSessionId' | 'sets'>
+): Promise<SessionExercise> {
+  const db = await getDatabase();
+  const exerciseId = generateId();
+
+  await db.runAsync(
+    `INSERT INTO session_exercises (
+      id, workout_session_id, exercise_name, order_index, notes, equipment_type,
+      group_type, group_name, parent_exercise_id, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      exerciseId,
+      sessionId,
+      exercise.exerciseName,
+      exercise.orderIndex,
+      exercise.notes || null,
+      exercise.equipmentType || null,
+      exercise.groupType || null,
+      exercise.groupName || null,
+      exercise.parentExerciseId || null,
+      exercise.status,
+    ]
+  );
+
+  return {
+    ...exercise,
+    id: exerciseId,
+    workoutSessionId: sessionId,
+    sets: [],
+  };
+}
+
+/**
+ * Insert a new set into an existing exercise
+ */
+export async function insertSessionSet(
+  exerciseId: string,
+  set: Omit<SessionSet, 'id' | 'sessionExerciseId'>
+): Promise<SessionSet> {
+  const db = await getDatabase();
+  const setId = generateId();
+
+  await db.runAsync(
+    `INSERT INTO session_sets (
+      id, session_exercise_id, order_index, parent_set_id, drop_sequence,
+      target_weight, target_weight_unit, target_reps, target_time, target_rpe,
+      rest_seconds, actual_weight, actual_weight_unit, actual_reps, actual_time,
+      actual_rpe, completed_at, status, notes, tempo, is_dropset, is_per_side
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      setId,
+      exerciseId,
+      set.orderIndex,
+      set.parentSetId || null,
+      set.dropSequence || null,
+      set.targetWeight || null,
+      set.targetWeightUnit || null,
+      set.targetReps || null,
+      set.targetTime || null,
+      set.targetRpe || null,
+      set.restSeconds || null,
+      set.actualWeight || null,
+      set.actualWeightUnit || null,
+      set.actualReps || null,
+      set.actualTime || null,
+      set.actualRpe || null,
+      set.completedAt || null,
+      set.status,
+      set.notes || null,
+      set.tempo || null,
+      set.isDropset ? 1 : 0,
+      set.isPerSide ? 1 : 0,
+    ]
+  );
+
+  return {
+    ...set,
+    id: setId,
+    sessionExerciseId: exerciseId,
+  };
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   Alert,
   BackHandler,
   Linking,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,6 +82,8 @@ export default function ActiveWorkoutScreen() {
     clearError,
     getProgress,
     getTrackableExercises,
+    updateExercise,
+    addExercise,
   } = useSessionStore();
 
   const { settings } = useSettingsStore();
@@ -98,6 +101,18 @@ export default function ActiveWorkoutScreen() {
   const [editValues, setEditValues] = useState<Record<string, { weight: string; reps: string; time: string }>>({});
   // Track suggested rest time from last completed set
   const [suggestedRestSeconds, setSuggestedRestSeconds] = useState<number | null>(null);
+
+  // Track exercise editing
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [editExerciseValues, setEditExerciseValues] = useState<{
+    exerciseName: string;
+    equipmentType: string;
+    notes: string;
+  }>({ exerciseName: '', equipmentType: '', notes: '' });
+
+  // Track add exercise modal
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
+  const [newExerciseMarkdown, setNewExerciseMarkdown] = useState('');
   // When true, show the current set as "Up Next" preview instead of full form
   const [showUpNextPreview, setShowUpNextPreview] = useState(false);
   // Track the last completed set for positioning the rest timer after it
@@ -574,6 +589,84 @@ export default function ActiveWorkoutScreen() {
     setLastCompletedSetId(null);
   }, [stopRestTimer]);
 
+  // Exercise editing handlers
+  const handleEditExercisePress = useCallback((exercise: SessionExercise) => {
+    setEditingExerciseId(exercise.id);
+    setEditExerciseValues({
+      exerciseName: exercise.exerciseName,
+      equipmentType: exercise.equipmentType || '',
+      notes: exercise.notes || '',
+    });
+  }, []);
+
+  const handleSaveExercise = useCallback(async () => {
+    if (!editingExerciseId) return;
+
+    await updateExercise(editingExerciseId, {
+      exerciseName: editExerciseValues.exerciseName,
+      equipmentType: editExerciseValues.equipmentType || undefined,
+      notes: editExerciseValues.notes || undefined,
+    });
+
+    setEditingExerciseId(null);
+  }, [editingExerciseId, editExerciseValues, updateExercise]);
+
+  const handleCancelEditExercise = useCallback(() => {
+    setEditingExerciseId(null);
+  }, []);
+
+  const handleAddExercisePress = useCallback(() => {
+    setShowAddExerciseModal(true);
+    setNewExerciseMarkdown('### Exercise Name\n\n- Rep\n- Rep\n- Rep');
+  }, []);
+
+  const handleSaveNewExercise = useCallback(async () => {
+    // Simple markdown parser for the template
+    const lines = newExerciseMarkdown.trim().split('\n');
+    if (lines.length < 2) {
+      Alert.alert('Error', 'Please provide exercise name and at least one set');
+      return;
+    }
+
+    // Parse exercise name from first line (removing ### prefix)
+    const exerciseName = lines[0].replace(/^#+\s*/, '').trim();
+    if (!exerciseName) {
+      Alert.alert('Error', 'Please provide an exercise name');
+      return;
+    }
+
+    // Parse sets from lines starting with '-'
+    const sets: Array<Omit<SessionSet, 'id' | 'sessionExerciseId'>> = [];
+    for (const line of lines) {
+      if (line.trim().startsWith('-')) {
+        // Simple set parsing - just create a pending set
+        // User can fill in details after adding
+        sets.push({
+          orderIndex: sets.length,
+          status: 'pending',
+        });
+      }
+    }
+
+    if (sets.length === 0) {
+      Alert.alert('Error', 'Please provide at least one set (lines starting with -)');
+      return;
+    }
+
+    await addExercise({
+      exerciseName,
+      sets,
+    });
+
+    setShowAddExerciseModal(false);
+    setNewExerciseMarkdown('');
+  }, [newExerciseMarkdown, addExercise]);
+
+  const handleCancelAddExercise = useCallback(() => {
+    setShowAddExerciseModal(false);
+    setNewExerciseMarkdown('');
+  }, []);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -1033,6 +1126,68 @@ export default function ActiveWorkoutScreen() {
       color: colors.textMuted,
       marginHorizontal: 8,
     },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 24,
+      width: '85%',
+      maxWidth: 500,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    modalInput: {
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    modalInputMultiline: {
+      minHeight: 100,
+      textAlignVertical: 'top',
+    },
+    modalButtonRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 16,
+      gap: 12,
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      minWidth: 80,
+      alignItems: 'center',
+    },
+    modalButtonPrimary: {
+      backgroundColor: colors.primary,
+    },
+    modalButtonSecondary: {
+      backgroundColor: colors.surfaceHover,
+    },
+    modalButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    exerciseEditButton: {
+      padding: 8,
+      marginLeft: 8,
+    },
   });
 
   // Loading/empty states
@@ -1101,6 +1256,9 @@ export default function ActiveWorkoutScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {activeSession.name}
         </Text>
+        <TouchableOpacity onPress={handleAddExercisePress} style={styles.headerButton}>
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={handleFinish} style={styles.headerButton}>
           <Text style={[styles.headerButtonText, styles.finishText]}>Finish</Text>
         </TouchableOpacity>
@@ -1177,6 +1335,9 @@ export default function ActiveWorkoutScreen() {
                                 <Text style={styles.supersetExerciseNames}>{ex.exerciseName}</Text>
                                 <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
                                   <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => handleEditExercisePress(ex)} style={styles.exerciseEditButton}>
+                                  <Ionicons name="create-outline" size={16} color={colors.primary} />
                                 </TouchableOpacity>
                               </View>
                             ))}
@@ -1384,6 +1545,9 @@ export default function ActiveWorkoutScreen() {
                             <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
                               <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                             </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleEditExercisePress(exercise)} style={styles.exerciseEditButton}>
+                              <Ionicons name="create-outline" size={16} color={colors.primary} />
+                            </TouchableOpacity>
                           </View>
                           {exercise.equipmentType && (
                             <Text style={styles.equipmentType}>{exercise.equipmentType}</Text>
@@ -1584,6 +1748,102 @@ export default function ActiveWorkoutScreen() {
         {/* Bottom padding */}
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Edit Exercise Modal */}
+      <Modal
+        visible={editingExerciseId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelEditExercise}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Exercise</Text>
+
+            <TextInput
+              style={styles.modalInput}
+              value={editExerciseValues.exerciseName}
+              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, exerciseName: text }))}
+              placeholder="Exercise Name"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <TextInput
+              style={styles.modalInput}
+              value={editExerciseValues.equipmentType}
+              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, equipmentType: text }))}
+              placeholder="Equipment Type (optional)"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <TextInput
+              style={[styles.modalInput, styles.modalInputMultiline]}
+              value={editExerciseValues.notes}
+              onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, notes: text }))}
+              placeholder="Notes (optional)"
+              placeholderTextColor={colors.textMuted}
+              multiline
+            />
+
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleCancelEditExercise}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSaveExercise}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Exercise Modal */}
+      <Modal
+        visible={showAddExerciseModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelAddExercise}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Exercise</Text>
+
+            <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 8 }}>
+              Enter exercise in markdown format:
+            </Text>
+
+            <TextInput
+              style={[styles.modalInput, styles.modalInputMultiline]}
+              value={newExerciseMarkdown}
+              onChangeText={setNewExerciseMarkdown}
+              placeholder="### Exercise Name&#10;&#10;- Rep&#10;- Rep&#10;- Rep"
+              placeholderTextColor={colors.textMuted}
+              multiline
+            />
+
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleCancelAddExercise}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSaveNewExercise}
+              >
+                <Text style={styles.modalButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

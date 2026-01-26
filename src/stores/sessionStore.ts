@@ -8,6 +8,8 @@ import {
   updateSessionSet,
   updateSessionExercise,
   deleteSession,
+  insertSessionExercise,
+  insertSessionSet,
 } from '@/db/sessionRepository';
 import { saveWorkoutToHealthKit, isHealthKitAvailable } from '@/services/healthKitService';
 import {
@@ -53,6 +55,10 @@ interface SessionStore {
   updateSetValues: (setId: string, values: Partial<SessionSet>) => void;
   completeSet: (setId: string, actualValues?: Partial<SessionSet>) => Promise<void>;
   skipSet: (setId: string) => Promise<void>;
+
+  // Exercise Actions
+  updateExercise: (exerciseId: string, updates: Partial<Pick<SessionExercise, 'exerciseName' | 'equipmentType' | 'notes'>>) => Promise<void>;
+  addExercise: (exercise: { exerciseName: string; equipmentType?: string; notes?: string; sets: Array<Omit<SessionSet, 'id' | 'sessionExerciseId'>> }) => Promise<void>;
 
   // Navigation
   goToNextSet: () => void;
@@ -487,6 +493,99 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to skip set',
+      });
+    }
+  },
+
+  // Update exercise details (name, equipment, notes)
+  updateExercise: async (
+    exerciseId: string,
+    updates: Partial<Pick<SessionExercise, 'exerciseName' | 'equipmentType' | 'notes'>>
+  ) => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+
+    try {
+      // Find the exercise
+      const targetExercise = activeSession.exercises.find((e) => e.id === exerciseId);
+      if (!targetExercise) return;
+
+      // Create updated exercise
+      const updatedExercise: SessionExercise = {
+        ...targetExercise,
+        ...updates,
+      };
+
+      // Update in database
+      await updateSessionExercise(updatedExercise);
+
+      // Update local state
+      const updatedExercises = activeSession.exercises.map((exercise) =>
+        exercise.id === exerciseId ? updatedExercise : exercise
+      );
+
+      set({
+        activeSession: {
+          ...activeSession,
+          exercises: updatedExercises,
+        },
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update exercise',
+      });
+    }
+  },
+
+  // Add a new exercise to the active workout
+  addExercise: async (exercise: {
+    exerciseName: string;
+    equipmentType?: string;
+    notes?: string;
+    sets: Array<Omit<SessionSet, 'id' | 'sessionExerciseId'>>;
+  }) => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+
+    try {
+      // Calculate the next order index
+      const maxOrderIndex = Math.max(
+        ...activeSession.exercises.map((e) => e.orderIndex),
+        -1
+      );
+
+      // Insert exercise into database
+      const newExercise = await insertSessionExercise(activeSession.id, {
+        exerciseName: exercise.exerciseName,
+        equipmentType: exercise.equipmentType,
+        notes: exercise.notes,
+        orderIndex: maxOrderIndex + 1,
+        status: 'pending',
+      });
+
+      // Insert sets into database
+      const newSets: SessionSet[] = [];
+      for (const [index, setData] of exercise.sets.entries()) {
+        const newSet = await insertSessionSet(newExercise.id, {
+          ...setData,
+          orderIndex: index,
+        });
+        newSets.push(newSet);
+      }
+
+      // Update the exercise with its sets
+      newExercise.sets = newSets;
+
+      // Update local state
+      set({
+        activeSession: {
+          ...activeSession,
+          exercises: [...activeSession.exercises, newExercise],
+        },
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to add exercise',
       });
     }
   },
