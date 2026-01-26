@@ -1153,7 +1153,7 @@ export default function ActiveWorkoutScreen() {
       alignItems: 'center',
     },
     modalContent: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.card,
       borderRadius: 12,
       padding: 24,
       width: '85%',
@@ -1196,7 +1196,7 @@ export default function ActiveWorkoutScreen() {
       backgroundColor: colors.primary,
     },
     modalButtonSecondary: {
-      backgroundColor: colors.surfaceHover,
+      backgroundColor: colors.backgroundTertiary,
     },
     modalButtonText: {
       fontSize: 16,
