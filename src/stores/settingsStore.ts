@@ -63,10 +63,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           healthKitEnabled: row.healthkit_enabled === 1,
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
-          showOpenInClaudeButton: row.show_open_in_claude_button === 1,
+          showOpenInClaudeButton: (row.show_open_in_claude_button ?? 0) === 1,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
+        console.log('[SettingsStore] Loaded settings:', {
+          hasApiKey: !!secureApiKey,
+          apiKeyStatus: settings.anthropicApiKeyStatus,
+          showOpenInClaudeButton: settings.showOpenInClaudeButton,
+          rawDbValue: row.show_open_in_claude_button,
+        });
         set({ settings, isLoading: false });
       } else {
         console.warn('No settings found in database, using defaults');
