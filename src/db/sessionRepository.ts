@@ -270,6 +270,73 @@ export async function updateSessionSet(set: SessionSet): Promise<void> {
 }
 
 /**
+ * Update target values for a set (used when editing exercise)
+ */
+export async function updateSessionSetTarget(
+  setId: string,
+  updates: {
+    targetWeight?: number | null;
+    targetWeightUnit?: 'lbs' | 'kg' | null;
+    targetReps?: number | null;
+    targetTime?: number | null;
+    targetRpe?: number | null;
+    restSeconds?: number | null;
+    notes?: string | null;
+  }
+): Promise<void> {
+  const db = await getDatabase();
+
+  // Build dynamic UPDATE query based on provided fields
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if ('targetWeight' in updates) {
+    fields.push('target_weight = ?');
+    values.push(updates.targetWeight ?? null);
+  }
+  if ('targetWeightUnit' in updates) {
+    fields.push('target_weight_unit = ?');
+    values.push(updates.targetWeightUnit || null);
+  }
+  if ('targetReps' in updates) {
+    fields.push('target_reps = ?');
+    values.push(updates.targetReps ?? null);
+  }
+  if ('targetTime' in updates) {
+    fields.push('target_time = ?');
+    values.push(updates.targetTime ?? null);
+  }
+  if ('targetRpe' in updates) {
+    fields.push('target_rpe = ?');
+    values.push(updates.targetRpe ?? null);
+  }
+  if ('restSeconds' in updates) {
+    fields.push('rest_seconds = ?');
+    values.push(updates.restSeconds ?? null);
+  }
+  if ('notes' in updates) {
+    fields.push('notes = ?');
+    values.push(updates.notes || null);
+  }
+
+  if (fields.length === 0) return; // No updates
+
+  values.push(setId);
+  await db.runAsync(
+    `UPDATE session_sets SET ${fields.join(', ')} WHERE id = ?`,
+    values
+  );
+}
+
+/**
+ * Delete a set from an exercise
+ */
+export async function deleteSessionSet(setId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM session_sets WHERE id = ?', [setId]);
+}
+
+/**
  * Update a session exercise (status)
  */
 export async function updateSessionExercise(
