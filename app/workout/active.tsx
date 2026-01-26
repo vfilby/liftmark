@@ -2015,7 +2015,7 @@ export default function ActiveWorkoutScreen() {
                       onPress={() => handleDeleteSetInModal(set.id)}
                       style={styles.setDeleteButton}
                     >
-                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                      <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </TouchableOpacity>
                   </View>
 
