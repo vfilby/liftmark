@@ -1112,6 +1112,12 @@ export default function ActiveWorkoutScreen() {
       fontSize: 15,
       color: colors.textSecondary,
     },
+    setNotes: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+      marginTop: 4,
+    },
     // Up Next Preview
     upNextContent: {
       flexDirection: 'row',
@@ -1428,6 +1434,7 @@ export default function ActiveWorkoutScreen() {
                                     ) : isActiveForm ? (
                                       <View style={styles.activeSetContent}>
                                         <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
+                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
 
                                         {/* Show plate calculator for barbell exercises */}
                                         {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
@@ -1516,7 +1523,10 @@ export default function ActiveWorkoutScreen() {
                                       </View>
                                     ) : isCompleted ? (
                                       <View style={styles.completedSetContent}>
-                                        <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
+                                        <View>
+                                          <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
+                                          {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
+                                        </View>
                                         <Text style={styles.tapToEdit}>Tap to edit</Text>
                                       </View>
                                     ) : isSkipped ? (
@@ -1527,6 +1537,7 @@ export default function ActiveWorkoutScreen() {
                                     ) : (
                                       <View style={styles.pendingSetContent}>
                                         <Text style={styles.pendingText}>{formatSetTarget(set)}</Text>
+                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
                                       </View>
                                     )}
                                   </View>
@@ -1651,6 +1662,7 @@ export default function ActiveWorkoutScreen() {
                                   ) : isActiveForm ? (
                                     <View style={styles.activeSetContent}>
                                       <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
+                                      {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
 
                                       {/* Show plate calculator for barbell exercises */}
                                       {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
@@ -1739,7 +1751,10 @@ export default function ActiveWorkoutScreen() {
                                     </View>
                                   ) : isCompleted ? (
                                     <View style={styles.completedSetContent}>
-                                      <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
+                                      <View>
+                                        <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
+                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
+                                      </View>
                                       <Text style={styles.tapToEdit}>Tap to edit</Text>
                                     </View>
                                   ) : isSkipped ? (
@@ -1750,6 +1765,7 @@ export default function ActiveWorkoutScreen() {
                                   ) : (
                                     <View style={styles.pendingSetContent}>
                                       <Text style={styles.pendingText}>{formatSetTarget(set)}</Text>
+                                      {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
                                     </View>
                                   )}
                                 </View>
