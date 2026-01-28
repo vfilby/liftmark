@@ -347,7 +347,7 @@ export default function WorkoutsScreen() {
     );
   };
 
-  const renderWorkout = ({ item }: { item: WorkoutTemplate }) => {
+  const renderWorkout = ({ item, index }: { item: WorkoutTemplate; index: number }) => {
     const isSelected = isTablet && selectedWorkoutId === item.id;
     const handlePress = () => {
       if (isTablet) {
@@ -375,42 +375,44 @@ export default function WorkoutsScreen() {
             onPress={handlePress}
             testID={`workout-card-${item.id}`}
           >
-            <View style={styles.workoutHeader}>
-              <Text style={styles.workoutName}>{item.name}</Text>
-              {item.tags.length > 0 && (
-                <View style={styles.tagContainer}>
-                  {item.tags.slice(0, 2).map((tag) => (
-                    <View key={tag} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                  {item.tags.length > 2 && (
-                    <Text style={styles.tagMore}>+{item.tags.length - 2}</Text>
-                  )}
-                </View>
-              )}
-            </View>
+            <View testID={`workout-card-index-${index}`}>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.workoutName}>{item.name}</Text>
+                {item.tags.length > 0 && (
+                  <View style={styles.tagContainer}>
+                    {item.tags.slice(0, 2).map((tag) => (
+                      <View key={tag} style={styles.tag}>
+                        <Text style={styles.tagText}>{tag}</Text>
+                      </View>
+                    ))}
+                    {item.tags.length > 2 && (
+                      <Text style={styles.tagMore}>+{item.tags.length - 2}</Text>
+                    )}
+                  </View>
+                )}
+              </View>
 
-            {item.description && (
-              <Text style={styles.description} numberOfLines={2}>
-                {item.description}
-              </Text>
-            )}
-
-            <View style={styles.workoutMeta}>
-              <Text style={styles.metaText}>
-                {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
-              </Text>
-              <Text style={styles.metaSeparator}>•</Text>
-              <Text style={styles.metaText}>
-                {item.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets
-              </Text>
-              {item.defaultWeightUnit && (
-                <>
-                  <Text style={styles.metaSeparator}>•</Text>
-                  <Text style={styles.metaText}>{item.defaultWeightUnit}</Text>
-                </>
+              {item.description && (
+                <Text style={styles.description} numberOfLines={2}>
+                  {item.description}
+                </Text>
               )}
+
+              <View style={styles.workoutMeta}>
+                <Text style={styles.metaText}>
+                  {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
+                </Text>
+                <Text style={styles.metaSeparator}>•</Text>
+                <Text style={styles.metaText}>
+                  {item.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets
+                </Text>
+                {item.defaultWeightUnit && (
+                  <>
+                    <Text style={styles.metaSeparator}>•</Text>
+                    <Text style={styles.metaText}>{item.defaultWeightUnit}</Text>
+                  </>
+                )}
+              </View>
             </View>
           </TouchableOpacity>
         </View>
