@@ -5,7 +5,7 @@
 #  lsof -i :$$p -sTCP:LISTEN >/dev/null 2>&1 || { echo $$p; break; }; done)
 EXPO_PORT := 8081
 
-.PHONY: all help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient load-db test-e2e e2e-prebuild e2e-build e2e-run
+.PHONY: all help server server-go server-bg server-tmux server-stop ios prebuild rebuild-native rebuild-ios android web test test-coverage test-coverage-open test-coverage-watch typecheck lint clean install build logs logs-file logs-tail logs-view logs-clean list-sims create-polecat-sims ios-polecat1 ios-polecat2 ios-polecat3 kill-all-sims release-alpha release-beta release-production release-cleanup-alpha release-cleanup-beta release-cleanup-production check-deps check-native install-devclient load-db
 
 # Default target - rebuild everything
 all: install check-native
@@ -170,22 +170,6 @@ test-coverage-open: check-deps
 test-coverage-watch: check-deps
 	@echo "👀 Running tests with coverage in watch mode..."
 	npm run test:coverage:watch
-
-# Detox end-to-end suite (iOS)
-test-e2e: check-deps e2e-build e2e-run
-	@echo "🚀 Detox end-to-end run complete"
-
-e2e-prebuild: check-deps
-	@echo "🔧 Preparing Detox prebuild artifacts (ios)..."
-	cd refinery/rig && npm run e2e:prebuild:ios
-
-e2e-build: e2e-prebuild
-	@echo "🏗️ Building Detox ios.sim.debug binary..."
-	cd refinery/rig && npm run build:e2e:ios
-
-e2e-run: e2e-build
-	@echo "🎬 Running Detox ios.sim.debug tests..."
-	cd refinery/rig && npm run test:e2e:ios
 
 typecheck: check-deps
 	@echo "🔍 Running TypeScript type checking..."

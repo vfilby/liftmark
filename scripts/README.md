@@ -1,0 +1,171 @@
+# Release Scripts
+
+## Release Helper
+
+The `release-helper.js` script automates the release process with smart conflict detection and cleanup.
+
+### Features
+
+- **Automatic conflict detection**: Checks if a release tag already exists before attempting to create
+- **Interactive cleanup**: Prompts to delete existing artifacts if a conflict is found
+- **Safe operation**: Requires confirmation before deleting anything
+
+### Usage
+
+The release helper is automatically used by the npm release scripts:
+
+```bash
+# Via npm (recommended)
+npm run release:alpha
+npm run release:beta
+npm run release:production
+
+# Via make (includes TestFlight trigger)
+make release-alpha
+make release-beta
+make release-production
+```
+
+### Manual Cleanup
+
+If a release fails partway through, you can manually clean up artifacts:
+
+```bash
+# Via npm
+npm run release:cleanup:alpha
+npm run release:cleanup:beta
+npm run release:cleanup:production
+
+# Via make
+make release-cleanup-alpha
+make release-cleanup-beta
+make release-cleanup-production
+```
+
+This will delete:
+- GitHub release (if exists)
+- Local git tag (if exists)
+- Remote git tag (if exists)
+
+### Workflow
+
+1. **Pre-release check**: Verifies you're on main branch with clean working tree
+2. **Conflict detection**: Checks if tag/release already exists
+3. **Cleanup prompt** (if conflict): Asks permission to delete existing artifacts
+4. **Release creation**: Creates new GitHub release with appropriate tag
+5. **TestFlight trigger** (make only): Triggers GitHub Actions workflow
+
+### Example Output
+
+```
+🏷️  Preparing alpha release: alpha-v1.0.24
+
+⚠️  Found existing release artifacts:
+   - Git tag exists locally
+   - GitHub release exists
+
+Delete existing artifacts and retry? [y/N] y
+
+🗑️  Cleaning up existing artifacts...
+
+✅ Deleted GitHub release
+✅ Deleted local tag
+✅ Deleted remote tag
+
+✨ Cleanup complete! Creating new release...
+
+Creating release: alpha-v1.0.24
+✅ Release created successfully: alpha-v1.0.24
+```
+
+## Database Loader
+
+The `load-db.sh` script loads a database file into a booted iOS simulator for testing purposes.
+
+### Usage
+
+#### Using Make (Recommended)
+
+```bash
+make load-db DB=<path-to-database>
+```
+
+Example:
+```bash
+make load-db DB=~/Downloads/liftmark.db
+```
+
+#### Direct Script Invocation
+
+```bash
+bash scripts/load-db.sh <path-to-database>
+```
+
+### How It Works
+
+1. **Validates** the database file path
+2. **Lists booted simulators** and prompts for selection
+3. **Locates** the LiftMark app directory in the simulator
+4. **Backs up** the current database with a timestamp
+5. **Copies** the new database to the simulator
+6. **Provides** instructions to restart the app
+
+### Prerequisites
+
+- Xcode Command Line Tools installed
+- iOS Simulator running with LiftMark app installed
+- Valid SQLite database file
+
+### Common Use Cases
+
+**Testing with production data:**
+```bash
+# Load a database from a user's backup
+make load-db DB=~/user-databases/john-doe.db
+```
+
+**Testing migrations:**
+```bash
+# Load an old database version to test migration
+make load-db DB=~/test-data/v1.0.0.db
+```
+
+**Debugging issues:**
+```bash
+# Load a database that reproduces a specific bug
+make load-db DB=~/bug-reports/issue-123.db
+```
+
+### Troubleshooting
+
+**Error: No booted iOS simulators found**
+- Start a simulator: `make ios`
+- Or open Simulator.app and boot a device
+
+**Error: LiftMark app not found in simulator**
+- Install the app: `make ios`
+- Wait for installation to complete
+- Try again
+
+**Database doesn't show new data**
+- Ensure you completely closed the app (swipe up from app switcher)
+- Reopen the app fresh
+
+### Safety Features
+
+- **Automatic backups**: Original database is always backed up with timestamp
+- **Validation**: Checks for file existence before proceeding
+- **Clear prompts**: Guides user through each step
+- **Error handling**: Provides helpful error messages and recovery steps
+
+### Database Location
+
+The script automatically finds the database at:
+```
+~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Containers/Data/Application/<APP-UUID>/Documents/liftmark.db
+```
+
+Backups are saved in the same directory with the format:
+```
+liftmark.db.backup_YYYYMMDD_HHMMSS
+```
