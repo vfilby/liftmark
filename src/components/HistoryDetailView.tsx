@@ -413,7 +413,11 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      testID="history-detail-view"
+    >
       <View style={styles.headerCard}>
         <Text style={styles.date}>{formatDate(session.date)}</Text>
         <View style={styles.timeRow}>
