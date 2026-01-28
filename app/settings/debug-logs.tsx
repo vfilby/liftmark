@@ -146,9 +146,9 @@ export default function DebugLogsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors?.background }]}>
+    <View style={[styles.container, { backgroundColor: colors?.background }]} testID="debug-logs-screen">
       {/* Device Info Header */}
-      <View style={[styles.header, { backgroundColor: colors?.card }]}>
+      <View style={[styles.header, { backgroundColor: colors?.card }]} testID="debug-logs-device-info">
         <Text style={[styles.headerTitle, { color: colors?.text }]}>Device Info</Text>
         <Text style={[styles.infoText, { color: colors?.text }]}>
           Platform: {deviceInfo.platform} {deviceInfo.osVersion}
@@ -163,7 +163,7 @@ export default function DebugLogsScreen() {
 
       {/* Stats */}
       {stats && (
-        <View style={[styles.stats, { backgroundColor: colors?.card }]}>
+        <View style={[styles.stats, { backgroundColor: colors?.card }]} testID="debug-logs-stats">
           <Text style={[styles.statsTitle, { color: colors?.text }]}>
             Total Logs: {stats.total}
           </Text>
@@ -183,16 +183,18 @@ export default function DebugLogsScreen() {
       )}
 
       {/* Action Buttons */}
-      <View style={styles.actions}>
+      <View style={styles.actions} testID="debug-logs-actions">
         <TouchableOpacity
           style={[styles.actionButton, styles.exportButton]}
           onPress={handleExportLogs}
+          testID="debug-logs-export-button"
         >
           <Text style={styles.actionButtonText}>Export Logs</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.clearButton]}
           onPress={handleClearLogs}
+          testID="debug-logs-clear-button"
         >
           <Text style={styles.actionButtonText}>Clear Logs</Text>
         </TouchableOpacity>
@@ -200,13 +202,13 @@ export default function DebugLogsScreen() {
 
       {/* Logs List */}
       {isLoading ? (
-        <View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer} testID="debug-logs-loading">
           <ActivityIndicator size="large" color={colors?.primary} />
         </View>
       ) : (
-        <ScrollView style={styles.logsList}>
+        <ScrollView style={styles.logsList} testID="debug-logs-list">
           {logs.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors?.text }]}>
+            <Text style={[styles.emptyText, { color: colors?.text }]} testID="debug-logs-empty">
               No logs found
             </Text>
           ) : (
@@ -214,6 +216,7 @@ export default function DebugLogsScreen() {
               <View
                 key={log.id || index}
                 style={[styles.logEntry, { backgroundColor: colors?.card }]}
+                testID={`debug-logs-entry-${log.id || index}`}
               >
                 <View style={styles.logHeader}>
                   <Text style={[styles.timestamp, { color: colors?.text }]}>

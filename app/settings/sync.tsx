@@ -303,7 +303,7 @@ export default function SyncSettingsScreen() {
   // Error state
   if (hasError) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="sync-settings-error">
         <Stack.Screen options={{ title: 'iCloud Sync' }} />
         <View style={styles.errorContainer}>
           <Ionicons name="cloud-offline" size={64} color={colors.textSecondary} />
@@ -316,6 +316,7 @@ export default function SyncSettingsScreen() {
               setErrorMessage('');
               initializeScreen();
             }}
+            testID="sync-settings-retry-button"
           >
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
@@ -327,7 +328,7 @@ export default function SyncSettingsScreen() {
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="sync-settings-loading">
         <Stack.Screen options={{ title: 'iCloud Sync' }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -338,12 +339,12 @@ export default function SyncSettingsScreen() {
 
   // Main content
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="sync-settings-screen">
       <Stack.Screen options={{ title: 'iCloud Sync' }} />
 
-      <ScrollView>
+      <ScrollView testID="sync-settings-content">
         {/* Info Box */}
-        <View style={styles.infoBox}>
+        <View style={styles.infoBox} testID="sync-settings-info">
           <Text style={styles.infoText}>
             This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
           </Text>
@@ -351,7 +352,10 @@ export default function SyncSettingsScreen() {
 
         {/* Simulator Warning */}
         {isSimulator && (
-          <View style={[styles.infoBox, { backgroundColor: '#fff3cd', borderColor: '#f39c12' }]}>
+          <View
+            style={[styles.infoBox, { backgroundColor: '#fff3cd', borderColor: '#f39c12' }]}
+            testID="sync-settings-simulator-warning"
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="warning" size={16} color="#f39c12" />
               <Text style={[styles.infoText, { color: '#856404' }]}>
@@ -363,7 +367,7 @@ export default function SyncSettingsScreen() {
 
         {/* CloudKit Status */}
         <Text style={styles.sectionTitle}>iCloud Status</Text>
-        <View style={styles.section}>
+        <View style={styles.section} testID="sync-settings-status-section">
           <View style={styles.row}>
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Account Status</Text>
@@ -379,6 +383,7 @@ export default function SyncSettingsScreen() {
                   styles.statusText,
                   { color: getStatusColor() }
                 ]}
+                testID="sync-settings-status-text"
               >
                 {getStatusText()}
               </Text>
@@ -388,7 +393,7 @@ export default function SyncSettingsScreen() {
 
         {/* Sync Settings */}
         <Text style={styles.sectionTitle}>Sync Settings</Text>
-        <View style={styles.section}>
+        <View style={styles.section} testID="sync-settings-toggle-section">
           <View style={styles.row}>
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Enable Sync</Text>
@@ -400,6 +405,7 @@ export default function SyncSettingsScreen() {
               value={syncEnabled}
               onValueChange={handleToggleSync}
               disabled={accountStatus !== 'available'}
+              testID="sync-settings-toggle"
             />
           </View>
         </View>
@@ -408,6 +414,7 @@ export default function SyncSettingsScreen() {
         <TouchableOpacity
           style={styles.testButton}
           onPress={handleTestCloudKit}
+          testID="sync-settings-test-button"
         >
           <Ionicons name="flask" size={20} color="#ffffff" />
           <Text style={styles.testButtonText}>Test CloudKit Module</Text>

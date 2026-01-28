@@ -59,12 +59,12 @@ export default function CloudKitTest() {
   };
 
   return (
-    <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
+    <View style={{ flex: 1, padding: 20, justifyContent: 'center' }} testID="cloudkit-test-screen">
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
         CloudKit Test
       </Text>
       
-      <Text style={{ marginBottom: 20, textAlign: 'center' }}>
+      <Text style={{ marginBottom: 20, textAlign: 'center' }} testID="cloudkit-test-status">
         Account Status: {accountStatus}
       </Text>
 
@@ -78,6 +78,7 @@ export default function CloudKitTest() {
         }}
         onPress={handleInitialize}
         disabled={isLoading}
+        testID="cloudkit-test-initialize-button"
       >
         <Text style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
           Initialize CloudKit
@@ -94,6 +95,7 @@ export default function CloudKitTest() {
         }}
         onPress={handleSaveTestRecord}
         disabled={isLoading}
+        testID="cloudkit-test-save-button"
       >
         <Text style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
           Save Test Record
@@ -110,6 +112,7 @@ export default function CloudKitTest() {
         }}
         onPress={handleFetchRecords}
         disabled={isLoading}
+        testID="cloudkit-test-fetch-button"
       >
         <Text style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
           Fetch Test Records
@@ -117,7 +120,7 @@ export default function CloudKitTest() {
       </TouchableOpacity>
 
       {isLoading && (
-        <Text style={{ textAlign: 'center', marginTop: 20, fontStyle: 'italic' }}>
+        <Text style={{ textAlign: 'center', marginTop: 20, fontStyle: 'italic' }} testID="cloudkit-test-loading">
           Loading...
         </Text>
       )}

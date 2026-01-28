@@ -241,7 +241,7 @@ export default function WorkoutSummaryScreen() {
 
   if (!activeSession) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="workout-summary-loading">
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -288,10 +288,14 @@ export default function WorkoutSummaryScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container} testID="workout-summary-screen">
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        testID="workout-summary-content"
+      >
         {/* Success Header */}
-        <View style={styles.successHeader}>
+        <View style={styles.successHeader} testID="workout-summary-header">
           <Text style={styles.checkmark}>✓</Text>
           <Text style={styles.successTitle}>Workout Complete!</Text>
           <Text style={styles.workoutName}>{activeSession.name}</Text>
@@ -303,23 +307,23 @@ export default function WorkoutSummaryScreen() {
         )}
 
         {/* Summary Stats */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+        <View style={styles.statsGrid} testID="workout-summary-stats">
+          <View style={styles.statCard} testID="workout-summary-stat-duration">
             <Text style={styles.statValue}>{formatDuration(activeSession.duration)}</Text>
             <Text style={styles.statLabel}>Duration</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={styles.statCard} testID="workout-summary-stat-completed-sets">
             <Text style={styles.statValue}>{completedSets}</Text>
             <Text style={styles.statLabel}>Sets Completed</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={styles.statCard} testID="workout-summary-stat-total-reps">
             <Text style={styles.statValue}>{totalReps}</Text>
             <Text style={styles.statLabel}>Total Reps</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={styles.statCard} testID="workout-summary-stat-total-volume">
             <Text style={styles.statValue}>
               {totalWeight > 0 ? `${Math.round(totalWeight).toLocaleString()}` : '-'}
             </Text>
@@ -328,18 +332,18 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         {/* Completion Summary */}
-        <View style={styles.completionCard}>
-          <View style={styles.completionRow}>
+        <View style={styles.completionCard} testID="workout-summary-completion">
+          <View style={styles.completionRow} testID="workout-summary-completion-sets">
             <Text style={styles.completionLabel}>Sets Completed</Text>
             <Text style={styles.completionValue}>{completedSets}</Text>
           </View>
           {skippedSets > 0 && (
-            <View style={styles.completionRow}>
+            <View style={styles.completionRow} testID="workout-summary-completion-skipped">
               <Text style={styles.completionLabel}>Sets Skipped</Text>
               <Text style={[styles.completionValue, styles.skippedValue]}>{skippedSets}</Text>
             </View>
           )}
-          <View style={styles.completionRow}>
+          <View style={styles.completionRow} testID="workout-summary-completion-rate">
             <Text style={styles.completionLabel}>Completion Rate</Text>
             <Text style={styles.completionValue}>
               {total > 0 ? Math.round((completedSets / total) * 100) : 0}%
@@ -348,7 +352,7 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         {/* Exercise Summary */}
-        <View style={styles.exerciseSummary}>
+        <View style={styles.exerciseSummary} testID="workout-summary-exercises">
           <Text style={styles.sectionTitle}>Exercises</Text>
           {trackableExercises.map((exercise) => {
             const exerciseCompletedSets = exercise.sets.filter(
@@ -359,11 +363,18 @@ export default function WorkoutSummaryScreen() {
             ).length;
 
             return (
-              <View key={exercise.id} style={styles.exerciseRow}>
+              <View
+                key={exercise.id}
+                style={styles.exerciseRow}
+                testID={`workout-summary-exercise-${exercise.id}`}
+              >
                 <View style={styles.exerciseInfo}>
                   <View style={styles.exerciseNameRow}>
                     <Text style={styles.exerciseRowName}>{exercise.exerciseName}</Text>
-                    <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                    <TouchableOpacity
+                      onPress={() => openYouTubeSearch(exercise.exerciseName)}
+                      testID={`workout-summary-youtube-${exercise.id}`}
+                    >
                       <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                     </TouchableOpacity>
                   </View>
@@ -373,7 +384,9 @@ export default function WorkoutSummaryScreen() {
                   </Text>
                 </View>
                 {exerciseCompletedSets === exercise.sets.length && (
-                  <Text style={styles.exerciseCheck}>✓</Text>
+                  <Text style={styles.exerciseCheck} testID={`workout-summary-exercise-complete-${exercise.id}`}>
+                    ✓
+                  </Text>
                 )}
               </View>
             );
@@ -382,8 +395,12 @@ export default function WorkoutSummaryScreen() {
       </ScrollView>
 
       {/* Done Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+      <View style={styles.footer} testID="workout-summary-footer">
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={handleDone}
+          testID="workout-summary-done-button"
+        >
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>

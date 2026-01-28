@@ -84,7 +84,7 @@ export default function HistoryDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="history-detail-loading">
         <Stack.Screen options={{ title: 'Loading...' }} />
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Loading workout...</Text>
@@ -95,7 +95,7 @@ export default function HistoryDetailScreen() {
 
   if (!session) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="history-detail-not-found">
         <Stack.Screen options={{ title: 'Not Found' }} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>Workout not found</Text>
@@ -105,12 +105,16 @@ export default function HistoryDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="history-detail-screen">
       <Stack.Screen
         options={{
           title: session.name,
           headerRight: () => (
-            <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              testID="history-detail-delete-button"
+            >
               <Text style={styles.deleteButtonText}>Delete</Text>
             </TouchableOpacity>
           ),

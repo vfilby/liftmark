@@ -1373,7 +1373,7 @@ export default function ActiveWorkoutScreen() {
   // Loading/empty states
   if (!activeSession) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="active-workout-loading">
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Loading workout...</Text>
         </View>
@@ -1427,31 +1427,44 @@ export default function ActiveWorkoutScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="active-workout-screen">
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handlePause} style={styles.headerButton}>
+      <View style={styles.header} testID="active-workout-header">
+        <TouchableOpacity
+          onPress={handlePause}
+          style={styles.headerButton}
+          testID="active-workout-pause-button"
+        >
           <Text style={styles.headerButtonText}>Pause</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={styles.headerTitle} numberOfLines={1} testID="active-workout-title">
           {activeSession.name}
         </Text>
-        <TouchableOpacity onPress={handleAddExercisePress} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={handleAddExercisePress}
+          style={styles.headerButton}
+          testID="active-workout-add-exercise-button"
+        >
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleFinish} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={handleFinish}
+          style={styles.headerButton}
+          testID="active-workout-finish-button"
+        >
           <Text style={[styles.headerButtonText, styles.finishText]}>Finish</Text>
         </TouchableOpacity>
       </View>
 
       {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
+      <View style={styles.progressContainer} testID="active-workout-progress">
+        <View style={styles.progressBar} testID="active-workout-progress-bar">
           <View
             style={[styles.progressFill, { width: `${total > 0 ? (completed / total) * 100 : 0}%` }]}
+            testID="active-workout-progress-fill"
           />
         </View>
-        <Text style={styles.progressText}>
+        <Text style={styles.progressText} testID="active-workout-progress-text">
           {completed} / {total} sets completed
         </Text>
       </View>
@@ -1460,6 +1473,7 @@ export default function ActiveWorkoutScreen() {
         ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
+        testID="active-workout-content"
       >
         {workoutSections.map((section, sectionIndex) => {
           const sectionType = getSectionType(section.name);
@@ -1476,10 +1490,10 @@ export default function ActiveWorkoutScreen() {
           }
 
           return (
-            <View key={`section-${sectionIndex}`}>
+            <View key={`section-${sectionIndex}`} testID={`active-workout-section-${sectionIndex}`}>
               {/* Section header - only show if section has a name */}
               {section.name && (
-                <View style={styles.sectionHeader}>
+                <View style={styles.sectionHeader} testID={`active-workout-section-header-${sectionIndex}`}>
                   <View style={[styles.sectionHeaderLine, { backgroundColor: sectionColor }]} />
                   <View style={styles.sectionHeaderTextContainer}>
                     <Text style={[styles.sectionHeaderText, { color: sectionColor }]}>
@@ -1499,9 +1513,13 @@ export default function ActiveWorkoutScreen() {
                   const exerciseNames = group.exercises.map(ex => ex.exerciseName).join(' & ');
 
                   return (
-                    <View key={`superset-${globalIndex}`} style={styles.exerciseSection}>
+                    <View
+                      key={`superset-${globalIndex}`}
+                      style={styles.exerciseSection}
+                      testID={`active-workout-superset-${globalIndex}`}
+                    >
                       {/* Superset Header */}
-                      <View style={styles.exerciseHeader}>
+                      <View style={styles.exerciseHeader} testID={`active-workout-superset-header-${globalIndex}`}>
                         <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
                         <View style={styles.exerciseInfo}>
                           <View style={styles.supersetBadge}>
@@ -1513,10 +1531,17 @@ export default function ActiveWorkoutScreen() {
                               <View key={ex.id} style={styles.exerciseNameRow}>
                                 {idx > 0 && <Text style={styles.supersetExerciseNames}> & </Text>}
                                 <Text style={styles.supersetExerciseNames}>{ex.exerciseName}</Text>
-                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
+                                <TouchableOpacity
+                                  onPress={() => openYouTubeSearch(ex.exerciseName)}
+                                  testID={`active-workout-youtube-${ex.id}`}
+                                >
                                   <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => handleEditExercisePress(ex)} style={styles.exerciseEditButton}>
+                                <TouchableOpacity
+                                  onPress={() => handleEditExercisePress(ex)}
+                                  style={styles.exerciseEditButton}
+                                  testID={`active-workout-edit-exercise-${ex.id}`}
+                                >
                                   <Ionicons name="create-outline" size={16} color={colors.primary} />
                                 </TouchableOpacity>
                               </View>
@@ -1561,6 +1586,7 @@ export default function ActiveWorkoutScreen() {
                                   style={[styles.setRow, getRowStyle()]}
                                   onPress={() => handleSetPress(set)}
                                   activeOpacity={0.7}
+                                  testID={`active-workout-set-${set.id}`}
                                 >
                                   <View style={[
                                     styles.setNumberContainer,
@@ -1627,6 +1653,7 @@ export default function ActiveWorkoutScreen() {
                                                 onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
                                                 keyboardType="numeric"
                                                 placeholder="0"
+                                                testID={`active-workout-set-weight-${set.id}`}
                                               />
                                               <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
                                             </View>
@@ -1638,6 +1665,7 @@ export default function ActiveWorkoutScreen() {
                                                 onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
                                                 keyboardType="numeric"
                                                 placeholder="0"
+                                                testID={`active-workout-set-reps-${set.id}`}
                                               />
                                             </View>
                                           </View>
@@ -1654,6 +1682,7 @@ export default function ActiveWorkoutScreen() {
                                                 onChangeText={(v) => updateEditValue(set.id, 'time', v)}
                                                 keyboardType="numeric"
                                                 placeholder="0"
+                                                testID={`active-workout-set-time-${set.id}`}
                                               />
                                               <Text style={styles.inputUnit}>seconds</Text>
                                             </View>
@@ -1662,15 +1691,30 @@ export default function ActiveWorkoutScreen() {
                                         <View style={styles.setActions}>
                                           {isPending ? (
                                             <>
-                                              <TouchableOpacity style={styles.completeButton} onPress={() => handleCompleteSet(set)} disabled={isLoading}>
+                                              <TouchableOpacity
+                                                style={styles.completeButton}
+                                                onPress={() => handleCompleteSet(set)}
+                                                disabled={isLoading}
+                                                testID={`active-workout-complete-${set.id}`}
+                                              >
                                                 <Text style={styles.completeButtonText}>Complete</Text>
                                               </TouchableOpacity>
-                                              <TouchableOpacity style={styles.skipButtonInline} onPress={() => handleSkipSet(set)} disabled={isLoading}>
+                                              <TouchableOpacity
+                                                style={styles.skipButtonInline}
+                                                onPress={() => handleSkipSet(set)}
+                                                disabled={isLoading}
+                                                testID={`active-workout-skip-${set.id}`}
+                                              >
                                                 <Text style={styles.skipButtonText}>Skip</Text>
                                               </TouchableOpacity>
                                             </>
                                           ) : (
-                                            <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateSet(set)} disabled={isLoading}>
+                                            <TouchableOpacity
+                                              style={styles.updateButton}
+                                              onPress={() => handleUpdateSet(set)}
+                                              disabled={isLoading}
+                                              testID={`active-workout-update-${set.id}`}
+                                            >
                                               <Text style={styles.updateButtonText}>Update</Text>
                                             </TouchableOpacity>
                                           )}
@@ -1706,11 +1750,19 @@ export default function ActiveWorkoutScreen() {
                                 {showRestAfterThis && !restTimer && suggestedRestSeconds && (
                                   <View style={styles.restSuggestionInline}>
                                     <Text style={styles.restSuggestionText}>Rest: {suggestedRestSeconds}s</Text>
-                                    <View style={styles.restSuggestionButtons}>
-                                      <TouchableOpacity style={styles.startRestButton} onPress={handleStartRest}>
+                                  <View style={styles.restSuggestionButtons}>
+                                      <TouchableOpacity
+                                        style={styles.startRestButton}
+                                        onPress={handleStartRest}
+                                        testID={`active-workout-rest-start-${set.id}`}
+                                      >
                                         <Text style={styles.startRestButtonText}>Start</Text>
                                       </TouchableOpacity>
-                                      <TouchableOpacity style={styles.dismissRestButton} onPress={handleDismissRest}>
+                                      <TouchableOpacity
+                                        style={styles.dismissRestButton}
+                                        onPress={handleDismissRest}
+                                        testID={`active-workout-rest-skip-${set.id}`}
+                                      >
                                         <Text style={styles.dismissRestButtonText}>Skip</Text>
                                       </TouchableOpacity>
                                     </View>
@@ -1735,16 +1787,27 @@ export default function ActiveWorkoutScreen() {
                   const exercise = group.exercises[0];
 
                   return (
-                    <View key={exercise.id} style={styles.exerciseSection}>
-                      <View style={styles.exerciseHeader}>
+                    <View
+                      key={exercise.id}
+                      style={styles.exerciseSection}
+                      testID={`active-workout-exercise-${exercise.id}`}
+                    >
+                      <View style={styles.exerciseHeader} testID={`active-workout-exercise-header-${exercise.id}`}>
                         <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
                         <View style={styles.exerciseInfo}>
                           <View style={styles.exerciseNameRow}>
                             <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                            <TouchableOpacity
+                              onPress={() => openYouTubeSearch(exercise.exerciseName)}
+                              testID={`active-workout-youtube-${exercise.id}`}
+                            >
                               <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleEditExercisePress(exercise)} style={styles.exerciseEditButton}>
+                            <TouchableOpacity
+                              onPress={() => handleEditExercisePress(exercise)}
+                              style={styles.exerciseEditButton}
+                              testID={`active-workout-edit-exercise-${exercise.id}`}
+                            >
                               <Ionicons name="create-outline" size={16} color={colors.primary} />
                             </TouchableOpacity>
                           </View>
@@ -1787,11 +1850,12 @@ export default function ActiveWorkoutScreen() {
 
                           return (
                             <View key={set.id}>
-                              <TouchableOpacity
-                                style={[styles.setRow, getRowStyle()]}
-                                onPress={() => handleSetPress(set)}
-                                activeOpacity={0.7}
-                              >
+                            <TouchableOpacity
+                              style={[styles.setRow, getRowStyle()]}
+                              onPress={() => handleSetPress(set)}
+                              activeOpacity={0.7}
+                              testID={`active-workout-set-${set.id}`}
+                            >
                                 <View style={[
                                   styles.setNumberContainer,
                                   isCurrentSet && styles.setNumberContainerActive,
@@ -1849,56 +1913,74 @@ export default function ActiveWorkoutScreen() {
                                         <View style={styles.inputRow}>
                                           <View style={styles.inputGroup}>
                                             <Text style={styles.inputLabel}>Weight</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.weight}
-                                              onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                            <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.weight}
+                                                onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                                testID={`active-workout-set-weight-${set.id}`}
+                                              />
+                                              <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
+                                            </View>
+                                            <View style={styles.inputGroup}>
+                                              <Text style={styles.inputLabel}>Reps</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.reps}
+                                                onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                                testID={`active-workout-set-reps-${set.id}`}
+                                              />
+                                            </View>
                                           </View>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Reps</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.reps}
-                                              onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                          </View>
-                                        </View>
-                                      )}
+                                        )}
 
                                       {/* Manual time input for time-based exercises when editing completed sets */}
                                       {set.targetTime !== undefined && isEditing && (
                                         <View style={styles.inputRow}>
                                           <View style={styles.inputGroup}>
                                             <Text style={styles.inputLabel}>Time</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.time}
-                                              onChangeText={(v) => updateEditValue(set.id, 'time', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                            <Text style={styles.inputUnit}>seconds</Text>
+                                              <TextInput
+                                                style={styles.input}
+                                                value={values.time}
+                                                onChangeText={(v) => updateEditValue(set.id, 'time', v)}
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                                testID={`active-workout-set-time-${set.id}`}
+                                              />
+                                              <Text style={styles.inputUnit}>seconds</Text>
+                                            </View>
                                           </View>
-                                        </View>
-                                      )}
+                                        )}
                                       <View style={styles.setActions}>
                                         {isPending ? (
                                           <>
-                                            <TouchableOpacity style={styles.completeButton} onPress={() => handleCompleteSet(set)} disabled={isLoading}>
+                                            <TouchableOpacity
+                                              style={styles.completeButton}
+                                              onPress={() => handleCompleteSet(set)}
+                                              disabled={isLoading}
+                                              testID={`active-workout-complete-${set.id}`}
+                                            >
                                               <Text style={styles.completeButtonText}>Complete</Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.skipButtonInline} onPress={() => handleSkipSet(set)} disabled={isLoading}>
+                                            <TouchableOpacity
+                                              style={styles.skipButtonInline}
+                                              onPress={() => handleSkipSet(set)}
+                                              disabled={isLoading}
+                                              testID={`active-workout-skip-${set.id}`}
+                                            >
                                               <Text style={styles.skipButtonText}>Skip</Text>
                                             </TouchableOpacity>
                                           </>
                                         ) : (
-                                          <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateSet(set)} disabled={isLoading}>
+                                          <TouchableOpacity
+                                            style={styles.updateButton}
+                                            onPress={() => handleUpdateSet(set)}
+                                            disabled={isLoading}
+                                            testID={`active-workout-update-${set.id}`}
+                                          >
                                             <Text style={styles.updateButtonText}>Update</Text>
                                           </TouchableOpacity>
                                         )}
@@ -1935,15 +2017,23 @@ export default function ActiveWorkoutScreen() {
                                 <View style={styles.restSuggestionInline}>
                                   <Text style={styles.restSuggestionText}>Rest: {suggestedRestSeconds}s</Text>
                                   <View style={styles.restSuggestionButtons}>
-                                    <TouchableOpacity style={styles.startRestButton} onPress={handleStartRest}>
-                                      <Text style={styles.startRestButtonText}>Start</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.dismissRestButton} onPress={handleDismissRest}>
-                                      <Text style={styles.dismissRestButtonText}>Skip</Text>
-                                    </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={styles.startRestButton}
+                                        onPress={handleStartRest}
+                                        testID={`active-workout-rest-start-${set.id}`}
+                                      >
+                                        <Text style={styles.startRestButtonText}>Start</Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={styles.dismissRestButton}
+                                        onPress={handleDismissRest}
+                                        testID={`active-workout-rest-skip-${set.id}`}
+                                      >
+                                        <Text style={styles.dismissRestButtonText}>Skip</Text>
+                                      </TouchableOpacity>
+                                    </View>
                                   </View>
-                                </View>
-                              )}
+                                )}
                               {showRestPlaceholder && (
                                 <View style={styles.restPlaceholder}>
                                   <View style={styles.restPlaceholderLine} />
@@ -1974,8 +2064,8 @@ export default function ActiveWorkoutScreen() {
         animationType="fade"
         onRequestClose={handleCancelEditExercise}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+        <View style={styles.modalOverlay} testID="active-workout-edit-exercise-modal">
+          <View style={[styles.modalContent, { maxHeight: '90%' }]} testID="active-workout-edit-exercise-content">
             <Text style={styles.modalTitle}>Edit Exercise</Text>
 
             <ScrollView style={{ maxHeight: 500 }}>
@@ -1985,6 +2075,7 @@ export default function ActiveWorkoutScreen() {
                 onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, exerciseName: text }))}
                 placeholder="Exercise Name"
                 placeholderTextColor={colors.textMuted}
+                testID="active-workout-edit-exercise-name"
               />
 
               <TextInput
@@ -1993,6 +2084,7 @@ export default function ActiveWorkoutScreen() {
                 onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, equipmentType: text }))}
                 placeholder="Equipment Type (optional)"
                 placeholderTextColor={colors.textMuted}
+                testID="active-workout-edit-exercise-equipment"
               />
 
               <TextInput
@@ -2002,6 +2094,7 @@ export default function ActiveWorkoutScreen() {
                 placeholder="Notes (optional)"
                 placeholderTextColor={colors.textMuted}
                 multiline
+                testID="active-workout-edit-exercise-notes"
               />
 
               {/* Sets Section */}
@@ -2014,6 +2107,7 @@ export default function ActiveWorkoutScreen() {
                     <TouchableOpacity
                       onPress={() => handleDeleteSetInModal(set.id)}
                       style={styles.setDeleteButton}
+                      testID={`active-workout-edit-set-delete-${set.id}`}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </TouchableOpacity>
@@ -2029,6 +2123,7 @@ export default function ActiveWorkoutScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={colors.textMuted}
+                        testID={`active-workout-edit-set-weight-${set.id}`}
                       />
                     </View>
                     <View style={styles.setEditInput}>
@@ -2040,6 +2135,7 @@ export default function ActiveWorkoutScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={colors.textMuted}
+                        testID={`active-workout-edit-set-reps-${set.id}`}
                       />
                     </View>
                     <View style={styles.setEditInput}>
@@ -2051,6 +2147,7 @@ export default function ActiveWorkoutScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={colors.textMuted}
+                        testID={`active-workout-edit-set-rpe-${set.id}`}
                       />
                     </View>
                   </View>
@@ -2065,6 +2162,7 @@ export default function ActiveWorkoutScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={colors.textMuted}
+                        testID={`active-workout-edit-set-rest-${set.id}`}
                       />
                     </View>
                     <View style={styles.setEditInput}>
@@ -2076,6 +2174,7 @@ export default function ActiveWorkoutScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={colors.textMuted}
+                        testID={`active-workout-edit-set-time-${set.id}`}
                       />
                     </View>
                   </View>
@@ -2086,6 +2185,7 @@ export default function ActiveWorkoutScreen() {
                     onChangeText={(text) => handleUpdateSetInModal(set.id, 'notes', text || undefined)}
                     placeholder="Set notes (optional)"
                     placeholderTextColor={colors.textMuted}
+                    testID={`active-workout-edit-set-notes-${set.id}`}
                   />
                 </View>
               ))}
@@ -2093,6 +2193,7 @@ export default function ActiveWorkoutScreen() {
               <TouchableOpacity
                 style={styles.addSetButton}
                 onPress={handleAddSetInModal}
+                testID="active-workout-edit-set-add"
               >
                 <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
                 <Text style={styles.addSetButtonText}>Add Set</Text>
@@ -2103,12 +2204,14 @@ export default function ActiveWorkoutScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonSecondary]}
                 onPress={handleCancelEditExercise}
+                testID="active-workout-edit-exercise-cancel"
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonPrimary]}
                 onPress={handleSaveExercise}
+                testID="active-workout-edit-exercise-save"
               >
                 <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
@@ -2124,8 +2227,8 @@ export default function ActiveWorkoutScreen() {
         animationType="fade"
         onRequestClose={handleCancelAddExercise}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalOverlay} testID="active-workout-add-exercise-modal">
+          <View style={styles.modalContent} testID="active-workout-add-exercise-content">
             <Text style={styles.modalTitle}>Add Exercise</Text>
 
             <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 8 }}>
@@ -2139,18 +2242,21 @@ export default function ActiveWorkoutScreen() {
               placeholder="### Exercise Name&#10;&#10;- Rep&#10;- Rep&#10;- Rep"
               placeholderTextColor={colors.textMuted}
               multiline
+              testID="active-workout-add-exercise-input"
             />
 
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonSecondary]}
                 onPress={handleCancelAddExercise}
+                testID="active-workout-add-exercise-cancel"
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonPrimary]}
                 onPress={handleSaveNewExercise}
+                testID="active-workout-add-exercise-save"
               >
                 <Text style={styles.modalButtonText}>Add</Text>
               </TouchableOpacity>
