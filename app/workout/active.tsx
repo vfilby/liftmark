@@ -1373,8 +1373,8 @@ export default function ActiveWorkoutScreen() {
   // Loading/empty states
   if (!activeSession) {
     return (
-      <View style={styles.container}>
-        <View style={styles.centered}>
+      <View style={styles.container} testID="active-workout-screen">
+        <View style={styles.centered} testID="active-workout-loading">
           <Text style={styles.loadingText}>Loading workout...</Text>
         </View>
       </View>
@@ -1427,25 +1427,37 @@ export default function ActiveWorkoutScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="active-workout-screen">
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handlePause} style={styles.headerButton}>
+      <View style={styles.header} testID="active-workout-header">
+        <TouchableOpacity
+          onPress={handlePause}
+          style={styles.headerButton}
+          testID="active-workout-pause-button"
+        >
           <Text style={styles.headerButtonText}>Pause</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {activeSession.name}
         </Text>
-        <TouchableOpacity onPress={handleAddExercisePress} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={handleAddExercisePress}
+          style={styles.headerButton}
+          testID="active-workout-add-exercise-button"
+        >
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleFinish} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={handleFinish}
+          style={styles.headerButton}
+          testID="active-workout-finish-button"
+        >
           <Text style={[styles.headerButtonText, styles.finishText]}>Finish</Text>
         </TouchableOpacity>
       </View>
 
       {/* Progress Bar */}
-      <View style={styles.progressContainer}>
+      <View style={styles.progressContainer} testID="active-workout-progress">
         <View style={styles.progressBar}>
           <View
             style={[styles.progressFill, { width: `${total > 0 ? (completed / total) * 100 : 0}%` }]}
@@ -1460,6 +1472,7 @@ export default function ActiveWorkoutScreen() {
         ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
+        testID="active-workout-scroll"
       >
         {workoutSections.map((section, sectionIndex) => {
           const sectionType = getSectionType(section.name);

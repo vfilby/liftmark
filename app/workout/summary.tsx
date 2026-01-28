@@ -241,8 +241,8 @@ export default function WorkoutSummaryScreen() {
 
   if (!activeSession) {
     return (
-      <View style={styles.container}>
-        <View style={styles.centered}>
+      <View style={styles.container} testID="workout-summary-screen">
+        <View style={styles.centered} testID="workout-summary-loading">
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </View>
@@ -288,10 +288,14 @@ export default function WorkoutSummaryScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container} testID="workout-summary-screen">
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        testID="workout-summary-scroll"
+      >
         {/* Success Header */}
-        <View style={styles.successHeader}>
+        <View style={styles.successHeader} testID="workout-summary-success-header">
           <Text style={styles.checkmark}>✓</Text>
           <Text style={styles.successTitle}>Workout Complete!</Text>
           <Text style={styles.workoutName}>{activeSession.name}</Text>
@@ -299,11 +303,13 @@ export default function WorkoutSummaryScreen() {
 
         {/* Workout Highlights */}
         {!loadingHighlights && highlights.length > 0 && (
-          <WorkoutHighlights highlights={highlights} />
+          <View testID="workout-summary-highlights">
+            <WorkoutHighlights highlights={highlights} />
+          </View>
         )}
 
         {/* Summary Stats */}
-        <View style={styles.statsGrid}>
+        <View style={styles.statsGrid} testID="workout-summary-stats">
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{formatDuration(activeSession.duration)}</Text>
             <Text style={styles.statLabel}>Duration</Text>
@@ -328,7 +334,7 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         {/* Completion Summary */}
-        <View style={styles.completionCard}>
+        <View style={styles.completionCard} testID="workout-summary-completion">
           <View style={styles.completionRow}>
             <Text style={styles.completionLabel}>Sets Completed</Text>
             <Text style={styles.completionValue}>{completedSets}</Text>
@@ -348,7 +354,7 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         {/* Exercise Summary */}
-        <View style={styles.exerciseSummary}>
+        <View style={styles.exerciseSummary} testID="workout-summary-exercises">
           <Text style={styles.sectionTitle}>Exercises</Text>
           {trackableExercises.map((exercise) => {
             const exerciseCompletedSets = exercise.sets.filter(
@@ -383,7 +389,11 @@ export default function WorkoutSummaryScreen() {
 
       {/* Done Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={handleDone}
+          testID="workout-summary-done-button"
+        >
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
