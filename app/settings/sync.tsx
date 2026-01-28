@@ -303,7 +303,7 @@ export default function SyncSettingsScreen() {
   // Error state
   if (hasError) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="sync-settings-error">
         <Stack.Screen options={{ title: 'iCloud Sync' }} />
         <View style={styles.errorContainer}>
           <Ionicons name="cloud-offline" size={64} color={colors.textSecondary} />
@@ -327,7 +327,7 @@ export default function SyncSettingsScreen() {
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="sync-settings-loading">
         <Stack.Screen options={{ title: 'iCloud Sync' }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -338,12 +338,12 @@ export default function SyncSettingsScreen() {
 
   // Main content
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="sync-settings-screen">
       <Stack.Screen options={{ title: 'iCloud Sync' }} />
 
       <ScrollView>
         {/* Info Box */}
-        <View style={styles.infoBox}>
+        <View style={styles.infoBox} testID="sync-info-box">
           <Text style={styles.infoText}>
             This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
           </Text>
@@ -363,7 +363,7 @@ export default function SyncSettingsScreen() {
 
         {/* CloudKit Status */}
         <Text style={styles.sectionTitle}>iCloud Status</Text>
-        <View style={styles.section}>
+        <View style={styles.section} testID="sync-status-section">
           <View style={styles.row}>
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Account Status</Text>
@@ -400,6 +400,7 @@ export default function SyncSettingsScreen() {
               value={syncEnabled}
               onValueChange={handleToggleSync}
               disabled={accountStatus !== 'available'}
+              testID="sync-toggle"
             />
           </View>
         </View>
@@ -408,6 +409,7 @@ export default function SyncSettingsScreen() {
         <TouchableOpacity
           style={styles.testButton}
           onPress={handleTestCloudKit}
+          testID="sync-test-button"
         >
           <Ionicons name="flask" size={20} color="#ffffff" />
           <Text style={styles.testButtonText}>Test CloudKit Module</Text>

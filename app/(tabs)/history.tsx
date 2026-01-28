@@ -255,6 +255,7 @@ export default function HistoryScreen() {
         style={[styles.sessionCard, isSelected && styles.sessionCardSelected]}
         onPress={handlePress}
         activeOpacity={0.7}
+        testID="history-session-card"
       >
         <View style={styles.sessionHeader}>
           <Text style={styles.sessionName}>{session.name}</Text>
@@ -322,6 +323,7 @@ export default function HistoryScreen() {
           renderItem={renderSession}
           keyExtractor={(session) => session.id}
           contentContainerStyle={styles.listContent}
+          testID="history-list"
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           }

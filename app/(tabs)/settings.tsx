@@ -802,7 +802,8 @@ export default function SettingsScreen() {
             key={gym.id}
             style={styles.gymListItem}
             onPress={() => router.push(`/gym/${gym.id}`)}
-            testID={`gym-item-${gym.id}`}
+            testID="gym-item"
+            accessibilityLabel={`gym-item-${gym.id}`}
           >
             <Text style={styles.gymListItemText}>{gym.name}</Text>
             <View style={styles.gymListItemActions}>
