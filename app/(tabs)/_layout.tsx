@@ -24,6 +24,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'LiftMark',
+          tabBarTestID: 'tab-home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -33,6 +34,7 @@ export default function TabLayout() {
         name="workouts"
         options={{
           title: 'Workouts',
+          tabBarTestID: 'tab-workouts',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="fitness" size={size} color={color} />
           ),
@@ -42,6 +44,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: 'History',
+          tabBarTestID: 'tab-history',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
           ),
@@ -51,6 +54,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
+          tabBarTestID: 'tab-settings',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),

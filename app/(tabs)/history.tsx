@@ -299,7 +299,7 @@ export default function HistoryScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="history-screen">
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Loading history...</Text>
         </View>
@@ -310,7 +310,7 @@ export default function HistoryScreen() {
   const listContent = (
     <>
       {sessions.length === 0 ? (
-        <View style={styles.emptyState}>
+        <View style={styles.emptyState} testID="history-empty-state">
           <Text style={styles.emptyTitle}>No Workouts Yet</Text>
           <Text style={styles.emptySubtitle}>
             Complete a workout to see it here
@@ -333,7 +333,7 @@ export default function HistoryScreen() {
 
   if (isTablet) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="history-screen">
         <SplitView
           leftPane={listContent}
           rightPane={
@@ -349,7 +349,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="history-screen">
       {listContent}
     </View>
   );
