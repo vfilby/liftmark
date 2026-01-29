@@ -1,3 +1,5 @@
+/* eslint-env detox/detox, jest */
+
 describe('Tab navigation', () => {
   beforeAll(async () => {
     await device.launchApp({ newInstance: true });

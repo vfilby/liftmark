@@ -1,9 +1,16 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Pressable } from 'react-native';
 import { useTheme } from '@/theme';
 
 export default function TabLayout() {
   const { colors } = useTheme();
+
+  const createTabButton = (testID: string) =>
+    React.forwardRef<any, any>((props, ref) => (
+      <Pressable {...props} ref={ref} testID={testID} />
+    ));
 
   return (
     <Tabs
@@ -24,7 +31,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'LiftMark',
-          tabBarTestID: 'tab-home',
+          tabBarButton: createTabButton('tab-home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -34,7 +41,7 @@ export default function TabLayout() {
         name="workouts"
         options={{
           title: 'Workouts',
-          tabBarTestID: 'tab-workouts',
+          tabBarButton: createTabButton('tab-workouts'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="fitness" size={size} color={color} />
           ),
@@ -44,7 +51,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: 'History',
-          tabBarTestID: 'tab-history',
+          tabBarButton: createTabButton('tab-history'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
           ),
@@ -54,7 +61,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarTestID: 'tab-settings',
+          tabBarButton: createTabButton('tab-settings'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),
