@@ -44,6 +44,16 @@ export const Colors = {
     sectionCooldown: '#06b6d4',
     sectionCooldownLight: '#ecfeff',
     sectionCooldownBorder: '#67e8f9',
+
+    // Chart colors
+    chartLine: '#2563eb',
+    chartLineSecondary: '#8b5cf6',
+    chartLineTertiary: '#10b981',
+    chartGrid: '#e5e7eb',
+    chartAxis: '#9ca3af',
+    chartTooltipBg: '#ffffff',
+    chartTooltipText: '#111827',
+    chartTooltipBorder: '#e5e7eb',
   },
   dark: {
     // Backgrounds
@@ -90,6 +100,16 @@ export const Colors = {
     sectionCooldown: '#06b6d4',
     sectionCooldownLight: '#164e63',
     sectionCooldownBorder: '#0891b2',
+
+    // Chart colors
+    chartLine: '#3b82f6',
+    chartLineSecondary: '#a78bfa',
+    chartLineTertiary: '#34d399',
+    chartGrid: '#374151',
+    chartAxis: '#6b7280',
+    chartTooltipBg: '#1f2937',
+    chartTooltipText: '#f9fafb',
+    chartTooltipBorder: '#4b5563',
   },
 };
 

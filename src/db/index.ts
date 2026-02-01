@@ -190,6 +190,9 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_session_exercises_session
       ON session_exercises(workout_session_id);
 
+    CREATE INDEX IF NOT EXISTS idx_session_exercises_name
+      ON session_exercises(exercise_name);
+
     CREATE INDEX IF NOT EXISTS idx_session_sets_exercise
       ON session_sets(session_exercise_id);
 

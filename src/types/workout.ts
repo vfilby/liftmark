@@ -352,3 +352,46 @@ export interface SessionSetRow {
   is_dropset: number; // SQLite boolean (0 or 1)
   is_per_side: number; // SQLite boolean (0 or 1)
 }
+
+// Exercise History Types
+export type ChartMetricType = 'maxWeight' | 'avgReps' | 'totalVolume' | 'setCount';
+
+export interface ExerciseHistoryPoint {
+  date: string; // ISO date
+  startTime?: string; // ISO datetime
+  workoutName: string;
+  maxWeight: number;
+  avgReps: number;
+  totalVolume: number;
+  setsCount: number;
+  unit: 'lbs' | 'kg';
+}
+
+export interface ExerciseSessionData {
+  sessionId: string;
+  workoutName: string;
+  date: string;
+  startTime?: string;
+  sets: {
+    setIndex: number;
+    targetWeight?: number;
+    targetReps?: number;
+    actualWeight?: number;
+    actualReps?: number;
+    actualWeightUnit?: 'lbs' | 'kg';
+    notes?: string;
+  }[];
+}
+
+export interface ExerciseProgressMetrics {
+  exerciseName: string;
+  totalSessions: number;
+  totalVolume: number;
+  maxWeight: number;
+  maxWeightUnit: 'lbs' | 'kg';
+  avgWeightPerSession: number;
+  avgRepsPerSet: number;
+  firstSessionDate: string;
+  lastSessionDate: string;
+  trend: 'improving' | 'stable' | 'declining'; // Based on last 5 sessions comparison
+}

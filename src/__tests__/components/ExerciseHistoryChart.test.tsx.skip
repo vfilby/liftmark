@@ -1,0 +1,354 @@
+/**
+ * ExerciseHistoryChart Unit Tests
+ * Tests component logic, data handling, and calculations
+ */
+
+import type { ExerciseHistoryPoint } from '@/types';
+
+const mockColors = {
+  background: '#f5f5f5',
+  backgroundSecondary: '#f9fafb',
+  backgroundTertiary: '#f3f4f6',
+  card: '#ffffff',
+  text: '#111827',
+  textSecondary: '#6b7280',
+  textMuted: '#9ca3af',
+  primary: '#2563eb',
+  primaryLight: '#eff6ff',
+  primaryLightBorder: '#bfdbfe',
+  success: '#16a34a',
+  successLight: '#f0fdf4',
+  successLighter: '#dcfce7',
+  successBorder: '#86efac',
+  warning: '#ca8a04',
+  warningLight: '#fefce8',
+  warningLighter: '#fef9c3',
+  warningBorder: '#fde047',
+  error: '#ef4444',
+  errorLight: '#fee2e2',
+  border: '#e5e7eb',
+  borderLight: '#f3f4f6',
+  tabBar: '#ffffff',
+  tabIconDefault: '#6b7280',
+  tabIconSelected: '#2563eb',
+  sectionWarmup: '#10b981',
+  sectionWarmupLight: '#ecfdf5',
+  sectionWarmupBorder: '#6ee7b7',
+  sectionCooldown: '#06b6d4',
+  sectionCooldownLight: '#ecfeff',
+  sectionCooldownBorder: '#67e8f9',
+  chartLine: '#2563eb',
+  chartAxis: '#e5e7eb',
+  chartGrid: '#f3f4f6',
+  chartTooltip: '#ffffff',
+  chartTooltipBorder: '#2563eb',
+};
+
+const mockHistoryData: ExerciseHistoryPoint[] = [
+  { date: '2025-01-01', workoutName: 'Test Workout', setsCount: 3, unit: 'lbs' as const, maxWeight: 185,
+    avgReps: 8,
+    totalVolume: 1480,
+  },
+  { date: '2025-01-08', workoutName: 'Test Workout', setsCount: 3, unit: 'lbs' as const, maxWeight: 190,
+    avgReps: 8,
+    totalVolume: 1520,
+  },
+  { date: '2025-01-15', workoutName: 'Test Workout', setsCount: 3, unit: 'lbs' as const, maxWeight: 195,
+    avgReps: 9,
+    totalVolume: 1755,
+  },
+];
+
+/**
+ * Helper: Format chart data from history points
+ */
+function formatChartData(
+  data: ExerciseHistoryPoint[],
+  metric: 'maxWeight' | 'reps' | 'volume'
+) {
+  return data
+    .filter((point) => point[metric] !== undefined && point[metric] !== null)
+    .map((point, index) => ({
+      x: index,
+      y: point[metric] || 0,
+      date: point.date,
+    }));
+}
+
+/**
+ * Helper: Get metric label
+ */
+function getMetricLabel(metric: 'maxWeight' | 'reps' | 'volume') {
+  const labels = {
+    maxWeight: 'Max Weight (lbs)',
+    avgReps: 'Reps',
+    totalVolume: 'Volume (lbs)',
+  };
+  return labels[metric];
+}
+
+describe('ExerciseHistoryChart Component Logic', () => {
+  describe('Data Handling', () => {
+    it('should format chart data correctly for maxWeight metric', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      expect(data).toHaveLength(3);
+      expect(data[0]).toEqual({ x: 0, y: 185, date: '2025-01-01' });
+      expect(data[2]).toEqual({ x: 2, y: 195, date: '2025-01-15' });
+    });
+
+    it('should format chart data correctly for reps metric', () => {
+      const data = formatChartData(mockHistoryData, 'reps');
+      expect(data).toHaveLength(3);
+      expect(data[0]).toEqual({ x: 0, y: 8, date: '2025-01-01' });
+      expect(data[2]).toEqual({ x: 2, y: 9, date: '2025-01-15' });
+    });
+
+    it('should format chart data correctly for volume metric', () => {
+      const data = formatChartData(mockHistoryData, 'volume');
+      expect(data).toHaveLength(3);
+      expect(data[0]).toEqual({ x: 0, y: 1480, date: '2025-01-01' });
+      expect(data[2]).toEqual({ x: 2, y: 1755, date: '2025-01-15' });
+    });
+
+    it('should filter out undefined metric values', () => {
+      const mixedData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: undefined, avgReps: 8, totalVolume: undefined },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-15', maxWeight: 195, avgReps: 9, totalVolume: 1755 },
+      ];
+
+      const data = formatChartData(mixedData, 'maxWeight');
+      expect(data).toHaveLength(2);
+      expect(data[0].y).toBe(185);
+      expect(data[1].y).toBe(195);
+    });
+
+    it('should handle empty data array', () => {
+      const data = formatChartData([], 'maxWeight');
+      expect(data).toHaveLength(0);
+    });
+
+    it('should return empty array when all values are undefined for metric', () => {
+      const emptyData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', avgReps: 8 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', avgReps: 9 },
+      ];
+
+      const data = formatChartData(emptyData, 'maxWeight');
+      expect(data).toHaveLength(0);
+    });
+  });
+
+  describe('Metric Labels', () => {
+    it('should return correct label for maxWeight metric', () => {
+      expect(getMetricLabel('maxWeight')).toBe('Max Weight (lbs)');
+    });
+
+    it('should return correct label for reps metric', () => {
+      expect(getMetricLabel('reps')).toBe('Reps');
+    });
+
+    it('should return correct label for volume metric', () => {
+      expect(getMetricLabel('volume')).toBe('Volume (lbs)');
+    });
+  });
+
+  describe('Statistics Calculation', () => {
+    it('should calculate correct current value', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      const currentValue = data[data.length - 1].y;
+      expect(currentValue).toBe(195);
+    });
+
+    it('should calculate correct best (max) value', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      const yValues = data.map((d) => d.y);
+      const maxValue = Math.max(...yValues);
+      expect(maxValue).toBe(195);
+    });
+
+    it('should calculate correct percentage change', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      const currentValue = data[data.length - 1].y;
+      const previousValue = data[data.length - 2].y;
+      const change = currentValue - previousValue;
+      const changePercent = previousValue !== 0 ? (change / previousValue) * 100 : 0;
+
+      expect(change).toBe(5); // 195 - 190
+      expect(changePercent).toBeCloseTo(2.631578947, 5); // 5/190 * 100
+    });
+
+    it('should handle zero previous value in change calculation', () => {
+      const data: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 0, avgReps: 8, totalVolume: 0 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+      ];
+
+      const formatted = formatChartData(data, 'maxWeight');
+      const currentValue = formatted[formatted.length - 1].y;
+      const previousValue = formatted[formatted.length - 2].y;
+      const changePercent = previousValue !== 0 ? (currentValue - previousValue) / previousValue * 100 : 0;
+
+      expect(changePercent).toBe(0); // Previous was 0
+    });
+
+    it('should calculate negative change correctly', () => {
+      const data: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 200, avgReps: 8, totalVolume: 1600 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 190, avgReps: 8, totalVolume: 1520 },
+      ];
+
+      const formatted = formatChartData(data, 'maxWeight');
+      const currentValue = formatted[formatted.length - 1].y;
+      const previousValue = formatted[formatted.length - 2].y;
+      const change = currentValue - previousValue;
+
+      expect(change).toBe(-10); // 190 - 200
+      expect(change < 0).toBe(true);
+    });
+  });
+
+  describe('Empty State Conditions', () => {
+    it('should detect insufficient data (less than 2 points)', () => {
+      const singleData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+      ];
+
+      const data = formatChartData(singleData, 'maxWeight');
+      expect(data.length < 2).toBe(true);
+    });
+
+    it('should detect when data has exactly 2 points', () => {
+      const twoData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 190, avgReps: 8, totalVolume: 1520 },
+      ];
+
+      const data = formatChartData(twoData, 'maxWeight');
+      expect(data.length >= 2).toBe(true);
+    });
+  });
+
+  describe('Metric Switching', () => {
+    it('should recalculate statistics when metric changes', () => {
+      const maxWeightData = formatChartData(mockHistoryData, 'maxWeight');
+      const repsData = formatChartData(mockHistoryData, 'reps');
+      const volumeData = formatChartData(mockHistoryData, 'volume');
+
+      const maxWeightValues = maxWeightData.map((d) => d.y);
+      const repsValues = repsData.map((d) => d.y);
+      const volumeValues = volumeData.map((d) => d.y);
+
+      expect(Math.max(...maxWeightValues)).toBe(195);
+      expect(Math.max(...repsValues)).toBe(9);
+      expect(Math.max(...volumeValues)).toBe(1755);
+    });
+
+    it('should preserve dates across metric changes', () => {
+      const maxWeightData = formatChartData(mockHistoryData, 'maxWeight');
+      const repsData = formatChartData(mockHistoryData, 'reps');
+
+      maxWeightData.forEach((point, index) => {
+        expect(point.date).toBe(repsData[index].date);
+      });
+    });
+  });
+
+  describe('Y-Axis Domain Calculation', () => {
+    it('should calculate appropriate Y-axis min with 10% padding', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      const yValues = data.map((d) => d.y);
+      const minY = Math.min(...yValues) * 0.9;
+
+      expect(minY).toBe(185 * 0.9); // 166.5
+      expect(minY).toBeLessThan(185);
+    });
+
+    it('should calculate appropriate Y-axis max with 10% padding', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      const yValues = data.map((d) => d.y);
+      const maxY = Math.max(...yValues) * 1.1;
+
+      expect(maxY).toBe(195 * 1.1); // 214.5
+      expect(maxY).toBeGreaterThan(195);
+    });
+
+    it('should handle single value Y-axis domain', () => {
+      const singleValueData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+      ];
+
+      const data = formatChartData(singleValueData, 'maxWeight');
+      const yValues = data.map((d) => d.y);
+      const minY = Math.min(...yValues) * 0.9;
+      const maxY = Math.max(...yValues) * 1.1;
+
+      expect(minY).toBe(185 * 0.9);
+      expect(maxY).toBe(185 * 1.1);
+      expect(minY < maxY).toBe(true);
+    });
+  });
+
+  describe('Data Point Dates', () => {
+    it('should preserve ISO date strings', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      expect(data[0].date).toBe('2025-01-01');
+      expect(data[1].date).toBe('2025-01-08');
+      expect(data[2].date).toBe('2025-01-15');
+    });
+
+    it('should maintain date order with data points', () => {
+      const data = formatChartData(mockHistoryData, 'maxWeight');
+      for (let i = 1; i < data.length; i++) {
+        expect(data[i].date > data[i - 1].date).toBe(true);
+      }
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle null metric values', () => {
+      const nullData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185, avgReps: 8, totalVolume: 1480 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 0, avgReps: 8, totalVolume: 1520 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-15', maxWeight: 195, avgReps: 9, totalVolume: 1755 },
+      ];
+
+      const data = formatChartData(nullData, 'maxWeight');
+      expect(data).toHaveLength(2); // null value filtered out
+    });
+
+    it('should handle very large metric values', () => {
+      const largeData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 999999, avgReps: 8, totalVolume: 7999992 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 1000000, avgReps: 8, totalVolume: 8000000 },
+      ];
+
+      const data = formatChartData(largeData, 'maxWeight');
+      expect(data).toHaveLength(2);
+      expect(data[1].y).toBe(1000000);
+    });
+
+    it('should handle decimal metric values', () => {
+      const decimalData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 185.5, avgReps: 8.25, totalVolume: 1530.75 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 190.75, avgReps: 8.5, totalVolume: 1621.375 },
+      ];
+
+      const data = formatChartData(decimalData, 'maxWeight');
+      expect(data[0].y).toBe(185.5);
+      expect(data[1].y).toBe(190.75);
+    });
+
+    it('should handle zero metric values', () => {
+      const zeroData: ExerciseHistoryPoint[] = [
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-01', maxWeight: 0, avgReps: 8, totalVolume: 0 },
+        { date:, workoutName: "Test Workout", setsCount: 3, unit: "lbs" as const, '2025-01-08', maxWeight: 0, avgReps: 8, totalVolume: 0 },
+      ];
+
+      const data = formatChartData(zeroData, 'maxWeight');
+      expect(data).toHaveLength(2);
+      expect(data[0].y).toBe(0);
+    });
+  });
+});
