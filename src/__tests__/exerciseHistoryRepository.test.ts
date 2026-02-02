@@ -71,6 +71,8 @@ function createExerciseHistoryPoint(overrides: Partial<ExerciseHistoryPoint> = {
     avgReps: 8,
     totalVolume: 1480,
     setsCount: 1,
+    avgTime: 0,
+    maxTime: 0,
     unit: 'lbs',
     ...overrides,
   };

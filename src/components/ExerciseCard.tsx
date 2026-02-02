@@ -8,7 +8,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import type { SessionExercise, SessionSet, ThemeColors, ExerciseHistoryPoint, ChartMetricType } from '@/types';
+import type { SessionExercise, SessionSet, ExerciseHistoryPoint, ChartMetricType } from '@/types';
+import type { ThemeColors } from '@/theme/colors';
 import { getExerciseHistory } from '@/db/exerciseHistoryRepository';
 import { ExerciseHistoryChart } from './ExerciseHistoryChart';
 
@@ -43,7 +44,7 @@ export const ExerciseCard = ({
 }: ExerciseCardProps) => {
   const [historyData, setHistoryData] = useState<ExerciseHistoryPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('weight');
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
 
   // Load exercise history when expanded
   useEffect(() => {

@@ -29,6 +29,8 @@ export async function getExerciseHistory(
     avg_reps: number | null;
     total_volume: number | null;
     sets_count: number;
+    avg_time: number | null;
+    max_time: number | null;
     unit: string;
   }>(`
     SELECT
@@ -39,6 +41,8 @@ export async function getExerciseHistory(
       AVG(ss.actual_reps) as avg_reps,
       SUM(ss.actual_weight * ss.actual_reps) as total_volume,
       COUNT(ss.id) as sets_count,
+      AVG(ss.actual_time) as avg_time,
+      MAX(ss.actual_time) as max_time,
       COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
     FROM workout_sessions ws
     JOIN session_exercises se ON se.workout_session_id = ws.id
@@ -58,9 +62,11 @@ export async function getExerciseHistory(
       startTime: row.start_time || undefined,
       workoutName: row.workout_name,
       maxWeight: row.max_weight ?? 0,
-      avgReps: Math.round(row.avg_reps ?? 0 * 10) / 10, // Round to 1 decimal
+      avgReps: Math.round((row.avg_reps ?? 0) * 10) / 10, // Round to 1 decimal - fixed operator precedence
       totalVolume: Math.round(row.total_volume ?? 0),
       setsCount: row.sets_count,
+      avgTime: Math.round(row.avg_time ?? 0),
+      maxTime: Math.round(row.max_time ?? 0),
       unit: (row.unit as 'lbs' | 'kg') || 'lbs',
     }));
 }

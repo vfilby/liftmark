@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
-import { ExerciseTrendView } from './ExerciseTrendView';
+import type { WorkoutSession, SessionExercise, SessionSet, ExerciseHistoryPoint, ChartMetricType } from '@/types';
+import { getExerciseHistory } from '@/db/exerciseHistoryRepository';
+import { ExerciseHistoryChart } from './ExerciseHistoryChart';
+import { ExerciseHistoryBottomSheet } from './ExerciseHistoryBottomSheet';
 
 interface ExerciseGroup {
   type: 'single' | 'superset';
@@ -29,6 +32,53 @@ interface HistoryDetailViewProps {
 
 export function HistoryDetailView({ session }: HistoryDetailViewProps) {
   const { colors } = useTheme();
+
+  // Track expanded exercises for chart display
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+  const [historyData, setHistoryData] = useState<Map<string, ExerciseHistoryPoint[]>>(new Map());
+  const [loadingHistory, setLoadingHistory] = useState<Set<string>>(new Set());
+  const [selectedMetrics, setSelectedMetrics] = useState<Map<string, ChartMetricType>>(new Map());
+  const [bottomSheetExercise, setBottomSheetExercise] = useState<string | null>(null);
+
+  // Load history when an exercise is expanded
+  const loadExerciseHistory = async (exerciseName: string) => {
+    if (historyData.has(exerciseName) || loadingHistory.has(exerciseName)) return;
+
+    setLoadingHistory(prev => new Set(prev).add(exerciseName));
+    try {
+      const data = await getExerciseHistory(exerciseName, 10);
+      setHistoryData(prev => new Map(prev).set(exerciseName, data));
+    } catch (error) {
+      console.error('Failed to load exercise history:', error);
+      setHistoryData(prev => new Map(prev).set(exerciseName, []));
+    } finally {
+      setLoadingHistory(prev => {
+        const next = new Set(prev);
+        next.delete(exerciseName);
+        return next;
+      });
+    }
+  };
+
+  const toggleExerciseExpanded = (exerciseName: string) => {
+    // Only toggle if there's data
+    const data = historyData.get(exerciseName) || [];
+    if (data.length === 0) return;
+
+    setExpandedExercises(prev => {
+      const next = new Set(prev);
+      if (next.has(exerciseName)) {
+        next.delete(exerciseName);
+      } else {
+        next.add(exerciseName);
+      }
+      return next;
+    });
+  };
+
+  const setMetricForExercise = (exerciseName: string, metric: ChartMetricType) => {
+    setSelectedMetrics(prev => new Map(prev).set(exerciseName, metric));
+  };
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -106,6 +156,24 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
 
     return { completedSets, skippedSets, totalSets, totalVolume, totalReps };
   };
+
+  // Load history data for all exercises on mount
+  useEffect(() => {
+    const exerciseNames = new Set<string>();
+    session.exercises.forEach(exercise => {
+      // Skip section/superset parents without sets
+      if (exercise.sets.length > 0) {
+        exerciseNames.add(exercise.exerciseName);
+      }
+    });
+
+    // Load history for all unique exercise names
+    exerciseNames.forEach(name => {
+      if (!historyData.has(name) && !loadingHistory.has(name)) {
+        loadExerciseHistory(name);
+      }
+    });
+  }, [session]);
 
   const workoutSections = useMemo((): WorkoutSection[] => {
     if (!session) return [];
@@ -410,9 +478,64 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
       color: colors.textSecondary,
       lineHeight: 22,
     },
+    chartContainer: {
+      marginTop: 8,
+      marginHorizontal: 0,
+      padding: 8,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      minHeight: 180,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    trendHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: colors.backgroundSecondary,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      marginTop: 8,
+    },
+    trendHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    trendHeaderText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    trendHeaderDisabled: {
+      opacity: 0.5,
+    },
+    trendHeaderTextDisabled: {
+      color: colors.textMuted,
+    },
+    detailsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      marginTop: 12,
+      marginHorizontal: 0,
+    },
+    detailsButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#ffffff',
+    },
   });
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
@@ -525,12 +648,74 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
                           ))}
                         </View>
 
-                        {group.exercises.map((exercise) => (
-                          <ExerciseTrendView
-                            key={`trend-${exercise.id}`}
-                            exerciseName={exercise.exerciseName}
-                          />
-                        ))}
+                        {group.exercises.map((exercise) => {
+                          const isExpanded = expandedExercises.has(exercise.exerciseName);
+                          const isLoading = loadingHistory.has(exercise.exerciseName);
+                          const hasLoadedData = historyData.has(exercise.exerciseName);
+                          const data = historyData.get(exercise.exerciseName) || [];
+                          const hasData = data.length > 0;
+                          const metric = selectedMetrics.get(exercise.exerciseName) || 'maxWeight';
+
+                          return (
+                            <View key={`chart-${exercise.id}`}>
+                              {/* Trend Header - Title Bar Style */}
+                              <TouchableOpacity
+                                style={[styles.trendHeader, !hasLoadedData || !hasData ? styles.trendHeaderDisabled : null]}
+                                onPress={() => toggleExerciseExpanded(exercise.exerciseName)}
+                                disabled={isLoading || (hasLoadedData && !hasData)}
+                              >
+                                <View style={styles.trendHeaderLeft}>
+                                  <Ionicons
+                                    name="stats-chart"
+                                    size={18}
+                                    color={isLoading || (hasLoadedData && !hasData) ? colors.textMuted : colors.primary}
+                                  />
+                                  <Text style={[
+                                    styles.trendHeaderText,
+                                    (isLoading || (hasLoadedData && !hasData)) && styles.trendHeaderTextDisabled
+                                  ]}>
+                                    {isLoading ? 'Loading...' : (hasLoadedData && !hasData) ? 'No History' : 'Show trends'}
+                                  </Text>
+                                </View>
+                                {hasData && (
+                                  <Ionicons
+                                    name={isExpanded ? "chevron-up" : "chevron-down"}
+                                    size={20}
+                                    color={colors.textSecondary}
+                                  />
+                                )}
+                              </TouchableOpacity>
+
+                              {/* Chart Area */}
+                              {isExpanded && (
+                                <View>
+                                  <View style={styles.chartContainer}>
+                                    {isLoading ? (
+                                      <ActivityIndicator size="large" color={colors.primary} />
+                                    ) : (
+                                      <ExerciseHistoryChart
+                                        exerciseName={exercise.exerciseName}
+                                        historyData={data}
+                                        selectedMetric={metric}
+                                        onMetricChange={(m) => setMetricForExercise(exercise.exerciseName, m)}
+                                        colors={colors}
+                                      />
+                                    )}
+                                  </View>
+
+                                  {/* Details Button */}
+                                  <TouchableOpacity
+                                    style={styles.detailsButton}
+                                    onPress={() => setBottomSheetExercise(exercise.exerciseName)}
+                                  >
+                                    <Ionicons name="list" size={16} color="#ffffff" />
+                                    <Text style={styles.detailsButtonText}>Details</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
                       </>
                     ) : (
                       <>
@@ -576,7 +761,75 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
                           ))}
                         </View>
 
-                        <ExerciseTrendView exerciseName={group.exercises[0].exerciseName} />
+                        {(() => {
+                          const exercise = group.exercises[0];
+                          const isExpanded = expandedExercises.has(exercise.exerciseName);
+                          const isLoading = loadingHistory.has(exercise.exerciseName);
+                          const hasLoadedData = historyData.has(exercise.exerciseName);
+                          const data = historyData.get(exercise.exerciseName) || [];
+                          const hasData = data.length > 0;
+                          const metric = selectedMetrics.get(exercise.exerciseName) || 'maxWeight';
+
+                          return (
+                            <View>
+                              {/* Trend Header - Title Bar Style */}
+                              <TouchableOpacity
+                                style={[styles.trendHeader, !hasLoadedData || !hasData ? styles.trendHeaderDisabled : null]}
+                                onPress={() => toggleExerciseExpanded(exercise.exerciseName)}
+                                disabled={isLoading || (hasLoadedData && !hasData)}
+                              >
+                                <View style={styles.trendHeaderLeft}>
+                                  <Ionicons
+                                    name="stats-chart"
+                                    size={18}
+                                    color={isLoading || (hasLoadedData && !hasData) ? colors.textMuted : colors.primary}
+                                  />
+                                  <Text style={[
+                                    styles.trendHeaderText,
+                                    (isLoading || (hasLoadedData && !hasData)) && styles.trendHeaderTextDisabled
+                                  ]}>
+                                    {isLoading ? 'Loading...' : (hasLoadedData && !hasData) ? 'No History' : 'Show trends'}
+                                  </Text>
+                                </View>
+                                {hasData && (
+                                  <Ionicons
+                                    name={isExpanded ? "chevron-up" : "chevron-down"}
+                                    size={20}
+                                    color={colors.textSecondary}
+                                  />
+                                )}
+                              </TouchableOpacity>
+
+                              {/* Chart Area */}
+                              {isExpanded && (
+                                <View>
+                                  <View style={styles.chartContainer}>
+                                    {isLoading ? (
+                                      <ActivityIndicator size="large" color={colors.primary} />
+                                    ) : (
+                                      <ExerciseHistoryChart
+                                        exerciseName={exercise.exerciseName}
+                                        historyData={data}
+                                        selectedMetric={metric}
+                                        onMetricChange={(m) => setMetricForExercise(exercise.exerciseName, m)}
+                                        colors={colors}
+                                      />
+                                    )}
+                                  </View>
+
+                                  {/* Details Button */}
+                                  <TouchableOpacity
+                                    style={styles.detailsButton}
+                                    onPress={() => setBottomSheetExercise(exercise.exerciseName)}
+                                  >
+                                    <Ionicons name="list" size={16} color="#ffffff" />
+                                    <Text style={styles.detailsButtonText}>Details</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })()}
                       </>
                     )}
                   </View>
@@ -596,5 +849,16 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+
+    {/* Exercise History Bottom Sheet */}
+    {bottomSheetExercise && (
+      <ExerciseHistoryBottomSheet
+        exerciseName={bottomSheetExercise}
+        isVisible={true}
+        onClose={() => setBottomSheetExercise(null)}
+        colors={colors}
+      />
+    )}
+  </>
   );
 }
