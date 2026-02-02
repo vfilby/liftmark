@@ -7,17 +7,17 @@ jest.mock('expo-crypto', () => ({
 }));
 
 // Mock expo-secure-store for secure API key storage
-const secureStoreMock = new Map();
+const mockSecureStore = new Map();
 jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn((key, value) => {
-    secureStoreMock.set(key, value);
+    mockSecureStore.set(key, value);
     return Promise.resolve();
   }),
   getItemAsync: jest.fn((key) => {
-    return Promise.resolve(secureStoreMock.get(key) || null);
+    return Promise.resolve(mockSecureStore.get(key) || null);
   }),
   deleteItemAsync: jest.fn((key) => {
-    secureStoreMock.delete(key);
+    mockSecureStore.delete(key);
     return Promise.resolve();
   }),
 }));

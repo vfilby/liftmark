@@ -4,13 +4,17 @@ import React from 'react';
 import { Pressable } from 'react-native';
 import { useTheme } from '@/theme';
 
+function createTabButton(testID: string) {
+  return (props: any) => <Pressable {...props} testID={testID} />;
+}
+
+const TabHomeButton = createTabButton('tab-home');
+const TabWorkoutsButton = createTabButton('tab-workouts');
+const TabHistoryButton = createTabButton('tab-history');
+const TabSettingsButton = createTabButton('tab-settings');
+
 export default function TabLayout() {
   const { colors } = useTheme();
-
-  const createTabButton = (testID: string) =>
-    React.forwardRef<any, any>((props, ref) => (
-      <Pressable {...props} ref={ref} testID={testID} />
-    ));
 
   return (
     <Tabs
@@ -31,7 +35,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'LiftMark',
-          tabBarButton: createTabButton('tab-home'),
+          tabBarButton: TabHomeButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -41,7 +45,7 @@ export default function TabLayout() {
         name="workouts"
         options={{
           title: 'Workouts',
-          tabBarButton: createTabButton('tab-workouts'),
+          tabBarButton: TabWorkoutsButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="fitness" size={size} color={color} />
           ),
@@ -51,7 +55,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: 'History',
-          tabBarButton: createTabButton('tab-history'),
+          tabBarButton: TabHistoryButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
           ),
@@ -61,7 +65,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarButton: createTabButton('tab-settings'),
+          tabBarButton: TabSettingsButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),
