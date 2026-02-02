@@ -53,6 +53,8 @@ coverage/
 # AI/Claude Code directories
 .beads/
 .claude/
+.claude-flow/
+.swarm/
 
 # Local working directories
 deacon/
@@ -63,6 +65,8 @@ mayor/
 state.json
 .gitattributes
 push-day-corrected.md
+.mcp.json
+PHASE_*.md
 
 # Gas Town (added by gt)
 .logs/
