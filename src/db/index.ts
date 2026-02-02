@@ -397,6 +397,24 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     // Column already exists, ignore error
   }
 
+  // Migration: Add is_favorite column to workout_templates if it doesn't exist
+  try {
+    await database.runAsync(
+      `ALTER TABLE workout_templates ADD COLUMN is_favorite INTEGER DEFAULT 0`
+    );
+  } catch (error) {
+    // Column already exists, ignore error
+  }
+
+  // Migration: Create index on is_favorite for faster filtering
+  try {
+    await database.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)`
+    );
+  } catch {
+    // Index might already exist
+  }
+
   // Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');

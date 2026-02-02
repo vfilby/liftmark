@@ -15,14 +15,17 @@ import type {
 
 /**
  * Get all workout templates with their exercises and sets
+ * @param favoritesOnly - If true, only returns favorited templates
  */
-export async function getAllWorkoutTemplates(): Promise<WorkoutTemplate[]> {
+export async function getAllWorkoutTemplates(favoritesOnly: boolean = false): Promise<WorkoutTemplate[]> {
   const db = await getDatabase();
 
-  // Get all templates
-  const templateRows = await db.getAllAsync<WorkoutTemplateRow>(
-    'SELECT * FROM workout_templates ORDER BY created_at DESC'
-  );
+  // Get all templates (optionally filtered by favorites)
+  const query = favoritesOnly
+    ? 'SELECT * FROM workout_templates WHERE is_favorite = 1 ORDER BY created_at DESC'
+    : 'SELECT * FROM workout_templates ORDER BY created_at DESC';
+
+  const templateRows = await db.getAllAsync<WorkoutTemplateRow>(query);
 
   // For each template, get its exercises and sets
   const templates: WorkoutTemplate[] = [];
@@ -218,6 +221,44 @@ export async function getWorkoutTemplatesByTag(
   return templates;
 }
 
+/**
+ * Toggle favorite status for a workout template
+ */
+export async function toggleFavoriteTemplate(id: string): Promise<boolean> {
+  const db = await getDatabase();
+
+  // Get current status
+  const template = await db.getFirstAsync<{ is_favorite: number }>(
+    'SELECT is_favorite FROM workout_templates WHERE id = ?',
+    [id]
+  );
+
+  if (!template) {
+    throw new Error('Template not found');
+  }
+
+  const newStatus = template.is_favorite === 1 ? 0 : 1;
+
+  await db.runAsync(
+    'UPDATE workout_templates SET is_favorite = ?, updated_at = ? WHERE id = ?',
+    [newStatus, new Date().toISOString(), id]
+  );
+
+  return newStatus === 1;
+}
+
+/**
+ * Set favorite status for a workout template
+ */
+export async function setFavoriteTemplate(id: string, isFavorite: boolean): Promise<void> {
+  const db = await getDatabase();
+
+  await db.runAsync(
+    'UPDATE workout_templates SET is_favorite = ?, updated_at = ? WHERE id = ?',
+    [isFavorite ? 1 : 0, new Date().toISOString(), id]
+  );
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -332,6 +373,7 @@ function rowToWorkoutTemplate(
     sourceMarkdown: row.source_markdown || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    isFavorite: row.is_favorite === 1,
     exercises,
   };
 }

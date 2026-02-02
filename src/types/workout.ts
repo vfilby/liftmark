@@ -13,6 +13,7 @@ export interface WorkoutTemplate {
   sourceMarkdown?: string; // Original markdown text for reprocessing
   createdAt: string; // ISO date
   updatedAt: string;
+  isFavorite?: boolean; // Whether workout is favorited
   exercises: TemplateExercise[];
 }
 
@@ -232,6 +233,7 @@ export interface WorkoutTemplateRow {
   source_markdown: string | null;
   created_at: string;
   updated_at: string;
+  is_favorite: number; // SQLite boolean (0 or 1)
 }
 
 export interface TemplateExerciseRow {
@@ -354,7 +356,7 @@ export interface SessionSetRow {
 }
 
 // Exercise History Types
-export type ChartMetricType = 'maxWeight' | 'avgReps' | 'totalVolume' | 'setCount';
+export type ChartMetricType = 'maxWeight' | 'totalVolume' | 'reps' | 'time';
 
 export interface ExerciseHistoryPoint {
   date: string; // ISO date
@@ -364,6 +366,8 @@ export interface ExerciseHistoryPoint {
   avgReps: number;
   totalVolume: number;
   setsCount: number;
+  avgTime: number; // Average time in seconds for timed exercises
+  maxTime: number; // Max time in seconds for timed exercises
   unit: 'lbs' | 'kg';
 }
 
