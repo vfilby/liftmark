@@ -440,7 +440,6 @@ export function ExerciseHistoryChart({
               maxValue: maxReps,
               showFractionalValues: false,
             }}
-            showDataPointLabelForSecondaryData
           />
         ) : (
           <LineChart

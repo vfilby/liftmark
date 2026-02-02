@@ -5,7 +5,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import ExerciseHistoryChart, { HistoryDataPoint } from '@/components/ExerciseHistoryChart';
+import { ExerciseHistoryChart } from '@/components/ExerciseHistoryChart';
+import { ExerciseHistoryPoint, ChartMetricType } from '@/types';
 import { useTheme } from '@/theme';
 
 /**
@@ -13,15 +14,15 @@ import { useTheme } from '@/theme';
  */
 export function ExerciseDetailScreen({ exerciseName }: { exerciseName: string }) {
   const { colors } = useTheme();
-  const [selectedMetric, setSelectedMetric] = useState<'maxWeight' | 'reps' | 'volume'>('maxWeight');
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
 
   // Mock history data - in real app, fetch from database
-  const historyData: HistoryDataPoint[] = [
-    { date: '2025-01-01', maxWeight: 185, reps: 8, volume: 1480 },
-    { date: '2025-01-08', maxWeight: 190, reps: 8, volume: 1520 },
-    { date: '2025-01-15', maxWeight: 195, reps: 9, volume: 1755 },
-    { date: '2025-01-22', maxWeight: 200, reps: 9, volume: 1800 },
-    { date: '2025-01-29', maxWeight: 205, reps: 10, volume: 2050 },
+  const historyData: ExerciseHistoryPoint[] = [
+    { date: '2025-01-01', workoutName: 'Push Day', maxWeight: 185, avgReps: 8, totalVolume: 1480, setsCount: 3, avgTime: 0, maxTime: 0, unit: 'lbs' },
+    { date: '2025-01-08', workoutName: 'Push Day', maxWeight: 190, avgReps: 8, totalVolume: 1520, setsCount: 3, avgTime: 0, maxTime: 0, unit: 'lbs' },
+    { date: '2025-01-15', workoutName: 'Push Day', maxWeight: 195, avgReps: 9, totalVolume: 1755, setsCount: 3, avgTime: 0, maxTime: 0, unit: 'lbs' },
+    { date: '2025-01-22', workoutName: 'Push Day', maxWeight: 200, avgReps: 9, totalVolume: 1800, setsCount: 3, avgTime: 0, maxTime: 0, unit: 'lbs' },
+    { date: '2025-01-29', workoutName: 'Push Day', maxWeight: 205, avgReps: 10, totalVolume: 2050, setsCount: 3, avgTime: 0, maxTime: 0, unit: 'lbs' },
   ];
 
   return (
@@ -47,11 +48,11 @@ export function ExerciseDetailScreenWithData({
   getExerciseHistory,
 }: {
   exerciseName: string;
-  getExerciseHistory: (name: string) => Promise<HistoryDataPoint[]>;
+  getExerciseHistory: (name: string) => Promise<ExerciseHistoryPoint[]>;
 }) {
   const { colors } = useTheme();
-  const [selectedMetric, setSelectedMetric] = useState<'maxWeight' | 'reps' | 'volume'>('maxWeight');
-  const [historyData, setHistoryData] = useState<HistoryDataPoint[]>([]);
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
+  const [historyData, setHistoryData] = useState<ExerciseHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,15 +111,15 @@ export function ExercisesDashboard({
   getExerciseHistory,
 }: {
   exercises: string[];
-  getExerciseHistory: (name: string) => Promise<HistoryDataPoint[]>;
+  getExerciseHistory: (name: string) => Promise<ExerciseHistoryPoint[]>;
 }) {
   const { colors } = useTheme();
-  const [selectedMetric, setSelectedMetric] = useState<'maxWeight' | 'reps' | 'volume'>('maxWeight');
-  const [historyData, setHistoryData] = useState<Record<string, HistoryDataPoint[]>>({});
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
+  const [historyData, setHistoryData] = useState<Record<string, ExerciseHistoryPoint[]>>({});
 
   useEffect(() => {
     const loadAllData = async () => {
-      const data: Record<string, HistoryDataPoint[]> = {};
+      const data: Record<string, ExerciseHistoryPoint[]> = {};
 
       for (const exercise of exercises) {
         try {
@@ -164,15 +165,15 @@ export function WorkoutSessionView({
 }: {
   workoutName: string;
   exercises: string[];
-  getSessionData: (workoutName: string, exerciseName: string) => Promise<HistoryDataPoint[]>;
+  getSessionData: (workoutName: string, exerciseName: string) => Promise<ExerciseHistoryPoint[]>;
 }) {
   const { colors } = useTheme();
-  const [selectedMetric, setSelectedMetric] = useState<'maxWeight' | 'reps' | 'volume'>('maxWeight');
-  const [allHistoryData, setAllHistoryData] = useState<Record<string, HistoryDataPoint[]>>({});
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
+  const [allHistoryData, setAllHistoryData] = useState<Record<string, ExerciseHistoryPoint[]>>({});
 
   useEffect(() => {
     const loadData = async () => {
-      const data: Record<string, HistoryDataPoint[]> = {};
+      const data: Record<string, ExerciseHistoryPoint[]> = {};
 
       for (const exercise of exercises) {
         try {
@@ -230,12 +231,12 @@ export function ProgressTrackingScreen({
   getHistoryForPeriod,
 }: {
   exerciseName: string;
-  getHistoryForPeriod: (exerciseName: string, days: number) => Promise<HistoryDataPoint[]>;
+  getHistoryForPeriod: (exerciseName: string, days: number) => Promise<ExerciseHistoryPoint[]>;
 }) {
   const { colors } = useTheme();
-  const [selectedMetric, setSelectedMetric] = useState<'maxWeight' | 'reps' | 'volume'>('maxWeight');
+  const [selectedMetric, setSelectedMetric] = useState<ChartMetricType>('maxWeight');
   const [period, setPeriod] = useState<30 | 90 | 180>(30); // days
-  const [historyData, setHistoryData] = useState<HistoryDataPoint[]>([]);
+  const [historyData, setHistoryData] = useState<ExerciseHistoryPoint[]>([]);
 
   useEffect(() => {
     const loadData = async () => {

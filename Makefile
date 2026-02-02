@@ -110,7 +110,13 @@ web: node_modules
 
 # Testing
 test: node_modules
-	@echo "🧪 Running tests..."
+	@echo "🔒 Running security audit..."
+	npm audit || true
+	@echo ""
+	@echo "🔍 Running TypeScript type checking..."
+	npm run typecheck
+	@echo ""
+	@echo "🧪 Running unit tests..."
 	npm run test
 
 test-watch: node_modules
@@ -233,18 +239,6 @@ logs-clean:
 	rm -rf logs
 	@echo "✅ Logs cleaned"
 
-tunnel:
-	@echo "🌍 Starting Expo with tunnel connection..."
-	npx expo start --tunnel
-
-clear-cache:
-	@echo "🗑️ Clearing Expo and Metro cache..."
-	npx expo start --clear
-
-doctor:
-	@echo "🩺 Running Expo doctor..."
-	npx expo doctor
-
 # iOS specific commands
 ios-device:
 	@echo "📱 Running on connected iOS device..."
@@ -273,24 +267,6 @@ android-device:
 android-emulator-list:
 	@echo "📋 Listing available Android emulators..."
 	emulator -list-avds
-
-# Git helpers
-commit:
-	@echo "💾 Adding and committing changes..."
-	git add -A
-	git commit
-
-push:
-	@echo "⬆️ Pushing to remote..."
-	git push
-
-pull:
-	@echo "⬇️ Pulling from remote..."
-	git pull
-
-status:
-	@echo "📊 Git status..."
-	git status --short
 
 # Database utilities
 load-db:
