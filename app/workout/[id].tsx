@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { toggleFavoriteTemplate } from '@/db/repository';
 import { useTheme } from '@/theme';
 import { WorkoutDetailView } from '@/components/WorkoutDetailView';
 
@@ -72,6 +73,19 @@ export default function WorkoutDetailScreen() {
     );
   };
 
+  const handleToggleFavorite = async () => {
+    if (!id) return;
+
+    try {
+      await toggleFavoriteTemplate(id);
+      // Reload the workout to get updated favorite status
+      loadWorkout(id);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite status');
+    }
+  };
+
   useEffect(() => {
     if (id) {
       loadWorkout(id);
@@ -112,6 +126,7 @@ export default function WorkoutDetailScreen() {
       workout={selectedWorkout}
       onStartWorkout={handleStartWorkout}
       onReprocess={handleReprocess}
+      onToggleFavorite={handleToggleFavorite}
       isStarting={isStarting}
       isReprocessing={isReprocessing}
       showBackButton={true}

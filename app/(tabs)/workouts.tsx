@@ -10,12 +10,14 @@ import {
   Switch,
   Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { toggleFavoriteTemplate } from '@/db/repository';
 import { useTheme } from '@/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { SplitView } from '@/components/SplitView';
@@ -28,26 +30,36 @@ export default function WorkoutsScreen() {
   const { workouts, loadWorkouts, removeWorkout, searchWorkouts, selectedWorkout, loadWorkout, reprocessWorkout, error, clearError } =
     useWorkoutStore();
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
-  const { defaultGym, loadGyms } = useGymStore();
+  const { defaultGym, loadGyms, gyms } = useGymStore();
   const { startWorkout, checkForActiveSession } = useSessionStore();
   const { isTablet } = useDeviceLayout();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByEquipment, setFilterByEquipment] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isReprocessing, setIsReprocessing] = useState(false);
+  const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadWorkouts();
     loadGyms();
   }, []);
 
-  // Load equipment when default gym changes
+  // Set initial selected gym to default gym
   useEffect(() => {
-    if (defaultGym) {
-      loadEquipment(defaultGym.id);
+    if (defaultGym && !selectedGymId) {
+      setSelectedGymId(defaultGym.id);
     }
   }, [defaultGym?.id]);
+
+  // Load equipment when selected gym changes
+  useEffect(() => {
+    if (selectedGymId) {
+      loadEquipment(selectedGymId);
+    }
+  }, [selectedGymId]);
 
   useEffect(() => {
     if (error) {
@@ -72,6 +84,20 @@ export default function WorkoutsScreen() {
     // Clear selection if deleted workout was selected
     if (selectedWorkoutId === workout.id) {
       setSelectedWorkoutId(null);
+    }
+  };
+
+  const handleToggleFavorite = async (workoutId: string, event: any) => {
+    // Stop event propagation to prevent card selection
+    event?.stopPropagation();
+
+    try {
+      await toggleFavoriteTemplate(workoutId);
+      // Reload workouts to get updated favorite status
+      loadWorkouts();
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite status');
     }
   };
 
@@ -132,36 +158,42 @@ export default function WorkoutsScreen() {
     );
   };
 
-  // Filter workouts based on available equipment
+  // Filter workouts based on available equipment and favorites
   const filteredWorkouts = useMemo(() => {
-    if (!filterByEquipment) {
-      return workouts;
+    let filtered = workouts;
+
+    // Filter by favorites first
+    if (showFavoritesOnly) {
+      filtered = filtered.filter((workout) => workout.isFavorite);
     }
 
-    const availableEquipmentNames = getAvailableEquipmentNames();
+    // Then filter by equipment if enabled
+    if (filterByEquipment) {
+      const availableEquipmentNames = getAvailableEquipmentNames();
 
-    // If no equipment is set up, show all workouts
-    if (equipment.length === 0) {
-      return workouts;
+      // If no equipment is set up, show all workouts
+      if (equipment.length > 0) {
+        filtered = filtered.filter((workout) => {
+          // Check if all exercises have available equipment
+          const allExercisesAvailable = workout.exercises.every((exercise) => {
+            // If exercise has no equipment type specified, it's available (bodyweight)
+            if (!exercise.equipmentType) {
+              return true;
+            }
+
+            // Check if the equipment is available
+            return availableEquipmentNames.includes(
+              exercise.equipmentType.toLowerCase()
+            );
+          });
+
+          return allExercisesAvailable;
+        });
+      }
     }
 
-    return workouts.filter((workout) => {
-      // Check if all exercises have available equipment
-      const allExercisesAvailable = workout.exercises.every((exercise) => {
-        // If exercise has no equipment type specified, it's available (bodyweight)
-        if (!exercise.equipmentType) {
-          return true;
-        }
-
-        // Check if the equipment is available
-        return availableEquipmentNames.includes(
-          exercise.equipmentType.toLowerCase()
-        );
-      });
-
-      return allExercisesAvailable;
-    });
-  }, [workouts, filterByEquipment, equipment]);
+    return filtered;
+  }, [workouts, filterByEquipment, showFavoritesOnly, equipment, getAvailableEquipmentNames]);
 
   const styles = StyleSheet.create({
     container: {
@@ -183,11 +215,29 @@ export default function WorkoutsScreen() {
       fontSize: 16,
       color: colors.text,
     },
-    filterRow: {
+    filterToggle: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingTop: 12,
+      paddingBottom: 8,
+    },
+    filterToggleText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    filterCard: {
+      marginTop: 8,
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: 8,
+      padding: 12,
+      gap: 12,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     filterLabel: {
       fontSize: 14,
@@ -198,6 +248,18 @@ export default function WorkoutsScreen() {
       fontSize: 12,
       color: colors.textSecondary,
       marginTop: 2,
+    },
+    gymPicker: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      marginTop: 8,
+    },
+    gymPickerText: {
+      fontSize: 14,
+      color: colors.text,
     },
     list: {
       padding: 16,
@@ -287,6 +349,13 @@ export default function WorkoutsScreen() {
       fontSize: 14,
       fontWeight: '600',
     },
+    favoriteButton: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      padding: 8,
+      zIndex: 1,
+    },
     emptyState: {
       flex: 1,
       justifyContent: 'center',
@@ -371,6 +440,17 @@ export default function WorkoutsScreen() {
           testID={`workout-${item.id}`}
         >
           <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={(e) => handleToggleFavorite(item.id, e)}
+            testID={`favorite-${item.id}`}
+          >
+            <Ionicons
+              name={item.isFavorite ? 'heart' : 'heart-outline'}
+              size={24}
+              color={item.isFavorite ? colors.error : colors.textSecondary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.workoutContent}
             onPress={handlePress}
             testID={`workout-card-${item.id}`}
@@ -432,20 +512,91 @@ export default function WorkoutsScreen() {
           testID="search-input"
         />
 
-        {equipment.length > 0 && (
-          <View style={styles.filterRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.filterLabel}>Show only available equipment</Text>
-              <Text style={styles.filterDescription}>
-                Filter workouts based on your gym equipment
-              </Text>
+        <TouchableOpacity
+          style={styles.filterToggle}
+          onPress={() => setShowFilters(!showFilters)}
+          testID="filter-toggle"
+        >
+          <Text style={styles.filterToggleText}>
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </Text>
+          <Ionicons
+            name={showFilters ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
+
+        {showFilters && (
+          <View style={styles.filterCard}>
+            <View style={styles.filterRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.filterLabel}>Favorites only</Text>
+                <Text style={styles.filterDescription}>
+                  Show only favorited workouts
+                </Text>
+              </View>
+              <Switch
+                value={showFavoritesOnly}
+                onValueChange={setShowFavoritesOnly}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                testID="switch-filter-favorites"
+              />
             </View>
-            <Switch
-              value={filterByEquipment}
-              onValueChange={setFilterByEquipment}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              testID="switch-filter-equipment"
-            />
+
+            {gyms.length > 0 && (
+              <>
+                <View style={styles.filterRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.filterLabel}>Equipment filter</Text>
+                    <Text style={styles.filterDescription}>
+                      Filter by available equipment
+                    </Text>
+                  </View>
+                  <Switch
+                    value={filterByEquipment}
+                    onValueChange={setFilterByEquipment}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    testID="switch-filter-equipment"
+                  />
+                </View>
+
+                {filterByEquipment && (
+                  <View>
+                    <Text style={styles.filterLabel}>Select Gym</Text>
+                    <View style={styles.gymPicker}>
+                      {gyms.map((gym) => (
+                        <TouchableOpacity
+                          key={gym.id}
+                          onPress={() => setSelectedGymId(gym.id)}
+                          style={{
+                            paddingVertical: 8,
+                            paddingHorizontal: 12,
+                            backgroundColor:
+                              selectedGymId === gym.id
+                                ? colors.primaryLight
+                                : 'transparent',
+                            borderRadius: 6,
+                            marginBottom: 4,
+                          }}
+                          testID={`gym-option-${gym.id}`}
+                        >
+                          <Text
+                            style={[
+                              styles.gymPickerText,
+                              selectedGymId === gym.id && { color: colors.primary, fontWeight: '600' },
+                            ]}
+                          >
+                            {gym.name}
+                            {gym.isDefault && ' (Default)'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
           </View>
         )}
       </View>
@@ -499,6 +650,7 @@ export default function WorkoutsScreen() {
                 workout={selectedWorkout}
                 onStartWorkout={handleStartWorkout}
                 onReprocess={handleReprocess}
+                onToggleFavorite={() => handleToggleFavorite(selectedWorkout.id, { stopPropagation: () => {} })}
                 isStarting={isStarting}
                 isReprocessing={isReprocessing}
               />

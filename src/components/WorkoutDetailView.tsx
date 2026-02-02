@@ -49,6 +49,7 @@ interface WorkoutDetailViewProps {
   workout: WorkoutTemplate;
   onStartWorkout?: () => void;
   onReprocess?: () => void;
+  onToggleFavorite?: () => void;
   isStarting?: boolean;
   isReprocessing?: boolean;
   showBackButton?: boolean;
@@ -58,6 +59,7 @@ export function WorkoutDetailView({
   workout,
   onStartWorkout,
   onReprocess,
+  onToggleFavorite,
   isStarting = false,
   isReprocessing = false,
   showBackButton = false,
@@ -219,11 +221,21 @@ export function WorkoutDetailView({
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+    },
     title: {
       fontSize: 28,
       fontWeight: 'bold',
       color: colors.text,
-      marginBottom: 8,
+      flex: 1,
+      marginRight: 12,
+    },
+    favoriteButton: {
+      padding: 8,
     },
     description: {
       fontSize: 16,
@@ -429,7 +441,22 @@ export function WorkoutDetailView({
   return (
     <ScrollView style={styles.container} testID="workout-detail-view">
       <View style={styles.header}>
-        <Text style={styles.title}>{workout.name}</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>{workout.name}</Text>
+          {onToggleFavorite && (
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={onToggleFavorite}
+              testID="favorite-button-detail"
+            >
+              <Ionicons
+                name={workout.isFavorite ? 'heart' : 'heart-outline'}
+                size={28}
+                color={workout.isFavorite ? colors.error : colors.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {workout.description && (
           <Text style={styles.description}>{workout.description}</Text>
