@@ -173,16 +173,64 @@ ci: node_modules
 # Release commands
 release-alpha:
 	@echo "🚀 Creating alpha release and triggering TestFlight deployment..."
+	@VERSION=$$(node -p "require('./package.json').version"); \
+	TAG="alpha-v$$VERSION"; \
+	if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+		echo "⚠️  Tag $$TAG already exists."; \
+		read -p "Delete the existing tag and continue? [y/N] " -n 1 -r; \
+		echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo "🗑️  Deleting local tag $$TAG..."; \
+			git tag -d "$$TAG"; \
+			echo "🗑️  Deleting remote tag $$TAG..."; \
+			git push origin ":refs/tags/$$TAG" || echo "Remote tag not found or already deleted"; \
+		else \
+			echo "❌ Release cancelled."; \
+			exit 1; \
+		fi; \
+	fi
 	npm run release:alpha
 	gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-beta:
 	@echo "🚀 Creating beta release and triggering TestFlight deployment..."
+	@VERSION=$$(node -p "require('./package.json').version"); \
+	TAG="beta-v$$VERSION"; \
+	if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+		echo "⚠️  Tag $$TAG already exists."; \
+		read -p "Delete the existing tag and continue? [y/N] " -n 1 -r; \
+		echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo "🗑️  Deleting local tag $$TAG..."; \
+			git tag -d "$$TAG"; \
+			echo "🗑️  Deleting remote tag $$TAG..."; \
+			git push origin ":refs/tags/$$TAG" || echo "Remote tag not found or already deleted"; \
+		else \
+			echo "❌ Release cancelled."; \
+			exit 1; \
+		fi; \
+	fi
 	npm run release:beta
 	gh workflow run "Deploy to TestFlight" --field profile=preview
 
 release-production:
 	@echo "🚀 Creating production release and triggering TestFlight deployment..."
+	@VERSION=$$(node -p "require('./package.json').version"); \
+	TAG="v$$VERSION"; \
+	if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+		echo "⚠️  Tag $$TAG already exists."; \
+		read -p "Delete the existing tag and continue? [y/N] " -n 1 -r; \
+		echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo "🗑️  Deleting local tag $$TAG..."; \
+			git tag -d "$$TAG"; \
+			echo "🗑️  Deleting remote tag $$TAG..."; \
+			git push origin ":refs/tags/$$TAG" || echo "Remote tag not found or already deleted"; \
+		else \
+			echo "❌ Release cancelled."; \
+			exit 1; \
+		fi; \
+	fi
 	npm run release:production
 	gh workflow run "Deploy to TestFlight" --field profile=production
 
