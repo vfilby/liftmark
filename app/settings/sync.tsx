@@ -55,13 +55,41 @@ export default function SyncSettingsScreen() {
         // Small delay to ensure everything is ready
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        // TEMPORARY: CloudKit disabled until entitlements are configured
-        // CloudKit requires proper configuration in Xcode:
-        // 1. Enable CloudKit capability in Signing & Capabilities
-        // 2. Create a CloudKit container
-        // 3. Configure app identifier with CloudKit enabled
-        console.log('[SyncScreen] CloudKit checks disabled - entitlements not configured');
-        setAccountStatus('not_configured');
+        // Try to load CloudKit service
+        try {
+          const cloudKitModule = require('@/services/cloudKitService');
+          if (cloudKitModule?.cloudKitService) {
+            console.log('[SyncScreen] CloudKit service available, checking status...');
+
+            // Wrap in Promise.race with timeout to prevent hanging
+            const statusPromise = new Promise<string>(async (resolve) => {
+              try {
+                const status = await cloudKitModule.cloudKitService.getAccountStatus();
+                resolve(status);
+              } catch (error) {
+                console.error('[SyncScreen] CloudKit status error:', error);
+                resolve('error');
+              }
+            });
+
+            const timeoutPromise = new Promise<string>(resolve =>
+              setTimeout(() => {
+                console.log('[SyncScreen] CloudKit status check timed out');
+                resolve('timeout');
+              }, 3000) // 3 second timeout
+            );
+
+            const status = await Promise.race([statusPromise, timeoutPromise]);
+            console.log('[SyncScreen] Account status:', status);
+            setAccountStatus(status || 'unknown');
+          } else {
+            console.log('[SyncScreen] CloudKit service not available');
+            setAccountStatus('unavailable');
+          }
+        } catch (cloudKitError) {
+          console.error('[SyncScreen] CloudKit error:', cloudKitError);
+          setAccountStatus('error');
+        }
 
         setIsLoading(false);
       } catch (error) {
@@ -176,9 +204,7 @@ export default function SyncSettingsScreen() {
         {/* Info Box */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            {accountStatus === 'not_configured'
-              ? 'CloudKit sync requires proper Xcode configuration. Enable CloudKit capability in Signing & Capabilities to use this feature.'
-              : 'This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.'}
+            This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
           </Text>
         </View>
 
