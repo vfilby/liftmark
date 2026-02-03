@@ -8,18 +8,26 @@
 import { Stack } from 'expo-router';
 import { useTheme } from '@/theme';
 
+// Default colors fallback
+const defaultColors = {
+  card: '#FFFFFF',
+  text: '#000000',
+  background: '#F5F5F5',
+};
+
 export default function SettingsLayout() {
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const colors = theme?.colors || defaultColors;
 
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors?.card || '#FFFFFF',
+          backgroundColor: colors.card,
         },
-        headerTintColor: colors?.text || '#000000',
+        headerTintColor: colors.text,
         contentStyle: {
-          backgroundColor: colors?.background || '#F5F5F5',
+          backgroundColor: colors.background,
         },
         headerBackTitle: 'Settings',
         presentation: 'card',

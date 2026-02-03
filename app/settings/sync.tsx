@@ -1,9 +1,9 @@
 /**
- * Simple iCloud Sync Settings Screen
- * Basic CloudKit sync configuration
+ * iCloud Sync Settings Screen
+ * CloudKit sync configuration with safe error handling
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,121 +15,72 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, router } from 'expo-router';
-import { useTheme } from '@/theme';
-import { logger } from '@/services/logger';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
-// Safe CloudKit service import with fallback
-console.log('[SyncScreen] Loading CloudKit service module');
-let cloudKitService: any = null;
-try {
-  const cloudKitModule = require('@/services/cloudKitService');
-  console.log('[SyncScreen] CloudKit module loaded:', !!cloudKitModule);
-  cloudKitService = cloudKitModule.cloudKitService;
-  console.log('[SyncScreen] CloudKit service:', !!cloudKitService);
-} catch (error) {
-  console.error('[SyncScreen] Failed to load CloudKit service:', error);
-}
+// Simple icon component (no external deps)
+const Icon = ({ name, size = 24, color = '#000' }: { name: string; size?: number; color?: string }) => {
+  const iconMap: Record<string, string> = {
+    'cloud-offline': '☁️',
+    'cloud-outline': '☁️',
+    'flask': '🧪',
+    'warning': '⚠️',
+  };
+  return <Text style={{ fontSize: size, color }}>{iconMap[name] || '•'}</Text>;
+};
 
 export default function SyncSettingsScreen() {
-  const { colors } = useTheme();
-  const [accountStatus, setAccountStatus] = useState<string>('unknown');
+  console.log('[SyncScreen] Component rendering...');
+
   const [isLoading, setIsLoading] = useState(true);
+  const [accountStatus, setAccountStatus] = useState<string>('unknown');
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
-
-  // Check if running in simulator - use try-catch in case Constants isn't available
-  let isSimulator = false;
-  try {
-    const Constants = require('expo-constants').default;
-    isSimulator = Platform.OS === 'ios' && !Constants.isDevice;
-  } catch (error) {
-    console.warn('Failed to check if running in simulator:', error);
-  }
+  const [isSimulator, setIsSimulator] = useState(false);
 
   useEffect(() => {
-    try {
-      logger.info('app', 'Initializing sync screen', {
-        platform: Platform.OS,
-        hasCloudKit: !!cloudKitService,
-      });
-      initializeScreen();
-    } catch (error) {
-      console.error('Failed to initialize sync screen:', error);
-      setHasError(true);
-      setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
-      setIsLoading(false);
-    }
+    const initialize = async () => {
+      try {
+        console.log('[SyncScreen] Initializing...');
+
+        // Check if simulator
+        try {
+          const Constants = require('expo-constants').default;
+          setIsSimulator(Platform.OS === 'ios' && !Constants.isDevice);
+        } catch (e) {
+          console.log('[SyncScreen] Could not check simulator status');
+        }
+
+        // Small delay to ensure everything is ready
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // TEMPORARY: CloudKit disabled until entitlements are configured
+        // CloudKit requires proper configuration in Xcode:
+        // 1. Enable CloudKit capability in Signing & Capabilities
+        // 2. Create a CloudKit container
+        // 3. Configure app identifier with CloudKit enabled
+        console.log('[SyncScreen] CloudKit checks disabled - entitlements not configured');
+        setAccountStatus('not_configured');
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('[SyncScreen] Initialization error:', error);
+        setHasError(true);
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to initialize');
+        setIsLoading(false);
+      }
+    };
+
+    initialize();
   }, []);
 
-  const initializeScreen = async () => {
-    console.log('[SyncScreen] initializeScreen called');
-    setIsLoading(true);
-    setHasError(false);
-
-    try {
-      // If CloudKit service isn't available, show error state
-      if (!cloudKitService) {
-        console.log('[SyncScreen] CloudKit service not available');
-        setAccountStatus('error');
-        setSyncEnabled(false);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('[SyncScreen] CloudKit service available');
-      logger.debug('app', 'Starting CloudKit account status check');
-
-      // Check CloudKit account status with timeout to prevent hanging
-      console.log('[SyncScreen] Creating status promise');
-      const statusPromise = cloudKitService.getAccountStatus().catch((error: Error) => {
-        console.log('[SyncScreen] Status promise caught error:', error);
-        logger.error('app', 'CloudKit status check failed', error);
-        // Return error status instead of throwing
-        return 'error';
-      });
-
-      console.log('[SyncScreen] Creating timeout promise');
-      const timeoutPromise = new Promise<string>((resolve) => {
-        setTimeout(() => {
-          console.log('[SyncScreen] Timeout promise fired');
-          logger.warn('app', 'CloudKit account status check timed out');
-          resolve('couldNotDetermine');
-        }, 10000); // 10 second timeout
-      });
-
-      console.log('[SyncScreen] Racing promises');
-      const status = await Promise.race([statusPromise, timeoutPromise]);
-      console.log('[SyncScreen] Race completed with status:', status);
-      logger.info('app', 'CloudKit account status determined', { status });
-      setAccountStatus(status || 'couldNotDetermine');
-
-      // For now, sync is always disabled since we have a basic implementation
-      setSyncEnabled(false);
-      console.log('[SyncScreen] Initialization complete');
-    } catch (error) {
-      console.log('[SyncScreen] Caught error in initializeScreen:', error);
-      logger.error('app', 'Failed to initialize sync screen', error as Error);
-      setAccountStatus('error');
-      setHasError(true);
-      setErrorMessage(error instanceof Error ? error.message : 'Unknown error occurred');
-    } finally {
-      console.log('[SyncScreen] Setting isLoading to false');
-      setIsLoading(false);
-    }
-  };
-
-  const handleToggleSync = async (enabled: boolean) => {
-    if (enabled) {
-      Alert.alert(
-        'CloudKit Sync',
-        'CloudKit sync is available but not fully implemented yet. This is a basic CloudKit module for testing.',
-        [{ text: 'OK' }]
-      );
-    }
-    // Keep it disabled for now
+  const handleToggleSync = (enabled: boolean) => {
+    Alert.alert(
+      'CloudKit Sync',
+      'CloudKit sync is available but not fully implemented yet. This is a basic CloudKit module for testing.',
+      [{ text: 'OK' }]
+    );
     setSyncEnabled(false);
   };
 
@@ -137,7 +88,7 @@ export default function SyncSettingsScreen() {
     try {
       router.push('/cloudkit-test');
     } catch (error) {
-      console.error('Failed to navigate to CloudKit test:', error);
+      console.error('[SyncScreen] Navigation error:', error);
       Alert.alert('Error', 'Failed to open CloudKit test screen');
     }
   };
@@ -149,13 +100,14 @@ export default function SyncSettingsScreen() {
       case 'noAccount':
       case 'restricted':
       case 'error':
+      case 'unavailable':
         return '#d32f2f';
+      case 'not_configured':
       case 'temporarilyUnavailable':
+      case 'timeout':
         return '#ff9800';
-      case 'couldNotDetermine':
-      case 'unknown':
       default:
-        return colors.textSecondary;
+        return '#666666';
     }
   };
 
@@ -169,192 +121,73 @@ export default function SyncSettingsScreen() {
         return 'iCloud Restricted';
       case 'temporarilyUnavailable':
         return 'Temporarily Unavailable';
-      case 'couldNotDetermine':
-        return 'Status Unknown';
+      case 'timeout':
+        return 'Status Check Timeout';
       case 'error':
         return 'Error';
+      case 'unavailable':
+        return 'Not Available';
+      case 'not_configured':
+        return 'Not Configured';
       default:
         return 'Checking...';
     }
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    errorContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    section: {
-      backgroundColor: colors.card,
-      marginTop: 16,
-      paddingVertical: 8,
-    },
-    sectionTitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      marginLeft: 16,
-      marginTop: 16,
-      marginBottom: 8,
-      textTransform: 'uppercase',
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    rowLast: {
-      borderBottomWidth: 0,
-    },
-    rowContent: {
-      flex: 1,
-    },
-    rowTitle: {
-      fontSize: 16,
-      color: colors.text,
-      marginBottom: 2,
-    },
-    rowSubtitle: {
-      fontSize: 13,
-      color: colors.textSecondary,
-    },
-    statusBadge: {
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 4,
-      backgroundColor: '#f5f5f5',
-    },
-    statusText: {
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    testButton: {
-      marginHorizontal: 16,
-      marginTop: 16,
-      paddingVertical: 12,
-      backgroundColor: colors.primary,
-      borderRadius: 8,
-      alignItems: 'center',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    testButtonText: {
-      color: '#ffffff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    infoBox: {
-      backgroundColor: colors.primaryLight || '#e3f2fd',
-      marginHorizontal: 16,
-      marginTop: 16,
-      padding: 12,
-      borderRadius: 8,
-    },
-    infoText: {
-      color: colors.primary,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    chevron: {
-      marginLeft: 8,
-    },
-    errorTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.text,
-      marginTop: 16,
-      textAlign: 'center',
-    },
-    errorText: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 8,
-      textAlign: 'center',
-    },
-    retryButton: {
-      marginTop: 24,
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      backgroundColor: colors.primary,
-      borderRadius: 8,
-    },
-    retryButtonText: {
-      color: '#ffffff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-  });
-
   // Error state
   if (hasError) {
     return (
-      <View style={styles.container} testID="sync-settings-error">
-        <Stack.Screen options={{ title: 'iCloud Sync' }} />
+      <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="cloud-offline" size={64} color={colors.textSecondary} />
+          <Icon name="cloud-offline" size={64} color="#666666" />
           <Text style={styles.errorTitle}>Unable to Load Sync Settings</Text>
           <Text style={styles.errorText}>{errorMessage || 'An unexpected error occurred'}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               setHasError(false);
+              setIsLoading(true);
               setErrorMessage('');
-              initializeScreen();
             }}
           >
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.container} testID="sync-settings-loading">
-        <Stack.Screen options={{ title: 'iCloud Sync' }} />
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading sync settings...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Main content
   return (
-    <View style={styles.container} testID="sync-settings-screen">
-      <Stack.Screen options={{ title: 'iCloud Sync' }} />
-
+    <SafeAreaView style={styles.container}>
       <ScrollView>
         {/* Info Box */}
-        <View style={styles.infoBox} testID="sync-info-box">
+        <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
+            {accountStatus === 'not_configured'
+              ? 'CloudKit sync requires proper Xcode configuration. Enable CloudKit capability in Signing & Capabilities to use this feature.'
+              : 'This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.'}
           </Text>
         </View>
 
         {/* Simulator Warning */}
         {isSimulator && (
-          <View style={[styles.infoBox, { backgroundColor: '#fff3cd', borderColor: '#f39c12' }]}>
+          <View style={[styles.infoBox, styles.warningBox]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="warning" size={16} color="#f39c12" />
-              <Text style={[styles.infoText, { color: '#856404' }]}>
+              <Icon name="warning" size={16} color="#f39c12" />
+              <Text style={styles.warningText}>
                 CloudKit features are limited in iOS Simulator. Test on a physical device for full functionality.
               </Text>
             </View>
@@ -362,8 +195,8 @@ export default function SyncSettingsScreen() {
         )}
 
         {/* CloudKit Status */}
-        <Text style={styles.sectionTitle}>iCloud Status</Text>
-        <View style={styles.section} testID="sync-status-section">
+        <Text style={styles.sectionTitle}>ICLOUD STATUS</Text>
+        <View style={styles.section}>
           <View style={styles.row}>
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Account Status</Text>
@@ -374,12 +207,7 @@ export default function SyncSettingsScreen() {
               </Text>
             </View>
             <View style={styles.statusBadge}>
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: getStatusColor() }
-                ]}
-              >
+              <Text style={[styles.statusText, { color: getStatusColor() }]}>
                 {getStatusText()}
               </Text>
             </View>
@@ -387,9 +215,9 @@ export default function SyncSettingsScreen() {
         </View>
 
         {/* Sync Settings */}
-        <Text style={styles.sectionTitle}>Sync Settings</Text>
+        <Text style={styles.sectionTitle}>SYNC SETTINGS</Text>
         <View style={styles.section}>
-          <View style={styles.row}>
+          <View style={[styles.row, styles.rowLast]}>
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Enable Sync</Text>
               <Text style={styles.rowSubtitle}>
@@ -400,7 +228,6 @@ export default function SyncSettingsScreen() {
               value={syncEnabled}
               onValueChange={handleToggleSync}
               disabled={accountStatus !== 'available'}
-              testID="sync-toggle"
             />
           </View>
         </View>
@@ -409,12 +236,142 @@ export default function SyncSettingsScreen() {
         <TouchableOpacity
           style={styles.testButton}
           onPress={handleTestCloudKit}
-          testID="sync-test-button"
         >
-          <Ionicons name="flask" size={20} color="#ffffff" />
+          <Icon name="flask" size={20} color="#ffffff" />
           <Text style={styles.testButtonText}>Test CloudKit Module</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: '#E3F2FD',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+  },
+  infoText: {
+    color: '#007AFF',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  warningBox: {
+    backgroundColor: '#FFF3CD',
+  },
+  warningText: {
+    color: '#856404',
+    fontSize: 14,
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666666',
+    marginLeft: 16,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  section: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  rowLast: {
+    borderBottomWidth: 0,
+  },
+  rowContent: {
+    flex: 1,
+  },
+  rowTitle: {
+    fontSize: 16,
+    color: '#000000',
+    marginBottom: 2,
+  },
+  rowSubtitle: {
+    fontSize: 13,
+    color: '#666666',
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    backgroundColor: '#F5F5F5',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  testButton: {
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 32,
+    paddingVertical: 12,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  testButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
