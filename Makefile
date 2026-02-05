@@ -111,10 +111,13 @@ web: node_modules
 # Testing
 test: node_modules
 	@echo "🔒 Running security audit..."
-	npm audit || true
+	npm run audit
 	@echo ""
 	@echo "🔍 Running TypeScript type checking..."
 	npm run typecheck
+	@echo ""
+	@echo "🧪 Running tests with coverage..."
+	npm run test:coverage
 	@echo ""
 	@echo "🧪 Running unit tests..."
 	npm run test
