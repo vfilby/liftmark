@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { WorkoutTemplate, WorkoutSession, SessionExercise, SessionSet } from '@/types';
+import type { WorkoutPlan, WorkoutSession, SessionExercise, SessionSet } from '@/types';
 import {
-  createSessionFromTemplate,
+  createSessionFromPlan,
   getActiveSession,
   getWorkoutSessionById,
   updateSession,
@@ -46,7 +46,7 @@ interface SessionStore {
   error: string | null;
 
   // Session Lifecycle
-  startWorkout: (template: WorkoutTemplate) => Promise<void>;
+  startWorkout: (plan: WorkoutPlan) => Promise<void>;
   resumeSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
   completeWorkout: () => Promise<void>;
@@ -149,8 +149,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   isLoading: false,
   error: null,
 
-  // Start a new workout from a template
-  startWorkout: async (template: WorkoutTemplate) => {
+  // Start a new workout from a plan
+  startWorkout: async (plan: WorkoutPlan) => {
     set({ isLoading: true, error: null });
     try {
       // Check for existing active session
@@ -159,8 +159,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         throw new Error('Another workout is already in progress');
       }
 
-      // Create new session from template
-      const session = await createSessionFromTemplate(template);
+      // Create new session from plan
+      const session = await createSessionFromPlan(plan);
 
       set({
         activeSession: session,

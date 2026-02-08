@@ -1,8 +1,8 @@
 import { useSessionStore } from '../stores/sessionStore';
 import type {
-  WorkoutTemplate,
-  TemplateExercise,
-  TemplateSet,
+  WorkoutPlan,
+  PlannedExercise,
+  PlannedSet,
   WorkoutSession,
   SessionExercise,
   SessionSet,
@@ -10,7 +10,7 @@ import type {
 
 // Mock the sessionRepository module
 jest.mock('@/db/sessionRepository', () => ({
-  createSessionFromTemplate: jest.fn(),
+  createSessionFromPlan: jest.fn(),
   getActiveSession: jest.fn(),
   getWorkoutSessionById: jest.fn(),
   updateSession: jest.fn(),
@@ -33,7 +33,7 @@ jest.mock('../stores/settingsStore', () => ({
 }));
 
 import {
-  createSessionFromTemplate,
+  createSessionFromPlan,
   getActiveSession,
   updateSession,
   updateSessionSet,
@@ -42,8 +42,8 @@ import {
 import { saveWorkoutToHealthKit, isHealthKitAvailable } from '@/services/healthKitService';
 import { useSettingsStore } from '../stores/settingsStore';
 
-const mockedCreateSessionFromTemplate = createSessionFromTemplate as jest.MockedFunction<
-  typeof createSessionFromTemplate
+const mockedCreateSessionFromTemplate = createSessionFromPlan as jest.MockedFunction<
+  typeof createSessionFromPlan
 >;
 const mockedGetActiveSession = getActiveSession as jest.MockedFunction<typeof getActiveSession>;
 const mockedUpdateSession = updateSession as jest.MockedFunction<typeof updateSession>;
@@ -63,10 +63,10 @@ const mockedUseSettingsStore = useSettingsStore as jest.Mocked<typeof useSetting
 // Helper Factory Functions - Templates
 // ============================================================================
 
-function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
+function createPlannedSet(overrides: Partial<PlannedSet> = {}): PlannedSet {
   return {
-    id: 'template-set-1',
-    templateExerciseId: 'template-exercise-1',
+    id: 'plan-set-1',
+    plannedExerciseId: 'plan-exercise-1',
     orderIndex: 0,
     targetWeight: 185,
     targetWeightUnit: 'lbs',
@@ -77,10 +77,10 @@ function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
   };
 }
 
-function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): TemplateExercise {
+function createPlannedExercise(overrides: Partial<PlannedExercise> = {}): PlannedExercise {
   return {
-    id: 'template-exercise-1',
-    workoutTemplateId: 'template-1',
+    id: 'plan-exercise-1',
+    workoutPlanId: 'plan-1',
     exerciseName: 'Bench Press',
     orderIndex: 0,
     sets: [],
@@ -88,9 +88,9 @@ function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): Temp
   };
 }
 
-function createWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): WorkoutTemplate {
+function createWorkoutPlan(overrides: Partial<WorkoutPlan> = {}): WorkoutPlan {
   return {
-    id: 'template-1',
+    id: 'plan-1',
     name: 'Test Workout',
     tags: ['strength'],
     createdAt: '2024-01-15T10:00:00Z',
@@ -134,7 +134,7 @@ function createSessionExercise(overrides: Partial<SessionExercise> = {}): Sessio
 function createWorkoutSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
   return {
     id: 'session-1',
-    workoutTemplateId: 'template-1',
+    workoutPlanId: 'plan-1',
     name: 'Test Session',
     date: '2024-01-15',
     startTime: '2024-01-15T10:00:00Z',
@@ -209,7 +209,7 @@ describe('sessionStore', () => {
 
   describe('startWorkout', () => {
     it('creates a session from template', async () => {
-      const template = createWorkoutTemplate({ name: 'Push Day' });
+      const template = createWorkoutPlan({ name: 'Push Day' });
       const session = createWorkoutSession({ name: 'Push Day' });
 
       mockedGetActiveSession.mockResolvedValue(null);
@@ -226,7 +226,7 @@ describe('sessionStore', () => {
     });
 
     it('throws error if another workout is in progress', async () => {
-      const template = createWorkoutTemplate();
+      const template = createWorkoutPlan();
       const existingSession = createWorkoutSession();
 
       mockedGetActiveSession.mockResolvedValue(existingSession);
@@ -241,7 +241,7 @@ describe('sessionStore', () => {
     });
 
     it('sets loading state during operation', async () => {
-      const template = createWorkoutTemplate();
+      const template = createWorkoutPlan();
       const session = createWorkoutSession();
 
       mockedGetActiveSession.mockResolvedValue(null);
@@ -256,7 +256,7 @@ describe('sessionStore', () => {
     });
 
     it('handles errors and sets error state', async () => {
-      const template = createWorkoutTemplate();
+      const template = createWorkoutPlan();
 
       mockedGetActiveSession.mockResolvedValue(null);
       mockedCreateSessionFromTemplate.mockRejectedValue(new Error('Database error'));
@@ -271,7 +271,7 @@ describe('sessionStore', () => {
     });
 
     it('clears rest timer when starting new workout', async () => {
-      const template = createWorkoutTemplate();
+      const template = createWorkoutPlan();
       const session = createWorkoutSession();
 
       useSessionStore.setState({

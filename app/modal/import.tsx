@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
 import { generateWorkoutHistoryContext } from '@/services/workoutHistoryService';
 import { generateWorkout } from '@/services/anthropicService';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
@@ -27,7 +27,7 @@ export default function ImportWorkoutModal() {
   const { colors } = useTheme();
   const padding = useResponsivePadding();
   const maxWidth = useMaxContentWidth();
-  const { saveWorkout } = useWorkoutStore();
+  const { savePlan } = useWorkoutPlanStore();
   const { settings, loadSettings } = useSettingsStore();
   const { defaultGym, loadGyms } = useGymStore();
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
@@ -300,7 +300,7 @@ Create a [workout type] workout with [specific requirements]. Follow LMWF format
 
   const saveWorkoutAndClose = async (workout: any) => {
     try {
-      await saveWorkout(workout);
+      await savePlan(workout);
       Alert.alert('Success', 'Workout imported successfully', [
         {
           text: 'OK',

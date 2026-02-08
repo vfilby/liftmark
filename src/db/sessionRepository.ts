@@ -1,7 +1,7 @@
 import { getDatabase } from './index';
 import { generateId } from '@/utils/id';
 import type {
-  WorkoutTemplate,
+  WorkoutPlan,
   WorkoutSession,
   SessionExercise,
   SessionSet,
@@ -16,11 +16,11 @@ import type {
  */
 
 /**
- * Create a new workout session from a template
- * Copies the template structure with target values, initializes status as pending
+ * Create a new workout session from a plan
+ * Copies the plan structure with target values, initializes status as pending
  */
-export async function createSessionFromTemplate(
-  template: WorkoutTemplate
+export async function createSessionFromPlan(
+  plan: WorkoutPlan
 ): Promise<WorkoutSession> {
   const db = await getDatabase();
   const now = new Date().toISOString();
@@ -33,33 +33,33 @@ export async function createSessionFromTemplate(
   const exerciseIdMap = new Map<string, string>();
 
   // Build session structure
-  const sessionExercises: SessionExercise[] = template.exercises.map((templateEx) => {
+  const sessionExercises: SessionExercise[] = plan.exercises.map((plannedEx) => {
     const sessionExerciseId = generateId();
-    exerciseIdMap.set(templateEx.id, sessionExerciseId);
+    exerciseIdMap.set(plannedEx.id, sessionExerciseId);
 
     return {
       id: sessionExerciseId,
       workoutSessionId: sessionId,
-      exerciseName: templateEx.exerciseName,
-      orderIndex: templateEx.orderIndex,
-      notes: templateEx.notes,
-      equipmentType: templateEx.equipmentType,
-      groupType: templateEx.groupType,
-      groupName: templateEx.groupName,
+      exerciseName: plannedEx.exerciseName,
+      orderIndex: plannedEx.orderIndex,
+      notes: plannedEx.notes,
+      equipmentType: plannedEx.equipmentType,
+      groupType: plannedEx.groupType,
+      groupName: plannedEx.groupName,
       parentExerciseId: undefined, // Will be set after all IDs are mapped
-      sets: templateEx.sets.map((templateSet, setIndex) => ({
+      sets: plannedEx.sets.map((plannedSet, setIndex) => ({
         id: generateId(),
         sessionExerciseId: sessionExerciseId,
         orderIndex: setIndex,
-        // Copy target values from template
-        targetWeight: templateSet.targetWeight,
-        targetWeightUnit: templateSet.targetWeightUnit,
-        targetReps: templateSet.targetReps,
-        targetTime: templateSet.targetTime,
-        targetRpe: templateSet.targetRpe,
-        restSeconds: templateSet.restSeconds,
-        tempo: templateSet.tempo,
-        isDropset: templateSet.isDropset,
+        // Copy target values from plan
+        targetWeight: plannedSet.targetWeight,
+        targetWeightUnit: plannedSet.targetWeightUnit,
+        targetReps: plannedSet.targetReps,
+        targetTime: plannedSet.targetTime,
+        targetRpe: plannedSet.targetRpe,
+        restSeconds: plannedSet.restSeconds,
+        tempo: plannedSet.tempo,
+        isDropset: plannedSet.isDropset,
         // Actual values start undefined
         status: 'pending' as const,
       })),
@@ -68,10 +68,10 @@ export async function createSessionFromTemplate(
   });
 
   // Now set parent exercise IDs using the map
-  for (let i = 0; i < template.exercises.length; i++) {
-    const templateEx = template.exercises[i];
-    if (templateEx.parentExerciseId) {
-      const newParentId = exerciseIdMap.get(templateEx.parentExerciseId);
+  for (let i = 0; i < plan.exercises.length; i++) {
+    const plannedEx = plan.exercises[i];
+    if (plannedEx.parentExerciseId) {
+      const newParentId = exerciseIdMap.get(plannedEx.parentExerciseId);
       if (newParentId) {
         sessionExercises[i].parentExerciseId = newParentId;
       }
@@ -80,8 +80,8 @@ export async function createSessionFromTemplate(
 
   const session: WorkoutSession = {
     id: sessionId,
-    workoutTemplateId: template.id,
-    name: template.name,
+    workoutPlanId: plan.id,
+    name: plan.name,
     date: today,
     startTime: now,
     exercises: sessionExercises,
@@ -99,7 +99,7 @@ export async function createSessionFromTemplate(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         session.id,
-        session.workoutTemplateId || null,
+        session.workoutPlanId || null,
         session.name,
         session.date,
         session.startTime || null,
@@ -674,7 +674,7 @@ function rowToWorkoutSession(
 ): WorkoutSession {
   return {
     id: row.id,
-    workoutTemplateId: row.workout_template_id || undefined,
+    workoutPlanId: row.workout_template_id || undefined,
     name: row.name,
     date: row.date,
     startTime: row.start_time || undefined,
@@ -765,3 +765,10 @@ async function afterUpdateSessionHook(session: WorkoutSession): Promise<void> {
 async function afterDeleteSessionHook(sessionId: string): Promise<void> {
   // Sync functionality removed
 }
+
+// ============================================================================
+// Legacy Function Aliases (for backward compatibility - will be removed)
+// ============================================================================
+
+/** @deprecated Use createSessionFromPlan instead */
+export const createSessionFromTemplate = createSessionFromPlan;

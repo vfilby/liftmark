@@ -1,5 +1,5 @@
 import {
-  createSessionFromTemplate,
+  createSessionFromPlan,
   getWorkoutSessionById,
   getActiveSession,
   updateSession,
@@ -12,9 +12,9 @@ import {
   getExerciseHistory,
 } from '../db/sessionRepository';
 import type {
-  WorkoutTemplate,
-  TemplateExercise,
-  TemplateSet,
+  WorkoutPlan,
+  PlannedExercise,
+  PlannedSet,
   WorkoutSession,
   SessionExercise,
   SessionSet,
@@ -63,10 +63,10 @@ function createMockDatabase(): MockDatabase {
 // Helper Factory Functions - Templates
 // ============================================================================
 
-function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
+function createPlannedSet(overrides: Partial<PlannedSet> = {}): PlannedSet {
   return {
-    id: 'template-set-1',
-    templateExerciseId: 'template-exercise-1',
+    id: 'plan-set-1',
+    plannedExerciseId: 'plan-exercise-1',
     orderIndex: 0,
     targetWeight: 185,
     targetWeightUnit: 'lbs',
@@ -77,10 +77,10 @@ function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
   };
 }
 
-function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): TemplateExercise {
+function createPlannedExercise(overrides: Partial<PlannedExercise> = {}): PlannedExercise {
   return {
-    id: 'template-exercise-1',
-    workoutTemplateId: 'template-1',
+    id: 'plan-exercise-1',
+    workoutPlanId: 'plan-1',
     exerciseName: 'Bench Press',
     orderIndex: 0,
     sets: [],
@@ -88,9 +88,9 @@ function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): Temp
   };
 }
 
-function createWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): WorkoutTemplate {
+function createWorkoutPlan(overrides: Partial<WorkoutPlan> = {}): WorkoutPlan {
   return {
-    id: 'template-1',
+    id: 'plan-1',
     name: 'Test Workout',
     tags: ['strength'],
     createdAt: '2024-01-15T10:00:00Z',
@@ -107,7 +107,7 @@ function createWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): Workou
 function createWorkoutSessionRow(overrides: Partial<WorkoutSessionRow> = {}): WorkoutSessionRow {
   return {
     id: 'session-1',
-    workout_template_id: 'template-1',
+    workout_template_id: 'plan-1',
     name: 'Test Session',
     date: '2024-01-15',
     start_time: '2024-01-15T10:00:00Z',
@@ -197,7 +197,7 @@ function createSessionExercise(overrides: Partial<SessionExercise> = {}): Sessio
 function createWorkoutSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
   return {
     id: 'session-1',
-    workoutTemplateId: 'template-1',
+    workoutPlanId: 'plan-1',
     name: 'Test Session',
     date: '2024-01-15',
     startTime: '2024-01-15T10:00:00Z',
@@ -208,10 +208,10 @@ function createWorkoutSession(overrides: Partial<WorkoutSession> = {}): WorkoutS
 }
 
 // ============================================================================
-// createSessionFromTemplate Tests
+// createSessionFromPlan Tests
 // ============================================================================
 
-describe('createSessionFromTemplate', () => {
+describe('createSessionFromPlan', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -225,17 +225,17 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('creates session with correct structure from template', async () => {
-    const set = createTemplateSet({ targetWeight: 200, targetReps: 10 });
-    const exercise = createTemplateExercise({ exerciseName: 'Squat', sets: [set] });
-    const template = createWorkoutTemplate({
+    const set = createPlannedSet({ targetWeight: 200, targetReps: 10 });
+    const exercise = createPlannedExercise({ exerciseName: 'Squat', sets: [set] });
+    const template = createWorkoutPlan({
       name: 'Leg Day',
       exercises: [exercise],
     });
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     expect(result.name).toBe('Leg Day');
-    expect(result.workoutTemplateId).toBe('template-1');
+    expect(result.workoutPlanId).toBe('plan-1');
     expect(result.status).toBe('in_progress');
     expect(result.exercises).toHaveLength(1);
     expect(result.exercises[0].exerciseName).toBe('Squat');
@@ -245,11 +245,11 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('maps template exercise/set IDs to new session IDs', async () => {
-    const set = createTemplateSet({ id: 'old-set-id' });
-    const exercise = createTemplateExercise({ id: 'old-exercise-id', sets: [set] });
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const set = createPlannedSet({ id: 'old-set-id' });
+    const exercise = createPlannedExercise({ id: 'old-exercise-id', sets: [set] });
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     // New IDs should be generated, not reused from template
     expect(result.id).toBe('generated-id-1'); // Session ID
@@ -262,8 +262,8 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('correctly maps parent exercise IDs for supersets', async () => {
-    const parentExercise = createTemplateExercise({
-      id: 'parent-template-exercise',
+    const parentExercise = createPlannedExercise({
+      id: 'parent-plan-exercise',
       exerciseName: 'Bicep Curl',
       orderIndex: 0,
       groupType: 'superset',
@@ -271,21 +271,21 @@ describe('createSessionFromTemplate', () => {
       sets: [],
     });
 
-    const childExercise = createTemplateExercise({
-      id: 'child-template-exercise',
+    const childExercise = createPlannedExercise({
+      id: 'child-plan-exercise',
       exerciseName: 'Tricep Extension',
       orderIndex: 1,
-      parentExerciseId: 'parent-template-exercise',
+      parentExerciseId: 'parent-plan-exercise',
       groupType: 'superset',
       groupName: 'Arms',
       sets: [],
     });
 
-    const template = createWorkoutTemplate({
+    const template = createWorkoutPlan({
       exercises: [parentExercise, childExercise],
     });
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     // Parent exercise should have new ID (generated-id-2)
     expect(result.exercises[0].id).toBe('generated-id-2');
@@ -297,21 +297,21 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('uses transaction (BEGIN/COMMIT)', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
 
-    await createSessionFromTemplate(template);
+    await createSessionFromPlan(template);
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('COMMIT');
   });
 
   it('rolls back transaction on error', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
     const error = new Error('Database error');
 
     mockDb.runAsync.mockRejectedValueOnce(error);
 
-    await expect(createSessionFromTemplate(template)).rejects.toThrow('Database error');
+    await expect(createSessionFromPlan(template)).rejects.toThrow('Database error');
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('ROLLBACK');
@@ -319,35 +319,35 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('initializes all sets with pending status', async () => {
-    const set1 = createTemplateSet({ orderIndex: 0 });
-    const set2 = createTemplateSet({ orderIndex: 1 });
-    const exercise = createTemplateExercise({ sets: [set1, set2] });
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const set1 = createPlannedSet({ orderIndex: 0 });
+    const set2 = createPlannedSet({ orderIndex: 1 });
+    const exercise = createPlannedExercise({ sets: [set1, set2] });
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     expect(result.exercises[0].sets[0].status).toBe('pending');
     expect(result.exercises[0].sets[1].status).toBe('pending');
   });
 
   it('sets session status to in_progress', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     expect(result.status).toBe('in_progress');
   });
 
   it('properly inserts session into database', async () => {
-    const template = createWorkoutTemplate({ name: 'Chest Day' });
+    const template = createWorkoutPlan({ name: 'Chest Day' });
 
-    await createSessionFromTemplate(template);
+    await createSessionFromPlan(template);
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO workout_sessions'),
       expect.arrayContaining([
         'generated-id-1', // session ID
-        'template-1', // template ID
+        'plan-1', // template ID
         'Chest Day', // name
         expect.any(String), // date
         expect.any(String), // start_time
@@ -360,7 +360,7 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('properly inserts exercises into database', async () => {
-    const exercise = createTemplateExercise({
+    const exercise = createPlannedExercise({
       exerciseName: 'Deadlift',
       notes: 'Focus on form',
       equipmentType: 'barbell',
@@ -368,9 +368,9 @@ describe('createSessionFromTemplate', () => {
       groupName: 'Main Lifts',
       sets: [],
     });
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    await createSessionFromTemplate(template);
+    await createSessionFromPlan(template);
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO session_exercises'),
@@ -390,7 +390,7 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('properly inserts sets into database with all fields', async () => {
-    const set = createTemplateSet({
+    const set = createPlannedSet({
       targetWeight: 225,
       targetWeightUnit: 'lbs',
       targetReps: 5,
@@ -401,10 +401,10 @@ describe('createSessionFromTemplate', () => {
       isDropset: true,
       isPerSide: true,
     });
-    const exercise = createTemplateExercise({ sets: [set] });
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const exercise = createPlannedExercise({ sets: [set] });
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    await createSessionFromTemplate(template);
+    await createSessionFromPlan(template);
 
     // Note: isPerSide is not currently copied from template to session in the implementation
     expect(mockDb.runAsync).toHaveBeenCalledWith(
@@ -437,21 +437,21 @@ describe('createSessionFromTemplate', () => {
   });
 
   it('handles multiple exercises with multiple sets', async () => {
-    const set1 = createTemplateSet({ orderIndex: 0 });
-    const set2 = createTemplateSet({ orderIndex: 1 });
-    const exercise1 = createTemplateExercise({ exerciseName: 'Squat', sets: [set1, set2] });
+    const set1 = createPlannedSet({ orderIndex: 0 });
+    const set2 = createPlannedSet({ orderIndex: 1 });
+    const exercise1 = createPlannedExercise({ exerciseName: 'Squat', sets: [set1, set2] });
 
-    const set3 = createTemplateSet({ orderIndex: 0 });
-    const exercise2 = createTemplateExercise({
-      id: 'template-exercise-2',
+    const set3 = createPlannedSet({ orderIndex: 0 });
+    const exercise2 = createPlannedExercise({
+      id: 'plan-exercise-2',
       exerciseName: 'Leg Press',
       orderIndex: 1,
       sets: [set3],
     });
 
-    const template = createWorkoutTemplate({ exercises: [exercise1, exercise2] });
+    const template = createWorkoutPlan({ exercises: [exercise1, exercise2] });
 
-    const result = await createSessionFromTemplate(template);
+    const result = await createSessionFromPlan(template);
 
     expect(result.exercises).toHaveLength(2);
     expect(result.exercises[0].sets).toHaveLength(2);
@@ -509,7 +509,7 @@ describe('getWorkoutSessionById', () => {
 
   it('proper type conversion for all fields', async () => {
     const sessionRow = createWorkoutSessionRow({
-      workout_template_id: 'template-1',
+      workout_template_id: 'plan-1',
       name: 'Full Workout',
       date: '2024-01-15',
       start_time: '2024-01-15T10:00:00Z',
@@ -558,7 +558,7 @@ describe('getWorkoutSessionById', () => {
     const result = await getWorkoutSessionById('session-1');
 
     // Session fields
-    expect(result!.workoutTemplateId).toBe('template-1');
+    expect(result!.workoutPlanId).toBe('plan-1');
     expect(result!.name).toBe('Full Workout');
     expect(result!.date).toBe('2024-01-15');
     expect(result!.startTime).toBe('2024-01-15T10:00:00Z');
@@ -642,7 +642,7 @@ describe('getWorkoutSessionById', () => {
 
     const result = await getWorkoutSessionById('session-1');
 
-    expect(result!.workoutTemplateId).toBeUndefined();
+    expect(result!.workoutPlanId).toBeUndefined();
     expect(result!.startTime).toBeUndefined();
     expect(result!.endTime).toBeUndefined();
     expect(result!.duration).toBeUndefined();

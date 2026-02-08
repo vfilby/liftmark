@@ -1,19 +1,19 @@
 import {
-  getAllWorkoutTemplates,
-  getWorkoutTemplateById,
-  createWorkoutTemplate as createWorkoutTemplateInDb,
-  updateWorkoutTemplate as updateWorkoutTemplateInDb,
-  deleteWorkoutTemplate,
-  searchWorkoutTemplates,
-  getWorkoutTemplatesByTag,
+  getAllWorkoutPlans,
+  getWorkoutPlanById,
+  createWorkoutPlan as createWorkoutPlanInDb,
+  updateWorkoutPlan as updateWorkoutPlanInDb,
+  deleteWorkoutPlan,
+  searchWorkoutPlans,
+  getWorkoutPlansByTag,
 } from '../db/repository';
 import type {
-  WorkoutTemplate,
-  TemplateExercise,
-  TemplateSet,
-  WorkoutTemplateRow,
-  TemplateExerciseRow,
-  TemplateSetRow,
+  WorkoutPlan,
+  PlannedExercise,
+  PlannedSet,
+  WorkoutPlanRow,
+  PlannedExerciseRow,
+  PlannedSetRow,
 } from '@/types';
 
 // Mock the database module
@@ -49,9 +49,9 @@ function createMockDatabase(): MockDatabase {
 // Helper Factory Functions
 // ============================================================================
 
-function createWorkoutTemplateRow(overrides: Partial<WorkoutTemplateRow> = {}): WorkoutTemplateRow {
+function createWorkoutPlanRow(overrides: Partial<WorkoutPlanRow> = {}): WorkoutPlanRow {
   return {
-    id: 'template-1',
+    id: 'plan-1',
     name: 'Test Workout',
     description: null,
     tags: '["strength"]',
@@ -64,10 +64,10 @@ function createWorkoutTemplateRow(overrides: Partial<WorkoutTemplateRow> = {}): 
   };
 }
 
-function createTemplateExerciseRow(overrides: Partial<TemplateExerciseRow> = {}): TemplateExerciseRow {
+function createPlannedExerciseRow(overrides: Partial<PlannedExerciseRow> = {}): PlannedExerciseRow {
   return {
     id: 'exercise-1',
-    workout_template_id: 'template-1',
+    workout_template_id: 'plan-1',
     exercise_name: 'Bench Press',
     order_index: 0,
     notes: null,
@@ -79,7 +79,7 @@ function createTemplateExerciseRow(overrides: Partial<TemplateExerciseRow> = {})
   };
 }
 
-function createTemplateSetRow(overrides: Partial<TemplateSetRow> = {}): TemplateSetRow {
+function createPlannedSetRow(overrides: Partial<PlannedSetRow> = {}): PlannedSetRow {
   return {
     id: 'set-1',
     template_exercise_id: 'exercise-1',
@@ -99,10 +99,10 @@ function createTemplateSetRow(overrides: Partial<TemplateSetRow> = {}): Template
   };
 }
 
-function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
+function createPlannedSet(overrides: Partial<PlannedSet> = {}): PlannedSet {
   return {
     id: 'set-1',
-    templateExerciseId: 'exercise-1',
+    plannedExerciseId: 'exercise-1',
     orderIndex: 0,
     targetWeight: 185,
     targetWeightUnit: 'lbs',
@@ -113,10 +113,10 @@ function createTemplateSet(overrides: Partial<TemplateSet> = {}): TemplateSet {
   };
 }
 
-function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): TemplateExercise {
+function createPlannedExercise(overrides: Partial<PlannedExercise> = {}): PlannedExercise {
   return {
     id: 'exercise-1',
-    workoutTemplateId: 'template-1',
+    workoutPlanId: 'plan-1',
     exerciseName: 'Bench Press',
     orderIndex: 0,
     sets: [],
@@ -124,9 +124,9 @@ function createTemplateExercise(overrides: Partial<TemplateExercise> = {}): Temp
   };
 }
 
-function createWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): WorkoutTemplate {
+function createWorkoutPlan(overrides: Partial<WorkoutPlan> = {}): WorkoutPlan {
   return {
-    id: 'template-1',
+    id: 'plan-1',
     name: 'Test Workout',
     tags: ['strength'],
     createdAt: '2024-01-15T10:00:00Z',
@@ -137,10 +137,10 @@ function createWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): Workou
 }
 
 // ============================================================================
-// getAllWorkoutTemplates Tests
+// getAllWorkoutPlans Tests
 // ============================================================================
 
-describe('getAllWorkoutTemplates', () => {
+describe('getAllWorkoutPlans', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -152,7 +152,7 @@ describe('getAllWorkoutTemplates', () => {
   it('returns empty array when no templates exist', async () => {
     mockDb.getAllAsync.mockResolvedValue([]);
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     expect(result).toEqual([]);
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
@@ -161,21 +161,21 @@ describe('getAllWorkoutTemplates', () => {
   });
 
   it('returns templates with their exercises and sets', async () => {
-    const templateRow = createWorkoutTemplateRow();
-    const exerciseRow = createTemplateExerciseRow();
-    const setRow = createTemplateSetRow();
+    const templateRow = createWorkoutPlanRow();
+    const exerciseRow = createPlannedExerciseRow();
+    const setRow = createPlannedSetRow();
 
     // First call: get templates
     // Subsequent calls: get exercises for template, then sets for exercise
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow]) // templates
-      .mockResolvedValueOnce([exerciseRow]) // exercises for template-1
+      .mockResolvedValueOnce([exerciseRow]) // exercises for plan-1
       .mockResolvedValueOnce([setRow]); // sets for exercise-1
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('template-1');
+    expect(result[0].id).toBe('plan-1');
     expect(result[0].name).toBe('Test Workout');
     expect(result[0].exercises).toHaveLength(1);
     expect(result[0].exercises[0].id).toBe('exercise-1');
@@ -184,9 +184,9 @@ describe('getAllWorkoutTemplates', () => {
   });
 
   it('exercises are ordered by order_index', async () => {
-    const templateRow = createWorkoutTemplateRow();
-    const exerciseRow1 = createTemplateExerciseRow({ id: 'exercise-1', order_index: 0 });
-    const exerciseRow2 = createTemplateExerciseRow({ id: 'exercise-2', order_index: 1, exercise_name: 'Squat' });
+    const templateRow = createWorkoutPlanRow();
+    const exerciseRow1 = createPlannedExerciseRow({ id: 'exercise-1', order_index: 0 });
+    const exerciseRow2 = createPlannedExerciseRow({ id: 'exercise-2', order_index: 1, exercise_name: 'Squat' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
@@ -194,19 +194,19 @@ describe('getAllWorkoutTemplates', () => {
       .mockResolvedValueOnce([]) // sets for exercise-1
       .mockResolvedValueOnce([]); // sets for exercise-2
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     // Verify exercises query includes ORDER BY order_index
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
       'SELECT * FROM template_exercises WHERE workout_template_id = ? ORDER BY order_index',
-      ['template-1']
+      ['plan-1']
     );
     expect(result[0].exercises[0].id).toBe('exercise-1');
     expect(result[0].exercises[1].id).toBe('exercise-2');
   });
 
   it('converts database rows to proper types with tags JSON parsing', async () => {
-    const templateRow = createWorkoutTemplateRow({
+    const templateRow = createWorkoutPlanRow({
       tags: '["push", "upper body", "strength"]',
       description: 'A test workout',
       default_weight_unit: 'kg',
@@ -217,7 +217,7 @@ describe('getAllWorkoutTemplates', () => {
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]);
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     expect(result[0].tags).toEqual(['push', 'upper body', 'strength']);
     expect(result[0].description).toBe('A test workout');
@@ -226,7 +226,7 @@ describe('getAllWorkoutTemplates', () => {
   });
 
   it('handles null values correctly by converting to undefined', async () => {
-    const templateRow = createWorkoutTemplateRow({
+    const templateRow = createWorkoutPlanRow({
       description: null,
       default_weight_unit: null,
       source_markdown: null,
@@ -237,7 +237,7 @@ describe('getAllWorkoutTemplates', () => {
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]);
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     expect(result[0].description).toBeUndefined();
     expect(result[0].defaultWeightUnit).toBeUndefined();
@@ -246,15 +246,15 @@ describe('getAllWorkoutTemplates', () => {
   });
 
   it('returns multiple templates with all their data', async () => {
-    const templateRow1 = createWorkoutTemplateRow({ id: 'template-1', name: 'Push Day' });
-    const templateRow2 = createWorkoutTemplateRow({ id: 'template-2', name: 'Pull Day' });
+    const templateRow1 = createWorkoutPlanRow({ id: 'plan-1', name: 'Push Day' });
+    const templateRow2 = createWorkoutPlanRow({ id: 'plan-2', name: 'Pull Day' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow1, templateRow2])
-      .mockResolvedValueOnce([]) // exercises for template-1
-      .mockResolvedValueOnce([]); // exercises for template-2
+      .mockResolvedValueOnce([]) // exercises for plan-1
+      .mockResolvedValueOnce([]); // exercises for plan-2
 
-    const result = await getAllWorkoutTemplates();
+    const result = await getAllWorkoutPlans();
 
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe('Push Day');
@@ -263,10 +263,10 @@ describe('getAllWorkoutTemplates', () => {
 });
 
 // ============================================================================
-// getWorkoutTemplateById Tests
+// getWorkoutPlanById Tests
 // ============================================================================
 
-describe('getWorkoutTemplateById', () => {
+describe('getWorkoutPlanById', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -278,7 +278,7 @@ describe('getWorkoutTemplateById', () => {
   it('returns null when template not found', async () => {
     mockDb.getFirstAsync.mockResolvedValue(null);
 
-    const result = await getWorkoutTemplateById('non-existent-id');
+    const result = await getWorkoutPlanById('non-existent-id');
 
     expect(result).toBeNull();
     expect(mockDb.getFirstAsync).toHaveBeenCalledWith(
@@ -288,37 +288,37 @@ describe('getWorkoutTemplateById', () => {
   });
 
   it('returns complete template with exercises and sets', async () => {
-    const templateRow = createWorkoutTemplateRow();
-    const exerciseRow = createTemplateExerciseRow();
-    const setRow = createTemplateSetRow();
+    const templateRow = createWorkoutPlanRow();
+    const exerciseRow = createPlannedExerciseRow();
+    const setRow = createPlannedSetRow();
 
     mockDb.getFirstAsync.mockResolvedValue(templateRow);
     mockDb.getAllAsync
       .mockResolvedValueOnce([exerciseRow])
       .mockResolvedValueOnce([setRow]);
 
-    const result = await getWorkoutTemplateById('template-1');
+    const result = await getWorkoutPlanById('plan-1');
 
     expect(result).not.toBeNull();
-    expect(result!.id).toBe('template-1');
+    expect(result!.id).toBe('plan-1');
     expect(result!.exercises).toHaveLength(1);
     expect(result!.exercises[0].sets).toHaveLength(1);
   });
 
   it('proper type conversion for all fields', async () => {
-    const templateRow = createWorkoutTemplateRow({
+    const templateRow = createWorkoutPlanRow({
       tags: '["strength", "legs"]',
       description: 'Leg workout',
       default_weight_unit: 'kg',
     });
-    const exerciseRow = createTemplateExerciseRow({
+    const exerciseRow = createPlannedExerciseRow({
       notes: 'Focus on form',
       equipment_type: 'barbell',
       group_type: 'superset',
       group_name: 'Leg Complex',
       parent_exercise_id: 'parent-1',
     });
-    const setRow = createTemplateSetRow({
+    const setRow = createPlannedSetRow({
       target_weight: 225,
       target_weight_unit: 'lbs',
       target_reps: 5,
@@ -335,7 +335,7 @@ describe('getWorkoutTemplateById', () => {
       .mockResolvedValueOnce([exerciseRow])
       .mockResolvedValueOnce([setRow]);
 
-    const result = await getWorkoutTemplateById('template-1');
+    const result = await getWorkoutPlanById('plan-1');
 
     expect(result!.tags).toEqual(['strength', 'legs']);
     expect(result!.defaultWeightUnit).toBe('kg');
@@ -360,15 +360,15 @@ describe('getWorkoutTemplateById', () => {
   });
 
   it('handles null optional fields correctly', async () => {
-    const templateRow = createWorkoutTemplateRow();
-    const exerciseRow = createTemplateExerciseRow({
+    const templateRow = createWorkoutPlanRow();
+    const exerciseRow = createPlannedExerciseRow({
       notes: null,
       equipment_type: null,
       group_type: null,
       group_name: null,
       parent_exercise_id: null,
     });
-    const setRow = createTemplateSetRow({
+    const setRow = createPlannedSetRow({
       target_weight: null,
       target_weight_unit: null,
       target_reps: null,
@@ -385,7 +385,7 @@ describe('getWorkoutTemplateById', () => {
       .mockResolvedValueOnce([exerciseRow])
       .mockResolvedValueOnce([setRow]);
 
-    const result = await getWorkoutTemplateById('template-1');
+    const result = await getWorkoutPlanById('plan-1');
 
     const exercise = result!.exercises[0];
     expect(exercise.notes).toBeUndefined();
@@ -408,10 +408,10 @@ describe('getWorkoutTemplateById', () => {
 });
 
 // ============================================================================
-// createWorkoutTemplate Tests
+// createWorkoutPlan Tests
 // ============================================================================
 
-describe('createWorkoutTemplate', () => {
+describe('createWorkoutPlan', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -421,11 +421,11 @@ describe('createWorkoutTemplate', () => {
   });
 
   it('inserts template, exercises, and sets', async () => {
-    const set = createTemplateSet();
-    const exercise = createTemplateExercise({ sets: [set] });
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const set = createPlannedSet();
+    const exercise = createPlannedExercise({ sets: [set] });
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    await createWorkoutTemplateInDb(template);
+    await createWorkoutPlanInDb(template);
 
     // Should call runAsync for template insert
     // Note: undefined values are converted to null by the repository
@@ -448,7 +448,7 @@ describe('createWorkoutTemplate', () => {
       expect.stringContaining('INSERT INTO template_exercises'),
       [
         exercise.id,
-        exercise.workoutTemplateId,
+        exercise.workoutPlanId,
         exercise.exerciseName,
         exercise.orderIndex,
         null, // notes
@@ -464,7 +464,7 @@ describe('createWorkoutTemplate', () => {
       expect.stringContaining('INSERT INTO template_sets'),
       [
         set.id,
-        set.templateExerciseId,
+        set.plannedExerciseId,
         set.orderIndex,
         set.targetWeight,
         set.targetWeightUnit,
@@ -480,21 +480,21 @@ describe('createWorkoutTemplate', () => {
   });
 
   it('uses transaction (BEGIN/COMMIT)', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
 
-    await createWorkoutTemplateInDb(template);
+    await createWorkoutPlanInDb(template);
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('COMMIT');
   });
 
   it('rolls back on error', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
     const error = new Error('Database error');
 
     mockDb.runAsync.mockRejectedValueOnce(error);
 
-    await expect(createWorkoutTemplateInDb(template)).rejects.toThrow('Database error');
+    await expect(createWorkoutPlanInDb(template)).rejects.toThrow('Database error');
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('ROLLBACK');
@@ -502,7 +502,7 @@ describe('createWorkoutTemplate', () => {
   });
 
   it('proper parameter mapping for all fields', async () => {
-    const set = createTemplateSet({
+    const set = createPlannedSet({
       targetWeight: 225,
       targetWeightUnit: 'kg',
       targetReps: 10,
@@ -513,7 +513,7 @@ describe('createWorkoutTemplate', () => {
       isDropset: true,
       isPerSide: true,
     });
-    const exercise = createTemplateExercise({
+    const exercise = createPlannedExercise({
       notes: 'Exercise notes',
       equipmentType: 'dumbbell',
       groupType: 'section',
@@ -521,7 +521,7 @@ describe('createWorkoutTemplate', () => {
       parentExerciseId: 'parent-id',
       sets: [set],
     });
-    const template = createWorkoutTemplate({
+    const template = createWorkoutPlan({
       description: 'Full workout',
       defaultWeightUnit: 'kg',
       sourceMarkdown: '# Workout',
@@ -529,7 +529,7 @@ describe('createWorkoutTemplate', () => {
       exercises: [exercise],
     });
 
-    await createWorkoutTemplateInDb(template);
+    await createWorkoutPlanInDb(template);
 
     // Verify template parameters
     expect(mockDb.runAsync).toHaveBeenCalledWith(
@@ -549,7 +549,7 @@ describe('createWorkoutTemplate', () => {
       expect.stringContaining('INSERT INTO template_exercises'),
       [
         exercise.id,
-        exercise.workoutTemplateId,
+        exercise.workoutPlanId,
         exercise.exerciseName,
         exercise.orderIndex,
         'Exercise notes',
@@ -565,7 +565,7 @@ describe('createWorkoutTemplate', () => {
       expect.stringContaining('INSERT INTO template_sets'),
       [
         set.id,
-        set.templateExerciseId,
+        set.plannedExerciseId,
         set.orderIndex,
         225,
         'kg',
@@ -581,19 +581,19 @@ describe('createWorkoutTemplate', () => {
   });
 
   it('handles multiple exercises with multiple sets', async () => {
-    const set1 = createTemplateSet({ id: 'set-1' });
-    const set2 = createTemplateSet({ id: 'set-2', orderIndex: 1 });
-    const exercise1 = createTemplateExercise({ id: 'exercise-1', sets: [set1, set2] });
-    const set3 = createTemplateSet({ id: 'set-3', templateExerciseId: 'exercise-2' });
-    const exercise2 = createTemplateExercise({
+    const set1 = createPlannedSet({ id: 'set-1' });
+    const set2 = createPlannedSet({ id: 'set-2', orderIndex: 1 });
+    const exercise1 = createPlannedExercise({ id: 'exercise-1', sets: [set1, set2] });
+    const set3 = createPlannedSet({ id: 'set-3', plannedExerciseId: 'exercise-2' });
+    const exercise2 = createPlannedExercise({
       id: 'exercise-2',
       orderIndex: 1,
       exerciseName: 'Squat',
       sets: [set3],
     });
-    const template = createWorkoutTemplate({ exercises: [exercise1, exercise2] });
+    const template = createWorkoutPlan({ exercises: [exercise1, exercise2] });
 
-    await createWorkoutTemplateInDb(template);
+    await createWorkoutPlanInDb(template);
 
     // Count runAsync calls: 1 template + 2 exercises + 3 sets = 6 (sync_metadata removed)
     expect(mockDb.runAsync).toHaveBeenCalledTimes(6);
@@ -601,10 +601,10 @@ describe('createWorkoutTemplate', () => {
 });
 
 // ============================================================================
-// updateWorkoutTemplate Tests
+// updateWorkoutPlan Tests
 // ============================================================================
 
-describe('updateWorkoutTemplate', () => {
+describe('updateWorkoutPlan', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -614,7 +614,7 @@ describe('updateWorkoutTemplate', () => {
   });
 
   it('updates template fields', async () => {
-    const template = createWorkoutTemplate({
+    const template = createWorkoutPlan({
       name: 'Updated Workout',
       description: 'Updated description',
       tags: ['updated', 'tags'],
@@ -622,7 +622,7 @@ describe('updateWorkoutTemplate', () => {
       sourceMarkdown: '# Updated',
     });
 
-    await updateWorkoutTemplateInDb(template);
+    await updateWorkoutPlanInDb(template);
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE workout_templates'),
@@ -639,10 +639,10 @@ describe('updateWorkoutTemplate', () => {
   });
 
   it('deletes old exercises before inserting new', async () => {
-    const exercise = createTemplateExercise();
-    const template = createWorkoutTemplate({ exercises: [exercise] });
+    const exercise = createPlannedExercise();
+    const template = createWorkoutPlan({ exercises: [exercise] });
 
-    await updateWorkoutTemplateInDb(template);
+    await updateWorkoutPlanInDb(template);
 
     // Check delete was called before inserts
     const runAsyncCalls = mockDb.runAsync.mock.calls;
@@ -665,21 +665,21 @@ describe('updateWorkoutTemplate', () => {
   });
 
   it('uses transaction', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
 
-    await updateWorkoutTemplateInDb(template);
+    await updateWorkoutPlanInDb(template);
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('COMMIT');
   });
 
   it('rolls back on error', async () => {
-    const template = createWorkoutTemplate();
+    const template = createWorkoutPlan();
     const error = new Error('Update failed');
 
     mockDb.runAsync.mockRejectedValueOnce(error);
 
-    await expect(updateWorkoutTemplateInDb(template)).rejects.toThrow('Update failed');
+    await expect(updateWorkoutPlanInDb(template)).rejects.toThrow('Update failed');
 
     expect(mockDb.execAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
     expect(mockDb.execAsync).toHaveBeenCalledWith('ROLLBACK');
@@ -687,13 +687,13 @@ describe('updateWorkoutTemplate', () => {
   });
 
   it('handles null optional fields', async () => {
-    const template = createWorkoutTemplate({
+    const template = createWorkoutPlan({
       description: undefined,
       defaultWeightUnit: undefined,
       sourceMarkdown: undefined,
     });
 
-    await updateWorkoutTemplateInDb(template);
+    await updateWorkoutPlanInDb(template);
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE workout_templates'),
@@ -703,10 +703,10 @@ describe('updateWorkoutTemplate', () => {
 });
 
 // ============================================================================
-// deleteWorkoutTemplate Tests
+// deleteWorkoutPlan Tests
 // ============================================================================
 
-describe('deleteWorkoutTemplate', () => {
+describe('deleteWorkoutPlan', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -716,16 +716,16 @@ describe('deleteWorkoutTemplate', () => {
   });
 
   it('calls delete with correct ID', async () => {
-    await deleteWorkoutTemplate('template-to-delete');
+    await deleteWorkoutPlan('plan-to-delete');
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       'DELETE FROM workout_templates WHERE id = ?',
-      ['template-to-delete']
+      ['plan-to-delete']
     );
   });
 
   it('handles different ID formats', async () => {
-    await deleteWorkoutTemplate('uuid-123-456-789');
+    await deleteWorkoutPlan('uuid-123-456-789');
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       'DELETE FROM workout_templates WHERE id = ?',
@@ -735,10 +735,10 @@ describe('deleteWorkoutTemplate', () => {
 });
 
 // ============================================================================
-// searchWorkoutTemplates Tests
+// searchWorkoutPlans Tests
 // ============================================================================
 
-describe('searchWorkoutTemplates', () => {
+describe('searchWorkoutPlans', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -748,13 +748,13 @@ describe('searchWorkoutTemplates', () => {
   });
 
   it('searches by name (case insensitive)', async () => {
-    const templateRow = createWorkoutTemplateRow({ name: 'Push Day Workout' });
+    const templateRow = createWorkoutPlanRow({ name: 'Push Day Workout' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]); // exercises
 
-    const result = await searchWorkoutTemplates('push');
+    const result = await searchWorkoutPlans('push');
 
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
       expect.stringContaining('WHERE LOWER(name) LIKE ? OR LOWER(tags) LIKE ?'),
@@ -765,7 +765,7 @@ describe('searchWorkoutTemplates', () => {
   });
 
   it('searches by tags', async () => {
-    const templateRow = createWorkoutTemplateRow({
+    const templateRow = createWorkoutPlanRow({
       name: 'Leg Workout',
       tags: '["strength", "lower body"]',
     });
@@ -774,7 +774,7 @@ describe('searchWorkoutTemplates', () => {
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]);
 
-    const result = await searchWorkoutTemplates('strength');
+    const result = await searchWorkoutPlans('strength');
 
     expect(result).toHaveLength(1);
     expect(result[0].tags).toContain('strength');
@@ -783,7 +783,7 @@ describe('searchWorkoutTemplates', () => {
   it('returns empty for no matches', async () => {
     mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-    const result = await searchWorkoutTemplates('nonexistent');
+    const result = await searchWorkoutPlans('nonexistent');
 
     expect(result).toEqual([]);
   });
@@ -791,7 +791,7 @@ describe('searchWorkoutTemplates', () => {
   it('converts search query to lowercase', async () => {
     mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-    await searchWorkoutTemplates('UPPER CASE QUERY');
+    await searchWorkoutPlans('UPPER CASE QUERY');
 
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
       expect.any(String),
@@ -800,16 +800,16 @@ describe('searchWorkoutTemplates', () => {
   });
 
   it('returns templates with exercises and sets', async () => {
-    const templateRow = createWorkoutTemplateRow();
-    const exerciseRow = createTemplateExerciseRow();
-    const setRow = createTemplateSetRow();
+    const templateRow = createWorkoutPlanRow();
+    const exerciseRow = createPlannedExerciseRow();
+    const setRow = createPlannedSetRow();
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([exerciseRow])
       .mockResolvedValueOnce([setRow]);
 
-    const result = await searchWorkoutTemplates('test');
+    const result = await searchWorkoutPlans('test');
 
     expect(result[0].exercises).toHaveLength(1);
     expect(result[0].exercises[0].sets).toHaveLength(1);
@@ -817,10 +817,10 @@ describe('searchWorkoutTemplates', () => {
 });
 
 // ============================================================================
-// getWorkoutTemplatesByTag Tests
+// getWorkoutPlansByTag Tests
 // ============================================================================
 
-describe('getWorkoutTemplatesByTag', () => {
+describe('getWorkoutPlansByTag', () => {
   let mockDb: MockDatabase;
 
   beforeEach(() => {
@@ -830,13 +830,13 @@ describe('getWorkoutTemplatesByTag', () => {
   });
 
   it('filters by tag correctly', async () => {
-    const templateRow = createWorkoutTemplateRow({ tags: '["strength", "push"]' });
+    const templateRow = createWorkoutPlanRow({ tags: '["strength", "push"]' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]);
 
-    const result = await getWorkoutTemplatesByTag('strength');
+    const result = await getWorkoutPlansByTag('strength');
 
     // The search uses %"tag"% pattern for exact JSON array element matching
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
@@ -850,7 +850,7 @@ describe('getWorkoutTemplatesByTag', () => {
   it('returns empty for unknown tag', async () => {
     mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-    const result = await getWorkoutTemplatesByTag('unknown-tag');
+    const result = await getWorkoutPlansByTag('unknown-tag');
 
     expect(result).toEqual([]);
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
@@ -860,43 +860,43 @@ describe('getWorkoutTemplatesByTag', () => {
   });
 
   it('returns templates with exercises and sets', async () => {
-    const templateRow = createWorkoutTemplateRow({ tags: '["cardio"]' });
-    const exerciseRow = createTemplateExerciseRow();
-    const setRow = createTemplateSetRow();
+    const templateRow = createWorkoutPlanRow({ tags: '["cardio"]' });
+    const exerciseRow = createPlannedExerciseRow();
+    const setRow = createPlannedSetRow();
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([exerciseRow])
       .mockResolvedValueOnce([setRow]);
 
-    const result = await getWorkoutTemplatesByTag('cardio');
+    const result = await getWorkoutPlansByTag('cardio');
 
     expect(result[0].exercises).toHaveLength(1);
     expect(result[0].exercises[0].sets).toHaveLength(1);
   });
 
   it('returns multiple matching templates', async () => {
-    const templateRow1 = createWorkoutTemplateRow({ id: 'template-1', tags: '["strength"]' });
-    const templateRow2 = createWorkoutTemplateRow({ id: 'template-2', tags: '["strength", "legs"]' });
+    const templateRow1 = createWorkoutPlanRow({ id: 'plan-1', tags: '["strength"]' });
+    const templateRow2 = createWorkoutPlanRow({ id: 'plan-2', tags: '["strength", "legs"]' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow1, templateRow2])
-      .mockResolvedValueOnce([]) // exercises for template-1
-      .mockResolvedValueOnce([]); // exercises for template-2
+      .mockResolvedValueOnce([]) // exercises for plan-1
+      .mockResolvedValueOnce([]); // exercises for plan-2
 
-    const result = await getWorkoutTemplatesByTag('strength');
+    const result = await getWorkoutPlansByTag('strength');
 
     expect(result).toHaveLength(2);
   });
 
   it('uses exact tag matching (not partial)', async () => {
-    const templateRow = createWorkoutTemplateRow({ tags: '["strength"]' });
+    const templateRow = createWorkoutPlanRow({ tags: '["strength"]' });
 
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([]);
 
-    await getWorkoutTemplatesByTag('strength');
+    await getWorkoutPlansByTag('strength');
 
     // Pattern should include quotes to match exact JSON string
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
@@ -921,34 +921,34 @@ describe('Row-to-Object conversion', () => {
 
   describe('tags parsing', () => {
     it('parses valid JSON array tags', async () => {
-      const templateRow = createWorkoutTemplateRow({ tags: '["tag1", "tag2", "tag3"]' });
+      const templateRow = createWorkoutPlanRow({ tags: '["tag1", "tag2", "tag3"]' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.tags).toEqual(['tag1', 'tag2', 'tag3']);
     });
 
     it('returns empty array for empty tags string', async () => {
-      const templateRow = createWorkoutTemplateRow({ tags: '' });
+      const templateRow = createWorkoutPlanRow({ tags: '' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.tags).toEqual([]);
     });
 
     it('parses empty JSON array', async () => {
-      const templateRow = createWorkoutTemplateRow({ tags: '[]' });
+      const templateRow = createWorkoutPlanRow({ tags: '[]' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.tags).toEqual([]);
     });
@@ -956,32 +956,32 @@ describe('Row-to-Object conversion', () => {
 
   describe('boolean conversion (is_dropset, is_per_side)', () => {
     it('converts 1 to true', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow();
-      const setRow = createTemplateSetRow({ is_dropset: 1, is_per_side: 1 });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow();
+      const setRow = createPlannedSetRow({ is_dropset: 1, is_per_side: 1 });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([setRow]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].sets[0].isDropset).toBe(true);
       expect(result!.exercises[0].sets[0].isPerSide).toBe(true);
     });
 
     it('converts 0 to false', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow();
-      const setRow = createTemplateSetRow({ is_dropset: 0, is_per_side: 0 });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow();
+      const setRow = createPlannedSetRow({ is_dropset: 0, is_per_side: 0 });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([setRow]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].sets[0].isDropset).toBe(false);
       expect(result!.exercises[0].sets[0].isPerSide).toBe(false);
@@ -990,34 +990,34 @@ describe('Row-to-Object conversion', () => {
 
   describe('null-to-undefined conversion', () => {
     it('converts null description to undefined', async () => {
-      const templateRow = createWorkoutTemplateRow({ description: null });
+      const templateRow = createWorkoutPlanRow({ description: null });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.description).toBeUndefined();
     });
 
     it('converts null exercise notes to undefined', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow({ notes: null });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow({ notes: null });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].notes).toBeUndefined();
     });
 
     it('converts null set values to undefined', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow();
-      const setRow = createTemplateSetRow({
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow();
+      const setRow = createPlannedSetRow({
         target_weight: null,
         target_reps: null,
         target_time: null,
@@ -1031,7 +1031,7 @@ describe('Row-to-Object conversion', () => {
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([setRow]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       const set = result!.exercises[0].sets[0];
       expect(set.targetWeight).toBeUndefined();
@@ -1045,27 +1045,27 @@ describe('Row-to-Object conversion', () => {
 
   describe('weight unit type casting', () => {
     it('casts default_weight_unit to proper type', async () => {
-      const templateRow = createWorkoutTemplateRow({ default_weight_unit: 'kg' });
+      const templateRow = createWorkoutPlanRow({ default_weight_unit: 'kg' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync.mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.defaultWeightUnit).toBe('kg');
     });
 
     it('casts target_weight_unit to proper type', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow();
-      const setRow = createTemplateSetRow({ target_weight_unit: 'kg' });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow();
+      const setRow = createPlannedSetRow({ target_weight_unit: 'kg' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([setRow]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].sets[0].targetWeightUnit).toBe('kg');
     });
@@ -1073,29 +1073,29 @@ describe('Row-to-Object conversion', () => {
 
   describe('group_type casting', () => {
     it('casts superset group_type correctly', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow({ group_type: 'superset' });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow({ group_type: 'superset' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].groupType).toBe('superset');
     });
 
     it('casts section group_type correctly', async () => {
-      const templateRow = createWorkoutTemplateRow();
-      const exerciseRow = createTemplateExerciseRow({ group_type: 'section' });
+      const templateRow = createWorkoutPlanRow();
+      const exerciseRow = createPlannedExerciseRow({ group_type: 'section' });
 
       mockDb.getFirstAsync.mockResolvedValue(templateRow);
       mockDb.getAllAsync
         .mockResolvedValueOnce([exerciseRow])
         .mockResolvedValueOnce([]);
 
-      const result = await getWorkoutTemplateById('template-1');
+      const result = await getWorkoutPlanById('plan-1');
 
       expect(result!.exercises[0].groupType).toBe('section');
     });

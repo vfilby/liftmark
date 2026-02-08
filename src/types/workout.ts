@@ -3,8 +3,8 @@
  * Based on PLAN.md data model
  */
 
-// Workout Template Types
-export interface WorkoutTemplate {
+// Workout Plan Types (renamed from Template for clarity)
+export interface WorkoutPlan {
   id: string; // UUID
   name: string;
   description?: string; // Freeform notes from markdown
@@ -14,12 +14,12 @@ export interface WorkoutTemplate {
   createdAt: string; // ISO date
   updatedAt: string;
   isFavorite?: boolean; // Whether workout is favorited
-  exercises: TemplateExercise[];
+  exercises: PlannedExercise[];
 }
 
-export interface TemplateExercise {
+export interface PlannedExercise {
   id: string;
-  workoutTemplateId: string;
+  workoutPlanId: string;
   exerciseName: string; // Reference to Exercise.name or custom
   orderIndex: number; // Order in workout
   notes?: string; // Freeform notes from markdown
@@ -27,12 +27,12 @@ export interface TemplateExercise {
   groupType?: 'superset' | 'section'; // 'superset' = performed together, 'section' = organizational grouping
   groupName?: string; // E.g., "Superset: Arms" or "Warmup"
   parentExerciseId?: string; // For exercises that are part of a superset/section
-  sets: TemplateSet[];
+  sets: PlannedSet[];
 }
 
-export interface TemplateSet {
+export interface PlannedSet {
   id: string;
-  templateExerciseId: string;
+  plannedExerciseId: string;
   orderIndex: number;
   targetWeight?: number; // undefined or 0 = bodyweight only
   targetWeightUnit?: 'lbs' | 'kg'; // Only set when targetWeight is specified
@@ -47,10 +47,18 @@ export interface TemplateSet {
   notes?: string; // Additional notes/instructions from set line (e.g., "forward", "each side")
 }
 
+// Legacy type aliases for backward compatibility (will be removed in future)
+/** @deprecated Use WorkoutPlan instead */
+export type WorkoutTemplate = WorkoutPlan;
+/** @deprecated Use PlannedExercise instead */
+export type TemplateExercise = PlannedExercise;
+/** @deprecated Use PlannedSet instead */
+export type TemplateSet = PlannedSet;
+
 // Workout Session Types (for future implementation)
 export interface WorkoutSession {
   id: string;
-  workoutTemplateId?: string; // null if custom/imported
+  workoutPlanId?: string; // null if custom/imported (renamed from workoutTemplateId)
   name: string;
   date: string; // ISO date
   startTime?: string; // ISO datetime
@@ -221,10 +229,11 @@ export interface ParseResult<T> {
   warnings?: string[];
 }
 
-export type WorkoutParseResult = ParseResult<WorkoutTemplate>;
+export type WorkoutParseResult = ParseResult<WorkoutPlan>;
 
 // Database row types (snake_case for SQL)
-export interface WorkoutTemplateRow {
+// Note: Table names remain as workout_templates, template_exercises, template_sets
+export interface WorkoutPlanRow {
   id: string;
   name: string;
   description: string | null;
@@ -236,9 +245,9 @@ export interface WorkoutTemplateRow {
   is_favorite: number; // SQLite boolean (0 or 1)
 }
 
-export interface TemplateExerciseRow {
+export interface PlannedExerciseRow {
   id: string;
-  workout_template_id: string;
+  workout_template_id: string; // DB column name unchanged
   exercise_name: string;
   order_index: number;
   notes: string | null;
@@ -248,9 +257,9 @@ export interface TemplateExerciseRow {
   parent_exercise_id: string | null;
 }
 
-export interface TemplateSetRow {
+export interface PlannedSetRow {
   id: string;
-  template_exercise_id: string;
+  template_exercise_id: string; // DB column name unchanged
   order_index: number;
   target_weight: number | null;
   target_weight_unit: string | null;
@@ -264,6 +273,14 @@ export interface TemplateSetRow {
   is_amrap: number; // SQLite boolean (0 or 1)
   notes: string | null; // Optional notes/comments for the set
 }
+
+// Legacy row type aliases for backward compatibility (will be removed in future)
+/** @deprecated Use WorkoutPlanRow instead */
+export type WorkoutTemplateRow = WorkoutPlanRow;
+/** @deprecated Use PlannedExerciseRow instead */
+export type TemplateExerciseRow = PlannedExerciseRow;
+/** @deprecated Use PlannedSetRow instead */
+export type TemplateSetRow = PlannedSetRow;
 
 export interface UserSettingsRow {
   id: string;

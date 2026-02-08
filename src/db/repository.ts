@@ -1,23 +1,24 @@
 import { getDatabase } from './index';
 import type {
-  WorkoutTemplate,
-  TemplateExercise,
-  TemplateSet,
-  WorkoutTemplateRow,
-  TemplateExerciseRow,
-  TemplateSetRow,
+  WorkoutPlan,
+  PlannedExercise,
+  PlannedSet,
+  WorkoutPlanRow,
+  PlannedExerciseRow,
+  PlannedSetRow,
 } from '@/types';
 
 /**
- * Repository for WorkoutTemplate CRUD operations
+ * Repository for WorkoutPlan CRUD operations
  * Handles conversion between application types and database rows
+ * Note: Database tables remain as workout_templates, template_exercises, template_sets
  */
 
 /**
- * Get all workout templates with their exercises and sets
- * @param favoritesOnly - If true, only returns favorited templates
+ * Get all workout plans with their exercises and sets
+ * @param favoritesOnly - If true, only returns favorited plans
  */
-export async function getAllWorkoutTemplates(favoritesOnly: boolean = false): Promise<WorkoutTemplate[]> {
+export async function getAllWorkoutPlans(favoritesOnly: boolean = false): Promise<WorkoutPlan[]> {
   const db = await getDatabase();
 
   // Get all templates (optionally filtered by favorites)
@@ -25,28 +26,28 @@ export async function getAllWorkoutTemplates(favoritesOnly: boolean = false): Pr
     ? 'SELECT * FROM workout_templates WHERE is_favorite = 1 ORDER BY created_at DESC'
     : 'SELECT * FROM workout_templates ORDER BY created_at DESC';
 
-  const templateRows = await db.getAllAsync<WorkoutTemplateRow>(query);
+  const templateRows = await db.getAllAsync<WorkoutPlanRow>(query);
 
-  // For each template, get its exercises and sets
-  const templates: WorkoutTemplate[] = [];
+  // For each plan, get its exercises and sets
+  const plans: WorkoutPlan[] = [];
 
   for (const templateRow of templateRows) {
-    const exercises = await getTemplateExercises(templateRow.id);
-    templates.push(rowToWorkoutTemplate(templateRow, exercises));
+    const exercises = await getPlannedExercises(templateRow.id);
+    plans.push(rowToWorkoutPlan(templateRow, exercises));
   }
 
-  return templates;
+  return plans;
 }
 
 /**
- * Get a single workout template by ID with all exercises and sets
+ * Get a single workout plan by ID with all exercises and sets
  */
-export async function getWorkoutTemplateById(
+export async function getWorkoutPlanById(
   id: string
-): Promise<WorkoutTemplate | null> {
+): Promise<WorkoutPlan | null> {
   const db = await getDatabase();
 
-  const templateRow = await db.getFirstAsync<WorkoutTemplateRow>(
+  const templateRow = await db.getFirstAsync<WorkoutPlanRow>(
     'SELECT * FROM workout_templates WHERE id = ?',
     [id]
   );
@@ -55,15 +56,15 @@ export async function getWorkoutTemplateById(
     return null;
   }
 
-  const exercises = await getTemplateExercises(id);
-  return rowToWorkoutTemplate(templateRow, exercises);
+  const exercises = await getPlannedExercises(id);
+  return rowToWorkoutPlan(templateRow, exercises);
 }
 
 /**
- * Create a new workout template with all exercises and sets
+ * Create a new workout plan with all exercises and sets
  */
-export async function createWorkoutTemplate(
-  template: WorkoutTemplate
+export async function createWorkoutPlan(
+  plan: WorkoutPlan
 ): Promise<void> {
   const db = await getDatabase();
 
@@ -71,36 +72,36 @@ export async function createWorkoutTemplate(
   await db.execAsync('BEGIN TRANSACTION');
 
   try {
-    // Insert template
+    // Insert plan (into workout_templates table)
     await db.runAsync(
       `INSERT INTO workout_templates (
         id, name, description, tags, default_weight_unit, source_markdown, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        template.id,
-        template.name,
-        template.description || null,
-        JSON.stringify(template.tags),
-        template.defaultWeightUnit || null,
-        template.sourceMarkdown || null,
-        template.createdAt,
-        template.updatedAt,
+        plan.id,
+        plan.name,
+        plan.description || null,
+        JSON.stringify(plan.tags),
+        plan.defaultWeightUnit || null,
+        plan.sourceMarkdown || null,
+        plan.createdAt,
+        plan.updatedAt,
       ]
     );
 
     // Insert exercises and sets
-    for (const exercise of template.exercises) {
-      await insertTemplateExercise(exercise);
+    for (const exercise of plan.exercises) {
+      await insertPlannedExercise(exercise);
 
       for (const set of exercise.sets) {
-        await insertTemplateSet(set);
+        await insertPlannedSet(set);
       }
     }
 
     await db.execAsync('COMMIT');
 
     // Sync hook: Add to sync queue
-    await afterCreateHook('WorkoutTemplate', template);
+    await afterCreateHook('WorkoutPlan', plan);
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
@@ -108,52 +109,52 @@ export async function createWorkoutTemplate(
 }
 
 /**
- * Update an existing workout template
+ * Update an existing workout plan
  */
-export async function updateWorkoutTemplate(
-  template: WorkoutTemplate
+export async function updateWorkoutPlan(
+  plan: WorkoutPlan
 ): Promise<void> {
   const db = await getDatabase();
 
   await db.execAsync('BEGIN TRANSACTION');
 
   try {
-    // Update template
+    // Update plan (in workout_templates table)
     await db.runAsync(
       `UPDATE workout_templates
        SET name = ?, description = ?, tags = ?, default_weight_unit = ?,
            source_markdown = ?, updated_at = ?
        WHERE id = ?`,
       [
-        template.name,
-        template.description || null,
-        JSON.stringify(template.tags),
-        template.defaultWeightUnit || null,
-        template.sourceMarkdown || null,
-        template.updatedAt,
-        template.id,
+        plan.name,
+        plan.description || null,
+        JSON.stringify(plan.tags),
+        plan.defaultWeightUnit || null,
+        plan.sourceMarkdown || null,
+        plan.updatedAt,
+        plan.id,
       ]
     );
 
     // Delete existing exercises and sets (CASCADE will handle sets)
     await db.runAsync(
       'DELETE FROM template_exercises WHERE workout_template_id = ?',
-      [template.id]
+      [plan.id]
     );
 
     // Insert new exercises and sets
-    for (const exercise of template.exercises) {
-      await insertTemplateExercise(exercise);
+    for (const exercise of plan.exercises) {
+      await insertPlannedExercise(exercise);
 
       for (const set of exercise.sets) {
-        await insertTemplateSet(set);
+        await insertPlannedSet(set);
       }
     }
 
     await db.execAsync('COMMIT');
 
     // Sync hook: Add to sync queue
-    await afterUpdateHook('WorkoutTemplate', template);
+    await afterUpdateHook('WorkoutPlan', plan);
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
@@ -161,83 +162,83 @@ export async function updateWorkoutTemplate(
 }
 
 /**
- * Delete a workout template (CASCADE will delete exercises and sets)
+ * Delete a workout plan (CASCADE will delete exercises and sets)
  */
-export async function deleteWorkoutTemplate(id: string): Promise<void> {
+export async function deleteWorkoutPlan(id: string): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM workout_templates WHERE id = ?', [id]);
 
   // Sync hook: Add to sync queue
-  await afterDeleteHook('WorkoutTemplate', id);
+  await afterDeleteHook('WorkoutPlan', id);
 }
 
 /**
- * Search workout templates by name or tags
+ * Search workout plans by name or tags
  */
-export async function searchWorkoutTemplates(
+export async function searchWorkoutPlans(
   query: string
-): Promise<WorkoutTemplate[]> {
+): Promise<WorkoutPlan[]> {
   const db = await getDatabase();
   const searchTerm = `%${query.toLowerCase()}%`;
 
-  const templateRows = await db.getAllAsync<WorkoutTemplateRow>(
+  const templateRows = await db.getAllAsync<WorkoutPlanRow>(
     `SELECT * FROM workout_templates
      WHERE LOWER(name) LIKE ? OR LOWER(tags) LIKE ?
      ORDER BY created_at DESC`,
     [searchTerm, searchTerm]
   );
 
-  const templates: WorkoutTemplate[] = [];
+  const plans: WorkoutPlan[] = [];
 
   for (const templateRow of templateRows) {
-    const exercises = await getTemplateExercises(templateRow.id);
-    templates.push(rowToWorkoutTemplate(templateRow, exercises));
+    const exercises = await getPlannedExercises(templateRow.id);
+    plans.push(rowToWorkoutPlan(templateRow, exercises));
   }
 
-  return templates;
+  return plans;
 }
 
 /**
- * Get templates by tag
+ * Get plans by tag
  */
-export async function getWorkoutTemplatesByTag(
+export async function getWorkoutPlansByTag(
   tag: string
-): Promise<WorkoutTemplate[]> {
+): Promise<WorkoutPlan[]> {
   const db = await getDatabase();
   const searchTerm = `%"${tag}"%`;
 
-  const templateRows = await db.getAllAsync<WorkoutTemplateRow>(
+  const templateRows = await db.getAllAsync<WorkoutPlanRow>(
     'SELECT * FROM workout_templates WHERE tags LIKE ? ORDER BY created_at DESC',
     [searchTerm]
   );
 
-  const templates: WorkoutTemplate[] = [];
+  const plans: WorkoutPlan[] = [];
 
   for (const templateRow of templateRows) {
-    const exercises = await getTemplateExercises(templateRow.id);
-    templates.push(rowToWorkoutTemplate(templateRow, exercises));
+    const exercises = await getPlannedExercises(templateRow.id);
+    plans.push(rowToWorkoutPlan(templateRow, exercises));
   }
 
-  return templates;
+  return plans;
 }
 
 /**
- * Toggle favorite status for a workout template
+ * Toggle favorite status for a workout plan
  */
-export async function toggleFavoriteTemplate(id: string): Promise<boolean> {
+export async function toggleFavoritePlan(id: string): Promise<boolean> {
   const db = await getDatabase();
 
   // Get current status
-  const template = await db.getFirstAsync<{ is_favorite: number }>(
+  const plan = await db.getFirstAsync<{ is_favorite: number }>(
     'SELECT is_favorite FROM workout_templates WHERE id = ?',
     [id]
   );
 
-  if (!template) {
-    throw new Error('Template not found');
+  if (!plan) {
+    throw new Error('Plan not found');
   }
 
-  const newStatus = template.is_favorite === 1 ? 0 : 1;
+  const newStatus = plan.is_favorite === 1 ? 0 : 1;
 
   await db.runAsync(
     'UPDATE workout_templates SET is_favorite = ?, updated_at = ? WHERE id = ?',
@@ -248,9 +249,9 @@ export async function toggleFavoriteTemplate(id: string): Promise<boolean> {
 }
 
 /**
- * Set favorite status for a workout template
+ * Set favorite status for a workout plan
  */
-export async function setFavoriteTemplate(id: string, isFavorite: boolean): Promise<void> {
+export async function setFavoritePlan(id: string, isFavorite: boolean): Promise<void> {
   const db = await getDatabase();
 
   await db.runAsync(
@@ -264,23 +265,23 @@ export async function setFavoriteTemplate(id: string, isFavorite: boolean): Prom
 // ============================================================================
 
 /**
- * Get all exercises for a template with their sets
+ * Get all exercises for a plan with their sets
  */
-async function getTemplateExercises(
-  workoutTemplateId: string
-): Promise<TemplateExercise[]> {
+async function getPlannedExercises(
+  workoutPlanId: string
+): Promise<PlannedExercise[]> {
   const db = await getDatabase();
 
-  const exerciseRows = await db.getAllAsync<TemplateExerciseRow>(
+  const exerciseRows = await db.getAllAsync<PlannedExerciseRow>(
     'SELECT * FROM template_exercises WHERE workout_template_id = ? ORDER BY order_index',
-    [workoutTemplateId]
+    [workoutPlanId]
   );
 
-  const exercises: TemplateExercise[] = [];
+  const exercises: PlannedExercise[] = [];
 
   for (const exerciseRow of exerciseRows) {
-    const sets = await getTemplateSets(exerciseRow.id);
-    exercises.push(rowToTemplateExercise(exerciseRow, sets));
+    const sets = await getPlannedSets(exerciseRow.id);
+    exercises.push(rowToPlannedExercise(exerciseRow, sets));
   }
 
   return exercises;
@@ -289,24 +290,24 @@ async function getTemplateExercises(
 /**
  * Get all sets for an exercise
  */
-async function getTemplateSets(
-  templateExerciseId: string
-): Promise<TemplateSet[]> {
+async function getPlannedSets(
+  plannedExerciseId: string
+): Promise<PlannedSet[]> {
   const db = await getDatabase();
 
-  const setRows = await db.getAllAsync<TemplateSetRow>(
+  const setRows = await db.getAllAsync<PlannedSetRow>(
     'SELECT * FROM template_sets WHERE template_exercise_id = ? ORDER BY order_index',
-    [templateExerciseId]
+    [plannedExerciseId]
   );
 
-  return setRows.map(rowToTemplateSet);
+  return setRows.map(rowToPlannedSet);
 }
 
 /**
- * Insert a template exercise
+ * Insert a planned exercise
  */
-async function insertTemplateExercise(
-  exercise: TemplateExercise
+async function insertPlannedExercise(
+  exercise: PlannedExercise
 ): Promise<void> {
   const db = await getDatabase();
 
@@ -317,7 +318,7 @@ async function insertTemplateExercise(
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       exercise.id,
-      exercise.workoutTemplateId,
+      exercise.workoutPlanId,
       exercise.exerciseName,
       exercise.orderIndex,
       exercise.notes || null,
@@ -330,9 +331,9 @@ async function insertTemplateExercise(
 }
 
 /**
- * Insert a template set
+ * Insert a planned set
  */
-async function insertTemplateSet(set: TemplateSet): Promise<void> {
+async function insertPlannedSet(set: PlannedSet): Promise<void> {
   const db = await getDatabase();
 
   await db.runAsync(
@@ -342,7 +343,7 @@ async function insertTemplateSet(set: TemplateSet): Promise<void> {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       set.id,
-      set.templateExerciseId,
+      set.plannedExerciseId,
       set.orderIndex,
       set.targetWeight ?? null,
       set.targetWeightUnit || null,
@@ -358,12 +359,12 @@ async function insertTemplateSet(set: TemplateSet): Promise<void> {
 }
 
 /**
- * Convert database row to WorkoutTemplate
+ * Convert database row to WorkoutPlan
  */
-function rowToWorkoutTemplate(
-  row: WorkoutTemplateRow,
-  exercises: TemplateExercise[]
-): WorkoutTemplate {
+function rowToWorkoutPlan(
+  row: WorkoutPlanRow,
+  exercises: PlannedExercise[]
+): WorkoutPlan {
   return {
     id: row.id,
     name: row.name,
@@ -379,15 +380,15 @@ function rowToWorkoutTemplate(
 }
 
 /**
- * Convert database row to TemplateExercise
+ * Convert database row to PlannedExercise
  */
-function rowToTemplateExercise(
-  row: TemplateExerciseRow,
-  sets: TemplateSet[]
-): TemplateExercise {
+function rowToPlannedExercise(
+  row: PlannedExerciseRow,
+  sets: PlannedSet[]
+): PlannedExercise {
   return {
     id: row.id,
-    workoutTemplateId: row.workout_template_id,
+    workoutPlanId: row.workout_template_id,
     exerciseName: row.exercise_name,
     orderIndex: row.order_index,
     notes: row.notes || undefined,
@@ -400,12 +401,12 @@ function rowToTemplateExercise(
 }
 
 /**
- * Convert database row to TemplateSet
+ * Convert database row to PlannedSet
  */
-function rowToTemplateSet(row: TemplateSetRow): TemplateSet {
+function rowToPlannedSet(row: PlannedSetRow): PlannedSet {
   return {
     id: row.id,
-    templateExerciseId: row.template_exercise_id,
+    plannedExerciseId: row.template_exercise_id,
     orderIndex: row.order_index,
     targetWeight: row.target_weight ?? undefined,
     targetWeightUnit: (row.target_weight_unit as 'lbs' | 'kg') || undefined,
@@ -424,31 +425,54 @@ function rowToTemplateSet(row: TemplateSetRow): TemplateSet {
 // ============================================================================
 
 /**
- * Hook called after creating a template
+ * Hook called after creating a plan
  */
 async function afterCreateHook(
-  entityType: 'WorkoutTemplate',
-  entity: WorkoutTemplate
+  entityType: 'WorkoutPlan',
+  entity: WorkoutPlan
 ): Promise<void> {
   // Sync functionality removed
 }
 
 /**
- * Hook called after updating a template
+ * Hook called after updating a plan
  */
 async function afterUpdateHook(
-  entityType: 'WorkoutTemplate',
-  entity: WorkoutTemplate
+  entityType: 'WorkoutPlan',
+  entity: WorkoutPlan
 ): Promise<void> {
   // Sync functionality removed
 }
 
 /**
- * Hook called after deleting a template
+ * Hook called after deleting a plan
  */
 async function afterDeleteHook(
-  entityType: 'WorkoutTemplate',
+  entityType: 'WorkoutPlan',
   entityId: string
 ): Promise<void> {
   // Sync functionality removed
 }
+
+// ============================================================================
+// Legacy Function Aliases (for backward compatibility - will be removed)
+// ============================================================================
+
+/** @deprecated Use getAllWorkoutPlans instead */
+export const getAllWorkoutTemplates = getAllWorkoutPlans;
+/** @deprecated Use getWorkoutPlanById instead */
+export const getWorkoutTemplateById = getWorkoutPlanById;
+/** @deprecated Use createWorkoutPlan instead */
+export const createWorkoutTemplate = createWorkoutPlan;
+/** @deprecated Use updateWorkoutPlan instead */
+export const updateWorkoutTemplate = updateWorkoutPlan;
+/** @deprecated Use deleteWorkoutPlan instead */
+export const deleteWorkoutTemplate = deleteWorkoutPlan;
+/** @deprecated Use searchWorkoutPlans instead */
+export const searchWorkoutTemplates = searchWorkoutPlans;
+/** @deprecated Use getWorkoutPlansByTag instead */
+export const getWorkoutTemplatesByTag = getWorkoutPlansByTag;
+/** @deprecated Use toggleFavoritePlan instead */
+export const toggleFavoriteTemplate = toggleFavoritePlan;
+/** @deprecated Use setFavoritePlan instead */
+export const setFavoriteTemplate = setFavoritePlan;

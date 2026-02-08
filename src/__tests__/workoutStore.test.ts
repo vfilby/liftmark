@@ -1,15 +1,15 @@
-import { useWorkoutStore } from '../stores/workoutStore';
-import type { WorkoutTemplate } from '@/types';
+import { useWorkoutPlanStore } from '../stores/workoutPlanStore';
+import type { WorkoutPlan } from '@/types';
 
 // Mock the repository module
 jest.mock('@/db/repository', () => ({
-  getAllWorkoutTemplates: jest.fn(),
-  getWorkoutTemplateById: jest.fn(),
-  createWorkoutTemplate: jest.fn(),
-  updateWorkoutTemplate: jest.fn(),
-  deleteWorkoutTemplate: jest.fn(),
-  searchWorkoutTemplates: jest.fn(),
-  getWorkoutTemplatesByTag: jest.fn(),
+  getAllWorkoutPlans: jest.fn(),
+  getWorkoutPlanById: jest.fn(),
+  createWorkoutPlan: jest.fn(),
+  updateWorkoutPlan: jest.fn(),
+  deleteWorkoutPlan: jest.fn(),
+  searchWorkoutPlans: jest.fn(),
+  getWorkoutPlansByTag: jest.fn(),
 }));
 
 // Mock the MarkdownParser
@@ -18,32 +18,32 @@ jest.mock('@/services/MarkdownParser', () => ({
 }));
 
 import {
-  getAllWorkoutTemplates,
-  getWorkoutTemplateById,
-  createWorkoutTemplate as createWorkoutTemplateInDb,
-  updateWorkoutTemplate as updateWorkoutTemplateInDb,
-  deleteWorkoutTemplate,
-  searchWorkoutTemplates,
-  getWorkoutTemplatesByTag,
+  getAllWorkoutPlans,
+  getWorkoutPlanById,
+  createWorkoutPlan as createWorkoutPlanInDb,
+  updateWorkoutPlan as updateWorkoutPlanInDb,
+  deleteWorkoutPlan,
+  searchWorkoutPlans,
+  getWorkoutPlansByTag,
 } from '@/db/repository';
 import { parseWorkout } from '@/services/MarkdownParser';
 
-const mockedGetAllWorkoutTemplates = getAllWorkoutTemplates as jest.MockedFunction<typeof getAllWorkoutTemplates>;
-const mockedGetWorkoutTemplateById = getWorkoutTemplateById as jest.MockedFunction<typeof getWorkoutTemplateById>;
-const mockedCreateWorkoutTemplate = createWorkoutTemplateInDb as jest.MockedFunction<typeof createWorkoutTemplateInDb>;
-const mockedUpdateWorkoutTemplate = updateWorkoutTemplateInDb as jest.MockedFunction<typeof updateWorkoutTemplateInDb>;
-const mockedDeleteWorkoutTemplate = deleteWorkoutTemplate as jest.MockedFunction<typeof deleteWorkoutTemplate>;
-const mockedSearchWorkoutTemplates = searchWorkoutTemplates as jest.MockedFunction<typeof searchWorkoutTemplates>;
-const mockedGetWorkoutTemplatesByTag = getWorkoutTemplatesByTag as jest.MockedFunction<typeof getWorkoutTemplatesByTag>;
+const mockedGetAllWorkoutPlans = getAllWorkoutPlans as jest.MockedFunction<typeof getAllWorkoutPlans>;
+const mockedGetWorkoutPlanById = getWorkoutPlanById as jest.MockedFunction<typeof getWorkoutPlanById>;
+const mockedCreateWorkoutPlan = createWorkoutPlanInDb as jest.MockedFunction<typeof createWorkoutPlanInDb>;
+const mockedUpdateWorkoutPlan = updateWorkoutPlanInDb as jest.MockedFunction<typeof updateWorkoutPlanInDb>;
+const mockedDeleteWorkoutPlan = deleteWorkoutPlan as jest.MockedFunction<typeof deleteWorkoutPlan>;
+const mockedSearchWorkoutPlans = searchWorkoutPlans as jest.MockedFunction<typeof searchWorkoutPlans>;
+const mockedGetWorkoutPlansByTag = getWorkoutPlansByTag as jest.MockedFunction<typeof getWorkoutPlansByTag>;
 const mockedParseWorkout = parseWorkout as jest.MockedFunction<typeof parseWorkout>;
 
 // ============================================================================
 // Helper Factory Functions
 // ============================================================================
 
-function createTestWorkoutTemplate(overrides: Partial<WorkoutTemplate> = {}): WorkoutTemplate {
+function createTestWorkoutPlan(overrides: Partial<WorkoutPlan> = {}): WorkoutPlan {
   return {
-    id: 'template-1',
+    id: 'plan-1',
     name: 'Test Workout',
     tags: ['strength'],
     createdAt: '2024-01-15T10:00:00Z',
@@ -62,9 +62,9 @@ describe('workoutStore', () => {
     jest.clearAllMocks();
 
     // Reset the store state before each test
-    useWorkoutStore.setState({
-      workouts: [],
-      selectedWorkout: null,
+    useWorkoutPlanStore.setState({
+      plans: [],
+      selectedPlan: null,
       isLoading: false,
       error: null,
     });
@@ -75,59 +75,59 @@ describe('workoutStore', () => {
   // ==========================================================================
 
   describe('initial state', () => {
-    it('has empty workouts array initially', () => {
-      const { workouts } = useWorkoutStore.getState();
-      expect(workouts).toEqual([]);
+    it('has empty plans array initially', () => {
+      const { plans } = useWorkoutPlanStore.getState();
+      expect(plans).toEqual([]);
     });
 
-    it('has null selectedWorkout initially', () => {
-      const { selectedWorkout } = useWorkoutStore.getState();
-      expect(selectedWorkout).toBeNull();
+    it('has null selectedPlan initially', () => {
+      const { selectedPlan } = useWorkoutPlanStore.getState();
+      expect(selectedPlan).toBeNull();
     });
 
     it('is not loading initially', () => {
-      const { isLoading } = useWorkoutStore.getState();
+      const { isLoading } = useWorkoutPlanStore.getState();
       expect(isLoading).toBe(false);
     });
 
     it('has no error initially', () => {
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
       expect(error).toBeNull();
     });
   });
 
   // ==========================================================================
-  // loadWorkouts Tests
+  // loadPlans Tests
   // ==========================================================================
 
-  describe('loadWorkouts', () => {
+  describe('loadPlans', () => {
     it('sets isLoading to true while loading', async () => {
-      let resolvePromise: (value: WorkoutTemplate[]) => void;
-      const pendingPromise = new Promise<WorkoutTemplate[]>((resolve) => {
+      let resolvePromise: (value: WorkoutPlan[]) => void;
+      const pendingPromise = new Promise<WorkoutPlan[]>((resolve) => {
         resolvePromise = resolve;
       });
 
-      mockedGetAllWorkoutTemplates.mockReturnValue(pendingPromise);
+      mockedGetAllWorkoutPlans.mockReturnValue(pendingPromise);
 
-      const loadPromise = useWorkoutStore.getState().loadWorkouts();
+      const loadPromise = useWorkoutPlanStore.getState().loadPlans();
 
-      expect(useWorkoutStore.getState().isLoading).toBe(true);
+      expect(useWorkoutPlanStore.getState().isLoading).toBe(true);
 
       resolvePromise!([]);
       await loadPromise;
     });
 
-    it('loads workouts from repository', async () => {
-      const workouts = [
-        createTestWorkoutTemplate({ id: 'template-1', name: 'Push Day' }),
-        createTestWorkoutTemplate({ id: 'template-2', name: 'Pull Day' }),
+    it('loads plans from repository', async () => {
+      const plans = [
+        createTestWorkoutPlan({ id: 'plan-1', name: 'Push Day' }),
+        createTestWorkoutPlan({ id: 'plan-2', name: 'Pull Day' }),
       ];
 
-      mockedGetAllWorkoutTemplates.mockResolvedValue(workouts);
+      mockedGetAllWorkoutPlans.mockResolvedValue(plans);
 
-      await useWorkoutStore.getState().loadWorkouts();
+      await useWorkoutPlanStore.getState().loadPlans();
 
-      const { workouts: loadedWorkouts, isLoading, error } = useWorkoutStore.getState();
+      const { plans: loadedWorkouts, isLoading, error } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(error).toBeNull();
@@ -136,305 +136,305 @@ describe('workoutStore', () => {
       expect(loadedWorkouts[1].name).toBe('Pull Day');
     });
 
-    it('handles empty workouts list', async () => {
-      mockedGetAllWorkoutTemplates.mockResolvedValue([]);
+    it('handles empty plans list', async () => {
+      mockedGetAllWorkoutPlans.mockResolvedValue([]);
 
-      await useWorkoutStore.getState().loadWorkouts();
+      await useWorkoutPlanStore.getState().loadPlans();
 
-      const { workouts, isLoading } = useWorkoutStore.getState();
+      const { plans, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
-      expect(workouts).toEqual([]);
+      expect(plans).toEqual([]);
     });
 
     it('handles errors', async () => {
-      const error = new Error('Failed to fetch workouts');
-      mockedGetAllWorkoutTemplates.mockRejectedValue(error);
+      const error = new Error('Failed to fetch plans');
+      mockedGetAllWorkoutPlans.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().loadWorkouts();
+      await useWorkoutPlanStore.getState().loadPlans();
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
-      expect(storeError).toBe('Failed to fetch workouts');
+      expect(storeError).toBe('Failed to fetch plans');
     });
 
     it('handles non-Error thrown values', async () => {
-      mockedGetAllWorkoutTemplates.mockRejectedValue('string error');
+      mockedGetAllWorkoutPlans.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().loadWorkouts();
+      await useWorkoutPlanStore.getState().loadPlans();
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to load workouts');
+      expect(error).toBe('Failed to load plans');
     });
 
     it('clears previous error when loading', async () => {
-      useWorkoutStore.setState({ error: 'Previous error' });
+      useWorkoutPlanStore.setState({ error: 'Previous error' });
 
-      mockedGetAllWorkoutTemplates.mockResolvedValue([]);
+      mockedGetAllWorkoutPlans.mockResolvedValue([]);
 
-      await useWorkoutStore.getState().loadWorkouts();
+      await useWorkoutPlanStore.getState().loadPlans();
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
       expect(error).toBeNull();
     });
   });
 
   // ==========================================================================
-  // loadWorkout Tests
+  // loadPlan Tests
   // ==========================================================================
 
-  describe('loadWorkout', () => {
+  describe('loadPlan', () => {
     it('sets isLoading to true while loading', async () => {
-      let resolvePromise: (value: WorkoutTemplate | null) => void;
-      const pendingPromise = new Promise<WorkoutTemplate | null>((resolve) => {
+      let resolvePromise: (value: WorkoutPlan | null) => void;
+      const pendingPromise = new Promise<WorkoutPlan | null>((resolve) => {
         resolvePromise = resolve;
       });
 
-      mockedGetWorkoutTemplateById.mockReturnValue(pendingPromise);
+      mockedGetWorkoutPlanById.mockReturnValue(pendingPromise);
 
-      const loadPromise = useWorkoutStore.getState().loadWorkout('template-1');
+      const loadPromise = useWorkoutPlanStore.getState().loadPlan('plan-1');
 
-      expect(useWorkoutStore.getState().isLoading).toBe(true);
+      expect(useWorkoutPlanStore.getState().isLoading).toBe(true);
 
-      resolvePromise!(createTestWorkoutTemplate());
+      resolvePromise!(createTestWorkoutPlan());
       await loadPromise;
     });
 
-    it('loads a single workout and sets as selectedWorkout', async () => {
-      const workout = createTestWorkoutTemplate({ id: 'template-1', name: 'Leg Day' });
+    it('loads a single workout and sets as selectedPlan', async () => {
+      const workout = createTestWorkoutPlan({ id: 'plan-1', name: 'Leg Day' });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(workout);
+      mockedGetWorkoutPlanById.mockResolvedValue(workout);
 
-      await useWorkoutStore.getState().loadWorkout('template-1');
+      await useWorkoutPlanStore.getState().loadPlan('plan-1');
 
-      const { selectedWorkout, isLoading, error } = useWorkoutStore.getState();
+      const { selectedPlan, isLoading, error } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(error).toBeNull();
-      expect(selectedWorkout).toEqual(workout);
-      expect(mockedGetWorkoutTemplateById).toHaveBeenCalledWith('template-1');
+      expect(selectedPlan).toEqual(workout);
+      expect(mockedGetWorkoutPlanById).toHaveBeenCalledWith('plan-1');
     });
 
     it('handles workout not found (null)', async () => {
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
 
-      await useWorkoutStore.getState().loadWorkout('non-existent');
+      await useWorkoutPlanStore.getState().loadPlan('non-existent');
 
-      const { selectedWorkout, isLoading } = useWorkoutStore.getState();
+      const { selectedPlan, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
-      expect(selectedWorkout).toBeNull();
+      expect(selectedPlan).toBeNull();
     });
 
     it('handles errors', async () => {
       const error = new Error('Database error');
-      mockedGetWorkoutTemplateById.mockRejectedValue(error);
+      mockedGetWorkoutPlanById.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().loadWorkout('template-1');
+      await useWorkoutPlanStore.getState().loadPlan('plan-1');
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(storeError).toBe('Database error');
     });
 
     it('handles non-Error thrown values', async () => {
-      mockedGetWorkoutTemplateById.mockRejectedValue('string error');
+      mockedGetWorkoutPlanById.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().loadWorkout('template-1');
+      await useWorkoutPlanStore.getState().loadPlan('plan-1');
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
       expect(error).toBe('Failed to load workout');
     });
   });
 
   // ==========================================================================
-  // saveWorkout Tests
+  // savePlan Tests
   // ==========================================================================
 
-  describe('saveWorkout', () => {
+  describe('savePlan', () => {
     it('creates a new workout when it does not exist', async () => {
-      const newWorkout = createTestWorkoutTemplate({ id: 'new-template', name: 'New Workout' });
+      const newWorkout = createTestWorkoutPlan({ id: 'new-template', name: 'New Workout' });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
-      mockedCreateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([newWorkout]);
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
+      mockedCreateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([newWorkout]);
 
-      await useWorkoutStore.getState().saveWorkout(newWorkout);
+      await useWorkoutPlanStore.getState().savePlan(newWorkout);
 
-      expect(mockedGetWorkoutTemplateById).toHaveBeenCalledWith('new-template');
-      expect(mockedCreateWorkoutTemplate).toHaveBeenCalledWith(newWorkout);
-      expect(mockedUpdateWorkoutTemplate).not.toHaveBeenCalled();
+      expect(mockedGetWorkoutPlanById).toHaveBeenCalledWith('new-template');
+      expect(mockedCreateWorkoutPlan).toHaveBeenCalledWith(newWorkout);
+      expect(mockedUpdateWorkoutPlan).not.toHaveBeenCalled();
     });
 
     it('updates an existing workout', async () => {
-      const existingWorkout = createTestWorkoutTemplate({ id: 'existing-template', name: 'Existing Workout' });
+      const existingWorkout = createTestWorkoutPlan({ id: 'existing-template', name: 'Existing Workout' });
       const updatedWorkout = { ...existingWorkout, name: 'Updated Workout' };
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
-      mockedUpdateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([updatedWorkout]);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
+      mockedUpdateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([updatedWorkout]);
 
-      await useWorkoutStore.getState().saveWorkout(updatedWorkout);
+      await useWorkoutPlanStore.getState().savePlan(updatedWorkout);
 
-      expect(mockedGetWorkoutTemplateById).toHaveBeenCalledWith('existing-template');
-      expect(mockedUpdateWorkoutTemplate).toHaveBeenCalledWith(updatedWorkout);
-      expect(mockedCreateWorkoutTemplate).not.toHaveBeenCalled();
+      expect(mockedGetWorkoutPlanById).toHaveBeenCalledWith('existing-template');
+      expect(mockedUpdateWorkoutPlan).toHaveBeenCalledWith(updatedWorkout);
+      expect(mockedCreateWorkoutPlan).not.toHaveBeenCalled();
     });
 
-    it('reloads workouts after saving', async () => {
-      const workout = createTestWorkoutTemplate();
-      const allWorkouts = [workout, createTestWorkoutTemplate({ id: 'template-2' })];
+    it('reloads plans after saving', async () => {
+      const workout = createTestWorkoutPlan();
+      const allWorkouts = [workout, createTestWorkoutPlan({ id: 'plan-2' })];
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
-      mockedCreateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue(allWorkouts);
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
+      mockedCreateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue(allWorkouts);
 
-      await useWorkoutStore.getState().saveWorkout(workout);
+      await useWorkoutPlanStore.getState().savePlan(workout);
 
-      const { workouts } = useWorkoutStore.getState();
+      const { plans } = useWorkoutPlanStore.getState();
 
-      expect(mockedGetAllWorkoutTemplates).toHaveBeenCalled();
-      expect(workouts).toHaveLength(2);
+      expect(mockedGetAllWorkoutPlans).toHaveBeenCalled();
+      expect(plans).toHaveLength(2);
     });
 
     it('handles save errors', async () => {
-      const workout = createTestWorkoutTemplate();
+      const workout = createTestWorkoutPlan();
       const error = new Error('Failed to save');
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
-      mockedCreateWorkoutTemplate.mockRejectedValue(error);
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
+      mockedCreateWorkoutPlan.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().saveWorkout(workout);
+      await useWorkoutPlanStore.getState().savePlan(workout);
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(storeError).toBe('Failed to save');
     });
 
     it('handles non-Error thrown values', async () => {
-      const workout = createTestWorkoutTemplate();
+      const workout = createTestWorkoutPlan();
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
-      mockedCreateWorkoutTemplate.mockRejectedValue('string error');
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
+      mockedCreateWorkoutPlan.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().saveWorkout(workout);
+      await useWorkoutPlanStore.getState().savePlan(workout);
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
       expect(error).toBe('Failed to save workout');
     });
   });
 
   // ==========================================================================
-  // removeWorkout Tests
+  // removePlan Tests
   // ==========================================================================
 
-  describe('removeWorkout', () => {
+  describe('removePlan', () => {
     it('deletes workout and reloads list', async () => {
-      mockedDeleteWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([]);
+      mockedDeleteWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([]);
 
-      await useWorkoutStore.getState().removeWorkout('template-to-delete');
+      await useWorkoutPlanStore.getState().removePlan('template-to-delete');
 
-      expect(mockedDeleteWorkoutTemplate).toHaveBeenCalledWith('template-to-delete');
-      expect(mockedGetAllWorkoutTemplates).toHaveBeenCalled();
+      expect(mockedDeleteWorkoutPlan).toHaveBeenCalledWith('template-to-delete');
+      expect(mockedGetAllWorkoutPlans).toHaveBeenCalled();
     });
 
-    it('clears selectedWorkout after deletion', async () => {
-      useWorkoutStore.setState({ selectedWorkout: createTestWorkoutTemplate({ id: 'template-1' }) });
+    it('clears selectedPlan after deletion', async () => {
+      useWorkoutPlanStore.setState({ selectedPlan: createTestWorkoutPlan({ id: 'plan-1' }) });
 
-      mockedDeleteWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([]);
+      mockedDeleteWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([]);
 
-      await useWorkoutStore.getState().removeWorkout('template-1');
+      await useWorkoutPlanStore.getState().removePlan('plan-1');
 
-      const { selectedWorkout } = useWorkoutStore.getState();
+      const { selectedPlan } = useWorkoutPlanStore.getState();
 
-      expect(selectedWorkout).toBeNull();
+      expect(selectedPlan).toBeNull();
     });
 
     it('handles delete errors', async () => {
       const error = new Error('Delete failed');
-      mockedDeleteWorkoutTemplate.mockRejectedValue(error);
+      mockedDeleteWorkoutPlan.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().removeWorkout('template-1');
+      await useWorkoutPlanStore.getState().removePlan('plan-1');
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(storeError).toBe('Delete failed');
     });
 
     it('handles non-Error thrown values', async () => {
-      mockedDeleteWorkoutTemplate.mockRejectedValue('string error');
+      mockedDeleteWorkoutPlan.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().removeWorkout('template-1');
+      await useWorkoutPlanStore.getState().removePlan('plan-1');
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
       expect(error).toBe('Failed to delete workout');
     });
   });
 
   // ==========================================================================
-  // reprocessWorkout Tests
+  // reprocessPlan Tests
   // ==========================================================================
 
-  describe('reprocessWorkout', () => {
+  describe('reprocessPlan', () => {
     it('returns error when workout not found', async () => {
-      mockedGetWorkoutTemplateById.mockResolvedValue(null);
+      mockedGetWorkoutPlanById.mockResolvedValue(null);
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('non-existent');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('non-existent');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Workout not found');
     });
 
     it('returns error when no source markdown', async () => {
-      const workout = createTestWorkoutTemplate({ id: 'template-1', sourceMarkdown: undefined });
-      mockedGetWorkoutTemplateById.mockResolvedValue(workout);
+      const workout = createTestWorkoutPlan({ id: 'plan-1', sourceMarkdown: undefined });
+      mockedGetWorkoutPlanById.mockResolvedValue(workout);
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('template-1');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('No source markdown stored for this workout');
     });
 
     it('returns error when parse fails', async () => {
-      const workout = createTestWorkoutTemplate({ id: 'template-1', sourceMarkdown: '# Invalid' });
-      mockedGetWorkoutTemplateById.mockResolvedValue(workout);
+      const workout = createTestWorkoutPlan({ id: 'plan-1', sourceMarkdown: '# Invalid' });
+      mockedGetWorkoutPlanById.mockResolvedValue(workout);
       mockedParseWorkout.mockReturnValue({
         success: false,
         errors: ['Parse error: invalid format'],
       });
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('template-1');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Parse error: invalid format');
     });
 
     it('successfully reprocesses workout', async () => {
-      const existingWorkout = createTestWorkoutTemplate({
-        id: 'template-1',
+      const existingWorkout = createTestWorkoutPlan({
+        id: 'plan-1',
         name: 'Old Name',
         sourceMarkdown: '# Push Day\n- Bench Press: 3x10',
         createdAt: '2024-01-10T10:00:00Z',
       });
 
-      const parsedWorkout = createTestWorkoutTemplate({
+      const parsedWorkout = createTestWorkoutPlan({
         id: 'parsed-id',
         name: 'Push Day',
         exercises: [
           {
             id: 'exercise-1',
-            workoutTemplateId: 'parsed-id',
+            workoutPlanId: 'parsed-id',
             exerciseName: 'Bench Press',
             orderIndex: 0,
             sets: [],
@@ -442,38 +442,38 @@ describe('workoutStore', () => {
         ],
       });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
       mockedParseWorkout.mockReturnValue({
         success: true,
         data: parsedWorkout,
       });
-      mockedUpdateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([parsedWorkout]);
+      mockedUpdateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([parsedWorkout]);
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('template-1');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(true);
-      expect(mockedUpdateWorkoutTemplate).toHaveBeenCalledWith(
+      expect(mockedUpdateWorkoutPlan).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 'template-1', // Preserves original ID
+          id: 'plan-1', // Preserves original ID
           createdAt: '2024-01-10T10:00:00Z', // Preserves original createdAt
           name: 'Push Day',
         })
       );
     });
 
-    it('updates exercise workoutTemplateId to match original workout', async () => {
-      const existingWorkout = createTestWorkoutTemplate({
+    it('updates exercise workoutPlanId to match original workout', async () => {
+      const existingWorkout = createTestWorkoutPlan({
         id: 'original-id',
         sourceMarkdown: '# Workout',
       });
 
-      const parsedWorkout = createTestWorkoutTemplate({
+      const parsedWorkout = createTestWorkoutPlan({
         id: 'new-id',
         exercises: [
           {
             id: 'exercise-1',
-            workoutTemplateId: 'new-id',
+            workoutPlanId: 'new-id',
             exerciseName: 'Squat',
             orderIndex: 0,
             sets: [],
@@ -481,80 +481,80 @@ describe('workoutStore', () => {
         ],
       });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
       mockedParseWorkout.mockReturnValue({ success: true, data: parsedWorkout });
-      mockedUpdateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([]);
+      mockedUpdateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([]);
 
-      await useWorkoutStore.getState().reprocessWorkout('original-id');
+      await useWorkoutPlanStore.getState().reprocessPlan('original-id');
 
-      expect(mockedUpdateWorkoutTemplate).toHaveBeenCalledWith(
+      expect(mockedUpdateWorkoutPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           exercises: expect.arrayContaining([
             expect.objectContaining({
-              workoutTemplateId: 'original-id',
+              workoutPlanId: 'original-id',
             }),
           ]),
         })
       );
     });
 
-    it('updates selectedWorkout after reprocessing', async () => {
-      const existingWorkout = createTestWorkoutTemplate({
-        id: 'template-1',
+    it('updates selectedPlan after reprocessing', async () => {
+      const existingWorkout = createTestWorkoutPlan({
+        id: 'plan-1',
         sourceMarkdown: '# Workout',
       });
 
-      const parsedWorkout = createTestWorkoutTemplate({ id: 'template-1', name: 'Updated' });
+      const parsedWorkout = createTestWorkoutPlan({ id: 'plan-1', name: 'Updated' });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
       mockedParseWorkout.mockReturnValue({ success: true, data: parsedWorkout });
-      mockedUpdateWorkoutTemplate.mockResolvedValue(undefined);
-      mockedGetAllWorkoutTemplates.mockResolvedValue([parsedWorkout]);
+      mockedUpdateWorkoutPlan.mockResolvedValue(undefined);
+      mockedGetAllWorkoutPlans.mockResolvedValue([parsedWorkout]);
 
-      await useWorkoutStore.getState().reprocessWorkout('template-1');
+      await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
-      const { selectedWorkout } = useWorkoutStore.getState();
+      const { selectedPlan } = useWorkoutPlanStore.getState();
 
-      expect(selectedWorkout).not.toBeNull();
-      expect(selectedWorkout?.name).toBe('Updated');
+      expect(selectedPlan).not.toBeNull();
+      expect(selectedPlan?.name).toBe('Updated');
     });
 
     it('handles reprocess errors', async () => {
-      const existingWorkout = createTestWorkoutTemplate({
-        id: 'template-1',
+      const existingWorkout = createTestWorkoutPlan({
+        id: 'plan-1',
         sourceMarkdown: '# Workout',
       });
 
-      const parsedWorkout = createTestWorkoutTemplate({ id: 'template-1' });
+      const parsedWorkout = createTestWorkoutPlan({ id: 'plan-1' });
       const error = new Error('Update failed');
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
       mockedParseWorkout.mockReturnValue({ success: true, data: parsedWorkout });
-      mockedUpdateWorkoutTemplate.mockRejectedValue(error);
+      mockedUpdateWorkoutPlan.mockRejectedValue(error);
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('template-1');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Update failed');
 
-      const { error: storeError } = useWorkoutStore.getState();
+      const { error: storeError } = useWorkoutPlanStore.getState();
       expect(storeError).toBe('Update failed');
     });
 
     it('handles non-Error thrown values', async () => {
-      const existingWorkout = createTestWorkoutTemplate({
-        id: 'template-1',
+      const existingWorkout = createTestWorkoutPlan({
+        id: 'plan-1',
         sourceMarkdown: '# Workout',
       });
 
-      const parsedWorkout = createTestWorkoutTemplate({ id: 'template-1' });
+      const parsedWorkout = createTestWorkoutPlan({ id: 'plan-1' });
 
-      mockedGetWorkoutTemplateById.mockResolvedValue(existingWorkout);
+      mockedGetWorkoutPlanById.mockResolvedValue(existingWorkout);
       mockedParseWorkout.mockReturnValue({ success: true, data: parsedWorkout });
-      mockedUpdateWorkoutTemplate.mockRejectedValue('string error');
+      mockedUpdateWorkoutPlan.mockRejectedValue('string error');
 
-      const result = await useWorkoutStore.getState().reprocessWorkout('template-1');
+      const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Unknown error');
@@ -562,59 +562,59 @@ describe('workoutStore', () => {
   });
 
   // ==========================================================================
-  // searchWorkouts Tests
+  // searchPlans Tests
   // ==========================================================================
 
-  describe('searchWorkouts', () => {
-    it('searches workouts with query', async () => {
-      const workouts = [createTestWorkoutTemplate({ name: 'Push Day' })];
-      mockedSearchWorkoutTemplates.mockResolvedValue(workouts);
+  describe('searchPlans', () => {
+    it('searches plans with query', async () => {
+      const plans = [createTestWorkoutPlan({ name: 'Push Day' })];
+      mockedSearchWorkoutPlans.mockResolvedValue(plans);
 
-      await useWorkoutStore.getState().searchWorkouts('push');
+      await useWorkoutPlanStore.getState().searchPlans('push');
 
-      expect(mockedSearchWorkoutTemplates).toHaveBeenCalledWith('push');
+      expect(mockedSearchWorkoutPlans).toHaveBeenCalledWith('push');
 
-      const { workouts: results } = useWorkoutStore.getState();
+      const { plans: results } = useWorkoutPlanStore.getState();
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe('Push Day');
     });
 
-    it('loads all workouts when query is empty', async () => {
-      const workouts = [
-        createTestWorkoutTemplate({ id: '1', name: 'Push' }),
-        createTestWorkoutTemplate({ id: '2', name: 'Pull' }),
+    it('loads all plans when query is empty', async () => {
+      const plans = [
+        createTestWorkoutPlan({ id: '1', name: 'Push' }),
+        createTestWorkoutPlan({ id: '2', name: 'Pull' }),
       ];
-      mockedGetAllWorkoutTemplates.mockResolvedValue(workouts);
+      mockedGetAllWorkoutPlans.mockResolvedValue(plans);
 
-      await useWorkoutStore.getState().searchWorkouts('');
+      await useWorkoutPlanStore.getState().searchPlans('');
 
-      expect(mockedGetAllWorkoutTemplates).toHaveBeenCalled();
-      expect(mockedSearchWorkoutTemplates).not.toHaveBeenCalled();
+      expect(mockedGetAllWorkoutPlans).toHaveBeenCalled();
+      expect(mockedSearchWorkoutPlans).not.toHaveBeenCalled();
 
-      const { workouts: results } = useWorkoutStore.getState();
+      const { plans: results } = useWorkoutPlanStore.getState();
       expect(results).toHaveLength(2);
     });
 
     it('handles search errors', async () => {
       const error = new Error('Search failed');
-      mockedSearchWorkoutTemplates.mockRejectedValue(error);
+      mockedSearchWorkoutPlans.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().searchWorkouts('query');
+      await useWorkoutPlanStore.getState().searchPlans('query');
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(storeError).toBe('Search failed');
     });
 
     it('handles non-Error thrown values', async () => {
-      mockedSearchWorkoutTemplates.mockRejectedValue('string error');
+      mockedSearchWorkoutPlans.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().searchWorkouts('query');
+      await useWorkoutPlanStore.getState().searchPlans('query');
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to search workouts');
+      expect(error).toBe('Failed to search plans');
     });
   });
 
@@ -623,65 +623,65 @@ describe('workoutStore', () => {
   // ==========================================================================
 
   describe('filterByTag', () => {
-    it('filters workouts by tag', async () => {
-      const workouts = [createTestWorkoutTemplate({ tags: ['strength'] })];
-      mockedGetWorkoutTemplatesByTag.mockResolvedValue(workouts);
+    it('filters plans by tag', async () => {
+      const plans = [createTestWorkoutPlan({ tags: ['strength'] })];
+      mockedGetWorkoutPlansByTag.mockResolvedValue(plans);
 
-      await useWorkoutStore.getState().filterByTag('strength');
+      await useWorkoutPlanStore.getState().filterByTag('strength');
 
-      expect(mockedGetWorkoutTemplatesByTag).toHaveBeenCalledWith('strength');
+      expect(mockedGetWorkoutPlansByTag).toHaveBeenCalledWith('strength');
 
-      const { workouts: results } = useWorkoutStore.getState();
+      const { plans: results } = useWorkoutPlanStore.getState();
       expect(results).toHaveLength(1);
       expect(results[0].tags).toContain('strength');
     });
 
     it('handles filter errors', async () => {
       const error = new Error('Filter failed');
-      mockedGetWorkoutTemplatesByTag.mockRejectedValue(error);
+      mockedGetWorkoutPlansByTag.mockRejectedValue(error);
 
-      await useWorkoutStore.getState().filterByTag('tag');
+      await useWorkoutPlanStore.getState().filterByTag('tag');
 
-      const { error: storeError, isLoading } = useWorkoutStore.getState();
+      const { error: storeError, isLoading } = useWorkoutPlanStore.getState();
 
       expect(isLoading).toBe(false);
       expect(storeError).toBe('Filter failed');
     });
 
     it('handles non-Error thrown values', async () => {
-      mockedGetWorkoutTemplatesByTag.mockRejectedValue('string error');
+      mockedGetWorkoutPlansByTag.mockRejectedValue('string error');
 
-      await useWorkoutStore.getState().filterByTag('tag');
+      await useWorkoutPlanStore.getState().filterByTag('tag');
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to filter workouts');
+      expect(error).toBe('Failed to filter plans');
     });
   });
 
   // ==========================================================================
-  // setSelectedWorkout Tests
+  // setSelectedPlan Tests
   // ==========================================================================
 
-  describe('setSelectedWorkout', () => {
-    it('sets selectedWorkout', () => {
-      const workout = createTestWorkoutTemplate({ id: 'template-1', name: 'Selected Workout' });
+  describe('setSelectedPlan', () => {
+    it('sets selectedPlan', () => {
+      const workout = createTestWorkoutPlan({ id: 'plan-1', name: 'Selected Workout' });
 
-      useWorkoutStore.getState().setSelectedWorkout(workout);
+      useWorkoutPlanStore.getState().setSelectedPlan(workout);
 
-      const { selectedWorkout } = useWorkoutStore.getState();
+      const { selectedPlan } = useWorkoutPlanStore.getState();
 
-      expect(selectedWorkout).toEqual(workout);
+      expect(selectedPlan).toEqual(workout);
     });
 
-    it('clears selectedWorkout when passed null', () => {
-      useWorkoutStore.setState({ selectedWorkout: createTestWorkoutTemplate() });
+    it('clears selectedPlan when passed null', () => {
+      useWorkoutPlanStore.setState({ selectedPlan: createTestWorkoutPlan() });
 
-      useWorkoutStore.getState().setSelectedWorkout(null);
+      useWorkoutPlanStore.getState().setSelectedPlan(null);
 
-      const { selectedWorkout } = useWorkoutStore.getState();
+      const { selectedPlan } = useWorkoutPlanStore.getState();
 
-      expect(selectedWorkout).toBeNull();
+      expect(selectedPlan).toBeNull();
     });
   });
 
@@ -691,21 +691,21 @@ describe('workoutStore', () => {
 
   describe('clearError', () => {
     it('clears the error state', () => {
-      useWorkoutStore.setState({ error: 'Some error' });
+      useWorkoutPlanStore.setState({ error: 'Some error' });
 
-      useWorkoutStore.getState().clearError();
+      useWorkoutPlanStore.getState().clearError();
 
-      const { error } = useWorkoutStore.getState();
+      const { error } = useWorkoutPlanStore.getState();
 
       expect(error).toBeNull();
     });
 
     it('does nothing when error is already null', () => {
-      expect(useWorkoutStore.getState().error).toBeNull();
+      expect(useWorkoutPlanStore.getState().error).toBeNull();
 
-      useWorkoutStore.getState().clearError();
+      useWorkoutPlanStore.getState().clearError();
 
-      expect(useWorkoutStore.getState().error).toBeNull();
+      expect(useWorkoutPlanStore.getState().error).toBeNull();
     });
   });
 });

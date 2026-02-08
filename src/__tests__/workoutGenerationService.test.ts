@@ -13,7 +13,7 @@ import {
   WorkoutGenerationContext,
   WorkoutGenerationParams,
 } from '../services/workoutGenerationService';
-import { WorkoutTemplate } from '../types/workout';
+import { WorkoutPlan } from '../types/workout';
 
 // Mock dependencies
 jest.mock('../services/workoutHistoryService', () => ({
@@ -90,7 +90,7 @@ jest.mock('../stores/gymStore', () => ({
 }));
 
 jest.mock('../db/repository', () => ({
-  createWorkoutTemplate: jest.fn().mockResolvedValue(undefined),
+  createWorkoutPlan: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('Workout Generation Service', () => {
@@ -272,7 +272,7 @@ Upper body strength focus
   });
 
   describe('validateGeneratedWorkout', () => {
-    const createValidTemplate = (): WorkoutTemplate => ({
+    const createValidTemplate = (): WorkoutPlan => ({
       id: 'test-id',
       name: 'Test Workout',
       tags: ['test'],
@@ -282,13 +282,13 @@ Upper body strength focus
       exercises: [
         {
           id: 'ex1',
-          workoutTemplateId: 'test-id',
+          workoutPlanId: 'test-id',
           exerciseName: 'Bench Press',
           orderIndex: 0,
           sets: [
             {
               id: 'set1',
-              templateExerciseId: 'ex1',
+              plannedExerciseId: 'ex1',
               orderIndex: 0,
               targetWeight: 185,
               targetWeightUnit: 'lbs',
@@ -350,7 +350,7 @@ Upper body strength focus
       const template = createValidTemplate();
       template.exercises[0].sets[0] = {
         id: 'set1',
-        templateExerciseId: 'ex1',
+        plannedExerciseId: 'ex1',
         orderIndex: 0,
       };
 
@@ -377,7 +377,7 @@ Upper body strength focus
       // Create a workout with 50 sets
       const sets = Array.from({ length: 50 }, (_, i) => ({
         id: `set${i}`,
-        templateExerciseId: 'ex1',
+        plannedExerciseId: 'ex1',
         orderIndex: i,
         targetWeight: 100,
         targetWeightUnit: 'lbs' as const,
