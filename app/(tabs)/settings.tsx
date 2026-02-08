@@ -18,7 +18,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import Constants from 'expo-constants';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useGymStore } from '@/stores/gymStore';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
@@ -49,7 +49,7 @@ export default function SettingsScreen() {
     error: gymError,
     clearError: clearGymError,
   } = useGymStore();
-  const { loadWorkouts } = useWorkoutStore();
+  const { loadPlans } = useWorkoutPlanStore();
   const { loadEquipment } = useEquipmentStore();
 
   const [promptText, setPromptText] = useState('');
@@ -274,7 +274,7 @@ export default function SettingsScreen() {
     await Promise.all([
       loadSettings(),
       loadGyms(),
-      loadWorkouts(),
+      loadPlans(),
     ]);
     if (defaultGym) {
       await loadEquipment(defaultGym.id);

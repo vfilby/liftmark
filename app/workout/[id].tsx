@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useSessionStore } from '@/stores/sessionStore';
-import { toggleFavoriteTemplate } from '@/db/repository';
+import { toggleFavoritePlan } from '@/db/repository';
 import { useTheme } from '@/theme';
 import { WorkoutDetailView } from '@/components/WorkoutDetailView';
 
@@ -11,13 +11,13 @@ export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
-  const { selectedWorkout, loadWorkout, reprocessWorkout, isLoading, error, clearError } = useWorkoutStore();
+  const { selectedPlan, loadPlan, reprocessPlan, isLoading, error, clearError } = useWorkoutPlanStore();
   const { startWorkout, checkForActiveSession } = useSessionStore();
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
   const handleStartWorkout = async () => {
-    if (!selectedWorkout || isStarting) return;
+    if (!selectedPlan || isStarting) return;
 
     // Check for existing active session
     const hasActive = await checkForActiveSession();
@@ -38,7 +38,7 @@ export default function WorkoutDetailScreen() {
 
     setIsStarting(true);
     try {
-      await startWorkout(selectedWorkout);
+      await startWorkout(selectedPlan);
       router.push('/workout/active');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to start workout');
@@ -51,21 +51,21 @@ export default function WorkoutDetailScreen() {
     if (!id || isReprocessing) return;
 
     Alert.alert(
-      'Reprocess Workout',
-      'This will re-parse the workout from its original markdown. Any manual edits will be lost.',
+      'Reprocess Plan',
+      'This will re-parse the plan from its original markdown. Any manual edits will be lost.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reprocess',
           onPress: async () => {
             setIsReprocessing(true);
-            const result = await reprocessWorkout(id);
+            const result = await reprocessPlan(id);
             setIsReprocessing(false);
 
             if (result.success) {
-              Alert.alert('Success', 'Workout has been reprocessed.');
+              Alert.alert('Success', 'Plan has been reprocessed.');
             } else {
-              Alert.alert('Error', result.errors?.join('\n') || 'Failed to reprocess workout');
+              Alert.alert('Error', result.errors?.join('\n') || 'Failed to reprocess plan');
             }
           },
         },
@@ -77,9 +77,9 @@ export default function WorkoutDetailScreen() {
     if (!id) return;
 
     try {
-      await toggleFavoriteTemplate(id);
-      // Reload the workout to get updated favorite status
-      loadWorkout(id);
+      await toggleFavoritePlan(id);
+      // Reload the plan to get updated favorite status
+      loadPlan(id);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
       Alert.alert('Error', 'Failed to update favorite status');
@@ -88,7 +88,7 @@ export default function WorkoutDetailScreen() {
 
   useEffect(() => {
     if (id) {
-      loadWorkout(id);
+      loadPlan(id);
     }
   }, [id]);
 
@@ -113,7 +113,7 @@ export default function WorkoutDetailScreen() {
     },
   });
 
-  if (!selectedWorkout) {
+  if (!selectedPlan) {
     return (
       <View style={styles.container} testID="workout-detail-loading">
         <Text style={styles.loadingText}>Loading...</Text>
@@ -123,7 +123,7 @@ export default function WorkoutDetailScreen() {
 
   return (
     <WorkoutDetailView
-      workout={selectedWorkout}
+      workout={selectedPlan}
       onStartWorkout={handleStartWorkout}
       onReprocess={handleReprocess}
       onToggleFavorite={handleToggleFavorite}

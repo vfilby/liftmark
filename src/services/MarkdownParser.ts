@@ -1,7 +1,7 @@
 /**
  * LiftMark Workout Format (LMWF) Markdown Parser
  *
- * Parses markdown text into WorkoutTemplate structure according to LMWF spec v1.0
+ * Parses markdown text into WorkoutPlan structure according to LMWF spec v1.0
  * See: /MARKDOWN_SPEC.md for full specification
  *
  * Features:
@@ -17,7 +17,7 @@
  * - Comprehensive validation with clear error messages
  */
 
-import { WorkoutTemplate, TemplateExercise, TemplateSet, ParseResult } from '../types/workout';
+import { WorkoutPlan, PlannedExercise, PlannedSet, ParseResult } from '../types/workout';
 import { generateId } from '../utils/id';
 
 // ============================================================================
@@ -77,11 +77,11 @@ interface ParsedSet {
 // ============================================================================
 
 /**
- * Parse markdown text into a WorkoutTemplate
+ * Parse markdown text into a WorkoutPlan
  * @param markdown - The markdown text to parse
- * @returns ParseResult with WorkoutTemplate or errors
+ * @returns ParseResult with WorkoutPlan or errors
  */
-export function parseWorkout(markdown: string): ParseResult<WorkoutTemplate> {
+export function parseWorkout(markdown: string): ParseResult<WorkoutPlan> {
   const context: ParseContext = {
     lines: preprocessLines(markdown),
     currentIndex: 0,
@@ -128,7 +128,7 @@ export function parseWorkout(markdown: string): ParseResult<WorkoutTemplate> {
 
     // Build workout template
     const now = new Date().toISOString();
-    const workout: WorkoutTemplate = {
+    const workout: WorkoutPlan = {
       id: workoutId,
       name,
       description: notes,
@@ -399,8 +399,8 @@ function parseUnitsMetadata(
 /**
  * Parse all exercises in the workout
  */
-function parseExercises(context: ParseContext, workoutTemplateId: string): TemplateExercise[] {
-  const exercises: TemplateExercise[] = [];
+function parseExercises(context: ParseContext, workoutTemplateId: string): PlannedExercise[] {
+  const exercises: PlannedExercise[] = [];
 
   let orderIndex = 0;
 
@@ -442,7 +442,7 @@ function parseExerciseBlock(
   context: ParseContext,
   workoutTemplateId: string,
   orderIndex: number
-): TemplateExercise | TemplateExercise[] | null {
+): PlannedExercise | PlannedExercise[] | null {
   const headerLine = context.lines[context.currentIndex];
   if (!headerLine.headerLevel || !headerLine.headerText) {
     context.currentIndex++;
@@ -480,7 +480,7 @@ function parseExerciseBlock(
 
   return {
     id: exerciseId,
-    workoutTemplateId,
+    workoutPlanId: workoutTemplateId,
     exerciseName,
     orderIndex,
     notes,
@@ -549,15 +549,15 @@ function parseGroupedExercises(
   orderIndex: number,
   groupName: string,
   isSuperset: boolean
-): TemplateExercise[] {
+): PlannedExercise[] {
   const headerLine = context.lines[context.currentIndex];
   const parentId = generateId();
   const groupType = isSuperset ? 'superset' : 'section';
 
   // Create parent exercise (no sets, just a grouping container)
-  const parentExercise: TemplateExercise = {
+  const parentExercise: PlannedExercise = {
     id: parentId,
-    workoutTemplateId,
+    workoutPlanId: workoutTemplateId,
     exerciseName: groupName,
     orderIndex,
     groupType,
@@ -571,7 +571,7 @@ function parseGroupedExercises(
   const childExerciseLevel = findChildExerciseLevel(context, context.currentIndex, headerLine.headerLevel!);
 
   // Parse child exercises
-  const childExercises: TemplateExercise[] = [];
+  const childExercises: PlannedExercise[] = [];
   let childOrderIndex = 0;
 
   while (context.currentIndex < context.lines.length) {
@@ -670,8 +670,8 @@ function parseSets(
   context: ParseContext,
   exerciseHeaderLevel: number,
   exerciseId: string
-): TemplateSet[] {
-  const sets: TemplateSet[] = [];
+): PlannedSet[] {
+  const sets: PlannedSet[] = [];
   let orderIndex = 0;
 
   while (context.currentIndex < context.lines.length) {
@@ -688,7 +688,7 @@ function parseSets(
       if (parsedSet) {
         sets.push({
           id: generateId(),
-          templateExerciseId: exerciseId,
+          plannedExerciseId: exerciseId,
           orderIndex,
           targetWeight: parsedSet.weight,
           targetWeightUnit: parsedSet.weightUnit,

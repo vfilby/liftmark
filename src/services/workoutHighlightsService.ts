@@ -158,7 +158,7 @@ async function calculateVolumeImprovement(
     (s) =>
       s.id !== session.id &&
       (s.name.toLowerCase() === session.name.toLowerCase() ||
-        s.workoutTemplateId === session.workoutTemplateId)
+        s.workoutPlanId === session.workoutPlanId)
   );
 
   if (similarSessions.length === 0) return null;

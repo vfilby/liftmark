@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
@@ -13,14 +13,14 @@ export default function HomeScreen() {
   const padding = useResponsivePadding();
   const fonts = useResponsiveFontSizes();
   const { isTablet } = useDeviceLayout();
-  const { workouts, loadWorkouts } = useWorkoutStore();
+  const { plans, loadPlans } = useWorkoutPlanStore();
   const { loadSettings } = useSettingsStore();
   const { activeSession, resumeSession, getProgress } = useSessionStore();
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
     // Load data on mount
-    loadWorkouts();
+    loadPlans();
     loadSettings();
   }, []);
 
@@ -219,8 +219,8 @@ export default function HomeScreen() {
 
       <View style={styles.stats}>
         <View style={styles.statCard} testID="stat-workouts">
-          <Text style={styles.statNumber}>{workouts.length}</Text>
-          <Text style={styles.statLabel}>Workouts</Text>
+          <Text style={styles.statNumber}>{plans.length}</Text>
+          <Text style={styles.statLabel}>Plans</Text>
         </View>
       </View>
 
@@ -243,27 +243,27 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.recentSection}>
-        <Text style={styles.sectionTitle}>Recent Workouts</Text>
-        {workouts.length === 0 ? (
+        <Text style={styles.sectionTitle}>Recent Plans</Text>
+        {plans.length === 0 ? (
           <View style={styles.emptyState} testID="empty-state">
-            <Text style={styles.emptyText}>No workouts yet</Text>
+            <Text style={styles.emptyText}>No plans yet</Text>
             <Text style={styles.emptySubtext}>
-              Import your first workout to get started
+              Import your first workout plan to get started
             </Text>
           </View>
         ) : (
           <View>
-            {workouts.slice(0, 3).map((workout) => (
+            {plans.slice(0, 3).map((plan) => (
               <TouchableOpacity
-                key={workout.id}
+                key={plan.id}
                 style={styles.workoutCard}
-                onPress={() => router.push(`/workout/${workout.id}`)}
-                testID={`workout-card-${workout.id}`}
+                onPress={() => router.push(`/workout/${plan.id}`)}
+                testID={`workout-card-${plan.id}`}
               >
-                <Text style={styles.workoutName}>{workout.name}</Text>
+                <Text style={styles.workoutName}>{plan.name}</Text>
                 <Text style={styles.workoutMeta}>
-                  {workout.exercises.length} exercises
-                  {workout.tags.length > 0 && ` • ${workout.tags.join(', ')}`}
+                  {plan.exercises.length} exercises
+                  {plan.tags.length > 0 && ` • ${plan.tags.join(', ')}`}
                 </Text>
               </TouchableOpacity>
             ))}

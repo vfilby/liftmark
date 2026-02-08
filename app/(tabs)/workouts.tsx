@@ -13,22 +13,22 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useGymStore } from '@/stores/gymStore';
 import { useSessionStore } from '@/stores/sessionStore';
-import { toggleFavoriteTemplate } from '@/db/repository';
+import { toggleFavoritePlan } from '@/db/repository';
 import { useTheme } from '@/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { SplitView } from '@/components/SplitView';
 import { WorkoutDetailView } from '@/components/WorkoutDetailView';
-import type { WorkoutTemplate } from '@/types';
+import type { WorkoutPlan } from '@/types';
 
 export default function WorkoutsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { workouts, loadWorkouts, removeWorkout, searchWorkouts, selectedWorkout, loadWorkout, reprocessWorkout, error, clearError } =
-    useWorkoutStore();
+  const { plans, loadPlans, removePlan, searchPlans, selectedPlan, loadPlan, reprocessPlan, error, clearError } =
+    useWorkoutPlanStore();
   const { equipment, loadEquipment, getAvailableEquipmentNames } = useEquipmentStore();
   const { defaultGym, loadGyms, gyms } = useGymStore();
   const { startWorkout, checkForActiveSession } = useSessionStore();
@@ -43,7 +43,7 @@ export default function WorkoutsScreen() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    loadWorkouts();
+    loadPlans();
     loadGyms();
   }, []);
 
@@ -67,22 +67,22 @@ export default function WorkoutsScreen() {
     }
   }, [error]);
 
-  // Load selected workout when ID changes (for tablet split view)
+  // Load selected plan when ID changes (for tablet split view)
   useEffect(() => {
     if (selectedWorkoutId && isTablet) {
-      loadWorkout(selectedWorkoutId);
+      loadPlan(selectedWorkoutId);
     }
   }, [selectedWorkoutId, isTablet]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    searchWorkouts(query);
+    searchPlans(query);
   };
 
-  const handleDelete = (workout: WorkoutTemplate) => {
-    removeWorkout(workout.id);
-    // Clear selection if deleted workout was selected
-    if (selectedWorkoutId === workout.id) {
+  const handleDelete = (plan: WorkoutPlan) => {
+    removePlan(plan.id);
+    // Clear selection if deleted plan was selected
+    if (selectedWorkoutId === plan.id) {
       setSelectedWorkoutId(null);
     }
   };
@@ -92,9 +92,9 @@ export default function WorkoutsScreen() {
     event?.stopPropagation();
 
     try {
-      await toggleFavoriteTemplate(workoutId);
-      // Reload workouts to get updated favorite status
-      loadWorkouts();
+      await toggleFavoritePlan(workoutId);
+      // Reload plans to get updated favorite status
+      loadPlans();
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
       Alert.alert('Error', 'Failed to update favorite status');
@@ -102,7 +102,7 @@ export default function WorkoutsScreen() {
   };
 
   const handleStartWorkout = async () => {
-    if (!selectedWorkout || isStarting) return;
+    if (!selectedPlan || isStarting) return;
 
     // Check for existing active session
     const hasActive = await checkForActiveSession();
@@ -123,7 +123,7 @@ export default function WorkoutsScreen() {
 
     setIsStarting(true);
     try {
-      await startWorkout(selectedWorkout);
+      await startWorkout(selectedPlan);
       router.push('/workout/active');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to start workout');
@@ -136,21 +136,21 @@ export default function WorkoutsScreen() {
     if (!selectedWorkoutId || isReprocessing) return;
 
     Alert.alert(
-      'Reprocess Workout',
-      'This will re-parse the workout from its original markdown. Any manual edits will be lost.',
+      'Reprocess Plan',
+      'This will re-parse the plan from its original markdown. Any manual edits will be lost.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reprocess',
           onPress: async () => {
             setIsReprocessing(true);
-            const result = await reprocessWorkout(selectedWorkoutId);
+            const result = await reprocessPlan(selectedWorkoutId);
             setIsReprocessing(false);
 
             if (result.success) {
-              Alert.alert('Success', 'Workout has been reprocessed.');
+              Alert.alert('Success', 'Plan has been reprocessed.');
             } else {
-              Alert.alert('Error', result.errors?.join('\n') || 'Failed to reprocess workout');
+              Alert.alert('Error', result.errors?.join('\n') || 'Failed to reprocess plan');
             }
           },
         },
@@ -158,24 +158,24 @@ export default function WorkoutsScreen() {
     );
   };
 
-  // Filter workouts based on available equipment and favorites
-  const filteredWorkouts = useMemo(() => {
-    let filtered = workouts;
+  // Filter plans based on available equipment and favorites
+  const filteredPlans = useMemo(() => {
+    let filtered = plans;
 
     // Filter by favorites first
     if (showFavoritesOnly) {
-      filtered = filtered.filter((workout) => workout.isFavorite);
+      filtered = filtered.filter((plan) => plan.isFavorite);
     }
 
     // Then filter by equipment if enabled
     if (filterByEquipment) {
       const availableEquipmentNames = getAvailableEquipmentNames();
 
-      // If no equipment is set up, show all workouts
+      // If no equipment is set up, show all plans
       if (equipment.length > 0) {
-        filtered = filtered.filter((workout) => {
+        filtered = filtered.filter((plan) => {
           // Check if all exercises have available equipment
-          const allExercisesAvailable = workout.exercises.every((exercise) => {
+          const allExercisesAvailable = plan.exercises.every((exercise) => {
             // If exercise has no equipment type specified, it's available (bodyweight)
             if (!exercise.equipmentType) {
               return true;
@@ -193,7 +193,7 @@ export default function WorkoutsScreen() {
     }
 
     return filtered;
-  }, [workouts, filterByEquipment, showFavoritesOnly, equipment, getAvailableEquipmentNames]);
+  }, [plans, filterByEquipment, showFavoritesOnly, equipment, getAvailableEquipmentNames]);
 
   const styles = StyleSheet.create({
     container: {
@@ -390,7 +390,7 @@ export default function WorkoutsScreen() {
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
     dragX: Animated.AnimatedInterpolation<number>,
-    item: WorkoutTemplate
+    item: WorkoutPlan
   ) => {
     const translateX = dragX.interpolate({
       inputRange: [-80, 0],
@@ -416,7 +416,7 @@ export default function WorkoutsScreen() {
     );
   };
 
-  const renderWorkout = ({ item, index }: { item: WorkoutTemplate; index: number }) => {
+  const renderPlan = ({ item, index }: { item: WorkoutPlan; index: number }) => {
     const isSelected = isTablet && selectedWorkoutId === item.id;
     const handlePress = () => {
       if (isTablet) {
@@ -505,7 +505,7 @@ export default function WorkoutsScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search workouts..."
+          placeholder="Search plans..."
           placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={handleSearch}
@@ -533,7 +533,7 @@ export default function WorkoutsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.filterLabel}>Favorites only</Text>
                 <Text style={styles.filterDescription}>
-                  Show only favorited workouts
+                  Show only favorited plans
                 </Text>
               </View>
               <Switch
@@ -601,21 +601,21 @@ export default function WorkoutsScreen() {
         )}
       </View>
 
-      {filteredWorkouts.length === 0 ? (
+      {filteredPlans.length === 0 ? (
         <View style={styles.emptyState} testID="empty-state">
           <Text style={styles.emptyText}>
             {filterByEquipment
-              ? 'No workouts available'
+              ? 'No plans available'
               : searchQuery
-              ? 'No workouts found'
-              : 'No workouts yet'}
+              ? 'No plans found'
+              : 'No plans yet'}
           </Text>
           <Text style={styles.emptySubtext}>
             {filterByEquipment
-              ? 'All workouts require unavailable equipment. Try adding equipment in Settings or disable the filter.'
+              ? 'All plans require unavailable equipment. Try adding equipment in Settings or disable the filter.'
               : searchQuery
               ? 'Try a different search term'
-              : 'Import your first workout to get started'}
+              : 'Import your first workout plan to get started'}
           </Text>
           {!searchQuery && !filterByEquipment && (
             <TouchableOpacity
@@ -623,14 +623,14 @@ export default function WorkoutsScreen() {
               onPress={() => router.push('/modal/import')}
               testID="button-import-empty"
             >
-              <Text style={styles.importButtonText}>Import Workout</Text>
+              <Text style={styles.importButtonText}>Import Plan</Text>
             </TouchableOpacity>
           )}
         </View>
       ) : (
         <FlatList
-          data={filteredWorkouts}
-          renderItem={renderWorkout}
+          data={filteredPlans}
+          renderItem={renderPlan}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           testID="workout-list"
@@ -645,19 +645,19 @@ export default function WorkoutsScreen() {
         <SplitView
           leftPane={listContent}
           rightPane={
-            selectedWorkout ? (
+            selectedPlan ? (
               <WorkoutDetailView
-                workout={selectedWorkout}
+                workout={selectedPlan}
                 onStartWorkout={handleStartWorkout}
                 onReprocess={handleReprocess}
-                onToggleFavorite={() => handleToggleFavorite(selectedWorkout.id, { stopPropagation: () => {} })}
+                onToggleFavorite={() => handleToggleFavorite(selectedPlan.id, { stopPropagation: () => {} })}
                 isStarting={isStarting}
                 isReprocessing={isReprocessing}
               />
             ) : null
           }
           selectedId={selectedWorkoutId}
-          emptyStateMessage="Select a workout to view details"
+          emptyStateMessage="Select a plan to view details"
         />
       </View>
     );
