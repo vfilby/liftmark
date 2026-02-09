@@ -166,7 +166,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to load plans');
+      expect(error).toBe('Failed to load workout plans');
     });
 
     it('clears previous error when loading', async () => {
@@ -248,7 +248,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to load workout');
+      expect(error).toBe('Failed to load workout plan');
     });
   });
 
@@ -327,7 +327,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to save workout');
+      expect(error).toBe('Failed to save workout plan');
     });
   });
 
@@ -378,7 +378,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to delete workout');
+      expect(error).toBe('Failed to delete workout plan');
     });
   });
 
@@ -393,7 +393,7 @@ describe('workoutStore', () => {
       const result = await useWorkoutPlanStore.getState().reprocessPlan('non-existent');
 
       expect(result.success).toBe(false);
-      expect(result.errors).toContain('Workout not found');
+      expect(result.errors).toContain('Workout plan not found');
     });
 
     it('returns error when no source markdown', async () => {
@@ -403,7 +403,7 @@ describe('workoutStore', () => {
       const result = await useWorkoutPlanStore.getState().reprocessPlan('plan-1');
 
       expect(result.success).toBe(false);
-      expect(result.errors).toContain('No source markdown stored for this workout');
+      expect(result.errors).toContain('No source markdown stored for this workout plan');
     });
 
     it('returns error when parse fails', async () => {
@@ -614,7 +614,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to search plans');
+      expect(error).toBe('Failed to search workout plans');
     });
   });
 
@@ -655,7 +655,7 @@ describe('workoutStore', () => {
 
       const { error } = useWorkoutPlanStore.getState();
 
-      expect(error).toBe('Failed to filter plans');
+      expect(error).toBe('Failed to filter workout plans');
     });
   });
 
