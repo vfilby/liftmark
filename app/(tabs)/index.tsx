@@ -242,7 +242,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.recentSection}>
+      <View style={styles.recentSection} testID="recent-plans">
         <Text style={styles.sectionTitle}>Recent Plans</Text>
         {plans.length === 0 ? (
           <View style={styles.emptyState} testID="empty-state">

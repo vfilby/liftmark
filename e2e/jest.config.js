@@ -3,7 +3,7 @@ module.exports = {
   testEnvironment: './e2e/environment',
   testRunner: 'jest-circus/runner',
   setupFilesAfterEnv: ['<rootDir>/e2e/init.js'],
-  testMatch: ['<rootDir>/e2e/**/*.test.js'],
+  testMatch: ['<rootDir>/e2e/**/*.test.js', '<rootDir>/e2e/**/*.e2e.js'],
   testTimeout: 120000,
   verbose: true,
   maxWorkers: 1,
