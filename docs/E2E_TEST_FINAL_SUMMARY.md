@@ -1,6 +1,6 @@
 # E2E Testing - Final Summary
 
-## ✅ Fully Passing Test Suites (18/18 tests passing)
+## ✅ Fully Passing Test Suites (19/19 tests passing)
 
 ### 1. Active Workout Flow ✨ (`active-workout-focused.e2e.js`)
 **6/6 tests passing**
@@ -50,6 +50,12 @@
 
 **Coverage:** History viewing and detail navigation. Note: Back navigation test removed due to tab bar visibility issues on stack screens (standard React Navigation behavior).
 
+### 7. Workout Flow ✨ (`workout-flow.e2e.js`)
+**1/1 test passing**
+- ✅ Complete flow: import → detail → active workout → summary
+
+**Coverage:** End-to-end workout lifecycle covering all major screens.
+
 ## 📊 Test Coverage Summary
 
 | Test Suite | Tests | Status | Duration |
@@ -60,7 +66,8 @@
 | **Navigation** | 1/1 | ✅ **100%** | ~40s |
 | **Smoke** | 1/1 | ✅ **100%** | ~38s |
 | **History Robust** | 3/3 | ✅ **100%** | ~62s |
-| **TOTAL** | **18/18** | ✅ **100%** | ~328s |
+| **Workout Flow** | 1/1 | ✅ **100%** | ~66s |
+| **TOTAL** | **19/19** | ✅ **100%** | ~394s |
 
 ## 🎯 Key Patterns Established
 
@@ -153,30 +160,36 @@ await element(by.text('OK')).tap();
 
 ## 🚀 Running Tests
 
-### Run All Tests
+### Run All Passing Tests (Recommended)
 ```bash
-npm run e2e:test
+npm run e2e:test:all
 ```
 
-### Run Specific Test Suites
+### Run Individual Test Suites
 ```bash
+# Smoke test (fastest - good for quick verification)
+npm run e2e:test:smoke
+
 # Active workout flow
 npm run e2e:test e2e/active-workout-focused.e2e.js
 
 # Import flow (robust)
 npm run e2e:test e2e/import-flow-robust.e2e.js
 
-# Smoke test
-npm run e2e:test:smoke
+# Complete workout flow (import → active → summary)
+npm run e2e:test e2e/workout-flow.e2e.js
+
+# History flow
+npm run e2e:test e2e/history-flow-robust.e2e.js
 ```
 
-### Run All Working Tests
+### Run Custom Test Combinations
 ```bash
-npm run e2e:test e2e/active-workout-focused.e2e.js \
-  e2e/import-flow-robust.e2e.js \
-  e2e/import-simple.e2e.js \
-  e2e/import-via-workouts.e2e.js \
-  e2e/smoke.test.js
+# Just critical flows
+npm run e2e:test e2e/smoke.test.js e2e/workout-flow.e2e.js
+
+# Just import tests
+npm run e2e:test e2e/import-flow-robust.e2e.js e2e/import-simple.e2e.js
 ```
 
 ## 📸 Debugging with Screenshots
@@ -212,9 +225,12 @@ e2e/
 ├── import-via-workouts.e2e.js       ✅ 1/1 passing
 ├── smoke.test.js                    ✅ 1/1 passing
 ├── history-flow-robust.e2e.js       ✅ 3/3 passing (back nav omitted)
+├── workout-flow.e2e.js              ✅ 1/1 passing (complete flow)
 ├── active-workout-flow.e2e.js       ⏸️ Original (replaced by focused)
 ├── import-flow.e2e.js               ⏸️ Original (replaced by robust)
-└── history-flow.e2e.js              ⏸️ Original (replaced by robust)
+├── history-flow.e2e.js              ⏸️ Original (replaced by robust)
+├── tabs.e2e.js                      ⏸️ Not updated
+└── detail-settings.e2e.js           ⏸️ Not updated
 ```
 
 ## 🎯 Coverage by Feature
@@ -293,9 +309,9 @@ await element(by.id('tab-home')).tap();
 
 ## ✨ Success Metrics
 
-- **18 tests passing** covering critical user journeys
+- **19 tests passing** covering critical user journeys
 - **100% pass rate** on all committed tests
-- **~328 seconds** total test execution time
+- **~394 seconds** (~6.5 minutes) total test execution time
 - **Zero flaky tests** - all tests pass reliably
 
 ---
