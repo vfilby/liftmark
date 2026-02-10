@@ -182,31 +182,42 @@ async function calculateVolumeImprovement(
 }
 
 /**
- * Calculate workout streak (consecutive days/weeks with workouts)
+ * Calculate workout streak (consecutive days with workouts)
  */
 async function calculateWorkoutStreak(session: WorkoutSession): Promise<number | null> {
   const recentSessions = await getRecentSessions(30);
   if (recentSessions.length === 0) return null;
 
-  // Sort by date descending
-  const sortedSessions = [...recentSessions].sort((a, b) =>
-    b.date.localeCompare(a.date)
-  );
+  // Filter out current session and sort by date descending (most recent first)
+  const sortedSessions = recentSessions
+    .filter(s => s.id !== session.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   // Count consecutive days with workouts
   let streak = 1; // Current session counts as 1
-  const sessionDate = new Date(session.date);
+  let lastDate = new Date(session.date);
+  // Normalize to start of day (UTC) for consistent day comparison
+  lastDate.setUTCHours(0, 0, 0, 0);
 
   for (let i = 0; i < sortedSessions.length; i++) {
-    const prevDate = new Date(sortedSessions[i].date);
+    const currentDate = new Date(sortedSessions[i].date);
+    currentDate.setUTCHours(0, 0, 0, 0);
+
     const daysDiff = Math.floor(
-      (sessionDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+      (lastDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Within 7 days = part of weekly streak
-    if (daysDiff <= 7) {
+    // Same day workout (multiple workouts on same day) - don't count again
+    if (daysDiff === 0) {
+      continue;
+    }
+    // Consecutive day (1 day apart)
+    else if (daysDiff === 1) {
       streak++;
-    } else {
+      lastDate = currentDate;
+    }
+    // Gap in streak - stop counting
+    else {
       break;
     }
   }

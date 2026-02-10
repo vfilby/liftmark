@@ -234,30 +234,127 @@ describe('calculateWorkoutHighlights', () => {
     );
   });
 
-  it('detects workout streak', async () => {
-    const currentSession = createWorkoutSession({
-      id: 'current',
-      date: '2024-01-20',
+  describe('workout streak detection', () => {
+    it('detects 3-day consecutive streak', async () => {
+      const currentSession = createWorkoutSession({
+        id: 'current',
+        date: '2024-01-20',
+      });
+
+      const recentSessions = [
+        createWorkoutSession({ id: 'session-1', date: '2024-01-19' }), // 1 day ago
+        createWorkoutSession({ id: 'session-2', date: '2024-01-18' }), // 2 days ago
+      ];
+
+      mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+      mockedGetRecentSessions.mockResolvedValue(recentSessions);
+
+      const highlights = await calculateWorkoutHighlights(currentSession);
+
+      expect(highlights).toContainEqual(
+        expect.objectContaining({
+          type: 'streak',
+          emoji: '🔥',
+          title: 'Consistency!',
+          message: '3-day streak!',
+        })
+      );
     });
 
-    const recentSessions = [
-      createWorkoutSession({ id: 'session-1', date: '2024-01-18' }),
-      createWorkoutSession({ id: 'session-2', date: '2024-01-16' }),
-      createWorkoutSession({ id: 'session-3', date: '2024-01-14' }),
-    ];
+    it('does not detect streak with gaps', async () => {
+      const currentSession = createWorkoutSession({
+        id: 'current',
+        date: '2024-01-20',
+      });
 
-    mockedGetExerciseBestWeights.mockResolvedValue(new Map());
-    mockedGetRecentSessions.mockResolvedValue(recentSessions);
+      const recentSessions = [
+        createWorkoutSession({ id: 'session-1', date: '2024-01-18' }), // 2 days ago (gap!)
+        createWorkoutSession({ id: 'session-2', date: '2024-01-16' }), // 4 days ago
+      ];
 
-    const highlights = await calculateWorkoutHighlights(currentSession);
+      mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+      mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
-    expect(highlights).toContainEqual(
-      expect.objectContaining({
-        type: 'streak',
-        emoji: '🔥',
-        title: 'Consistency!',
-      })
-    );
+      const highlights = await calculateWorkoutHighlights(currentSession);
+
+      // Should not have streak since there's a gap
+      expect(highlights.find(h => h.type === 'streak')).toBeUndefined();
+    });
+
+    it('handles multiple workouts on same day correctly', async () => {
+      const currentSession = createWorkoutSession({
+        id: 'current',
+        date: '2024-01-20T18:00:00Z',
+      });
+
+      const recentSessions = [
+        createWorkoutSession({ id: 'session-1', date: '2024-01-20T10:00:00Z' }), // Same day
+        createWorkoutSession({ id: 'session-2', date: '2024-01-19' }), // 1 day ago
+        createWorkoutSession({ id: 'session-3', date: '2024-01-18' }), // 2 days ago
+      ];
+
+      mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+      mockedGetRecentSessions.mockResolvedValue(recentSessions);
+
+      const highlights = await calculateWorkoutHighlights(currentSession);
+
+      // Should count as 3-day streak (same-day workout doesn't add to count)
+      expect(highlights).toContainEqual(
+        expect.objectContaining({
+          type: 'streak',
+          message: '3-day streak!',
+        })
+      );
+    });
+
+    it('does not show streak for only 1 day', async () => {
+      const currentSession = createWorkoutSession({
+        id: 'current',
+        date: '2024-01-20',
+      });
+
+      const recentSessions = [
+        createWorkoutSession({ id: 'session-1', date: '2024-01-17' }), // 3 days ago (gap!)
+      ];
+
+      mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+      mockedGetRecentSessions.mockResolvedValue(recentSessions);
+
+      const highlights = await calculateWorkoutHighlights(currentSession);
+
+      // Should not show streak for only 1 day
+      expect(highlights.find(h => h.type === 'streak')).toBeUndefined();
+    });
+
+    it('detects 7+ day streak and shows as weeks', async () => {
+      const currentSession = createWorkoutSession({
+        id: 'current',
+        date: '2024-01-20',
+      });
+
+      const recentSessions = [
+        createWorkoutSession({ id: 'session-1', date: '2024-01-19' }),
+        createWorkoutSession({ id: 'session-2', date: '2024-01-18' }),
+        createWorkoutSession({ id: 'session-3', date: '2024-01-17' }),
+        createWorkoutSession({ id: 'session-4', date: '2024-01-16' }),
+        createWorkoutSession({ id: 'session-5', date: '2024-01-15' }),
+        createWorkoutSession({ id: 'session-6', date: '2024-01-14' }),
+        createWorkoutSession({ id: 'session-7', date: '2024-01-13' }),
+      ];
+
+      mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+      mockedGetRecentSessions.mockResolvedValue(recentSessions);
+
+      const highlights = await calculateWorkoutHighlights(currentSession);
+
+      // 8 consecutive days = 1 week streak
+      expect(highlights).toContainEqual(
+        expect.objectContaining({
+          type: 'streak',
+          message: '1-week streak!',
+        })
+      );
+    });
   });
 
   it('returns empty array when no highlights are detected', async () => {
