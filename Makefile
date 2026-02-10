@@ -118,9 +118,6 @@ test: node_modules
 	@echo ""
 	@echo "🧪 Running tests with coverage..."
 	npm run test:coverage
-	@echo ""
-	@echo "🧪 Running unit tests..."
-	npm run test
 
 test-watch: node_modules
 	@echo "👀 Running tests in watch mode..."
