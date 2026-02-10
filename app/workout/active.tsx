@@ -32,6 +32,7 @@ import {
   calculatePlates,
   formatCompletePlateSetup,
 } from '@/utils/plateCalculator';
+import { interleaveSupersetSets } from '@/utils/supersetHelpers';
 
 // Represents either a single exercise or a superset group
 interface ExerciseGroup {
@@ -1538,10 +1539,9 @@ export default function ActiveWorkoutScreen() {
                         </View>
                       </View>
 
-                      {/* Render sets from all exercises in superset */}
+                      {/* Render sets from all exercises in superset - interleaved */}
                       <View style={styles.setsContainer}>
-                        {group.exercises.map((exercise) => (
-                          exercise.sets.map((set, setIndex) => {
+                        {interleaveSupersetSets(group.exercises).map(({ exercise, set, setIndex }) => {
                             const isCurrentSet = set.id === currentSetId;
                             const isEditing = set.id === editingSetId;
                             const isCompleted = set.status === 'completed';
@@ -1738,8 +1738,7 @@ export default function ActiveWorkoutScreen() {
                                 )}
                               </View>
                             );
-                          })
-                        ))}
+                        })}
                       </View>
                     </View>
                   );
