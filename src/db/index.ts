@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
+import { generateId } from '@/utils/id';
 
 const DB_NAME = 'liftmark.db';
+const CURRENT_SCHEMA_VERSION = 1;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -31,13 +33,49 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 }
 
 /**
- * Run database migrations
+ * Run database migrations using a versioned schema system.
+ * Only runs migrations that haven't been applied yet.
  */
 async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
-  // Create tables for MVP
-  // Only creating workout_templates, template_exercises, template_sets, and user_settings
-  // Session tables will be added in Phase 3
+  // Create version tracking table
+  await database.execAsync(
+    'CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL DEFAULT 0)'
+  );
 
+  // Get current schema version
+  const row = await database.getFirstAsync<{ version: number }>(
+    'SELECT version FROM schema_version LIMIT 1'
+  );
+
+  let currentVersion: number;
+  if (row == null) {
+    await database.runAsync('INSERT INTO schema_version (version) VALUES (0)');
+    currentVersion = 0;
+  } else {
+    currentVersion = row.version;
+  }
+
+  // Skip if already at latest version
+  if (currentVersion >= CURRENT_SCHEMA_VERSION) return;
+
+  // Run pending migrations
+  if (currentVersion < 1) {
+    await migrateToV1(database);
+  }
+  // Future: if (currentVersion < 2) { await migrateToV2(database); }
+
+  // Update schema version
+  await database.runAsync('UPDATE schema_version SET version = ?', [CURRENT_SCHEMA_VERSION]);
+}
+
+/**
+ * Migration to V1: Full initial schema + all column additions.
+ * For new databases, creates everything from scratch.
+ * For existing databases, the CREATE IF NOT EXISTS and ALTER TABLE try/catch
+ * ensure idempotency on the one-time transition to the versioned system.
+ */
+async function migrateToV1(database: SQLite.SQLiteDatabase): Promise<void> {
+  // Create base tables
   await database.execAsync(`
     -- Workout Templates
     CREATE TABLE IF NOT EXISTS workout_templates (
@@ -200,90 +238,32 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       ON workout_sessions(status);
   `);
 
-  // Migration: Add auto_start_rest_timer column if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN auto_start_rest_timer INTEGER DEFAULT 1`
-    );
-  } catch {
-    // Column already exists, ignore error
+  // Column additions (try/catch for existing databases transitioning to versioned migrations)
+  const alterStatements = [
+    'ALTER TABLE user_settings ADD COLUMN auto_start_rest_timer INTEGER DEFAULT 1',
+    'ALTER TABLE user_settings ADD COLUMN custom_prompt_addition TEXT',
+    'ALTER TABLE template_sets ADD COLUMN is_per_side INTEGER DEFAULT 0',
+    'ALTER TABLE session_sets ADD COLUMN is_per_side INTEGER DEFAULT 0',
+    'ALTER TABLE user_settings ADD COLUMN healthkit_enabled INTEGER DEFAULT 0',
+    'ALTER TABLE user_settings ADD COLUMN live_activities_enabled INTEGER DEFAULT 1',
+    'ALTER TABLE user_settings ADD COLUMN keep_screen_awake INTEGER DEFAULT 1',
+    'ALTER TABLE user_settings ADD COLUMN anthropic_api_key TEXT',
+    'ALTER TABLE gym_equipment ADD COLUMN gym_id TEXT',
+    'ALTER TABLE user_settings ADD COLUMN anthropic_api_key_status TEXT DEFAULT \'not_set\'',
+    'ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0',
+    'ALTER TABLE workout_templates ADD COLUMN is_favorite INTEGER DEFAULT 0',
+  ];
+
+  for (const sql of alterStatements) {
+    try {
+      await database.runAsync(sql);
+    } catch {
+      // Column already exists, ignore
+    }
   }
 
-  // Migration: Add custom_prompt_addition column if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN custom_prompt_addition TEXT`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add is_per_side column to template_sets if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE template_sets ADD COLUMN is_per_side INTEGER DEFAULT 0`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add is_per_side column to session_sets if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE session_sets ADD COLUMN is_per_side INTEGER DEFAULT 0`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add healthkit_enabled column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN healthkit_enabled INTEGER DEFAULT 0`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add live_activities_enabled column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN live_activities_enabled INTEGER DEFAULT 1`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add keep_screen_awake column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN keep_screen_awake INTEGER DEFAULT 1`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add anthropic_api_key column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN anthropic_api_key TEXT`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add gym_id column to gym_equipment if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE gym_equipment ADD COLUMN gym_id TEXT`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Create sync tables for CloudKit synchronization
+  // Sync tables
   await database.execAsync(`
-    -- Sync Metadata (stores sync state and tokens)
     CREATE TABLE IF NOT EXISTS sync_metadata (
       id TEXT PRIMARY KEY,
       device_id TEXT NOT NULL,
@@ -294,7 +274,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       updated_at TEXT NOT NULL
     );
 
-    -- Sync Queue (pending operations to sync)
     CREATE TABLE IF NOT EXISTS sync_queue (
       id TEXT PRIMARY KEY,
       entity_type TEXT NOT NULL,
@@ -306,7 +285,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       created_at TEXT NOT NULL
     );
 
-    -- Sync Conflicts (for debugging conflict resolution)
     CREATE TABLE IF NOT EXISTS sync_conflicts (
       id TEXT PRIMARY KEY,
       entity_type TEXT NOT NULL,
@@ -318,7 +296,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       created_at TEXT NOT NULL
     );
 
-    -- Indexes for sync tables
     CREATE INDEX IF NOT EXISTS idx_sync_queue_entity
       ON sync_queue(entity_type, entity_id);
 
@@ -326,101 +303,57 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       ON sync_conflicts(entity_type, entity_id);
   `);
 
-  // Migration: Create default gym and migrate existing equipment
+  // Additional indexes
   try {
-    const { generateId } = await import('@/utils/id');
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)'
+    );
+  } catch {
+    // Index might already exist
+  }
+
+  try {
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)'
+    );
+  } catch {
+    // Index might already exist
+  }
+
+  // Data migration: Create default gym and migrate existing equipment
+  try {
     const existingGym = await database.getFirstAsync('SELECT id FROM gyms LIMIT 1');
 
     if (!existingGym) {
-      // Check if there's any existing equipment without a gym_id
       const orphanedEquipment = await database.getFirstAsync<{ count: number }>(
-        `SELECT COUNT(*) as count FROM gym_equipment WHERE gym_id IS NULL`
+        'SELECT COUNT(*) as count FROM gym_equipment WHERE gym_id IS NULL'
       );
 
       const now = new Date().toISOString();
       const defaultGymId = generateId();
 
-      // Create default gym
       await database.runAsync(
         `INSERT INTO gyms (id, name, is_default, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?)`,
         [defaultGymId, 'My Gym', 1, now, now]
       );
-      console.log('Default gym created');
 
-      // Migrate any existing equipment to the default gym
       if (orphanedEquipment && orphanedEquipment.count > 0) {
         await database.runAsync(
-          `UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL`,
+          'UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL',
           [defaultGymId]
         );
-        console.log(`Migrated ${orphanedEquipment.count} equipment items to default gym`);
       }
     }
   } catch (error) {
     console.error('Failed to migrate gyms:', error);
   }
 
-  // Migration: Add gym_equipment index on gym_id
-  try {
-    await database.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)`
-    );
-  } catch {
-    // Index might already exist
-  }
-
-  // Migration: Add anthropic_api_key column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN anthropic_api_key TEXT`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add anthropic_api_key_status column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN anthropic_api_key_status TEXT DEFAULT 'not_set'`
-    );
-  } catch {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add show_open_in_claude_button column to user_settings if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0`
-    );
-  } catch (error) {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Add is_favorite column to workout_templates if it doesn't exist
-  try {
-    await database.runAsync(
-      `ALTER TABLE workout_templates ADD COLUMN is_favorite INTEGER DEFAULT 0`
-    );
-  } catch (error) {
-    // Column already exists, ignore error
-  }
-
-  // Migration: Create index on is_favorite for faster filtering
-  try {
-    await database.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)`
-    );
-  } catch {
-    // Index might already exist
-  }
-
-  // Initialize default user settings if they don't exist
+  // Data migration: Initialize default user settings if they don't exist
   try {
     const settings = await database.getFirstAsync('SELECT * FROM user_settings LIMIT 1');
 
     if (!settings) {
-      const { generateId } = await import('@/utils/id');
       const now = new Date().toISOString();
 
       await database.runAsync(
@@ -428,11 +361,9 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [generateId(), 'lbs', 1, 1, 'auto', 1, now, now]
       );
-      console.log('Default user settings created');
     }
   } catch (error) {
     console.error('Failed to initialize default settings:', error);
-    // Don't throw here - the app can still function without settings
   }
 }
 

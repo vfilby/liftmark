@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes, useDeviceLayout } from '@/utils/responsive';
@@ -14,14 +13,11 @@ export default function HomeScreen() {
   const fonts = useResponsiveFontSizes();
   const { isTablet } = useDeviceLayout();
   const { plans, loadPlans } = useWorkoutPlanStore();
-  const { loadSettings } = useSettingsStore();
   const { activeSession, resumeSession, getProgress } = useSessionStore();
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
-    // Load data on mount
     loadPlans();
-    loadSettings();
   }, []);
 
   // Check for active session when screen comes into focus

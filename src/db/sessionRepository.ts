@@ -196,8 +196,8 @@ export async function getWorkoutSessionById(
     return null;
   }
 
-  const exercises = await getSessionExercises(id);
-  return rowToWorkoutSession(sessionRow, exercises);
+  const exercisesBySession = await batchLoadSessionExercisesWithSets([id]);
+  return rowToWorkoutSession(sessionRow, exercisesBySession.get(id) || []);
 }
 
 /**
@@ -214,8 +214,8 @@ export async function getActiveSession(): Promise<WorkoutSession | null> {
     return null;
   }
 
-  const exercises = await getSessionExercises(sessionRow.id);
-  return rowToWorkoutSession(sessionRow, exercises);
+  const exercisesBySession = await batchLoadSessionExercisesWithSets([sessionRow.id]);
+  return rowToWorkoutSession(sessionRow, exercisesBySession.get(sessionRow.id) || []);
 }
 
 /**
@@ -460,14 +460,12 @@ export async function getCompletedSessions(): Promise<WorkoutSession[]> {
     "SELECT * FROM workout_sessions WHERE status = 'completed' ORDER BY date DESC, start_time DESC"
   );
 
-  const sessions: WorkoutSession[] = [];
+  const sessionIds = sessionRows.map(r => r.id);
+  const exercisesBySession = await batchLoadSessionExercisesWithSets(sessionIds);
 
-  for (const sessionRow of sessionRows) {
-    const exercises = await getSessionExercises(sessionRow.id);
-    sessions.push(rowToWorkoutSession(sessionRow, exercises));
-  }
-
-  return sessions;
+  return sessionRows.map(row =>
+    rowToWorkoutSession(row, exercisesBySession.get(row.id) || [])
+  );
 }
 
 /**
@@ -481,14 +479,12 @@ export async function getRecentSessions(limit: number = 5): Promise<WorkoutSessi
     [limit]
   );
 
-  const sessions: WorkoutSession[] = [];
+  const sessionIds = sessionRows.map(r => r.id);
+  const exercisesBySession = await batchLoadSessionExercisesWithSets(sessionIds);
 
-  for (const sessionRow of sessionRows) {
-    const exercises = await getSessionExercises(sessionRow.id);
-    sessions.push(rowToWorkoutSession(sessionRow, exercises));
-  }
-
-  return sessions;
+  return sessionRows.map(row =>
+    rowToWorkoutSession(row, exercisesBySession.get(row.id) || [])
+  );
 }
 
 /**
@@ -629,40 +625,54 @@ export async function getExerciseHistory(
 // ============================================================================
 
 /**
- * Get all exercises for a session with their sets
+ * Batch load all exercises and their sets for multiple sessions.
+ * Uses 2 queries (exercises + sets) instead of N+1 per-exercise queries.
  */
-async function getSessionExercises(
-  workoutSessionId: string
-): Promise<SessionExercise[]> {
+async function batchLoadSessionExercisesWithSets(
+  sessionIds: string[]
+): Promise<Map<string, SessionExercise[]>> {
+  const result = new Map<string, SessionExercise[]>();
+  if (sessionIds.length === 0) return result;
+
   const db = await getDatabase();
+  const placeholders = sessionIds.map(() => '?').join(',');
 
   const exerciseRows = await db.getAllAsync<SessionExerciseRow>(
-    'SELECT * FROM session_exercises WHERE workout_session_id = ? ORDER BY order_index',
-    [workoutSessionId]
+    `SELECT * FROM session_exercises WHERE workout_session_id IN (${placeholders}) ORDER BY order_index`,
+    sessionIds
   );
 
-  const exercises: SessionExercise[] = [];
+  const exerciseIds = exerciseRows.map(r => r.id);
+  const setsByExercise = new Map<string, SessionSet[]>();
 
-  for (const exerciseRow of exerciseRows) {
-    const sets = await getSessionSets(exerciseRow.id);
-    exercises.push(rowToSessionExercise(exerciseRow, sets));
+  if (exerciseIds.length > 0) {
+    const setPlaceholders = exerciseIds.map(() => '?').join(',');
+    const setRows = await db.getAllAsync<SessionSetRow>(
+      `SELECT * FROM session_sets WHERE session_exercise_id IN (${setPlaceholders}) ORDER BY order_index`,
+      exerciseIds
+    );
+
+    for (const setRow of setRows) {
+      const eid = setRow.session_exercise_id;
+      if (!setsByExercise.has(eid)) {
+        setsByExercise.set(eid, []);
+      }
+      setsByExercise.get(eid)!.push(rowToSessionSet(setRow));
+    }
   }
 
-  return exercises;
-}
+  for (const sessionId of sessionIds) {
+    result.set(sessionId, []);
+  }
 
-/**
- * Get all sets for an exercise
- */
-async function getSessionSets(sessionExerciseId: string): Promise<SessionSet[]> {
-  const db = await getDatabase();
+  for (const exerciseRow of exerciseRows) {
+    const sets = setsByExercise.get(exerciseRow.id) || [];
+    result.get(exerciseRow.workout_session_id)!.push(
+      rowToSessionExercise(exerciseRow, sets)
+    );
+  }
 
-  const setRows = await db.getAllAsync<SessionSetRow>(
-    'SELECT * FROM session_sets WHERE session_exercise_id = ? ORDER BY order_index',
-    [sessionExerciseId]
-  );
-
-  return setRows.map(rowToSessionSet);
+  return result;
 }
 
 /**

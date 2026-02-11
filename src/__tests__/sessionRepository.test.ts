@@ -726,8 +726,7 @@ describe('getActiveSession', () => {
     mockDb.getFirstAsync.mockResolvedValue(sessionRow);
     mockDb.getAllAsync
       .mockResolvedValueOnce([exerciseRow1, exerciseRow2])
-      .mockResolvedValueOnce([setRow1])
-      .mockResolvedValueOnce([setRow2]);
+      .mockResolvedValueOnce([setRow1, setRow2]);
 
     const result = await getActiveSession();
 

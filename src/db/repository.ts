@@ -28,15 +28,12 @@ export async function getAllWorkoutPlans(favoritesOnly: boolean = false): Promis
 
   const templateRows = await db.getAllAsync<WorkoutPlanRow>(query);
 
-  // For each plan, get its exercises and sets
-  const plans: WorkoutPlan[] = [];
+  const planIds = templateRows.map(r => r.id);
+  const exercisesByPlan = await batchLoadExercisesWithSets(planIds);
 
-  for (const templateRow of templateRows) {
-    const exercises = await getPlannedExercises(templateRow.id);
-    plans.push(rowToWorkoutPlan(templateRow, exercises));
-  }
-
-  return plans;
+  return templateRows.map(row =>
+    rowToWorkoutPlan(row, exercisesByPlan.get(row.id) || [])
+  );
 }
 
 /**
@@ -56,8 +53,8 @@ export async function getWorkoutPlanById(
     return null;
   }
 
-  const exercises = await getPlannedExercises(id);
-  return rowToWorkoutPlan(templateRow, exercises);
+  const exercisesByPlan = await batchLoadExercisesWithSets([id]);
+  return rowToWorkoutPlan(templateRow, exercisesByPlan.get(id) || []);
 }
 
 /**
@@ -188,14 +185,12 @@ export async function searchWorkoutPlans(
     [searchTerm, searchTerm]
   );
 
-  const plans: WorkoutPlan[] = [];
+  const planIds = templateRows.map(r => r.id);
+  const exercisesByPlan = await batchLoadExercisesWithSets(planIds);
 
-  for (const templateRow of templateRows) {
-    const exercises = await getPlannedExercises(templateRow.id);
-    plans.push(rowToWorkoutPlan(templateRow, exercises));
-  }
-
-  return plans;
+  return templateRows.map(row =>
+    rowToWorkoutPlan(row, exercisesByPlan.get(row.id) || [])
+  );
 }
 
 /**
@@ -212,14 +207,12 @@ export async function getWorkoutPlansByTag(
     [searchTerm]
   );
 
-  const plans: WorkoutPlan[] = [];
+  const planIds = templateRows.map(r => r.id);
+  const exercisesByPlan = await batchLoadExercisesWithSets(planIds);
 
-  for (const templateRow of templateRows) {
-    const exercises = await getPlannedExercises(templateRow.id);
-    plans.push(rowToWorkoutPlan(templateRow, exercises));
-  }
-
-  return plans;
+  return templateRows.map(row =>
+    rowToWorkoutPlan(row, exercisesByPlan.get(row.id) || [])
+  );
 }
 
 /**
@@ -265,42 +258,54 @@ export async function setFavoritePlan(id: string, isFavorite: boolean): Promise<
 // ============================================================================
 
 /**
- * Get all exercises for a plan with their sets
+ * Batch load all exercises and their sets for multiple plans.
+ * Uses 2 queries (exercises + sets) instead of N+1 per-exercise queries.
  */
-async function getPlannedExercises(
-  workoutPlanId: string
-): Promise<PlannedExercise[]> {
+async function batchLoadExercisesWithSets(
+  planIds: string[]
+): Promise<Map<string, PlannedExercise[]>> {
+  const result = new Map<string, PlannedExercise[]>();
+  if (planIds.length === 0) return result;
+
   const db = await getDatabase();
+  const placeholders = planIds.map(() => '?').join(',');
 
   const exerciseRows = await db.getAllAsync<PlannedExerciseRow>(
-    'SELECT * FROM template_exercises WHERE workout_template_id = ? ORDER BY order_index',
-    [workoutPlanId]
+    `SELECT * FROM template_exercises WHERE workout_template_id IN (${placeholders}) ORDER BY order_index`,
+    planIds
   );
 
-  const exercises: PlannedExercise[] = [];
+  const exerciseIds = exerciseRows.map(r => r.id);
+  const setsByExercise = new Map<string, PlannedSet[]>();
 
-  for (const exerciseRow of exerciseRows) {
-    const sets = await getPlannedSets(exerciseRow.id);
-    exercises.push(rowToPlannedExercise(exerciseRow, sets));
+  if (exerciseIds.length > 0) {
+    const setPlaceholders = exerciseIds.map(() => '?').join(',');
+    const setRows = await db.getAllAsync<PlannedSetRow>(
+      `SELECT * FROM template_sets WHERE template_exercise_id IN (${setPlaceholders}) ORDER BY order_index`,
+      exerciseIds
+    );
+
+    for (const setRow of setRows) {
+      const eid = setRow.template_exercise_id;
+      if (!setsByExercise.has(eid)) {
+        setsByExercise.set(eid, []);
+      }
+      setsByExercise.get(eid)!.push(rowToPlannedSet(setRow));
+    }
   }
 
-  return exercises;
-}
+  for (const planId of planIds) {
+    result.set(planId, []);
+  }
 
-/**
- * Get all sets for an exercise
- */
-async function getPlannedSets(
-  plannedExerciseId: string
-): Promise<PlannedSet[]> {
-  const db = await getDatabase();
+  for (const exerciseRow of exerciseRows) {
+    const sets = setsByExercise.get(exerciseRow.id) || [];
+    result.get(exerciseRow.workout_template_id)!.push(
+      rowToPlannedExercise(exerciseRow, sets)
+    );
+  }
 
-  const setRows = await db.getAllAsync<PlannedSetRow>(
-    'SELECT * FROM template_sets WHERE template_exercise_id = ? ORDER BY order_index',
-    [plannedExerciseId]
-  );
-
-  return setRows.map(rowToPlannedSet);
+  return result;
 }
 
 /**

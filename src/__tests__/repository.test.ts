@@ -191,14 +191,13 @@ describe('getAllWorkoutPlans', () => {
     mockDb.getAllAsync
       .mockResolvedValueOnce([templateRow])
       .mockResolvedValueOnce([exerciseRow1, exerciseRow2])
-      .mockResolvedValueOnce([]) // sets for exercise-1
-      .mockResolvedValueOnce([]); // sets for exercise-2
+      .mockResolvedValueOnce([]); // all sets (batch)
 
     const result = await getAllWorkoutPlans();
 
     // Verify exercises query includes ORDER BY order_index
     expect(mockDb.getAllAsync).toHaveBeenCalledWith(
-      'SELECT * FROM template_exercises WHERE workout_template_id = ? ORDER BY order_index',
+      'SELECT * FROM template_exercises WHERE workout_template_id IN (?) ORDER BY order_index',
       ['plan-1']
     );
     expect(result[0].exercises[0].id).toBe('exercise-1');
