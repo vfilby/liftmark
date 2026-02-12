@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 // Simple icon component (no external deps)
@@ -165,7 +164,7 @@ export default function SyncSettingsScreen() {
   // Error state
   if (hasError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={64} color="#666666" />
           <Text style={styles.errorTitle}>Unable to Load Sync Settings</Text>
@@ -181,25 +180,25 @@ export default function SyncSettingsScreen() {
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading sync settings...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Main content
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView>
         {/* Info Box */}
         <View style={styles.infoBox}>
@@ -267,7 +266,7 @@ export default function SyncSettingsScreen() {
           <Text style={styles.testButtonText}>Test CloudKit Module</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
