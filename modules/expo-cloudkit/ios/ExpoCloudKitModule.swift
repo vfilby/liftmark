@@ -14,76 +14,23 @@ public class ExpoCloudKitModule: Module {
     // Defines event names that the module can send to JavaScript.
     Events("onCloudKitAccountChange")
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     AsyncFunction("initialize") { (promise: Promise) in
-      DispatchQueue.main.async {
-        CKContainer.default().accountStatus { (accountStatus, error) in
-          if let error = error {
-            promise.reject("CLOUDKIT_ERROR", "Failed to check CloudKit account status: \(error.localizedDescription)")
-            return
-          }
-          
-          switch accountStatus {
-          case .available:
-            promise.resolve(true)
-          case .noAccount:
-            promise.reject("CLOUDKIT_NO_ACCOUNT", "No iCloud account available")
-          case .restricted:
-            promise.reject("CLOUDKIT_RESTRICTED", "CloudKit access is restricted")
-          case .couldNotDetermine:
-            promise.reject("CLOUDKIT_UNKNOWN", "Could not determine CloudKit account status")
-          case .temporarilyUnavailable:
-            promise.reject("CLOUDKIT_TEMPORARILY_UNAVAILABLE", "CloudKit is temporarily unavailable")
-          @unknown default:
-            promise.reject("CLOUDKIT_UNKNOWN", "Unknown CloudKit account status")
-          }
-        }
+      // Use FileManager check - safe and synchronous, no CKContainer crash risk
+      if FileManager.default.ubiquityIdentityToken != nil {
+        promise.resolve(true)
+      } else {
+        promise.reject("CLOUDKIT_NO_ACCOUNT", "No iCloud account available")
       }
     }
 
     AsyncFunction("getAccountStatus") { (promise: Promise) in
-      NSLog("[CloudKit Swift] getAccountStatus called")
-
-      // Wrap everything to prevent crashes
-      do {
-        NSLog("[CloudKit Swift] Getting CKContainer.default()")
-        let container = CKContainer.default()
-        NSLog("[CloudKit Swift] Got container: %@", container.containerIdentifier ?? "unknown")
-
-        DispatchQueue.main.async {
-          NSLog("[CloudKit Swift] Calling container.accountStatus")
-          container.accountStatus { (accountStatus, error) in
-            NSLog("[CloudKit Swift] accountStatus callback received")
-
-            if let error = error {
-              NSLog("[CloudKit Swift] Error in accountStatus: %@", error.localizedDescription)
-              promise.reject("CLOUDKIT_ERROR", "Failed to check CloudKit account status: \(error.localizedDescription)")
-              return
-            }
-
-            let statusString: String
-            switch accountStatus {
-            case .available:
-              statusString = "available"
-            case .noAccount:
-              statusString = "noAccount"
-            case .restricted:
-              statusString = "restricted"
-            case .couldNotDetermine:
-              statusString = "couldNotDetermine"
-            case .temporarilyUnavailable:
-              statusString = "temporarilyUnavailable"
-            @unknown default:
-              statusString = "unknown"
-            }
-
-            NSLog("[CloudKit Swift] Resolved status: %@", statusString)
-            promise.resolve(statusString)
-          }
-        }
-      } catch {
-        NSLog("[CloudKit Swift] Exception caught: %@", error.localizedDescription)
-        promise.reject("CLOUDKIT_INIT_ERROR", "Failed to initialize CloudKit: \(error.localizedDescription)")
+      // Use FileManager.ubiquityIdentityToken instead of CKContainer.accountStatus
+      // CKContainer(identifier: "iCloud.com.eff3.liftmark").accountStatus can trigger native crashes on device
+      // that Swift do/catch cannot intercept (ObjC-level exceptions)
+      if FileManager.default.ubiquityIdentityToken != nil {
+        promise.resolve("available")
+      } else {
+        promise.resolve("noAccount")
       }
     }
 
@@ -108,7 +55,7 @@ public class ExpoCloudKitModule: Module {
           ckRecord[key] = value as? CKRecordValue
         }
         
-        let database = CKContainer.default().privateCloudDatabase
+        let database = CKContainer(identifier: "iCloud.com.eff3.liftmark").privateCloudDatabase
         database.save(ckRecord) { (savedRecord, error) in
           if let error = error {
             promise.reject("CLOUDKIT_SAVE_ERROR", "Failed to save record: \(error.localizedDescription)")
@@ -134,7 +81,7 @@ public class ExpoCloudKitModule: Module {
     AsyncFunction("fetchRecord") { (recordId: String, recordType: String, promise: Promise) in
       DispatchQueue.main.async {
         let ckRecordID = CKRecord.ID(recordName: recordId)
-        let database = CKContainer.default().privateCloudDatabase
+        let database = CKContainer(identifier: "iCloud.com.eff3.liftmark").privateCloudDatabase
         
         database.fetch(withRecordID: ckRecordID) { (record, error) in
           if let error = error {
@@ -162,7 +109,7 @@ public class ExpoCloudKitModule: Module {
       DispatchQueue.main.async {
         let predicate = NSPredicate(value: true)
         let query = CKQuery(recordType: recordType, predicate: predicate)
-        let database = CKContainer.default().privateCloudDatabase
+        let database = CKContainer(identifier: "iCloud.com.eff3.liftmark").privateCloudDatabase
         
         database.perform(query, inZoneWith: nil) { (records, error) in
           if let error = error {
@@ -186,7 +133,7 @@ public class ExpoCloudKitModule: Module {
     AsyncFunction("deleteRecord") { (recordId: String, recordType: String, promise: Promise) in
       DispatchQueue.main.async {
         let ckRecordID = CKRecord.ID(recordName: recordId)
-        let database = CKContainer.default().privateCloudDatabase
+        let database = CKContainer(identifier: "iCloud.com.eff3.liftmark").privateCloudDatabase
         
         database.delete(withRecordID: ckRecordID) { (deletedRecordID, error) in
           if let error = error {
