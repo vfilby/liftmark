@@ -41,7 +41,7 @@ describe('Import Flow - Robust', () => {
         .toBeVisible()
         .withTimeout(30000);
     } catch (error) {
-      await waitFor(element(by.id('stat-workouts')))
+      await waitFor(element(by.id('max-lift-squat')))
         .toBeVisible()
         .withTimeout(5000);
     }
@@ -128,10 +128,7 @@ describe('Import Flow - Robust', () => {
     await element(by.id('tab-home')).tap();
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    await waitFor(element(by.id('button-view-workouts')))
-      .toBeVisible()
-      .withTimeout(5000);
-    await element(by.id('button-view-workouts')).tap();
+    await element(by.id('tab-workouts')).tap();
 
     // Wait for workouts screen
     await new Promise(resolve => setTimeout(resolve, 1000));

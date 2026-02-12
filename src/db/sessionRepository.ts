@@ -620,6 +620,55 @@ export async function getExerciseHistory(
   return Array.from(sessionMap.values()).slice(0, limit);
 }
 
+/**
+ * Get the most frequently performed exercise (by distinct sessions),
+ * excluding a list of exercise names. Returns the best weight for that exercise.
+ */
+export async function getMostFrequentExercise(
+  excludeNames: string[]
+): Promise<{ name: string; weight: number; reps: number; unit: string } | null> {
+  const db = await getDatabase();
+
+  // Build exclusion clause - match case-insensitively
+  const excludeLower = excludeNames.map(n => n.toLowerCase());
+  const excludePlaceholders = excludeLower.map(() => '?').join(',');
+
+  const row = await db.getFirstAsync<{
+    exercise_name: string;
+    session_count: number;
+    max_weight: number;
+    reps: number;
+    unit: string;
+  }>(`
+    SELECT
+      se.exercise_name,
+      COUNT(DISTINCT se.workout_session_id) as session_count,
+      MAX(ss.actual_weight) as max_weight,
+      ss.actual_reps as reps,
+      COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+    FROM session_exercises se
+    JOIN session_sets ss ON ss.session_exercise_id = se.id
+    JOIN workout_sessions ws ON se.workout_session_id = ws.id
+    WHERE ws.status = 'completed'
+      AND ss.status = 'completed'
+      AND ss.actual_weight IS NOT NULL
+      AND ss.actual_weight > 0
+      AND LOWER(se.exercise_name) NOT IN (${excludePlaceholders})
+    GROUP BY se.exercise_name
+    ORDER BY session_count DESC, max_weight DESC
+    LIMIT 1
+  `, excludeLower);
+
+  if (!row) return null;
+
+  return {
+    name: row.exercise_name,
+    weight: row.max_weight,
+    reps: row.reps || 0,
+    unit: row.unit,
+  };
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================

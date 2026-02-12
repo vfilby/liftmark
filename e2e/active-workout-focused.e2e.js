@@ -24,7 +24,7 @@ describe('Active Workout - Focused Flow', () => {
         .toBeVisible()
         .withTimeout(30000);
     } catch (error) {
-      await waitFor(element(by.id('stat-workouts')))
+      await waitFor(element(by.id('max-lift-squat')))
         .toBeVisible()
         .withTimeout(5000);
     }

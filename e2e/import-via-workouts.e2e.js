@@ -20,19 +20,15 @@ describe('Import Via Workouts Tab', () => {
         .toBeVisible()
         .withTimeout(30000);
     } catch (error) {
-      await waitFor(element(by.id('stat-workouts')))
+      await waitFor(element(by.id('max-lift-squat')))
         .toBeVisible()
         .withTimeout(5000);
     }
   });
 
   it('should navigate to workouts tab', async () => {
-    // Tap the "View Workouts" button
-    await waitFor(element(by.id('button-view-workouts')))
-      .toBeVisible()
-      .withTimeout(5000);
-
-    await element(by.id('button-view-workouts')).tap();
+    // Tap the workouts tab
+    await element(by.id('tab-workouts')).tap();
 
     // Should be on workouts screen
     await waitFor(element(by.id('workouts-screen')))

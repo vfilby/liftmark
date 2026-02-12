@@ -1,10 +1,36 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes, useDeviceLayout } from '@/utils/responsive';
+import { getExerciseBestWeights, getMostFrequentExercise } from '@/db/sessionRepository';
+
+type LiftData = { weight: number; unit: string } | null;
+
+interface MaxLifts {
+  squat: LiftData;
+  deadlift: LiftData;
+  bench: LiftData;
+  frequent: { name: string; weight: number; unit: string } | null;
+}
+
+function matchExercise(
+  bestWeights: Map<string, { weight: number; reps: number; unit: string }>,
+  includes: string[],
+  excludes: string[]
+): { name: string; weight: number; unit: string } | null {
+  for (const [name, data] of bestWeights) {
+    const lower = name.toLowerCase();
+    const matches = includes.some(term => lower.includes(term));
+    const excluded = excludes.some(term => lower.includes(term));
+    if (matches && !excluded) {
+      return { name, weight: data.weight, unit: data.unit };
+    }
+  }
+  return null;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -15,12 +41,17 @@ export default function HomeScreen() {
   const { plans, loadPlans } = useWorkoutPlanStore();
   const { activeSession, resumeSession, getProgress } = useSessionStore();
   const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [maxLifts, setMaxLifts] = useState<MaxLifts>({
+    squat: null,
+    deadlift: null,
+    bench: null,
+    frequent: null,
+  });
 
   useEffect(() => {
     loadPlans();
   }, []);
 
-  // Check for active session when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       const checkSession = async () => {
@@ -29,6 +60,30 @@ export default function HomeScreen() {
         setHasActiveSession(session !== null);
       };
       checkSession();
+
+      const loadMaxLifts = async () => {
+        const bestWeights = await getExerciseBestWeights();
+
+        const squat = matchExercise(bestWeights, ['squat'], ['front squat']);
+        const deadlift = matchExercise(bestWeights, ['deadlift'], ['romanian', 'rdl']);
+        const bench = matchExercise(bestWeights, ['bench press', 'chest press'], []);
+
+        // Collect matched names to exclude from frequency query
+        const excludeNames: string[] = [];
+        if (squat) excludeNames.push(squat.name);
+        if (deadlift) excludeNames.push(deadlift.name);
+        if (bench) excludeNames.push(bench.name);
+
+        const frequent = await getMostFrequentExercise(excludeNames);
+
+        setMaxLifts({
+          squat: squat ? { weight: squat.weight, unit: squat.unit } : null,
+          deadlift: deadlift ? { weight: deadlift.weight, unit: deadlift.unit } : null,
+          bench: bench ? { weight: bench.weight, unit: bench.unit } : null,
+          frequent: frequent ? { name: frequent.name, weight: frequent.weight, unit: frequent.unit } : null,
+        });
+      };
+      loadMaxLifts();
     }, [])
   );
 
@@ -36,119 +91,18 @@ export default function HomeScreen() {
     router.push('/workout/active');
   };
 
+  const formatWeight = (data: LiftData) => {
+    if (!data) return '\u2014';
+    return `${data.weight} ${data.unit}`;
+  };
+
   const styles = StyleSheet.create({
-    container: {
+    outerContainer: {
       flex: 1,
       backgroundColor: colors.background,
     },
-    stats: {
-      flexDirection: 'row',
-      padding: padding.container,
-      gap: padding.container,
-    },
-    statCard: {
-      flex: 1,
-      backgroundColor: colors.card,
-      padding: padding.card,
-      borderRadius: 12,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    statNumber: {
-      fontSize: isTablet ? 42 : 36,
-      fontWeight: 'bold',
-      color: colors.primary,
-      marginBottom: 4,
-    },
-    statLabel: {
-      fontSize: fonts.sm,
-      color: colors.textSecondary,
-    },
-    actions: {
-      padding: padding.container,
-      gap: padding.small,
-      flexDirection: isTablet ? 'row' : 'column',
-    },
-    button: {
-      flex: isTablet ? 1 : undefined,
-      padding: padding.container,
-      borderRadius: 12,
-      alignItems: 'center',
-    },
-    primaryButton: {
-      backgroundColor: colors.primary,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    primaryButtonText: {
-      fontSize: fonts.md,
-      fontWeight: '600',
-      color: '#ffffff',
-    },
-    secondaryButton: {
-      backgroundColor: colors.card,
-      borderWidth: 2,
-      borderColor: colors.primary,
-    },
-    secondaryButtonText: {
-      fontSize: fonts.md,
-      fontWeight: '600',
-      color: colors.primary,
-    },
-    recentSection: {
-      flex: 1,
-      padding: padding.container,
-    },
-    sectionTitle: {
-      fontSize: fonts.lg,
-      fontWeight: 'bold',
-      color: colors.text,
-      marginBottom: padding.small,
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 32,
-    },
-    emptyText: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      marginBottom: 8,
-    },
-    emptySubtext: {
-      fontSize: 14,
-      color: colors.textMuted,
-      textAlign: 'center',
-    },
-    workoutCard: {
-      backgroundColor: colors.card,
-      padding: padding.container,
-      borderRadius: 12,
-      marginBottom: padding.small,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    workoutName: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: 4,
-    },
-    workoutMeta: {
-      fontSize: 14,
-      color: colors.textSecondary,
+    scrollContent: {
+      paddingBottom: 16,
     },
     // Resume Banner
     resumeBanner: {
@@ -191,80 +145,200 @@ export default function HomeScreen() {
       color: '#ffffff',
       marginLeft: 12,
     },
+    // Max Lifts
+    maxLiftsSection: {
+      padding: padding.container,
+    },
+    sectionTitle: {
+      fontSize: fonts.lg,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: padding.small,
+    },
+    quadrantGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: padding.small,
+    },
+    quadrantCard: {
+      flex: 1,
+      minWidth: '45%' as unknown as number,
+      backgroundColor: colors.card,
+      padding: padding.card,
+      borderRadius: 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    quadrantWeight: {
+      fontSize: isTablet ? 28 : 22,
+      fontWeight: 'bold',
+      color: colors.primary,
+      marginBottom: 2,
+    },
+    quadrantLabel: {
+      fontSize: fonts.sm,
+      color: colors.textSecondary,
+    },
+    // Recent Plans
+    recentSection: {
+      padding: padding.container,
+      paddingTop: 0,
+    },
+    emptyState: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+    },
+    emptyText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+    workoutCard: {
+      backgroundColor: colors.card,
+      padding: padding.container,
+      borderRadius: 12,
+      marginBottom: padding.small,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    workoutName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    workoutMeta: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    // Fixed button
+    fixedButtonContainer: {
+      padding: padding.container,
+      paddingBottom: padding.small,
+      backgroundColor: colors.background,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    createButton: {
+      padding: padding.container,
+      borderRadius: 12,
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    createButtonText: {
+      fontSize: fonts.md,
+      fontWeight: '600',
+      color: '#ffffff',
+    },
   });
 
   return (
-    <View style={styles.container} testID="home-screen">
-      {/* Resume Workout Banner */}
-      {hasActiveSession && activeSession && (
-        <TouchableOpacity
-          style={styles.resumeBanner}
-          onPress={handleResumeWorkout}
-          testID="resume-workout-banner"
-        >
-          <View style={styles.resumeContent}>
-            <Text style={styles.resumeTitle}>Workout In Progress</Text>
-            <Text style={styles.resumeWorkoutName}>{activeSession.name}</Text>
-            <Text style={styles.resumeProgress}>
-              {getProgress().completed} / {getProgress().total} sets completed
-            </Text>
+    <View style={styles.outerContainer} testID="home-screen">
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Resume Workout Banner */}
+        {hasActiveSession && activeSession && (
+          <TouchableOpacity
+            style={styles.resumeBanner}
+            onPress={handleResumeWorkout}
+            testID="resume-workout-banner"
+          >
+            <View style={styles.resumeContent}>
+              <Text style={styles.resumeTitle}>Workout In Progress</Text>
+              <Text style={styles.resumeWorkoutName}>{activeSession.name}</Text>
+              <Text style={styles.resumeProgress}>
+                {getProgress().completed} / {getProgress().total} sets completed
+              </Text>
+            </View>
+            <Text style={styles.resumeArrow}>{'\u2192'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Max Lifts Quadrant */}
+        <View style={styles.maxLiftsSection}>
+          <Text style={styles.sectionTitle}>Max Lifts</Text>
+          <View style={styles.quadrantGrid}>
+            <View style={styles.quadrantCard} testID="max-lift-squat">
+              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.squat)}</Text>
+              <Text style={styles.quadrantLabel}>Squat</Text>
+            </View>
+            <View style={styles.quadrantCard} testID="max-lift-deadlift">
+              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.deadlift)}</Text>
+              <Text style={styles.quadrantLabel}>Deadlift</Text>
+            </View>
+            <View style={styles.quadrantCard} testID="max-lift-bench">
+              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.bench)}</Text>
+              <Text style={styles.quadrantLabel}>Bench Press</Text>
+            </View>
+            <View style={styles.quadrantCard} testID="max-lift-frequent">
+              <Text style={styles.quadrantWeight}>
+                {maxLifts.frequent ? `${maxLifts.frequent.weight} ${maxLifts.frequent.unit}` : '\u2014'}
+              </Text>
+              <Text style={styles.quadrantLabel}>
+                {maxLifts.frequent ? maxLifts.frequent.name : 'Other'}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.resumeArrow}>→</Text>
-        </TouchableOpacity>
-      )}
-
-      <View style={styles.stats}>
-        <View style={styles.statCard} testID="stat-workouts">
-          <Text style={styles.statNumber}>{plans.length}</Text>
-          <Text style={styles.statLabel}>Plans</Text>
         </View>
-      </View>
 
-      <View style={styles.actions}>
+        {/* Recent Plans */}
+        <View style={styles.recentSection} testID="recent-plans">
+          <Text style={styles.sectionTitle}>Recent Plans</Text>
+          {plans.length === 0 ? (
+            <View style={styles.emptyState} testID="empty-state">
+              <Text style={styles.emptyText}>No plans yet</Text>
+              <Text style={styles.emptySubtext}>
+                Import your first workout plan to get started
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {plans.slice(0, 3).map((plan) => (
+                <TouchableOpacity
+                  key={plan.id}
+                  style={styles.workoutCard}
+                  onPress={() => router.push(`/workout/${plan.id}`)}
+                  testID={`workout-card-${plan.id}`}
+                >
+                  <Text style={styles.workoutName}>{plan.name}</Text>
+                  <Text style={styles.workoutMeta}>
+                    {plan.exercises.length} exercises
+                    {plan.tags.length > 0 && ` \u2022 ${plan.tags.join(', ')}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Fixed Create Plan Button */}
+      <View style={styles.fixedButtonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.primaryButton]}
+          style={styles.createButton}
           onPress={() => router.push('/modal/import')}
           testID="button-import-workout"
         >
-          <Text style={styles.primaryButtonText}>Import Workout</Text>
+          <Text style={styles.createButtonText}>Create Plan</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => router.push('/(tabs)/workouts')}
-          testID="button-view-workouts"
-        >
-          <Text style={styles.secondaryButtonText}>View Workouts</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.recentSection} testID="recent-plans">
-        <Text style={styles.sectionTitle}>Recent Plans</Text>
-        {plans.length === 0 ? (
-          <View style={styles.emptyState} testID="empty-state">
-            <Text style={styles.emptyText}>No plans yet</Text>
-            <Text style={styles.emptySubtext}>
-              Import your first workout plan to get started
-            </Text>
-          </View>
-        ) : (
-          <View>
-            {plans.slice(0, 3).map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                style={styles.workoutCard}
-                onPress={() => router.push(`/workout/${plan.id}`)}
-                testID={`workout-card-${plan.id}`}
-              >
-                <Text style={styles.workoutName}>{plan.name}</Text>
-                <Text style={styles.workoutMeta}>
-                  {plan.exercises.length} exercises
-                  {plan.tags.length > 0 && ` • ${plan.tags.join(', ')}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </View>
     </View>
   );
