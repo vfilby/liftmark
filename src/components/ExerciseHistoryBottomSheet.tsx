@@ -120,14 +120,14 @@ export function ExerciseHistoryBottomSheet({
               {/* Target */}
               {(set.targetWeight || set.targetReps) && (
                 <Text style={styles.setTarget}>
-                  {set.targetWeight ? `${set.targetWeight}${set.actualWeightUnit || 'lbs'}` : ''}{' '}
+                  {set.targetWeight ? `${set.targetWeight} ${set.actualWeightUnit || 'lbs'}` : ''}{' '}
                   {set.targetReps ? `x${set.targetReps}` : ''}
                 </Text>
               )}
 
               {/* Actual */}
               <Text style={styles.setActual}>
-                {set.actualWeight ? `${set.actualWeight}${set.actualWeightUnit || 'lbs'}` : ''}{' '}
+                {set.actualWeight ? `${set.actualWeight} ${set.actualWeightUnit || 'lbs'}` : ''}{' '}
                 {set.actualReps ? `x${set.actualReps}` : ''}
               </Text>
 

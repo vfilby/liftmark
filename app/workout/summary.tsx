@@ -270,6 +270,7 @@ export default function WorkoutSummaryScreen() {
   let totalReps = 0;
   let completedSets = 0;
   let skippedSets = 0;
+  let volumeUnit = 'lbs';
 
   for (const exercise of trackableExercises) {
     for (const set of exercise.sets) {
@@ -278,6 +279,9 @@ export default function WorkoutSummaryScreen() {
         if (set.actualWeight && set.actualReps) {
           totalWeight += set.actualWeight * set.actualReps;
           totalReps += set.actualReps;
+          if (volumeUnit === 'lbs' && set.actualWeightUnit) {
+            volumeUnit = set.actualWeightUnit;
+          }
         } else if (set.actualReps) {
           totalReps += set.actualReps;
         }
@@ -327,7 +331,7 @@ export default function WorkoutSummaryScreen() {
 
           <View style={styles.statCard}>
             <Text style={styles.statValue}>
-              {totalWeight > 0 ? `${Math.round(totalWeight).toLocaleString()}` : '-'}
+              {totalWeight > 0 ? `${Math.round(totalWeight).toLocaleString()} ${volumeUnit}` : '-'}
             </Text>
             <Text style={styles.statLabel}>Total Volume</Text>
           </View>

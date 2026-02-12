@@ -77,7 +77,7 @@ export const ExerciseCard = ({
     // Always show weight for rep-based exercises
     if (reps !== undefined) {
       const weight = set.actualWeight ?? set.targetWeight ?? 0;
-      parts.push(`${weight}${unit}`);
+      parts.push(`${weight} ${unit}`);
       parts.push(`${reps} reps`);
     }
     // Time-based sets

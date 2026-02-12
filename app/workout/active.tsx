@@ -1392,7 +1392,7 @@ export default function ActiveWorkoutScreen() {
     // Always show weight for rep-based exercises
     if (set.targetReps !== undefined) {
       const weight = set.targetWeight ?? 0;
-      parts.push(`${weight}${unit}`);
+      parts.push(`${weight} ${unit}`);
       parts.push(`${set.targetReps} reps`);
     }
     // Time-based sets (like planks)
@@ -1414,7 +1414,7 @@ export default function ActiveWorkoutScreen() {
     // Always show weight for rep-based exercises
     if (reps !== undefined) {
       const weight = set.actualWeight ?? set.targetWeight ?? 0;
-      parts.push(`${weight}${unit}`);
+      parts.push(`${weight} ${unit}`);
       parts.push(`${reps} reps`);
     }
     // Time-based sets

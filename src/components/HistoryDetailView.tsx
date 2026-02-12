@@ -116,7 +116,7 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
 
     if (reps !== undefined) {
       const weight = set.actualWeight ?? set.targetWeight ?? 0;
-      parts.push(`${weight}${unit}`);
+      parts.push(`${weight} ${unit}`);
       parts.push(`${reps} reps`);
     }
     if (set.actualTime ?? set.targetTime) {

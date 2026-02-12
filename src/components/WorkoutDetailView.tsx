@@ -174,11 +174,11 @@ export function WorkoutDetailView({
     }
 
     if (set.targetWeight !== undefined && set.targetReps !== undefined) {
-      parts.push(`${set.targetReps} reps @ ${set.targetWeight}${set.targetWeightUnit || ''}`);
+      parts.push(`${set.targetReps} reps @ ${set.targetWeight} ${set.targetWeightUnit || 'lbs'}`);
     } else if (set.targetReps !== undefined) {
       parts.push(`${set.targetReps} reps`);
     } else if (set.targetWeight !== undefined) {
-      parts.push(`${set.targetWeight}${set.targetWeightUnit || ''}`);
+      parts.push(`${set.targetWeight} ${set.targetWeightUnit || 'lbs'}`);
     }
 
     if (set.targetTime !== undefined) {
