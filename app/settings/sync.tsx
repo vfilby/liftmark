@@ -3,7 +3,7 @@
  * CloudKit sync configuration with safe error handling
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 
@@ -29,78 +28,38 @@ const Icon = ({ name, size = 24, color = '#000' }: { name: string; size?: number
 };
 
 export default function SyncSettingsScreen() {
-  console.log('[SyncScreen] Component rendering...');
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [accountStatus, setAccountStatus] = useState<string>('unknown');
+  const [accountStatus, setAccountStatus] = useState<string>('not_checked');
   const [syncEnabled, setSyncEnabled] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isSimulator, setIsSimulator] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        console.log('[SyncScreen] Initializing...');
-
-        // Check if simulator
-        try {
-          const Constants = require('expo-constants').default;
-          setIsSimulator(Platform.OS === 'ios' && !Constants.isDevice);
-        } catch (e) {
-          console.log('[SyncScreen] Could not check simulator status');
-        }
-
-        // Small delay to ensure everything is ready
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Try to load CloudKit service
-        try {
-          const cloudKitModule = require('@/services/cloudKitService');
-          if (cloudKitModule?.cloudKitService) {
-            console.log('[SyncScreen] CloudKit service available, checking status...');
-
-            // Wrap in Promise.race with timeout to prevent hanging
-            const statusPromise = new Promise<string>(async (resolve) => {
-              try {
-                const status = await cloudKitModule.cloudKitService.getAccountStatus();
-                resolve(status);
-              } catch (error) {
-                console.error('[SyncScreen] CloudKit status error:', error);
-                resolve('error');
-              }
-            });
-
-            const timeoutPromise = new Promise<string>(resolve =>
-              setTimeout(() => {
-                console.log('[SyncScreen] CloudKit status check timed out');
-                resolve('timeout');
-              }, 3000) // 3 second timeout
-            );
-
-            const status = await Promise.race([statusPromise, timeoutPromise]);
-            console.log('[SyncScreen] Account status:', status);
-            setAccountStatus(status || 'unknown');
-          } else {
-            console.log('[SyncScreen] CloudKit service not available');
-            setAccountStatus('unavailable');
+  const checkCloudKitStatus = async () => {
+    setIsChecking(true);
+    try {
+      const cloudKitModule = require('@/services/cloudKitService');
+      if (cloudKitModule?.cloudKitService) {
+        const statusPromise = new Promise<string>(async (resolve) => {
+          try {
+            const status = await cloudKitModule.cloudKitService.getAccountStatus();
+            resolve(status);
+          } catch (error) {
+            resolve('error');
           }
-        } catch (cloudKitError) {
-          console.error('[SyncScreen] CloudKit error:', cloudKitError);
-          setAccountStatus('error');
-        }
+        });
 
-        setIsLoading(false);
-      } catch (error) {
-        console.error('[SyncScreen] Initialization error:', error);
-        setHasError(true);
-        setErrorMessage(error instanceof Error ? error.message : 'Failed to initialize');
-        setIsLoading(false);
+        const timeoutPromise = new Promise<string>(resolve =>
+          setTimeout(() => resolve('timeout'), 3000)
+        );
+
+        const status = await Promise.race([statusPromise, timeoutPromise]);
+        setAccountStatus(status || 'unknown');
+      } else {
+        setAccountStatus('unavailable');
       }
-    };
-
-    initialize();
-  }, []);
+    } catch (error) {
+      setAccountStatus('error');
+    }
+    setIsChecking(false);
+  };
 
   const handleToggleSync = (enabled: boolean) => {
     Alert.alert(
@@ -154,70 +113,24 @@ export default function SyncSettingsScreen() {
         return 'Error';
       case 'unavailable':
         return 'Not Available';
+      case 'not_checked':
+        return 'Not Checked';
       case 'not_configured':
         return 'Not Configured';
       default:
-        return 'Checking...';
+        return 'Unknown';
     }
   };
 
-  // Error state
-  if (hasError) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Icon name="cloud-offline" size={64} color="#666666" />
-          <Text style={styles.errorTitle}>Unable to Load Sync Settings</Text>
-          <Text style={styles.errorText}>{errorMessage || 'An unexpected error occurred'}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={() => {
-              setHasError(false);
-              setIsLoading(true);
-              setErrorMessage('');
-            }}
-          >
-            <Text style={styles.retryButtonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading sync settings...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Main content
   return (
     <View style={styles.container}>
       <ScrollView>
         {/* Info Box */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            This is a basic CloudKit implementation for testing. Full sync functionality is not yet implemented.
+            iCloud sync is experimental. Tap "Check Status" below to test your iCloud connection.
           </Text>
         </View>
-
-        {/* Simulator Warning */}
-        {isSimulator && (
-          <View style={[styles.infoBox, styles.warningBox]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Icon name="warning" size={16} color="#f39c12" />
-              <Text style={styles.warningText}>
-                CloudKit features are limited in iOS Simulator. Test on a physical device for full functionality.
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* CloudKit Status */}
         <Text style={styles.sectionTitle}>ICLOUD STATUS</Text>
@@ -228,6 +141,8 @@ export default function SyncSettingsScreen() {
               <Text style={styles.rowSubtitle}>
                 {accountStatus === 'available'
                   ? 'Signed in to iCloud'
+                  : accountStatus === 'not_checked'
+                  ? 'Tap Check Status to verify'
                   : 'iCloud account required for sync'}
               </Text>
             </View>
@@ -238,6 +153,22 @@ export default function SyncSettingsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Check Status Button */}
+        <TouchableOpacity
+          style={[styles.testButton, isChecking && { opacity: 0.6 }]}
+          onPress={checkCloudKitStatus}
+          disabled={isChecking}
+        >
+          {isChecking ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Icon name="cloud-outline" size={20} color="#ffffff" />
+          )}
+          <Text style={styles.testButtonText}>
+            {isChecking ? 'Checking...' : 'Check Status'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Sync Settings */}
         <Text style={styles.sectionTitle}>SYNC SETTINGS</Text>
@@ -259,11 +190,11 @@ export default function SyncSettingsScreen() {
 
         {/* Test CloudKit */}
         <TouchableOpacity
-          style={styles.testButton}
+          style={[styles.testButton, { backgroundColor: '#666666' }]}
           onPress={handleTestCloudKit}
         >
           <Icon name="flask" size={20} color="#ffffff" />
-          <Text style={styles.testButtonText}>Test CloudKit Module</Text>
+          <Text style={styles.testButtonText}>CloudKit Test Screen</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -274,47 +205,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 14,
-    color: '#666666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   infoBox: {
     backgroundColor: '#E3F2FD',
@@ -327,14 +217,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     lineHeight: 20,
-  },
-  warningBox: {
-    backgroundColor: '#FFF3CD',
-  },
-  warningText: {
-    color: '#856404',
-    fontSize: 14,
-    flex: 1,
   },
   sectionTitle: {
     fontSize: 13,
@@ -385,7 +267,7 @@ const styles = StyleSheet.create({
   testButton: {
     marginHorizontal: 16,
     marginTop: 24,
-    marginBottom: 32,
+    marginBottom: 8,
     paddingVertical: 12,
     backgroundColor: '#007AFF',
     borderRadius: 8,
