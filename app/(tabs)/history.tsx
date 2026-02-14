@@ -6,9 +6,14 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { shareAsync } from 'expo-sharing';
 import { getCompletedSessions, getWorkoutSessionById } from '@/db/sessionRepository';
+import { exportSessionsAsJson, ExportError } from '@/services/workoutExportService';
 import { useTheme } from '@/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { SplitView } from '@/components/SplitView';
@@ -17,13 +22,53 @@ import type { WorkoutSession } from '@/types';
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { colors } = useTheme();
   const { isTablet } = useDeviceLayout();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
+
+  const handleExportJson = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const fileUri = await exportSessionsAsJson();
+      await shareAsync(fileUri, { mimeType: 'application/json' });
+    } catch (error) {
+      if (error instanceof ExportError) {
+        Alert.alert('Nothing to Export', error.message);
+      } else {
+        Alert.alert(
+          'Export Failed',
+          error instanceof Error ? error.message : 'Failed to export workouts'
+        );
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
+
+  // Set header right button for export
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        isExporting ? (
+          <ActivityIndicator style={{ marginRight: 16 }} color={colors.primary} />
+        ) : (
+          <TouchableOpacity
+            onPress={handleExportJson}
+            style={{ marginRight: 16 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            testID="history-export-button"
+          >
+            <Ionicons name="share-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        ),
+    });
+  }, [navigation, isExporting, handleExportJson, colors.primary]);
 
   const loadSessions = useCallback(async () => {
     try {

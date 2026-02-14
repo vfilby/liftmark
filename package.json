@@ -23,7 +23,7 @@
     "e2e:build": "detox build --configuration ios.sim.debug",
     "e2e:test": "detox test --configuration ios.sim.debug",
     "e2e:test:smoke": "detox test --configuration ios.sim.debug e2e/smoke.test.js",
-    "e2e:test:all": "detox test --configuration ios.sim.debug e2e/active-workout-focused.e2e.js e2e/import-flow-robust.e2e.js e2e/import-simple.e2e.js e2e/import-via-workouts.e2e.js e2e/history-flow-robust.e2e.js e2e/workout-flow.e2e.js e2e/smoke.test.js e2e/tabs.e2e.js e2e/detail-settings.e2e.js"
+    "e2e:test:all": "detox test --configuration ios.sim.debug e2e/active-workout-focused.e2e.js e2e/import-flow-robust.e2e.js e2e/import-simple.e2e.js e2e/import-via-workouts.e2e.js e2e/history-flow-robust.e2e.js e2e/history-export.e2e.js e2e/workout-flow.e2e.js e2e/smoke.test.js e2e/tabs.e2e.js e2e/detail-settings.e2e.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
