@@ -372,12 +372,3 @@ See `__tests__/MarkdownParser.example.ts` for comprehensive examples including:
 
 Full LMWF specification: `/MARKDOWN_SPEC.md`
 
-## Future Enhancements
-
-Potential v2.0 features (not yet implemented):
-
-- Plate calculations
-- Cardio tracking
-- Complex set schemes (cluster sets, rest-pause)
-- Video references
-- Workout programming metadata

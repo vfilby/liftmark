@@ -993,7 +993,7 @@ Last set felt like an 8/10 effort.
 ### Version 1.1 (2026-01-16)
 - **Simplified to one workout per file** - removed multi-workout support for cleaner mental model
 - **Simplified modifiers** to only functional ones: `@rest`, `@dropset`
-- Removed `@rpe` and `@tempo` - use freeform notes instead
+- Deprecated `@rpe` and `@tempo` — still parsed for compatibility, but freeform notes are preferred
 - Clarified time units in set format components
 - Updated examples to use freeform notes for descriptive data
 - Simplified header detection logic (first header with exercises = workout)
@@ -1026,19 +1026,11 @@ Based on user feedback, the following design decisions were implemented:
 7. ✅ **Superset Support**: Uses nested headers (e.g., `## Superset: Arms` with `### Exercise` children)
 8. ✅ **Simplified Modifiers**:
    - Only functional modifiers: `@rest` (triggers timer), `@dropset` (changes UI)
-   - Removed `@rpe` and `@tempo` - use freeform notes instead
+   - Deprecated `@rpe` and `@tempo` — still parsed for compatibility, but freeform notes are preferred
    - `@dropset` is a flag, not `@dropset: true`
    - AMRAP implies failure, no separate flag needed
-
-## Open Questions for Review
-
-1. **Modifiers**: Are there any critical modifiers missing? (e.g., percentage-based loading, cluster sets)
-2. **Units**: Should we support other units (plates, bodyweight %, 1RM %, etc.)?
-3. **Internationalization**: Should we support localized units/terms?
-4. **Parsing Strictness**: How forgiving should the parser be with typos/variations?
 
 ---
 
 **Document Version:** 1.1
 **Last Updated:** 2026-01-16
-**Status:** Draft - Ready for Review

@@ -72,7 +72,7 @@ make release-production  # production
 - `app/` — Expo Router file-based routes. Tabs: index, workouts, history, settings. Dynamic route: `workout/[id].tsx`.
 - `src/stores/` — Zustand stores (workoutPlanStore, sessionStore, settingsStore, gymStore, equipmentStore)
 - `src/db/` — SQLite layer via expo-sqlite. Repository pattern (`repository.ts`, `sessionRepository.ts`, `exerciseHistoryRepository.ts`). Versioned migrations in `db/index.ts`.
-- `src/services/` — Business logic: `MarkdownParser.ts` (LMWF parser, ~1000 lines), `workoutGenerationService.ts` (Anthropic AI), `healthKitService.ts`, `liveActivityService.ts`, `workoutExportService.ts`
+- `src/services/` — Business logic: `MarkdownParser.ts` (LMWF parser, ~1300 lines), `workoutGenerationService.ts` (Anthropic AI), `healthKitService.ts`, `liveActivityService.ts`, `workoutExportService.ts`
 - `src/components/` — Reusable UI components
 - `src/hooks/` — Custom React hooks
 - `src/types/` — TypeScript type definitions

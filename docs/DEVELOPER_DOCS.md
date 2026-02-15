@@ -3,7 +3,7 @@
 - **Framework**: Expo SDK 54
 - **Language**: TypeScript 5.9.2
 - **Runtime**: React 19.1.0, React Native 0.81.5
-- **Navigation**: Expo Router 6.0.21
+- **Navigation**: Expo Router ~6.0.23
 - **Database**: expo-sqlite 16.0.10
 - **State Management**: Zustand 5.0.9
 - **ID Generation**: expo-crypto 15.0.8 (UUID v4)
@@ -12,35 +12,53 @@
 ## Project Structure
 
 ```
-/LiftMark2
+/LiftMark
 ├── app/                          # Expo Router screens
 │   ├── (tabs)/                  # Tab navigation
 │   │   ├── _layout.tsx          # Tab layout
 │   │   ├── index.tsx            # Home screen
 │   │   ├── workouts.tsx         # Workout list screen
+│   │   ├── history.tsx          # Workout history screen
 │   │   └── settings.tsx         # Settings screen
 │   ├── modal/                   # Modal screens
 │   │   └── import.tsx           # Import workout modal
-│   ├── workout/                 # Workout detail
-│   │   └── [id].tsx            # Workout detail screen
+│   ├── workout/                 # Workout screens
+│   │   ├── [id].tsx            # Workout detail screen
+│   │   ├── active.tsx          # Active workout tracking
+│   │   └── summary.tsx         # Workout summary
+│   ├── history/                 # History screens
+│   │   └── [id].tsx            # Individual workout history
+│   ├── gym/                     # Gym management
+│   │   └── [id].tsx            # Gym detail/equipment
+│   ├── settings/                # Settings sub-screens
+│   │   ├── _layout.tsx
+│   │   ├── workout.tsx         # Workout settings
+│   │   ├── sync.tsx            # iCloud sync settings
+│   │   └── debug-logs.tsx      # Debug log viewer
 │   └── _layout.tsx              # Root layout
 ├── src/
 │   ├── db/                      # Database layer
 │   │   ├── index.ts            # SQLite setup & migrations
-│   │   └── repository.ts       # CRUD operations
+│   │   ├── repository.ts       # Template CRUD operations
+│   │   ├── sessionRepository.ts # Workout session CRUD
+│   │   └── exerciseHistoryRepository.ts # Exercise history queries
 │   ├── services/                # Business logic
-│   │   ├── MarkdownParser.ts   # LMWF parser (1,038 lines)
-│   │   ├── README.md
-│   │   ├── PARSER_EXAMPLES.md
-│   │   └── PARSER_FEATURES.md
+│   │   ├── MarkdownParser.ts   # LMWF parser (~1300 lines)
+│   │   ├── workoutGenerationService.ts # AI workout generation
+│   │   ├── workoutExportService.ts     # Export & share
+│   │   ├── healthKitService.ts         # HealthKit integration
+│   │   └── liveActivityService.ts      # Live Activities
 │   ├── stores/                  # Zustand state
-│   │   ├── workoutStore.ts     # Workout state & actions
-│   │   └── settingsStore.ts    # Settings state & actions
+│   │   ├── workoutPlanStore.ts # Workout plan state & actions
+│   │   ├── sessionStore.ts    # Active session state
+│   │   ├── settingsStore.ts   # Settings state & actions
+│   │   ├── gymStore.ts        # Gym management state
+│   │   └── equipmentStore.ts  # Equipment state
+│   ├── components/              # Reusable UI components
+│   ├── hooks/                   # Custom React hooks
 │   ├── types/                   # TypeScript types
-│   │   ├── workout.ts          # All type definitions
-│   │   └── index.ts
+│   ├── theme/                   # Theme configuration
 │   └── utils/                   # Utilities
-│       └── id.ts               # UUID generation
 ├── babel.config.js              # Babel with module resolver
 ├── tsconfig.json                # TypeScript config
 ├── package.json
@@ -51,24 +69,23 @@
 
 ### Prerequisites
 - Node.js (v18 or later recommended)
-- npm or yarn
-- Expo Go app (for testing on physical device)
+- npm
+- Xcode (for iOS development builds)
 
 ### Installation
 
-1. Install dependencies:
 ```bash
-npm install
+# Install deps + generate native projects
+make
+
+# Run on iOS (dev build — native modules require it, not Expo Go)
+make ios
+
+# Start dev server with logging
+make server
 ```
 
-2. Start the development server:
-```bash
-npm start
-```
-
-3. Run on your device:
-- Scan the QR code with Expo Go (Android) or Camera app (iOS)
-- Or press `i` for iOS simulator, `a` for Android emulator
+See `CLAUDE.md` for the full list of build, test, and release commands.
 
 ## Development Notes
 
@@ -96,51 +113,22 @@ import { getDatabase } from '@/db';
 const db = await getDatabase();
 ```
 
-## Deployment & Versioning
+## Release Process
 
-### Automated Version Bumping
+Version must be bumped manually in **both** `app.json` (`expo.version`) and `package.json` (`version`) before releasing. The release script reads from `package.json`.
 
-This project uses automated version bumping via the Refinery (Gas Town's merge queue processor). When PRs are merged to `main`:
-
-1. The Refinery automatically bumps the patch version in `package.json`
-2. The version increment is included in the merge commit
-3. No manual version management needed
-
-**Configuration:** See `.refinery/refinery.yml` for version bump settings.
-
-**Current Strategy:** Patch bump (1.0.24 → 1.0.25) on every merge.
-
-### Release Process
-
-After the Refinery merges your PR and bumps the version:
+Always push commits to main before releasing — `make release-alpha` creates a GitHub release tag that triggers a TestFlight build, but does NOT push commits.
 
 ```bash
-# Pull the latest main with version bump
-git checkout main
-git pull
+# 1. Bump version in both files
+# 2. Commit and push
+git push origin main
 
-# Create a release (alpha/beta/production)
-make release-alpha
+# 3. Create a release
+make release-alpha       # alpha → TestFlight
+make release-beta        # beta
+make release-production  # production
 ```
-
-This creates a git tag and triggers deployment to TestFlight.
-
-**Full details:** See [`docs/release-process.md`](./release-process.md) for the complete release workflow.
-
-### Refinery Integration
-
-The `.refinery/` directory contains:
-- `bump-version.sh` - Script that performs version bumping
-- `refinery.yml` - Configuration for merge behavior
-- `test-bump.sh` - Test suite for version bumping logic
-- `README.md` - Detailed documentation
-
-**Testing version bump locally:**
-```bash
-.refinery/test-bump.sh
-```
-
-See [`.refinery/README.md`](../.refinery/README.md) for complete documentation.
 
 ## Troubleshooting
 
