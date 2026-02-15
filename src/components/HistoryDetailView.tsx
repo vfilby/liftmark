@@ -30,7 +30,7 @@ interface HistoryDetailViewProps {
   onDelete?: () => void;
 }
 
-export function HistoryDetailView({ session }: HistoryDetailViewProps) {
+export function HistoryDetailView({ session, onDelete }: HistoryDetailViewProps) {
   const { colors } = useTheme();
 
   // Track expanded exercises for chart display
@@ -532,6 +532,18 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
       fontWeight: '600',
       color: '#ffffff',
     },
+    deleteButton: {
+      backgroundColor: colors.error,
+      borderRadius: 12,
+      paddingVertical: 16,
+      marginTop: 32,
+      alignItems: 'center' as const,
+    },
+    deleteButtonText: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      color: '#ffffff',
+    },
   });
 
   return (
@@ -845,6 +857,12 @@ export function HistoryDetailView({ session }: HistoryDetailViewProps) {
           <Text style={styles.sectionTitle}>Notes</Text>
           <Text style={styles.notesText}>{session.notes}</Text>
         </View>
+      )}
+
+      {onDelete && (
+        <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+          <Text style={styles.deleteButtonText}>Delete Workout</Text>
+        </TouchableOpacity>
       )}
 
       <View style={{ height: 40 }} />

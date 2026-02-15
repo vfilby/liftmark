@@ -25,7 +25,7 @@ jest.mock('@/db/sessionRepository', () => ({
   getCompletedSessions: jest.fn(),
 }));
 
-import { exportSessionsAsJson, ExportError } from '../services/workoutExportService';
+import { exportSessionsAsJson, exportSingleSessionAsJson, buildSessionFileName, ExportError } from '../services/workoutExportService';
 import { getCompletedSessions } from '@/db/sessionRepository';
 
 const mockedGetCompletedSessions = getCompletedSessions as jest.MockedFunction<typeof getCompletedSessions>;
@@ -215,6 +215,22 @@ describe('exportSessionsAsJson', () => {
     expect(set.isPerSide).toBe(false);
   });
 
+  it('exports a single session via exportSingleSessionAsJson', async () => {
+    const session = createSession();
+
+    const uri = await exportSingleSessionAsJson(session);
+
+    expect(uri).toMatch(/^\/mock\/cache\/workout-push-day-2024-06-15\.json$/);
+    expect(mockWrite).toHaveBeenCalledTimes(1);
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    expect(written).toHaveProperty('exportedAt');
+    expect(written.appVersion).toBe('1.2.3');
+    expect(written.session.name).toBe('Push Day');
+    expect(written.session).not.toHaveProperty('id');
+    expect(written).not.toHaveProperty('sessions'); // single session, not array
+  });
+
   it('handles multiple sessions with multiple exercises', async () => {
     mockedGetCompletedSessions.mockResolvedValue([
       createSession({
@@ -242,5 +258,44 @@ describe('exportSessionsAsJson', () => {
     expect(written.sessions[0].exercises[0].exerciseName).toBe('Bench Press');
     expect(written.sessions[0].exercises[1].exerciseName).toBe('OHP');
     expect(written.sessions[1].exercises[0].exerciseName).toBe('Deadlift');
+  });
+});
+
+describe('buildSessionFileName', () => {
+  it('creates a sanitized filename from name and date', () => {
+    expect(buildSessionFileName('Push Day', '2026-02-14T10:30:00Z'))
+      .toBe('workout-push-day-2026-02-14.json');
+  });
+
+  it('handles special characters and emojis', () => {
+    expect(buildSessionFileName('🔥 MAX EFFORT LEG DAY 💪 (Heavy Singles)', '2026-02-14'))
+      .toBe('workout-max-effort-leg-day-heavy-singles-2026-02-14.json');
+  });
+
+  it('collapses multiple spaces and hyphens', () => {
+    expect(buildSessionFileName('Upper   Body -- A', '2026-02-15'))
+      .toBe('workout-upper-body-a-2026-02-15.json');
+  });
+
+  it('truncates long names to 50 chars', () => {
+    const longName = 'a'.repeat(100);
+    const fileName = buildSessionFileName(longName, '2026-02-14');
+    const namePart = fileName.replace('workout-', '').replace('-2026-02-14.json', '');
+    expect(namePart.length).toBeLessThanOrEqual(50);
+  });
+
+  it('falls back to "workout" for empty name', () => {
+    expect(buildSessionFileName('', '2026-02-14'))
+      .toBe('workout-workout-2026-02-14.json');
+  });
+
+  it('falls back to "workout" for name with only special chars', () => {
+    expect(buildSessionFileName('🔥💪', '2026-02-14'))
+      .toBe('workout-workout-2026-02-14.json');
+  });
+
+  it('handles diacritics', () => {
+    expect(buildSessionFileName('Séance Résistance', '2026-02-14'))
+      .toBe('workout-seance-resistance-2026-02-14.json');
   });
 });

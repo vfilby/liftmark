@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { shareAsync } from 'expo-sharing';
 import { getWorkoutSessionById, deleteSession } from '@/db/sessionRepository';
+import { exportSingleSessionAsJson } from '@/services/workoutExportService';
 import { useTheme } from '@/theme';
 import { HistoryDetailView } from '@/components/HistoryDetailView';
 import type { WorkoutSession } from '@/types';
@@ -12,6 +15,19 @@ export default function HistoryDetailScreen() {
   const { colors } = useTheme();
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleShare = async () => {
+    if (!session) return;
+    try {
+      const fileUri = await exportSingleSessionAsJson(session);
+      await shareAsync(fileUri, { mimeType: 'application/json' });
+    } catch (error) {
+      Alert.alert(
+        'Export Failed',
+        error instanceof Error ? error.message : 'Failed to export workout'
+      );
+    }
+  };
 
   const handleDelete = () => {
     if (!session) return;
@@ -71,14 +87,9 @@ export default function HistoryDetailScreen() {
       fontSize: 16,
       color: colors.error,
     },
-    deleteButton: {
-      paddingHorizontal: 12,
+    shareButton: {
+      paddingHorizontal: 8,
       paddingVertical: 6,
-    },
-    deleteButtonText: {
-      fontSize: 16,
-      color: colors.error,
-      fontWeight: '500',
     },
   });
 
@@ -110,13 +121,13 @@ export default function HistoryDetailScreen() {
         options={{
           title: session.name,
           headerRight: () => (
-            <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+            <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+              <Ionicons name="share-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           ),
         }}
       />
-      <HistoryDetailView session={session} />
+      <HistoryDetailView session={session} onDelete={handleDelete} />
     </View>
   );
 }

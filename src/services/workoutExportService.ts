@@ -34,6 +34,45 @@ export async function exportSessionsAsJson(): Promise<string> {
   return exportFile.uri;
 }
 
+/**
+ * Export a single workout session as a portable JSON file.
+ * Returns the file URI for sharing.
+ */
+export async function exportSingleSessionAsJson(session: WorkoutSession): Promise<string> {
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    appVersion: Constants.expoConfig?.version || '1.0.0',
+    session: stripSession(session),
+  };
+
+  const fileName = buildSessionFileName(session.name, session.date);
+  const exportFile = new File(Paths.cache, fileName);
+
+  exportFile.write(JSON.stringify(exportData, null, 2));
+
+  return exportFile.uri;
+}
+
+/**
+ * Build a sanitized file name: workout-{name}-{date}.json
+ */
+export function buildSessionFileName(name: string, date: string): string {
+  const sanitized = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')     // strip diacritics
+    .replace(/[^\w\s-]/g, '')            // remove non-alphanumeric (except spaces/hyphens)
+    .replace(/\s+/g, '-')               // spaces to hyphens
+    .replace(/-+/g, '-')                // collapse multiple hyphens
+    .replace(/^-|-$/g, '')              // trim leading/trailing hyphens
+    .slice(0, 50);
+
+  const datePart = date.split('T')[0] || new Date().toISOString().split('T')[0];
+  const namePart = sanitized || 'workout';
+
+  return `workout-${namePart}-${datePart}.json`;
+}
+
 export class ExportError extends Error {
   constructor(message: string) {
     super(message);
