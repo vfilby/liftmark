@@ -26,7 +26,20 @@
         "NSHealthUpdateUsageDescription": "LiftMark uses HealthKit to save your completed workouts.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true,
-        "NSSupportsLiveActivitiesFrequentUpdates": true
+        "NSSupportsLiveActivitiesFrequentUpdates": true,
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Text File",
+            "LSHandlerRank": "Alternate",
+            "CFBundleTypeRole": "Viewer",
+            "LSItemContentTypes": [
+              "public.plain-text",
+              "public.utf8-plain-text",
+              "net.daringfireball.markdown"
+            ]
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": false
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,

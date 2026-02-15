@@ -1,20 +1,25 @@
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, useNavigationContainerRef, usePathname } from 'expo-router';
-import { View } from 'react-native';
+import { Stack, useNavigationContainerRef, usePathname, useRouter } from 'expo-router';
+import { View, Alert } from 'react-native';
+import { useURL } from 'expo-linking';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import NavigationErrorBoundary from '@/components/NavigationErrorBoundary';
 import { ActiveWorkoutBanner } from '@/components/ActiveWorkoutBanner';
 import { logger } from '@/services/logger';
 import { navigationLogger } from '@/services/navigationLogger';
+import { isFileImportUrl, readSharedFile } from '@/services/fileImportService';
 
 export default function RootLayout() {
   const { colors } = useTheme();
   const { loadSettings } = useSettingsStore();
   const navigationRef = useNavigationContainerRef();
   const pathname = usePathname();
+  const router = useRouter();
+  const incomingUrl = useURL();
+  const processedUrls = useRef(new Set<string>());
 
   // Load settings when the app starts
   useEffect(() => {
@@ -23,6 +28,26 @@ export default function RootLayout() {
       logger.error('app', 'Failed to load settings on app start', error);
     });
   }, [loadSettings]);
+
+  // Handle incoming file URLs (Open In / Copy To)
+  useEffect(() => {
+    if (!incomingUrl) return;
+    if (processedUrls.current.has(incomingUrl)) return;
+    if (!isFileImportUrl(incomingUrl)) return;
+
+    processedUrls.current.add(incomingUrl);
+
+    readSharedFile(incomingUrl).then((result) => {
+      if (result.success && result.markdown) {
+        router.push({
+          pathname: '/modal/import',
+          params: { prefilledMarkdown: result.markdown, fileName: result.fileName },
+        });
+      } else {
+        Alert.alert('Import Error', result.error || 'Failed to read file.');
+      }
+    });
+  }, [incomingUrl]);
 
   // Log app initialization
   useEffect(() => {

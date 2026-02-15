@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { parseWorkout } from '@/services/MarkdownParser';
 import { generateWorkoutHistoryContext } from '@/services/workoutHistoryService';
 import { generateWorkout } from '@/services/anthropicService';
@@ -24,6 +24,7 @@ import { useResponsivePadding, useMaxContentWidth } from '@/utils/responsive';
 
 export default function ImportWorkoutModal() {
   const router = useRouter();
+  const { prefilledMarkdown, fileName } = useLocalSearchParams<{ prefilledMarkdown?: string; fileName?: string }>();
   const { colors } = useTheme();
   const padding = useResponsivePadding();
   const maxWidth = useMaxContentWidth();
@@ -43,6 +44,13 @@ export default function ImportWorkoutModal() {
     // Load workout history for AI context
     generateWorkoutHistoryContext(5).then(setWorkoutHistory);
   }, []);
+
+  // Pre-fill markdown from file import
+  useEffect(() => {
+    if (prefilledMarkdown) {
+      setMarkdown(prefilledMarkdown);
+    }
+  }, [prefilledMarkdown]);
 
   // Load equipment when default gym changes
   useEffect(() => {
