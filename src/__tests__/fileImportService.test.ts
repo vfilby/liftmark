@@ -32,9 +32,17 @@ describe('fileImportService', () => {
       expect(isFileImportUrl('file:///path/to/workout.TXT')).toBe(true);
     });
 
+    it('returns true for liftmark:// file URLs', () => {
+      expect(isFileImportUrl('liftmark://private/var/mobile/Containers/Data/Application/123/Documents/Inbox/workout.md')).toBe(true);
+      expect(isFileImportUrl('liftmark://private/var/mobile/Containers/Data/Application/123/Documents/Inbox/workout.txt')).toBe(true);
+    });
+
+    it('returns false for liftmark:// URLs without file extensions', () => {
+      expect(isFileImportUrl('liftmark://import')).toBe(false);
+    });
+
     it('returns false for non-file URLs', () => {
       expect(isFileImportUrl('https://example.com/file.md')).toBe(false);
-      expect(isFileImportUrl('liftmark://import')).toBe(false);
     });
 
     it('returns false for unsupported extensions', () => {
@@ -133,6 +141,25 @@ describe('fileImportService', () => {
 
       expect(result.success).toBe(true);
       expect(result.fileName).toBe('my workout.md');
+    });
+
+    it('reads a file from liftmark:// URL', async () => {
+      const content = '# Push Day\n- 135 x 10';
+      mockFile({ text: content });
+
+      const result = await readSharedFile('liftmark://private/var/mobile/Containers/Data/Application/123/Documents/Inbox/workout.md');
+
+      expect(result.success).toBe(true);
+      expect(result.markdown).toBe(content);
+      expect(result.fileName).toBe('workout.md');
+      expect(MockFile).toHaveBeenCalledWith('file:///private/var/mobile/Containers/Data/Application/123/Documents/Inbox/workout.md');
+    });
+
+    it('returns error for unsupported URL scheme', async () => {
+      const result = await readSharedFile('https://example.com/workout.md');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Unsupported URL scheme.');
     });
 
     it('handles exceptions gracefully', async () => {

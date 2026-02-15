@@ -11,28 +11,48 @@ export interface FileImportResult {
 }
 
 /**
- * Check if a URL is a file:// URL with a valid text/markdown extension.
+ * Convert a URL to a file:// URL.
+ * iOS "Open In" / share sends URLs using the app's custom scheme (liftmark://)
+ * rather than file://, so we need to normalize them.
+ */
+function toFileUrl(url: string): string | null {
+  if (url.startsWith('file://')) return url;
+  if (url.startsWith('liftmark://')) {
+    const path = url.replace('liftmark://', '');
+    return `file:///${path}`;
+  }
+  return null;
+}
+
+/**
+ * Check if a URL is a file import URL with a valid text/markdown extension.
+ * Accepts both file:// and liftmark:// scheme URLs.
  */
 export function isFileImportUrl(url: string): boolean {
-  if (!url.startsWith('file://')) return false;
-  const path = decodeURIComponent(url.replace('file://', ''));
+  const fileUrl = toFileUrl(url);
+  if (!fileUrl) return false;
+  const path = decodeURIComponent(fileUrl.replace('file://', ''));
   const lower = path.toLowerCase();
   return VALID_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
 /**
- * Read a shared file from a file:// URL and return its content.
+ * Read a shared file from a file:// or liftmark:// URL and return its content.
  */
 export async function readSharedFile(url: string): Promise<FileImportResult> {
   try {
-    const path = decodeURIComponent(url.replace('file://', ''));
+    const fileUrl = toFileUrl(url);
+    if (!fileUrl) {
+      return { success: false, error: 'Unsupported URL scheme.' };
+    }
+    const path = decodeURIComponent(fileUrl.replace('file://', ''));
     const fileName = path.split('/').pop() || 'unknown';
 
     if (!VALID_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext))) {
       return { success: false, error: 'Unsupported file type. Only .txt, .md, and .markdown files are supported.' };
     }
 
-    const file = new File(url);
+    const file = new File(fileUrl);
 
     if (!file.exists) {
       return { success: false, error: 'File not found.' };
