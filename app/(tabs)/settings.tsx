@@ -32,6 +32,7 @@ import {
   importDatabase,
   validateDatabaseFile,
 } from '@/services/databaseBackupService';
+import { LoadingView } from '@/components/LoadingView';
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
@@ -660,7 +661,7 @@ export default function SettingsScreen() {
   if (!settings) {
     return (
       <View style={styles.container} testID="settings-loading">
-        <Text style={styles.loadingText}>Loading settings...</Text>
+        <LoadingView message="Loading settings..." />
       </View>
     );
   }
@@ -806,6 +807,7 @@ export default function SettingsScreen() {
                     e.stopPropagation();
                     handleSetDefaultGym(gym.id);
                   }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   testID={`set-default-${gym.id}`}
                 >
                   <Ionicons name="star-outline" size={20} color={colors.textSecondary} />

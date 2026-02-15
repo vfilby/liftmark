@@ -26,6 +26,7 @@ import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive
 import { audioService } from '@/services/audioService';
 import RestTimer from '@/components/RestTimer';
 import ExerciseTimer from '@/components/ExerciseTimer';
+import { LoadingView } from '@/components/LoadingView';
 import type { SessionExercise, SessionSet } from '@/types';
 import {
   isBarbellExercise,
@@ -1326,7 +1327,7 @@ export default function ActiveWorkoutScreen() {
       color: colors.text,
     },
     setDeleteButton: {
-      padding: 4,
+      padding: 8,
     },
     setEditRow: {
       flexDirection: 'row',
@@ -1375,9 +1376,7 @@ export default function ActiveWorkoutScreen() {
   if (!activeSession) {
     return (
       <View style={styles.container} testID="active-workout-screen">
-        <View style={styles.centered} testID="active-workout-loading">
-          <Text style={styles.loadingText}>Loading workout...</Text>
-        </View>
+        <LoadingView message="Loading workout..." />
       </View>
     );
   }
@@ -1527,10 +1526,10 @@ export default function ActiveWorkoutScreen() {
                               <View key={ex.id} style={styles.exerciseNameRow}>
                                 {idx > 0 && <Text style={styles.supersetExerciseNames}> & </Text>}
                                 <Text style={styles.supersetExerciseNames}>{ex.exerciseName}</Text>
-                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
+                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                   <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => handleEditExercisePress(ex)} style={styles.exerciseEditButton}>
+                                <TouchableOpacity onPress={() => handleEditExercisePress(ex)} style={styles.exerciseEditButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                   <Ionicons name="create-outline" size={16} color={colors.primary} />
                                 </TouchableOpacity>
                               </View>
@@ -1753,10 +1752,10 @@ export default function ActiveWorkoutScreen() {
                         <View style={styles.exerciseInfo}>
                           <View style={styles.exerciseNameRow}>
                             <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleEditExercisePress(exercise)} style={styles.exerciseEditButton}>
+                            <TouchableOpacity onPress={() => handleEditExercisePress(exercise)} style={styles.exerciseEditButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name="create-outline" size={16} color={colors.primary} />
                             </TouchableOpacity>
                           </View>
@@ -2026,6 +2025,7 @@ export default function ActiveWorkoutScreen() {
                     <TouchableOpacity
                       onPress={() => handleDeleteSetInModal(set.id)}
                       style={styles.setDeleteButton}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </TouchableOpacity>

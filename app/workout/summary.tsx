@@ -12,6 +12,7 @@ import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 import WorkoutHighlights from '@/components/WorkoutHighlights';
 import { calculateWorkoutHighlights, type WorkoutHighlight } from '@/services/workoutHighlightsService';
+import { LoadingView } from '@/components/LoadingView';
 
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
@@ -242,9 +243,7 @@ export default function WorkoutSummaryScreen() {
   if (!activeSession) {
     return (
       <View style={styles.container} testID="workout-summary-screen">
-        <View style={styles.centered} testID="workout-summary-loading">
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
+        <LoadingView />
       </View>
     );
   }
@@ -373,7 +372,7 @@ export default function WorkoutSummaryScreen() {
                 <View style={styles.exerciseInfo}>
                   <View style={styles.exerciseNameRow}>
                     <Text style={styles.exerciseRowName}>{exercise.exerciseName}</Text>
-                    <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                    <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                       <Ionicons name="open-outline" size={14} style={styles.youtubeLink} />
                     </TouchableOpacity>
                   </View>

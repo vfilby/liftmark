@@ -6,6 +6,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { toggleFavoritePlan } from '@/db/repository';
 import { useTheme } from '@/theme';
 import { WorkoutDetailView } from '@/components/WorkoutDetailView';
+import { LoadingView } from '@/components/LoadingView';
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -116,7 +117,7 @@ export default function WorkoutDetailScreen() {
   if (!selectedPlan) {
     return (
       <View style={styles.container} testID="workout-detail-loading">
-        <Text style={styles.loadingText}>Loading...</Text>
+        <LoadingView />
       </View>
     );
   }

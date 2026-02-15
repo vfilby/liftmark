@@ -121,7 +121,7 @@ export default function HistoryDetailScreen() {
         options={{
           title: session.name,
           headerRight: () => (
-            <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+            <TouchableOpacity onPress={handleShare} style={styles.shareButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="share-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
           ),

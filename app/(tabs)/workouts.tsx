@@ -442,6 +442,7 @@ export default function WorkoutsScreen() {
           <TouchableOpacity
             style={styles.favoriteButton}
             onPress={(e) => handleToggleFavorite(item.id, e)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             testID={`favorite-${item.id}`}
           >
             <Ionicons
@@ -515,6 +516,7 @@ export default function WorkoutsScreen() {
         <TouchableOpacity
           style={styles.filterToggle}
           onPress={() => setShowFilters(!showFilters)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           testID="filter-toggle"
         >
           <Text style={styles.filterToggleText}>
@@ -624,6 +626,21 @@ export default function WorkoutsScreen() {
               testID="button-import-empty"
             >
               <Text style={styles.importButtonText}>Import Plan</Text>
+            </TouchableOpacity>
+          )}
+          {filterByEquipment && (
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={() => {
+                if (defaultGym) {
+                  router.push(`/gym/${defaultGym.id}`);
+                } else {
+                  router.push('/(tabs)/settings');
+                }
+              }}
+              testID="button-setup-equipment"
+            >
+              <Text style={styles.importButtonText}>Set Up Equipment</Text>
             </TouchableOpacity>
           )}
         </View>

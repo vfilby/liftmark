@@ -447,6 +447,7 @@ export function WorkoutDetailView({
             <TouchableOpacity
               style={styles.favoriteButton}
               onPress={onToggleFavorite}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               testID="favorite-button-detail"
             >
               <Ionicons
@@ -578,7 +579,7 @@ export function WorkoutDetailView({
                               <View key={ex.id} style={styles.exerciseNameRow}>
                                 {idx > 0 && <Text style={styles.exerciseName}> & </Text>}
                                 <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
-                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)}>
+                                <TouchableOpacity onPress={() => openYouTubeSearch(ex.exerciseName)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                   <Ionicons name="open-outline" size={16} style={styles.youtubeLink} />
                                 </TouchableOpacity>
                               </View>
@@ -629,7 +630,7 @@ export function WorkoutDetailView({
                         <View style={styles.exerciseInfo}>
                           <View style={styles.exerciseNameRow}>
                             <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)}>
+                            <TouchableOpacity onPress={() => openYouTubeSearch(exercise.exerciseName)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name="open-outline" size={16} style={styles.youtubeLink} />
                             </TouchableOpacity>
                           </View>

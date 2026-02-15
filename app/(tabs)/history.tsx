@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { shareAsync } from 'expo-sharing';
 import { getCompletedSessions, getWorkoutSessionById } from '@/db/sessionRepository';
 import { exportSessionsAsJson, ExportError } from '@/services/workoutExportService';
+import { LoadingView } from '@/components/LoadingView';
 import { useTheme } from '@/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { SplitView } from '@/components/SplitView';
@@ -33,23 +34,35 @@ export default function HistoryScreen() {
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
 
   const handleExportJson = useCallback(async () => {
-    setIsExporting(true);
-    try {
-      const fileUri = await exportSessionsAsJson();
-      await shareAsync(fileUri, { mimeType: 'application/json' });
-    } catch (error) {
-      if (error instanceof ExportError) {
-        Alert.alert('Nothing to Export', error.message);
-      } else {
-        Alert.alert(
-          'Export Failed',
-          error instanceof Error ? error.message : 'Failed to export workouts'
-        );
-      }
-    } finally {
-      setIsExporting(false);
-    }
-  }, []);
+    Alert.alert(
+      `Export ${sessions.length} workout${sessions.length !== 1 ? 's' : ''}?`,
+      'This will create a JSON file you can share or save.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Export',
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const fileUri = await exportSessionsAsJson();
+              await shareAsync(fileUri, { mimeType: 'application/json' });
+            } catch (error) {
+              if (error instanceof ExportError) {
+                Alert.alert('Nothing to Export', error.message);
+              } else {
+                Alert.alert(
+                  'Export Failed',
+                  error instanceof Error ? error.message : 'Failed to export workouts'
+                );
+              }
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [sessions.length]);
 
   // Set header right button for export
   useEffect(() => {
@@ -346,9 +359,7 @@ export default function HistoryScreen() {
   if (isLoading) {
     return (
       <View style={styles.container} testID="history-screen">
-        <View style={styles.centered}>
-          <Text style={styles.loadingText}>Loading history...</Text>
-        </View>
+        <LoadingView message="Loading history..." />
       </View>
     );
   }
