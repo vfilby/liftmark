@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Alert,
   BackHandler,
   Linking,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,15 +22,11 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes } from '@/utils/responsive';
 import { audioService } from '@/services/audioService';
-import RestTimer from '@/components/RestTimer';
-import ExerciseTimer from '@/components/ExerciseTimer';
 import { LoadingView } from '@/components/LoadingView';
+import SetRow from '@/components/SetRow';
+import EditExerciseModal from '@/components/EditExerciseModal';
+import AddExerciseModal from '@/components/AddExerciseModal';
 import type { SessionExercise, SessionSet } from '@/types';
-import {
-  isBarbellExercise,
-  calculatePlates,
-  formatCompletePlateSetup,
-} from '@/utils/plateCalculator';
 import { interleaveSupersetSets } from '@/utils/supersetHelpers';
 
 // Represents either a single exercise or a superset group
@@ -834,54 +828,6 @@ export default function ActiveWorkoutScreen() {
       color: colors.textSecondary,
       textAlign: 'center',
     },
-    // Rest Timer (inline)
-    restTimerInline: {
-      marginBottom: 16,
-    },
-    restSuggestionInline: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.primaryLight,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: colors.primaryLightBorder,
-    },
-    restSuggestionText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.primary,
-    },
-    restSuggestionButtons: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    startRestButton: {
-      backgroundColor: colors.primary,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 6,
-    },
-    startRestButtonText: {
-      color: '#ffffff',
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    dismissRestButton: {
-      backgroundColor: colors.card,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    dismissRestButtonText: {
-      color: colors.textSecondary,
-      fontSize: 14,
-      fontWeight: '500',
-    },
     // Content
     content: {
       flex: 1,
@@ -979,396 +925,9 @@ export default function ActiveWorkoutScreen() {
     setsContainer: {
       marginLeft: 36,
     },
-    // Set Row
-    setRow: {
-      flexDirection: 'row',
-      backgroundColor: colors.card,
-      borderRadius: 10,
-      marginBottom: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      overflow: 'hidden',
-    },
-    setRowActive: {
-      borderColor: colors.primary,
-      borderWidth: 2,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    setRowCompleted: {
-      backgroundColor: colors.successLight,
-      borderColor: colors.successBorder,
-    },
-    setRowSkipped: {
-      backgroundColor: colors.warningLight,
-      borderColor: colors.warningBorder,
-    },
-    // Active editing states with colored borders
-    setRowCompletedActive: {
-      backgroundColor: colors.successLight,
-      borderColor: colors.success,
-      borderWidth: 2,
-      shadowColor: colors.success,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    setRowSkippedActive: {
-      backgroundColor: colors.warningLight,
-      borderColor: colors.warning,
-      borderWidth: 2,
-      shadowColor: colors.warning,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    setRowPendingActive: {
-      backgroundColor: colors.backgroundSecondary,
-      borderColor: colors.textMuted,
-      borderWidth: 2,
-      shadowColor: colors.textMuted,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    // Set Number
-    setNumberContainer: {
-      width: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.backgroundSecondary,
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-    },
-    setNumberContainerActive: {
-      backgroundColor: colors.primaryLight,
-      borderRightColor: colors.primaryLightBorder,
-    },
-    setNumberContainerCompleted: {
-      backgroundColor: colors.successLighter,
-      borderRightColor: colors.successBorder,
-    },
-    setNumberContainerSkipped: {
-      backgroundColor: colors.warningLighter,
-      borderRightColor: colors.warningBorder,
-    },
-    setNumberContainerPending: {
-      backgroundColor: colors.backgroundTertiary,
-      borderRightColor: colors.borderLight,
-    },
-    setNumber: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.textSecondary,
-    },
-    setNumberCompleted: {
-      color: colors.success,
-      fontSize: 18,
-    },
-    setNumberSkipped: {
-      color: colors.warning,
-      fontSize: 20,
-    },
-    // Set Content
-    setContent: {
-      flex: 1,
-      padding: 12,
-    },
-    // Active Set
-    activeSetContent: {},
-    targetLabel: {
-      fontSize: 13,
-      color: colors.textSecondary,
-      marginBottom: 12,
-    },
-    plateInfo: {
-      backgroundColor: colors.primaryLight,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 6,
-      marginBottom: 12,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.primary,
-    },
-    plateInfoText: {
-      fontSize: 13,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    inputRow: {
-      flexDirection: 'row',
-      gap: 16,
-      marginBottom: 12,
-    },
-    inputGroup: {
-      flex: 1,
-      alignItems: 'center',
-    },
-    inputLabel: {
-      fontSize: 12,
-      color: colors.textSecondary,
-      marginBottom: 4,
-    },
-    input: {
-      width: '100%',
-      height: 44,
-      backgroundColor: colors.backgroundSecondary,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      fontSize: 20,
-      fontWeight: '600',
-      textAlign: 'center',
-      color: colors.text,
-    },
-    inputUnit: {
-      fontSize: 12,
-      color: colors.textSecondary,
-      marginTop: 4,
-    },
-    setActions: {
-      flexDirection: 'row',
-      gap: 10,
-    },
-    completeButton: {
-      flex: 1,
-      backgroundColor: colors.primary,
-      paddingVertical: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    completeButtonText: {
-      color: '#ffffff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    skipButtonInline: {
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: colors.backgroundTertiary,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    skipButtonText: {
-      color: colors.textSecondary,
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    updateButton: {
-      flex: 1,
-      backgroundColor: colors.success,
-      paddingVertical: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    updateButtonText: {
-      color: '#ffffff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    // Completed Set
-    completedSetContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    completedText: {
-      fontSize: 15,
-      color: colors.success,
-      fontWeight: '500',
-    },
-    tapToEdit: {
-      fontSize: 12,
-      color: colors.textMuted,
-    },
-    // Skipped Set
-    skippedSetContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    skippedText: {
-      fontSize: 14,
-      color: colors.warning,
-      fontStyle: 'italic',
-    },
-    // Pending Set
-    pendingSetContent: {},
-    pendingText: {
-      fontSize: 15,
-      color: colors.textSecondary,
-    },
-    setNotes: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontStyle: 'italic',
-      marginTop: 4,
-    },
-    // Up Next Preview
-    upNextContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    upNextLabel: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.primary,
-      letterSpacing: 0.5,
-    },
-    upNextTarget: {
-      fontSize: 15,
-      color: colors.textSecondary,
-    },
-    // Rest Placeholder
-    restPlaceholder: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 4,
-      marginBottom: 4,
-    },
-    restPlaceholderLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor: colors.border,
-    },
-    restPlaceholderText: {
-      fontSize: 10,
-      color: colors.textMuted,
-      marginHorizontal: 8,
-    },
-    // Modal styles
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalContent: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      padding: 24,
-      width: '85%',
-      maxWidth: 500,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: 16,
-    },
-    modalInput: {
-      backgroundColor: colors.background,
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 16,
-      color: colors.text,
-      marginBottom: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    modalInputMultiline: {
-      minHeight: 100,
-      textAlignVertical: 'top',
-    },
-    modalButtonRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 16,
-      gap: 12,
-    },
-    modalButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 8,
-      minWidth: 80,
-      alignItems: 'center',
-    },
-    modalButtonPrimary: {
-      backgroundColor: colors.primary,
-    },
-    modalButtonSecondary: {
-      backgroundColor: colors.backgroundTertiary,
-    },
-    modalButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-    },
     exerciseEditButton: {
       padding: 8,
       marginLeft: 8,
-    },
-    // Set editing styles
-    setEditContainer: {
-      backgroundColor: colors.backgroundSecondary,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    setEditHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    setEditNumber: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-    },
-    setDeleteButton: {
-      padding: 8,
-    },
-    setEditRow: {
-      flexDirection: 'row',
-      gap: 12,
-      marginBottom: 8,
-    },
-    setEditInput: {
-      flex: 1,
-    },
-    setEditLabel: {
-      fontSize: 12,
-      color: colors.textSecondary,
-      marginBottom: 4,
-    },
-    setEditTextInput: {
-      backgroundColor: colors.background,
-      borderRadius: 6,
-      padding: 8,
-      fontSize: 14,
-      color: colors.text,
-      borderWidth: 1,
-      borderColor: colors.border,
-      textAlign: 'center',
-    },
-    addSetButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 12,
-      backgroundColor: colors.backgroundTertiary,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginTop: 8,
-      marginBottom: 16,
-      gap: 8,
-    },
-    addSetButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.primary,
     },
   });
 
@@ -1382,48 +941,24 @@ export default function ActiveWorkoutScreen() {
   }
 
   const { completed, total } = getProgress();
-  const trackableExercises = getTrackableExercises();
 
-  const formatSetTarget = (set: SessionSet): string => {
-    const parts: string[] = [];
-    const unit = set.targetWeightUnit || 'lbs';
-
-    // Always show weight for rep-based exercises
-    if (set.targetReps !== undefined) {
-      const weight = set.targetWeight ?? 0;
-      parts.push(`${weight} ${unit}`);
-      parts.push(`${set.targetReps} reps`);
-    }
-    // Time-based sets (like planks)
-    if (set.targetTime !== undefined) {
-      parts.push(`${set.targetTime}s`);
-    }
-    if (set.targetRpe !== undefined) {
-      parts.push(`RPE ${set.targetRpe}`);
-    }
-    return parts.join(' × ') || 'Bodyweight';
-  };
-
-  const formatSetActual = (set: SessionSet): string => {
-    const parts: string[] = [];
-    const unit = set.actualWeightUnit || set.targetWeightUnit || 'lbs';
-    const reps = set.actualReps ?? set.targetReps;
-    const rpe = set.actualRpe ?? set.targetRpe;
-
-    // Always show weight for rep-based exercises
-    if (reps !== undefined) {
-      const weight = set.actualWeight ?? set.targetWeight ?? 0;
-      parts.push(`${weight} ${unit}`);
-      parts.push(`${reps} reps`);
-    }
-    // Time-based sets
-    if (set.actualTime ?? set.targetTime) {
-      parts.push(`${set.actualTime ?? set.targetTime}s`);
-    }
-    if (rpe !== undefined) {
-      parts.push(`RPE ${rpe}`);
-    }
-    return parts.join(' × ') || 'Bodyweight';
+  // Common props for SetRow components
+  const setRowSharedProps = {
+    isLoading,
+    lastCompletedSetId,
+    restTimer,
+    suggestedRestSeconds,
+    exerciseTimer,
+    onSetPress: handleSetPress,
+    onCompleteSet: handleCompleteSet,
+    onSkipSet: handleSkipSet,
+    onUpdateSet: handleUpdateSet,
+    onUpdateEditValue: updateEditValue,
+    onStartExerciseTimer: startExerciseTimer,
+    onStopExerciseTimer: stopExerciseTimer,
+    onStopRest: handleStopRest,
+    onStartRest: handleStartRest,
+    onDismissRest: handleDismissRest,
   };
 
   return (
@@ -1508,9 +1043,6 @@ export default function ActiveWorkoutScreen() {
                 const numberColor = sectionColor;
 
                 if (group.type === 'superset') {
-                  // Render superset with all exercises' sets
-                  const exerciseNames = group.exercises.map(ex => ex.exerciseName).join(' & ');
-
                   return (
                     <View key={`superset-${globalIndex}`} style={styles.exerciseSection}>
                       {/* Superset Header */}
@@ -1540,204 +1072,21 @@ export default function ActiveWorkoutScreen() {
 
                       {/* Render sets from all exercises in superset - interleaved */}
                       <View style={styles.setsContainer}>
-                        {interleaveSupersetSets(group.exercises).map(({ exercise, set, setIndex }) => {
-                            const isCurrentSet = set.id === currentSetId;
-                            const isEditing = set.id === editingSetId;
-                            const isCompleted = set.status === 'completed';
-                            const isSkipped = set.status === 'skipped';
-                            const isPending = set.status === 'pending';
-                            const values = editValues[set.id] || { weight: '', reps: '', time: '' };
-
-                            const isUpNext = isCurrentSet && showUpNextPreview;
-                            const isActiveForm = (isCurrentSet && !showUpNextPreview) || isEditing;
-                            const showRestAfterThis = set.id === lastCompletedSetId && (restTimer || suggestedRestSeconds);
-
-                            const nextSet = exercise.sets[setIndex + 1];
-                            const showRestPlaceholder = isPending && set.restSeconds &&
-                              nextSet && nextSet.status === 'pending' &&
-                              !isActiveForm && !showRestAfterThis;
-
-                            const getRowStyle = () => {
-                              if (isCurrentSet && !isEditing) return styles.setRowActive;
-                              if (isActiveForm && isCompleted) return styles.setRowCompletedActive;
-                              if (isActiveForm && isSkipped) return styles.setRowSkippedActive;
-                              if (isActiveForm && isPending) return styles.setRowPendingActive;
-                              if (isCompleted) return styles.setRowCompleted;
-                              if (isSkipped) return styles.setRowSkipped;
-                              return null;
-                            };
-
-                            return (
-                              <View key={set.id}>
-                                <TouchableOpacity
-                                  style={[styles.setRow, getRowStyle()]}
-                                  onPress={() => handleSetPress(set)}
-                                  activeOpacity={0.7}
-                                >
-                                  <View style={[
-                                    styles.setNumberContainer,
-                                    isCurrentSet && styles.setNumberContainerActive,
-                                    isEditing && isCompleted && styles.setNumberContainerCompleted,
-                                    isEditing && isSkipped && styles.setNumberContainerSkipped,
-                                    isEditing && isPending && styles.setNumberContainerPending,
-                                  ]}>
-                                    <Text style={[
-                                      styles.setNumber,
-                                      !isActiveForm && isCompleted && styles.setNumberCompleted,
-                                      !isActiveForm && isSkipped && styles.setNumberSkipped,
-                                    ]}>
-                                      {!isActiveForm && isCompleted ? '✓' : !isActiveForm && isSkipped ? '−' : setIndex + 1}
-                                    </Text>
-                                  </View>
-
-                                  <View style={styles.setContent}>
-                                    {/* Show exercise name for superset sets */}
-                                    <Text style={styles.supersetExerciseNames}>{exercise.exerciseName}</Text>
-                                    {isUpNext ? (
-                                      <View style={styles.upNextContent}>
-                                        <Text style={styles.upNextLabel}>UP NEXT</Text>
-                                        <Text style={styles.upNextTarget}>{formatSetTarget(set)}</Text>
-                                      </View>
-                                    ) : isActiveForm ? (
-                                      <View style={styles.activeSetContent}>
-                                        <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
-                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-
-                                        {/* Show plate calculator for barbell exercises */}
-                                        {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
-                                          <View style={styles.plateInfo}>
-                                            <Text style={styles.plateInfoText}>
-                                              {formatCompletePlateSetup(
-                                                calculatePlates(
-                                                  parseFloat(values.weight) || set.targetWeight || 0,
-                                                  (set.targetWeightUnit || 'lbs') as 'lbs' | 'kg'
-                                                )
-                                              )}
-                                            </Text>
-                                          </View>
-                                        )}
-
-                                        {/* Show exercise timer for timed exercises */}
-                                        {set.targetTime !== undefined && (
-                                          <ExerciseTimer
-                                            elapsedSeconds={exerciseTimer?.setId === set.id ? exerciseTimer.elapsedSeconds : 0}
-                                            targetSeconds={set.targetTime}
-                                            isRunning={exerciseTimer?.setId === set.id && exerciseTimer.isRunning}
-                                            onStart={() => startExerciseTimer(set.id, set.targetTime!)}
-                                            onStop={stopExerciseTimer}
-                                          />
-                                        )}
-
-                                        {/* Show weight/reps inputs for non-time-based exercises or mixed exercises */}
-                                        {(set.targetReps !== undefined || set.targetWeight !== undefined) && (
-                                          <View style={styles.inputRow}>
-                                            <View style={styles.inputGroup}>
-                                              <Text style={styles.inputLabel}>Weight</Text>
-                                              <TextInput
-                                                style={styles.input}
-                                                value={values.weight}
-                                                onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
-                                                keyboardType="numeric"
-                                                placeholder="0"
-                                              />
-                                              <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
-                                            </View>
-                                            <View style={styles.inputGroup}>
-                                              <Text style={styles.inputLabel}>Reps</Text>
-                                              <TextInput
-                                                style={styles.input}
-                                                value={values.reps}
-                                                onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
-                                                keyboardType="numeric"
-                                                placeholder="0"
-                                              />
-                                            </View>
-                                          </View>
-                                        )}
-
-                                        {/* Manual time input for time-based exercises when editing completed sets */}
-                                        {set.targetTime !== undefined && isEditing && (
-                                          <View style={styles.inputRow}>
-                                            <View style={styles.inputGroup}>
-                                              <Text style={styles.inputLabel}>Time</Text>
-                                              <TextInput
-                                                style={styles.input}
-                                                value={values.time}
-                                                onChangeText={(v) => updateEditValue(set.id, 'time', v)}
-                                                keyboardType="numeric"
-                                                placeholder="0"
-                                              />
-                                              <Text style={styles.inputUnit}>seconds</Text>
-                                            </View>
-                                          </View>
-                                        )}
-                                        <View style={styles.setActions}>
-                                          {isPending ? (
-                                            <>
-                                              <TouchableOpacity style={styles.completeButton} onPress={() => handleCompleteSet(set)} disabled={isLoading}>
-                                                <Text style={styles.completeButtonText}>Complete</Text>
-                                              </TouchableOpacity>
-                                              <TouchableOpacity style={styles.skipButtonInline} onPress={() => handleSkipSet(set)} disabled={isLoading}>
-                                                <Text style={styles.skipButtonText}>Skip</Text>
-                                              </TouchableOpacity>
-                                            </>
-                                          ) : (
-                                            <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateSet(set)} disabled={isLoading}>
-                                              <Text style={styles.updateButtonText}>Update</Text>
-                                            </TouchableOpacity>
-                                          )}
-                                        </View>
-                                      </View>
-                                    ) : isCompleted ? (
-                                      <View style={styles.completedSetContent}>
-                                        <View>
-                                          <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
-                                          {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-                                        </View>
-                                        <Text style={styles.tapToEdit}>Tap to edit</Text>
-                                      </View>
-                                    ) : isSkipped ? (
-                                      <View style={styles.skippedSetContent}>
-                                        <Text style={styles.skippedText}>Skipped</Text>
-                                        <Text style={styles.tapToEdit}>Tap to edit</Text>
-                                      </View>
-                                    ) : (
-                                      <View style={styles.pendingSetContent}>
-                                        <Text style={styles.pendingText}>{formatSetTarget(set)}</Text>
-                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-                                      </View>
-                                    )}
-                                  </View>
-                                </TouchableOpacity>
-
-                                {showRestAfterThis && restTimer && (
-                                  <View style={styles.restTimerInline}>
-                                    <RestTimer remainingSeconds={restTimer.remainingSeconds} totalSeconds={restTimer.totalSeconds} isRunning={restTimer.isRunning} onStop={handleStopRest} />
-                                  </View>
-                                )}
-                                {showRestAfterThis && !restTimer && suggestedRestSeconds && (
-                                  <View style={styles.restSuggestionInline}>
-                                    <Text style={styles.restSuggestionText}>Rest: {suggestedRestSeconds}s</Text>
-                                    <View style={styles.restSuggestionButtons}>
-                                      <TouchableOpacity style={styles.startRestButton} onPress={handleStartRest}>
-                                        <Text style={styles.startRestButtonText}>Start</Text>
-                                      </TouchableOpacity>
-                                      <TouchableOpacity style={styles.dismissRestButton} onPress={handleDismissRest}>
-                                        <Text style={styles.dismissRestButtonText}>Skip</Text>
-                                      </TouchableOpacity>
-                                    </View>
-                                  </View>
-                                )}
-                                {showRestPlaceholder && (
-                                  <View style={styles.restPlaceholder}>
-                                    <View style={styles.restPlaceholderLine} />
-                                    <Text style={styles.restPlaceholderText}>Rest {set.restSeconds}s</Text>
-                                    <View style={styles.restPlaceholderLine} />
-                                  </View>
-                                )}
-                              </View>
-                            );
-                        })}
+                        {interleaveSupersetSets(group.exercises).map(({ exercise, set, setIndex }) => (
+                          <SetRow
+                            key={set.id}
+                            set={set}
+                            setIndex={setIndex}
+                            exercise={exercise}
+                            isCurrentSet={set.id === currentSetId}
+                            isEditing={set.id === editingSetId}
+                            showUpNextPreview={showUpNextPreview}
+                            editValues={editValues[set.id] || { weight: '', reps: '', time: '' }}
+                            showExerciseName={true}
+                            nextSet={exercise.sets[setIndex + 1]}
+                            {...setRowSharedProps}
+                          />
+                        ))}
                       </View>
                     </View>
                   );
@@ -1769,202 +1118,21 @@ export default function ActiveWorkoutScreen() {
                       </View>
 
                       <View style={styles.setsContainer}>
-                        {exercise.sets.map((set, setIndex) => {
-                          const isCurrentSet = set.id === currentSetId;
-                          const isEditing = set.id === editingSetId;
-                          const isCompleted = set.status === 'completed';
-                          const isSkipped = set.status === 'skipped';
-                          const isPending = set.status === 'pending';
-                          const values = editValues[set.id] || { weight: '', reps: '', time: '' };
-
-                          const isUpNext = isCurrentSet && showUpNextPreview;
-                          const isActiveForm = (isCurrentSet && !showUpNextPreview) || isEditing;
-                          const showRestAfterThis = set.id === lastCompletedSetId && (restTimer || suggestedRestSeconds);
-
-                          const nextSet = exercise.sets[setIndex + 1];
-                          const showRestPlaceholder = isPending && set.restSeconds &&
-                            nextSet && nextSet.status === 'pending' &&
-                            !isActiveForm && !showRestAfterThis;
-
-                          const getRowStyle = () => {
-                            if (isCurrentSet && !isEditing) return styles.setRowActive;
-                            if (isActiveForm && isCompleted) return styles.setRowCompletedActive;
-                            if (isActiveForm && isSkipped) return styles.setRowSkippedActive;
-                            if (isActiveForm && isPending) return styles.setRowPendingActive;
-                            if (isCompleted) return styles.setRowCompleted;
-                            if (isSkipped) return styles.setRowSkipped;
-                            return null;
-                          };
-
-                          return (
-                            <View key={set.id}>
-                              <TouchableOpacity
-                                style={[styles.setRow, getRowStyle()]}
-                                onPress={() => handleSetPress(set)}
-                                activeOpacity={0.7}
-                              >
-                                <View style={[
-                                  styles.setNumberContainer,
-                                  isCurrentSet && styles.setNumberContainerActive,
-                                  isEditing && isCompleted && styles.setNumberContainerCompleted,
-                                  isEditing && isSkipped && styles.setNumberContainerSkipped,
-                                  isEditing && isPending && styles.setNumberContainerPending,
-                                ]}>
-                                  <Text style={[
-                                    styles.setNumber,
-                                    !isActiveForm && isCompleted && styles.setNumberCompleted,
-                                    !isActiveForm && isSkipped && styles.setNumberSkipped,
-                                  ]}>
-                                    {!isActiveForm && isCompleted ? '✓' : !isActiveForm && isSkipped ? '−' : setIndex + 1}
-                                  </Text>
-                                </View>
-
-                                <View style={styles.setContent}>
-                                  {isUpNext ? (
-                                    <View style={styles.upNextContent}>
-                                      <Text style={styles.upNextLabel}>UP NEXT</Text>
-                                      <Text style={styles.upNextTarget}>{formatSetTarget(set)}</Text>
-                                    </View>
-                                  ) : isActiveForm ? (
-                                    <View style={styles.activeSetContent}>
-                                      <Text style={styles.targetLabel}>Target: {formatSetTarget(set)}</Text>
-                                      {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-
-                                      {/* Show plate calculator for barbell exercises */}
-                                      {set.targetWeight && isBarbellExercise(exercise.exerciseName, exercise.equipmentType) && (
-                                        <View style={styles.plateInfo}>
-                                          <Text style={styles.plateInfoText}>
-                                            {formatCompletePlateSetup(
-                                              calculatePlates(
-                                                parseFloat(values.weight) || set.targetWeight || 0,
-                                                (set.targetWeightUnit || 'lbs') as 'lbs' | 'kg'
-                                              )
-                                            )}
-                                          </Text>
-                                        </View>
-                                      )}
-
-                                      {/* Show exercise timer for timed exercises */}
-                                      {set.targetTime !== undefined && (
-                                        <ExerciseTimer
-                                          elapsedSeconds={exerciseTimer?.setId === set.id ? exerciseTimer.elapsedSeconds : 0}
-                                          targetSeconds={set.targetTime}
-                                          isRunning={exerciseTimer?.setId === set.id && exerciseTimer.isRunning}
-                                          onStart={() => startExerciseTimer(set.id, set.targetTime!)}
-                                          onStop={stopExerciseTimer}
-                                        />
-                                      )}
-
-                                      {/* Show weight/reps inputs for non-time-based exercises or mixed exercises */}
-                                      {(set.targetReps !== undefined || set.targetWeight !== undefined) && (
-                                        <View style={styles.inputRow}>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Weight</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.weight}
-                                              onChangeText={(v) => updateEditValue(set.id, 'weight', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                            <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
-                                          </View>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Reps</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.reps}
-                                              onChangeText={(v) => updateEditValue(set.id, 'reps', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                          </View>
-                                        </View>
-                                      )}
-
-                                      {/* Manual time input for time-based exercises when editing completed sets */}
-                                      {set.targetTime !== undefined && isEditing && (
-                                        <View style={styles.inputRow}>
-                                          <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Time</Text>
-                                            <TextInput
-                                              style={styles.input}
-                                              value={values.time}
-                                              onChangeText={(v) => updateEditValue(set.id, 'time', v)}
-                                              keyboardType="numeric"
-                                              placeholder="0"
-                                            />
-                                            <Text style={styles.inputUnit}>seconds</Text>
-                                          </View>
-                                        </View>
-                                      )}
-                                      <View style={styles.setActions}>
-                                        {isPending ? (
-                                          <>
-                                            <TouchableOpacity style={styles.completeButton} onPress={() => handleCompleteSet(set)} disabled={isLoading}>
-                                              <Text style={styles.completeButtonText}>Complete</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity style={styles.skipButtonInline} onPress={() => handleSkipSet(set)} disabled={isLoading}>
-                                              <Text style={styles.skipButtonText}>Skip</Text>
-                                            </TouchableOpacity>
-                                          </>
-                                        ) : (
-                                          <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateSet(set)} disabled={isLoading}>
-                                            <Text style={styles.updateButtonText}>Update</Text>
-                                          </TouchableOpacity>
-                                        )}
-                                      </View>
-                                    </View>
-                                  ) : isCompleted ? (
-                                    <View style={styles.completedSetContent}>
-                                      <View>
-                                        <Text style={styles.completedText}>{formatSetActual(set) || formatSetTarget(set)}</Text>
-                                        {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-                                      </View>
-                                      <Text style={styles.tapToEdit}>Tap to edit</Text>
-                                    </View>
-                                  ) : isSkipped ? (
-                                    <View style={styles.skippedSetContent}>
-                                      <Text style={styles.skippedText}>Skipped</Text>
-                                      <Text style={styles.tapToEdit}>Tap to edit</Text>
-                                    </View>
-                                  ) : (
-                                    <View style={styles.pendingSetContent}>
-                                      <Text style={styles.pendingText}>{formatSetTarget(set)}</Text>
-                                      {set.notes && <Text style={styles.setNotes}>{set.notes}</Text>}
-                                    </View>
-                                  )}
-                                </View>
-                              </TouchableOpacity>
-
-                              {showRestAfterThis && restTimer && (
-                                <View style={styles.restTimerInline}>
-                                  <RestTimer remainingSeconds={restTimer.remainingSeconds} totalSeconds={restTimer.totalSeconds} isRunning={restTimer.isRunning} onStop={handleStopRest} />
-                                </View>
-                              )}
-                              {showRestAfterThis && !restTimer && suggestedRestSeconds && (
-                                <View style={styles.restSuggestionInline}>
-                                  <Text style={styles.restSuggestionText}>Rest: {suggestedRestSeconds}s</Text>
-                                  <View style={styles.restSuggestionButtons}>
-                                    <TouchableOpacity style={styles.startRestButton} onPress={handleStartRest}>
-                                      <Text style={styles.startRestButtonText}>Start</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.dismissRestButton} onPress={handleDismissRest}>
-                                      <Text style={styles.dismissRestButtonText}>Skip</Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                </View>
-                              )}
-                              {showRestPlaceholder && (
-                                <View style={styles.restPlaceholder}>
-                                  <View style={styles.restPlaceholderLine} />
-                                  <Text style={styles.restPlaceholderText}>Rest {set.restSeconds}s</Text>
-                                  <View style={styles.restPlaceholderLine} />
-                                </View>
-                              )}
-                            </View>
-                          );
-                        })}
+                        {exercise.sets.map((set, setIndex) => (
+                          <SetRow
+                            key={set.id}
+                            set={set}
+                            setIndex={setIndex}
+                            exercise={exercise}
+                            isCurrentSet={set.id === currentSetId}
+                            isEditing={set.id === editingSetId}
+                            showUpNextPreview={showUpNextPreview}
+                            editValues={editValues[set.id] || { weight: '', reps: '', time: '' }}
+                            showExerciseName={false}
+                            nextSet={exercise.sets[setIndex + 1]}
+                            {...setRowSharedProps}
+                          />
+                        ))}
                       </View>
                     </View>
                   );
@@ -1979,197 +1147,26 @@ export default function ActiveWorkoutScreen() {
       </ScrollView>
 
       {/* Edit Exercise Modal */}
-      <Modal
+      <EditExerciseModal
         visible={editingExerciseId !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancelEditExercise}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <Text style={styles.modalTitle}>Edit Exercise</Text>
-
-            <ScrollView style={{ maxHeight: 500 }}>
-              <TextInput
-                style={styles.modalInput}
-                value={editExerciseValues.exerciseName}
-                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, exerciseName: text }))}
-                placeholder="Exercise Name"
-                placeholderTextColor={colors.textMuted}
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                value={editExerciseValues.equipmentType}
-                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, equipmentType: text }))}
-                placeholder="Equipment Type (optional)"
-                placeholderTextColor={colors.textMuted}
-              />
-
-              <TextInput
-                style={[styles.modalInput, styles.modalInputMultiline]}
-                value={editExerciseValues.notes}
-                onChangeText={(text) => setEditExerciseValues(prev => ({ ...prev, notes: text }))}
-                placeholder="Notes (optional)"
-                placeholderTextColor={colors.textMuted}
-                multiline
-              />
-
-              {/* Sets Section */}
-              <Text style={[styles.modalTitle, { fontSize: 16, marginTop: 16, marginBottom: 8 }]}>Sets</Text>
-
-              {editingExerciseSets.map((set, index) => (
-                <View key={set.id} style={styles.setEditContainer}>
-                  <View style={styles.setEditHeader}>
-                    <Text style={styles.setEditNumber}>Set {index + 1}</Text>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteSetInModal(set.id)}
-                      style={styles.setDeleteButton}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.setEditRow}>
-                    <View style={styles.setEditInput}>
-                      <Text style={styles.setEditLabel}>Weight</Text>
-                      <TextInput
-                        style={styles.setEditTextInput}
-                        value={set.targetWeight !== undefined ? String(set.targetWeight) : ''}
-                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetWeight', text ? parseFloat(text) : undefined)}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                      />
-                    </View>
-                    <View style={styles.setEditInput}>
-                      <Text style={styles.setEditLabel}>Reps</Text>
-                      <TextInput
-                        style={styles.setEditTextInput}
-                        value={set.targetReps !== undefined ? String(set.targetReps) : ''}
-                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetReps', text ? parseInt(text, 10) : undefined)}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                      />
-                    </View>
-                    <View style={styles.setEditInput}>
-                      <Text style={styles.setEditLabel}>RPE</Text>
-                      <TextInput
-                        style={styles.setEditTextInput}
-                        value={set.targetRpe !== undefined ? String(set.targetRpe) : ''}
-                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetRpe', text ? parseFloat(text) : undefined)}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.setEditRow}>
-                    <View style={styles.setEditInput}>
-                      <Text style={styles.setEditLabel}>Rest (s)</Text>
-                      <TextInput
-                        style={styles.setEditTextInput}
-                        value={set.restSeconds !== undefined ? String(set.restSeconds) : ''}
-                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'restSeconds', text ? parseInt(text, 10) : undefined)}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                      />
-                    </View>
-                    <View style={styles.setEditInput}>
-                      <Text style={styles.setEditLabel}>Time (s)</Text>
-                      <TextInput
-                        style={styles.setEditTextInput}
-                        value={set.targetTime !== undefined ? String(set.targetTime) : ''}
-                        onChangeText={(text) => handleUpdateSetInModal(set.id, 'targetTime', text ? parseInt(text, 10) : undefined)}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                      />
-                    </View>
-                  </View>
-
-                  <TextInput
-                    style={[styles.modalInput, { marginTop: 8 }]}
-                    value={set.notes || ''}
-                    onChangeText={(text) => handleUpdateSetInModal(set.id, 'notes', text || undefined)}
-                    placeholder="Set notes (optional)"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
-              ))}
-
-              <TouchableOpacity
-                style={styles.addSetButton}
-                onPress={handleAddSetInModal}
-              >
-                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-                <Text style={styles.addSetButtonText}>Add Set</Text>
-              </TouchableOpacity>
-            </ScrollView>
-
-            <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={handleCancelEditExercise}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={handleSaveExercise}
-              >
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        exerciseValues={editExerciseValues}
+        sets={editingExerciseSets}
+        onChangeExerciseValues={setEditExerciseValues}
+        onUpdateSet={handleUpdateSetInModal}
+        onAddSet={handleAddSetInModal}
+        onDeleteSet={handleDeleteSetInModal}
+        onSave={handleSaveExercise}
+        onCancel={handleCancelEditExercise}
+      />
 
       {/* Add Exercise Modal */}
-      <Modal
+      <AddExerciseModal
         visible={showAddExerciseModal}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancelAddExercise}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Exercise</Text>
-
-            <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 8 }}>
-              Enter exercise in markdown format:
-            </Text>
-
-            <TextInput
-              style={[styles.modalInput, styles.modalInputMultiline]}
-              value={newExerciseMarkdown}
-              onChangeText={setNewExerciseMarkdown}
-              placeholder="### Exercise Name&#10;&#10;- Rep&#10;- Rep&#10;- Rep"
-              placeholderTextColor={colors.textMuted}
-              multiline
-            />
-
-            <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={handleCancelAddExercise}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={handleSaveNewExercise}
-              >
-                <Text style={styles.modalButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        markdown={newExerciseMarkdown}
+        onChangeMarkdown={setNewExerciseMarkdown}
+        onSave={handleSaveNewExercise}
+        onCancel={handleCancelAddExercise}
+      />
     </View>
   );
 }
