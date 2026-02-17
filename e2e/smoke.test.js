@@ -11,8 +11,8 @@ describe('Smoke', () => {
         .toBeVisible()
         .withTimeout(30000);
     } catch (error) {
-      // If home screen isn't found, try max-lift-squat which should also be visible
-      await waitFor(element(by.id('max-lift-squat')))
+      // If home screen isn't found, try max-lift-tile-0 which should also be visible
+      await waitFor(element(by.id('max-lift-tile-0')))
         .toBeVisible()
         .withTimeout(5000);
     }

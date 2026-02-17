@@ -1,36 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes, useDeviceLayout } from '@/utils/responsive';
-import { getExerciseBestWeights, getMostFrequentExercise } from '@/db/sessionRepository';
+import { getExerciseBestWeights } from '@/db/sessionRepository';
+import ExercisePickerModal from '@/components/ExercisePickerModal';
 
-type LiftData = { weight: number; unit: string } | null;
-
-interface MaxLifts {
-  squat: LiftData;
-  deadlift: LiftData;
-  bench: LiftData;
-  frequent: { name: string; weight: number; unit: string } | null;
-}
-
-function matchExercise(
-  bestWeights: Map<string, { weight: number; reps: number; unit: string }>,
-  includes: string[],
-  excludes: string[]
-): { name: string; weight: number; unit: string } | null {
-  for (const [name, data] of bestWeights) {
-    const lower = name.toLowerCase();
-    const matches = includes.some(term => lower.includes(term));
-    const excluded = excludes.some(term => lower.includes(term));
-    if (matches && !excluded) {
-      return { name, weight: data.weight, unit: data.unit };
-    }
-  }
-  return null;
-}
+const DEFAULT_TILES = ['Squat', 'Deadlift', 'Bench Press', 'Overhead Press'];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,13 +20,12 @@ export default function HomeScreen() {
   const { isTablet } = useDeviceLayout();
   const { plans, loadPlans } = useWorkoutPlanStore();
   const { activeSession, resumeSession, getProgress } = useSessionStore();
+  const { settings, updateSettings } = useSettingsStore();
   const [hasActiveSession, setHasActiveSession] = useState(false);
-  const [maxLifts, setMaxLifts] = useState<MaxLifts>({
-    squat: null,
-    deadlift: null,
-    bench: null,
-    frequent: null,
-  });
+  const [bestWeights, setBestWeights] = useState<Map<string, { weight: number; reps: number; unit: string }>>(new Map());
+  const [editingTileIndex, setEditingTileIndex] = useState<number | null>(null);
+
+  const homeTiles = settings?.homeTiles ?? DEFAULT_TILES;
 
   useEffect(() => {
     loadPlans();
@@ -61,39 +40,36 @@ export default function HomeScreen() {
       };
       checkSession();
 
-      const loadMaxLifts = async () => {
-        const bestWeights = await getExerciseBestWeights();
-
-        const squat = matchExercise(bestWeights, ['squat'], ['front squat']);
-        const deadlift = matchExercise(bestWeights, ['deadlift'], ['romanian', 'rdl']);
-        const bench = matchExercise(bestWeights, ['bench press', 'chest press'], []);
-
-        // Collect matched names to exclude from frequency query
-        const excludeNames: string[] = [];
-        if (squat) excludeNames.push(squat.name);
-        if (deadlift) excludeNames.push(deadlift.name);
-        if (bench) excludeNames.push(bench.name);
-
-        const frequent = await getMostFrequentExercise(excludeNames);
-
-        setMaxLifts({
-          squat: squat ? { weight: squat.weight, unit: squat.unit } : null,
-          deadlift: deadlift ? { weight: deadlift.weight, unit: deadlift.unit } : null,
-          bench: bench ? { weight: bench.weight, unit: bench.unit } : null,
-          frequent: frequent ? { name: frequent.name, weight: frequent.weight, unit: frequent.unit } : null,
-        });
-      };
-      loadMaxLifts();
+      getExerciseBestWeights().then(setBestWeights);
     }, [])
   );
 
-  const handleResumeWorkout = () => {
-    router.push('/workout/active');
+  const handleTileLongPress = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setEditingTileIndex(index);
   };
 
-  const formatWeight = (data: LiftData) => {
-    if (!data) return '\u2014';
-    return `${data.weight} ${data.unit}`;
+  const handleExerciseSelected = (exerciseName: string) => {
+    if (editingTileIndex === null) return;
+    const newTiles = [...homeTiles];
+    newTiles[editingTileIndex] = exerciseName;
+    updateSettings({ homeTiles: newTiles });
+    setEditingTileIndex(null);
+  };
+
+  const formatTileWeight = (exerciseName: string) => {
+    // Case-insensitive exact match
+    const lower = exerciseName.toLowerCase();
+    for (const [name, data] of bestWeights) {
+      if (name.toLowerCase() === lower) {
+        return `${data.weight} ${data.unit}`;
+      }
+    }
+    return '\u2014';
+  };
+
+  const handleResumeWorkout = () => {
+    router.push('/workout/active');
   };
 
   const styles = StyleSheet.create({
@@ -276,26 +252,21 @@ export default function HomeScreen() {
         <View style={styles.maxLiftsSection}>
           <Text style={styles.sectionTitle}>Max Lifts</Text>
           <View style={styles.quadrantGrid}>
-            <View style={styles.quadrantCard} testID="max-lift-squat">
-              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.squat)}</Text>
-              <Text style={styles.quadrantLabel}>Squat</Text>
-            </View>
-            <View style={styles.quadrantCard} testID="max-lift-deadlift">
-              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.deadlift)}</Text>
-              <Text style={styles.quadrantLabel}>Deadlift</Text>
-            </View>
-            <View style={styles.quadrantCard} testID="max-lift-bench">
-              <Text style={styles.quadrantWeight}>{formatWeight(maxLifts.bench)}</Text>
-              <Text style={styles.quadrantLabel}>Bench Press</Text>
-            </View>
-            <View style={styles.quadrantCard} testID="max-lift-frequent">
-              <Text style={styles.quadrantWeight}>
-                {maxLifts.frequent ? `${maxLifts.frequent.weight} ${maxLifts.frequent.unit}` : '\u2014'}
-              </Text>
-              <Text style={styles.quadrantLabel}>
-                {maxLifts.frequent ? maxLifts.frequent.name : 'Other'}
-              </Text>
-            </View>
+            {homeTiles.map((tileName, index) => (
+              <TouchableOpacity
+                key={`tile-${index}`}
+                style={styles.quadrantCard}
+                onLongPress={() => handleTileLongPress(index)}
+                delayLongPress={400}
+                activeOpacity={0.7}
+                testID={`max-lift-tile-${index}`}
+              >
+                <Text style={styles.quadrantWeight}>
+                  {formatTileWeight(tileName)}
+                </Text>
+                <Text style={styles.quadrantLabel}>{tileName}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -340,6 +311,13 @@ export default function HomeScreen() {
           <Text style={styles.createButtonText}>Create Plan</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Exercise Picker Modal */}
+      <ExercisePickerModal
+        visible={editingTileIndex !== null}
+        onSelect={handleExerciseSelected}
+        onCancel={() => setEditingTileIndex(null)}
+      />
     </View>
   );
 }

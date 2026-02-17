@@ -143,6 +143,7 @@ export interface UserSettings {
   liveActivitiesEnabled: boolean; // Whether to show Live Activities on lock screen
   keepScreenAwake: boolean; // Whether to keep screen awake during active workouts
   showOpenInClaudeButton: boolean; // Whether to always show 'Open in Claude' button
+  homeTiles?: string[]; // Custom home screen max lift tile exercise names
   createdAt: string;
   updatedAt: string;
 }
@@ -296,6 +297,7 @@ export interface UserSettingsRow {
   live_activities_enabled: number; // SQLite boolean
   keep_screen_awake: number; // SQLite boolean
   show_open_in_claude_button: number; // SQLite boolean
+  home_tiles: string | null;
   created_at: string;
   updated_at: string;
 }

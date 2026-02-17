@@ -41,6 +41,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         live_activities_enabled: number;
         keep_screen_awake: number;
         show_open_in_claude_button: number;
+        home_tiles: string | null;
         created_at: string;
         updated_at: string;
       }>('SELECT * FROM user_settings LIMIT 1');
@@ -64,6 +65,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           liveActivitiesEnabled: row.live_activities_enabled === 1,
           keepScreenAwake: row.keep_screen_awake === 1,
           showOpenInClaudeButton: (row.show_open_in_claude_button ?? 0) === 1,
+          homeTiles: row.home_tiles
+            ? JSON.parse(row.home_tiles)
+            : ['Squat', 'Deadlift', 'Bench Press', 'Overhead Press'],
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -136,6 +140,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (updates.showOpenInClaudeButton !== undefined) {
         updateFields.push('show_open_in_claude_button = ?');
         values.push(updates.showOpenInClaudeButton ? 1 : 0);
+      }
+
+      if (updates.homeTiles !== undefined) {
+        updateFields.push('home_tiles = ?');
+        values.push(JSON.stringify(updates.homeTiles));
       }
 
       // Handle API key separately - store in secure storage, not database

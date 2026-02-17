@@ -193,6 +193,7 @@ describe('settingsStore', () => {
         keepScreenAwake: false,
         liveActivitiesEnabled: true,
         showOpenInClaudeButton: false,
+        homeTiles: ['Squat', 'Deadlift', 'Bench Press', 'Overhead Press'],
         createdAt: '2024-01-15T10:00:00Z',
         updatedAt: '2024-01-15T10:00:00Z',
       });

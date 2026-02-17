@@ -21,7 +21,7 @@ describe('History Export', () => {
         .toBeVisible()
         .withTimeout(30000);
     } catch (error) {
-      await waitFor(element(by.id('max-lift-squat')))
+      await waitFor(element(by.id('max-lift-tile-0')))
         .toBeVisible()
         .withTimeout(5000);
     }

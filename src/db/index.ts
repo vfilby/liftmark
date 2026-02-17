@@ -252,6 +252,7 @@ async function migrateToV1(database: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE user_settings ADD COLUMN anthropic_api_key_status TEXT DEFAULT \'not_set\'',
     'ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0',
     'ALTER TABLE workout_templates ADD COLUMN is_favorite INTEGER DEFAULT 0',
+    'ALTER TABLE user_settings ADD COLUMN home_tiles TEXT',
   ];
 
   for (const sql of alterStatements) {
