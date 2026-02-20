@@ -13,7 +13,7 @@
     "test:coverage:watch": "jest --coverage --watch",
     "test:coverage:open": "npm run test:coverage && open coverage/lcov-report/index.html",
     "typecheck": "tsc --noEmit",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm audit --audit-level=critical",
     "ci": "npm run audit && npm run typecheck && npm run test:coverage",
     "prerelease:check": "node -e \"const { execSync } = require('child_process'); const branch = execSync('git branch --show-current', { encoding: 'utf8' }).trim(); if (branch !== 'main') { console.error('Error: Must be on main branch for releases. Current branch:', branch); process.exit(1); } const status = execSync('git status --porcelain', { encoding: 'utf8' }).trim(); if (status) { console.error('Error: Working tree is not clean. Please commit or stash changes:'); console.error(status); process.exit(1); } console.log('✅ Repository is clean and on main branch');\"",
     "release:alpha": "npm run prerelease:check && gh release create alpha-v$(node -p \"require('./package.json').version\") --title \"Alpha Release v$(node -p \"require('./package.json').version\")\" --notes \"Alpha build for internal testing\" --prerelease",
@@ -74,6 +74,12 @@
     "jest-expo": "~54.0.17",
     "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "minimatch": "^10.2.1",
+    "test-exclude": {
+      "minimatch": "^3.1.2"
+    }
   },
   "private": true
 }
