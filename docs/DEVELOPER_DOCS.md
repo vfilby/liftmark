@@ -43,11 +43,20 @@
 │   │   ├── sessionRepository.ts # Workout session CRUD
 │   │   └── exerciseHistoryRepository.ts # Exercise history queries
 │   ├── services/                # Business logic
-│   │   ├── MarkdownParser.ts   # LMWF parser (~1300 lines)
+│   │   ├── MarkdownParser.ts   # LMWF parser
 │   │   ├── workoutGenerationService.ts # AI workout generation
+│   │   ├── anthropicService.ts         # Anthropic SDK service
 │   │   ├── workoutExportService.ts     # Export & share
+│   │   ├── workoutHistoryService.ts    # Workout history queries
+│   │   ├── workoutHighlightsService.ts # Workout highlights/PRs
 │   │   ├── healthKitService.ts         # HealthKit integration
-│   │   └── liveActivityService.ts      # Live Activities
+│   │   ├── liveActivityService.ts      # Live Activities
+│   │   ├── cloudKitService.ts          # iCloud sync
+│   │   ├── databaseBackupService.ts    # Database backup/restore
+│   │   ├── fileImportService.ts        # File import handling
+│   │   ├── audioService.ts             # Audio feedback
+│   │   ├── logger.ts                   # Logging service
+│   │   └── secureStorage.ts            # Secure key storage
 │   ├── stores/                  # Zustand state
 │   │   ├── workoutPlanStore.ts # Workout plan state & actions
 │   │   ├── sessionStore.ts    # Active session state
@@ -92,7 +101,7 @@ See `CLAUDE.md` for the full list of build, test, and release commands.
 ### Path Aliases
 The project uses `@/` as an alias for `src/`:
 ```typescript
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutPlanStore } from '@/stores/workoutPlanStore';
 ```
 
 Configured in:

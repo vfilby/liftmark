@@ -33,9 +33,9 @@ Focus on leg drive and bar path.
 
 - 135 x 5 @rest: 90s
 - 185 x 5 @rest: 120s
-- 225 x 5 @rpe: 8 @rest: 180s
-- 245 x 3 @rpe: 9 @rest: 180s
-- 265 x 1 @rpe: 10
+- 225 x 5 @rest: 180s
+- 245 x 3 @rest: 180s
+- 265 x 1
 
 ## Incline Dumbbell Press
 - 70 x 10 @rest: 90s
@@ -127,15 +127,20 @@ All modifiers are optional and go at the end of the set line:
 
 | Modifier | Format | Example |
 |----------|--------|---------|
-| RPE | `@rpe: 1-10` | `@rpe: 8` |
 | Rest | `@rest: [time]s` or `@rest: [time]m` | `@rest: 180s` or `@rest: 3m` |
-| Tempo | `@tempo: X-X-X-X` | `@tempo: 3-0-1-0` |
 | Drop set | `@dropset` | `@dropset` |
+
+**Deprecated** (still parsed for backward compatibility — use freeform notes instead):
+
+| Modifier | Format | Example |
+|----------|--------|---------|
+| RPE | `@rpe: 1-10` | `@rpe: 8` |
+| Tempo | `@tempo: X-X-X-X` | `@tempo: 3-0-1-0` |
 
 **Combining modifiers:**
 ```markdown
-- 225 lbs x 5 @rpe: 8 @rest: 180s
-- 185 lbs x 8 @tempo: 3-0-1-0 @rest: 90s
+- 225 lbs x 5 @rest: 180s
+- 185 lbs x 8 @rest: 90s @dropset
 ```
 
 ---
@@ -240,11 +245,11 @@ Use section grouping (nested headers without "superset" in the name):
 ### Progressive Overload
 ```markdown
 ## Squat
-- 135 x 5 @rpe: 6
-- 185 x 5 @rpe: 7
-- 225 x 5 @rpe: 8
-- 245 x 3 @rpe: 9
-- 265 x 1 @rpe: 10
+- 135 x 5 @rest: 90s
+- 185 x 5 @rest: 120s
+- 225 x 5 @rest: 180s
+- 245 x 3 @rest: 180s
+- 265 x 1
 ```
 
 ### Volume Training
@@ -292,7 +297,7 @@ Use section grouping (nested headers without "superset" in the name):
 - Start minimal, add details as needed
 - Use shortcuts: `225 x 5` instead of `225 lbs x 5 reps`
 - Add notes for form cues or how you felt
-- Use `@rpe` to track effort over time
+- Use freeform notes to track RPE, tempo, or other details
 
 ### For LLM Generation
 - Prompts work best when you specify:
@@ -326,5 +331,5 @@ Include RPE and rest times.
 
 ---
 
-**Spec Version:** 1.0
-**Last Updated:** 2026-01-03
+**Spec Version:** 1.1
+**Last Updated:** 2026-02-17
