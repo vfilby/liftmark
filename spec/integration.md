@@ -70,9 +70,9 @@ Every navigation path listed here must be functional end-to-end. "Functional" me
 #### Home Tab → Start Workout
 1. Home screen shows recent plans (from `WorkoutPlanStore`)
 2. Tap a plan → navigates to Workout Detail screen (passing plan ID)
-3. Workout Detail shows exercises/sets (loaded from `WorkoutPlanStore.getPlan(id)`)
-4. Tap "Start Workout" → creates session via `SessionStore.startSession(planId)` → navigates to Active Workout screen
-5. Active Workout shows exercises with target values (from `SessionStore.activeSession`)
+3. Workout Detail shows exercises/sets with **weight and reps visible** (loaded from `WorkoutPlanStore.getPlan(id)`)
+4. Tap "Start Workout" → creates session via `SessionStore.startSession(planId)` → **MUST navigate** to Active Workout screen. The navigation to the active workout screen is critical — if the session is created but the screen does not change, the workout is unusable.
+5. Active Workout shows exercises with target values including **weight, reps, and unit** (from `SessionStore.activeSession`). Weight must not be omitted from set display.
 6. Complete sets → data persists (see Active Session Persistence above)
 7. Tap "Finish" → `SessionStore.completeSession()` → navigates to Workout Summary
 8. Workout Summary shows stats (from the just-completed session)

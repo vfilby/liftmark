@@ -12,7 +12,13 @@ Main dashboard showing max lift tiles, recent workout plans, and an active worko
   1. Resume Workout Banner (conditional)
   2. Max Lifts section (2x2 grid of tiles)
   3. Recent Plans section (up to 3 plan cards)
-- **Footer**: Fixed "Create Plan" button pinned to bottom
+  4. "Create Plan" button (inline, at end of scroll content)
+
+### Layout Constraint: Tab Bar Clearance
+
+**Critical**: All interactive UI elements MUST be fully visible and tappable above the tab bar. No buttons, cards, or interactive elements may be positioned behind or obscured by the tab bar (including translucent/frosted glass tab bars). The scroll content area must account for the tab bar inset — either by using safe area insets or by adding sufficient bottom padding so that the last element in the scroll view can be scrolled fully above the tab bar.
+
+The "Create Plan" button MUST be placed **inside the ScrollView** as the last content item (not fixed/pinned to the bottom of the screen outside the scroll area). This ensures it scrolls naturally with content and is never obscured by the tab bar. If the content is short enough that no scrolling is needed, the button must still be visible above the tab bar.
 
 ## UI Elements
 

@@ -60,14 +60,14 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 - **expo-document-picker**: `getDocumentAsync()`
 
 ## User Interactions
-- **Tap theme segment** → updates theme to light/dark/auto
+- **Tap theme segment** → updates theme to light/dark/auto and applies immediately (see Theme Application below)
 - **Tap Workout Settings** → navigates to `/settings/workout`
 - **Tap gym item** → navigates to `/gym/{gym.id}`
 - **Tap star on non-default gym** → sets as default gym
 - **Tap Add Gym** → Alert.prompt for gym name → creates gym → navigates to `/gym/{newGym.id}`
 - **Tap iCloud Sync** → navigates to `/settings/sync`
-- **Toggle HealthKit** → requests authorization, shows alert on failure
-- **Toggle Live Activities** → updates setting directly
+- **Toggle HealthKit** → see HealthKit Integration Behavior below
+- **Toggle Live Activities** → see Live Activities Toggle Behavior below
 - **Edit custom prompt** → saves on blur
 - **Enter API key + Save** → validates `sk-ant-` prefix, saves securely
 - **Remove API key** → confirmation alert → removes key
@@ -75,6 +75,63 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 - **Export Database** → exports + share sheet
 - **Import Database** → document picker → validation → confirmation alert → imports + reloads all stores
 - **Tap Debug Logs** → navigates to `/settings/debug-logs`
+
+### Theme Application
+
+The theme selector (Light / Dark / Auto) MUST actually control the app's color scheme. Selecting a theme persists the preference AND applies the corresponding appearance immediately to the entire app:
+
+| Selection | Behavior |
+|-----------|----------|
+| **Light** | Forces light appearance regardless of system setting. All screens use light backgrounds, dark text. |
+| **Dark** | Forces dark appearance regardless of system setting. All screens use dark backgrounds, light text. |
+| **Auto** | Follows the device's system appearance setting. Changes automatically when the user toggles system dark mode. |
+
+**Implementation requirement** (iOS): The app MUST set `overrideUserInterfaceStyle` on the root window (or equivalent SwiftUI `preferredColorScheme`) when the theme changes. Simply storing the preference without applying it is a bug. The theme change must be visible immediately — no app restart required.
+
+**Visual indicator**: The currently active theme button should be visually distinct (e.g., filled/highlighted) so the user can see which mode is selected.
+
+### HealthKit Integration Behavior
+
+The HealthKit toggle has a multi-step authorization flow. The toggle state must reflect the actual OS-level authorization status, not just an internal app preference.
+
+**Toggle states:**
+
+| OS Authorization | Toggle State | Behavior on Tap |
+|-----------------|-------------|-----------------|
+| Not yet requested | Off, enabled | Requests HealthKit authorization via system prompt. If granted → toggle turns on and setting is saved. If denied → toggle stays off, shows explanatory alert. |
+| Authorized | On, enabled | Toggling off disables the app-level integration (stops writing new workouts to Health). Toggling back on re-enables without re-prompting. |
+| Denied at OS level | Off, disabled | Toggle is disabled (grayed out). A helper label below the toggle reads: "Apple Health access was denied. To enable, go to Settings > Privacy & Security > Health > LiftMark." Tapping the label/link opens the system Settings app to the Health privacy page. |
+| Not available (non-iOS) | Hidden | The entire HealthKit row is hidden on platforms without HealthKit. |
+
+**What "enabled" means**: When HealthKit is enabled, completed workout sessions are automatically saved to Apple Health during `completeWorkout()`. The saved data includes workout duration, activity type (strength training), total volume, and a deduplication UUID.
+
+**Additional UI elements:**
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| HealthKit status label | `healthkit-status-label` | Text | Shows authorization status or instructions |
+| Open Health Settings link | `healthkit-open-settings` | Button | Opens iOS Settings > Health (visible only when denied) |
+
+### Live Activities Toggle Behavior
+
+The Live Activities toggle must check OS-level permission before allowing the user to enable it.
+
+**Toggle states:**
+
+| OS Permission | Toggle State | Behavior |
+|--------------|-------------|----------|
+| Allowed (or not yet requested) | Enabled, reflects app setting | Toggling on/off updates the app setting normally. |
+| Disabled at OS level (Settings > LiftMark > Live Activities = off) | Off, disabled | Toggle is disabled (grayed out). A helper label below reads: "Live Activities are disabled for this app. To enable, go to Settings > LiftMark > Live Activities." Tapping opens the app's system Settings page. |
+| Not available (pre-iOS 16.2) | Hidden | The entire Live Activities row is hidden. |
+
+**Checking permission**: On iOS, use `ActivityAuthorizationInfo().areActivitiesEnabled` (or the platform equivalent) to determine whether Live Activities are permitted at the OS level. This check should run each time the settings screen appears, not just once.
+
+**Additional UI elements:**
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Live Activities status label | `live-activities-status-label` | Text | Shows permission status or instructions |
+| Open App Settings link | `live-activities-open-settings` | Button | Opens iOS Settings for this app (visible only when disabled at OS level) |
 
 ## Navigation
 - `/settings/workout` — workout settings
@@ -125,14 +182,56 @@ Configure weight units, rest timer behavior, and screen preferences.
 ### Route: `/settings/sync`
 
 ### Purpose
-Experimental iCloud sync configuration. Check CloudKit status, toggle sync.
+iCloud sync configuration. Shows current CloudKit account status, allows enabling/disabling sync, and provides status information about sync state.
+
+### Layout
+
+The screen MUST display meaningful content — it must never appear as an empty screen. The layout is a ScrollView with grouped sections:
+
+1. **iCloud Status Section** — Shows the current iCloud account status with a colored badge:
+
+   | Status | Badge Color | Label | Description |
+   |--------|------------|-------|-------------|
+   | `available` | Green | "iCloud Available" | "Your iCloud account is connected and ready for sync." |
+   | `noAccount` | Orange | "No iCloud Account" | "Sign in to iCloud in your device Settings to enable sync." |
+   | `restricted` | Red | "Restricted" | "iCloud access is restricted on this device (e.g., parental controls)." |
+   | `couldNotDetermine` | Gray | "Unknown" | "Could not determine iCloud status. Try again later." |
+   | `error` | Red | "Error" | "An error occurred checking iCloud status." |
+
+2. **Sync Controls Section** — Only shown when status is `available`:
+   - **Enable Sync** toggle — Enables/disables automatic background sync
+   - **Last Synced** label — Shows timestamp of last successful sync, or "Never" if not yet synced
+   - **Sync Now** button — Manually triggers a sync operation
+
+3. **Sync Info Section** — Always visible:
+   - Description text: "iCloud Sync keeps your workout plans, session history, and settings in sync across all your devices signed into the same iCloud account."
+   - If sync is not available, shows guidance: "To use iCloud Sync, sign in to iCloud in your device's Settings app."
+
+4. **Status Footer** — When sync tables exist but sync is not active, show: "Sync infrastructure is ready. Enable sync above to start syncing your data."
 
 ### UI Elements
-- Check Status button, Enable Sync switch, CloudKit Test Screen button
-- Status badge showing: iCloud Available / No iCloud Account / Error / etc.
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Screen container | `sync-settings-screen` | View | Root container |
+| Status badge | `sync-status-badge` | View | Shows iCloud status with color |
+| Status label | `sync-status-label` | Text | Human-readable status text |
+| Status description | `sync-status-description` | Text | Detailed explanation of current status |
+| Enable sync toggle | `switch-enable-sync` | Switch | Toggle sync on/off |
+| Last synced label | `sync-last-synced` | Text | Timestamp of last sync |
+| Sync now button | `sync-now-button` | Button | Manual sync trigger |
+| Check status button | `sync-check-status` | Button | Refresh iCloud status |
+| Info text | `sync-info-text` | Text | Explanatory description |
 
 ### Data Dependencies
-- **cloudKitService** (dynamically imported): `getAccountStatus()`
+- **cloudKitService** (dynamically imported): `getAccountStatus()`, `initialize()`
+- **settingsStore**: for sync enable/disable preference
+
+### Behavior
+- On screen appear: automatically calls `getAccountStatus()` and displays result
+- **Check Status** button: re-fetches status (useful after user signs into iCloud in system Settings)
+- **Enable Sync** toggle: only interactive when status is `available`; grayed out otherwise
+- **Sync Now** button: only enabled when sync is enabled and status is `available`; shows a spinner during sync
 
 ---
 

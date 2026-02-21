@@ -90,7 +90,11 @@ Implementations on any platform must attach these identifiers to the correspondi
 | `add-gym-button` | TouchableOpacity | Add a new gym |
 | `sync-settings-button` | TouchableOpacity | Navigate to iCloud sync settings |
 | `switch-healthkit` | Switch | Toggle Apple Health integration |
+| `healthkit-status-label` | Text | Shows HealthKit authorization status or instructions |
+| `healthkit-open-settings` | Button | Opens iOS Settings > Health (visible only when denied) |
 | `switch-live-activities` | Switch | Toggle Live Activities |
+| `live-activities-status-label` | Text | Shows Live Activities permission status or instructions |
+| `live-activities-open-settings` | Button | Opens app system Settings (visible only when disabled at OS level) |
 | `input-custom-prompt` | TextInput | Custom AI prompt addition input |
 | `input-api-key` | TextInput | Anthropic API key input |
 | `toggle-api-key-visibility` | TouchableOpacity | Show/hide API key text |
@@ -190,6 +194,22 @@ Implementations on any platform must attach these identifiers to the correspondi
 
 ---
 
+## iCloud Sync Screen (`settings/sync`)
+
+| ID | Element Type | Purpose |
+|----|-------------|---------|
+| `sync-settings-screen` | View | Root container |
+| `sync-status-badge` | View | Colored badge showing iCloud status |
+| `sync-status-label` | Text | Human-readable status text |
+| `sync-status-description` | Text | Detailed explanation of current status |
+| `switch-enable-sync` | Switch | Toggle sync on/off |
+| `sync-last-synced` | Text | Timestamp of last sync |
+| `sync-now-button` | Button | Manual sync trigger |
+| `sync-check-status` | Button | Refresh iCloud status |
+| `sync-info-text` | Text | Explanatory description about iCloud Sync |
+
+---
+
 ## Workout Settings Screen (`settings/workout`)
 
 | ID | Element Type | Purpose |
@@ -233,7 +253,7 @@ The following IDs are referenced in E2E test files under `e2e/`:
 | `tab-home` | workout-flow, import-flow-robust |
 | `tab-workouts` | import-via-workouts, tabs, import-flow-robust |
 | `tab-history` | history-export, detail-settings, tabs, active-workout-focused, history-flow-robust |
-| `tab-settings` | tabs |
+| `tab-settings` | tabs, detail-settings |
 | `button-import-workout` | workout-flow, history-export, active-workout-focused, import-flow-robust, history-flow-robust, import-simple |
 | `input-markdown` | workout-flow, history-export, active-workout-focused, share-target-import, import-flow-robust, history-flow-robust, import-simple |
 | `button-import` | workout-flow, history-export, active-workout-focused, share-target-import, import-flow-robust, history-flow-robust, import-simple |
@@ -265,7 +285,9 @@ The following IDs exist in the codebase but are not currently referenced in any 
 
 **History Screen**: `history-list`, `history-empty-state`
 
-**Settings Screen**: `settings-loading`, `button-theme-light`, `button-theme-dark`, `button-theme-auto`, `workout-settings-button`, `gym-item`, `set-default-{gym.id}`, `add-gym-button`, `sync-settings-button`, `switch-healthkit`, `switch-live-activities`, `input-custom-prompt`, `input-api-key`, `toggle-api-key-visibility`, `save-api-key-button`, `remove-api-key-button`, `open-claude-button`, `button-options-section`, `switch-show-open-in-claude`, `debug-logs-button`
+**Settings Screen**: `settings-loading`, `workout-settings-button`, `gym-item`, `set-default-{gym.id}`, `add-gym-button`, `input-custom-prompt`, `input-api-key`, `toggle-api-key-visibility`, `save-api-key-button`, `remove-api-key-button`, `open-claude-button`, `button-options-section`, `switch-show-open-in-claude`, `debug-logs-button`
+
+**iCloud Sync Screen**: `sync-status-description`, `switch-enable-sync`, `sync-last-synced`, `sync-now-button`, `sync-check-status`
 
 **Workout Detail**: `workout-detail-loading`, `workout-detail-view`, `favorite-button-detail`, `superset-{index}`, `exercise-{exercise.id}`, `set-{set.id}`
 

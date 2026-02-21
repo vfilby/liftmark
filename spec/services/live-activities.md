@@ -30,6 +30,15 @@ End the running Live Activity. An optional completion message is displayed brief
 - Requires a dev build (not compatible with Expo Go).
 - The `expo-live-activity` module is loaded lazily to avoid crashes when not available.
 
+### OS-Level Permission
+
+Live Activities can be disabled at the OS level by the user (Settings > LiftMark > Live Activities). The service must check this permission:
+
+- **`areActivitiesEnabled` (via `ActivityAuthorizationInfo`)**: Returns whether the OS allows this app to show Live Activities.
+- If disabled at the OS level, the app's Live Activities toggle in Settings must be **grayed out** with a helper message directing the user to system Settings to re-enable (see Settings Screen spec).
+- The permission check must be performed each time the Settings screen appears, not cached from a previous check.
+- When Live Activities are disabled at the OS level, calling `startWorkoutLiveActivity()` is a no-op (silent failure) — this must never affect workout functionality.
+
 ### Activity Lifecycle
 
 - The service tracks the current activity ID internally.

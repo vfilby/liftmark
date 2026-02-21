@@ -102,12 +102,23 @@ Primary workout execution screen. Displays all exercises and sets for the active
 
 ## SetRow Component
 Renders individual sets with multiple visual states:
-- **Pending**: Shows target weight/reps, neutral styling
-- **Current (active form)**: Blue border, weight/reps input fields, Complete/Skip buttons
+- **Pending**: Shows target weight/reps (e.g., "135 lbs x 5"), neutral styling
+- **Current (active form)**: Blue border, weight/reps input fields pre-filled with target values, Complete/Skip buttons
 - **Up Next preview**: Compact single-line with "UP NEXT" label
-- **Completed**: Green background, shows actual values, "Tap to edit"
+- **Completed**: Green background, shows actual values (weight + reps), "Tap to edit"
 - **Skipped**: Yellow/warning background, "Skipped", "Tap to edit"
 - **Editing (completed/skipped)**: Expanded form with Update button
+
+### Set Data Display Requirements
+
+**Critical**: Every set row MUST display the weight when it exists in the set data (`targetWeight` for pending/current sets, `actualWeight` for completed sets). A set row that shows only reps (e.g., "x 5") when weight data exists (e.g., 135 lbs) is a bug. The weight is the primary data point for strength training and must always be visible.
+
+| Set State | Weight Display | Reps Display |
+|-----------|---------------|-------------|
+| Pending | Target weight + unit (e.g., "135 lbs") | Target reps (e.g., "x 5") |
+| Current | Pre-filled in weight input field | Pre-filled in reps input field |
+| Completed | Actual weight + unit | Actual reps |
+| Skipped | "Skipped" label (no weight/reps) | — |
 
 ### Rest Timer inline
 - Shows after the last completed set when rest is needed

@@ -33,6 +33,7 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 - **Tap favorite heart** → toggles favorite, reloads plan
 - **Tap "Start Workout"** → checks for active session → starts workout → navigates to `/workout/active`
   - If active session exists: alert with "Resume Workout" option
+  - **Critical**: After tapping "Start Workout", the app MUST navigate to the Active Workout screen (`/workout/active`) and display the workout exercises with their sets. The active workout screen must be fully functional — showing exercise names, set targets (weight, reps, time), and input controls. If the session is created but navigation fails or the active workout screen does not appear, this is a blocking bug.
 - **Tap "Reprocess from Markdown"** → confirmation alert → re-parses plan from original markdown
 - **Tap YouTube icon** on exercise name → opens YouTube search for that exercise
 
@@ -62,7 +63,25 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 - Exercise name with YouTube search link
 - Equipment type (if set)
 - Notes (italic, if present)
-- Sets listed with: set number, reps @ weight unit, time, RPE, rest, tempo, dropset, per-side modifiers
+- Sets listed with all applicable fields:
+
+#### Set Display Format
+
+Each set row MUST display all data that was parsed from the workout plan. The following fields must be shown when they have values:
+
+| Field | Display Format | Example | Required |
+|-------|---------------|---------|----------|
+| Set number | Numeric index | "Set 1", "Set 2" | Always |
+| Weight | Numeric value + unit | "135 lbs", "60 kg" | When `targetWeight` is set |
+| Reps | "x" + count | "x 5", "x 12" | When `targetReps` is set |
+| Time | Duration format | "60s", "1:30" | When `targetTime` is set |
+| RPE | "@RPE" + value | "@RPE 8" | When `targetRpe` is set |
+| Rest | Rest duration | "90s rest" | When `restSeconds` is set |
+| Tempo | Tempo notation | "3-0-1-0" | When `tempo` is set |
+| Drop set | Badge | "Drop" | When `isDropset` is true |
+| Per side | Badge | "/side" | When `isPerSide` is true |
+
+**Critical**: Weight MUST be displayed when it exists in the parsed data. A set row showing only "x 5" when the plan specifies "135 x 5" is a bug — it must show "135 lbs x 5" (or the appropriate unit). The weight is the most important piece of information in a strength training set and must never be silently omitted.
 
 ### Section Headers
 - Styled divider lines with section name

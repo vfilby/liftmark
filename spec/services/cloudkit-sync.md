@@ -41,7 +41,16 @@ Delete a record by its ID and type. Returns `true` on success, `false` on failur
 
 - Auto-initializes on the first operation if `initialize()` has not been called explicitly.
 - In simulator and development environments, CloudKit errors are handled gracefully; `getAccountStatus()` returns `'noAccount'` rather than failing.
-- The local database includes sync-related tables (`sync_metadata`, `sync_queue`, `sync_conflicts`) for tracking sync state, though the sync hooks are currently stubbed and not actively syncing.
+- The local database includes sync-related tables (`sync_metadata`, `sync_queue`, `sync_conflicts`) for tracking sync state.
+
+## UI Requirements
+
+The iCloud Sync settings screen (see Settings Screen spec, sub-screen: iCloud Sync) MUST display meaningful content at all times. An empty screen is a bug. At minimum, the screen must show:
+1. The current iCloud account status (with a colored badge and human-readable description)
+2. Explanatory text about what iCloud Sync does
+3. Guidance for the user based on their current status (e.g., "Sign in to iCloud to enable sync")
+
+See `spec/screens/settings.md` for the complete iCloud Sync sub-screen layout specification.
 
 ## Dependencies
 

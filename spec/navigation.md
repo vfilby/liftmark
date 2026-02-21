@@ -18,6 +18,10 @@ Each tab button has a testID for E2E testing: `tab-home`, `tab-workouts`, `tab-h
 Active tab tint: theme `tabIconSelected` (default `#007AFF`).
 Inactive tab tint: theme `tabIconDefault` (default `#8E8E93`).
 
+### Tab Bar Content Clearance
+
+**Critical layout constraint**: On all tab screens, interactive UI elements (buttons, cards, toggles, links) MUST be fully visible and tappable. No interactive element may be positioned behind, underneath, or obscured by the tab bar — including translucent, frosted glass, or "liquid glass" style tab bars. Scroll content areas must account for the tab bar height via safe area insets or bottom padding so that the last interactive element can be scrolled fully above the tab bar.
+
 ---
 
 ## Screen Hierarchy
@@ -65,7 +69,7 @@ An `ActiveWorkoutBanner` component is rendered above the stack navigator. When a
 - **Resume Workout Banner** (`resume-workout-banner`): Shown when an active session exists. Displays workout name and set progress. Tapping navigates to `/workout/active`.
 - **Max Lifts Section**: A grid of customizable tiles (`max-lift-tile-{index}`, indices 0-3 by default) showing the user's best weight for selected exercises. Long-press (400ms) opens an exercise picker modal to change the tile.
 - **Recent Plans Section** (`recent-plans`): Shows the 3 most recent workout plans. Each plan card (`workout-card-{plan.id}`) navigates to `/workout/{plan.id}`. Empty state (`empty-state`) shown when no plans exist.
-- **Create Plan Button** (`button-import-workout`): Fixed at the bottom. Navigates to `/modal/import`.
+- **Create Plan Button** (`button-import-workout`): Placed at the end of the scroll content (not fixed/pinned outside the scroll area). Must be visible above the tab bar. Navigates to `/modal/import`.
 
 **Exercise Picker Modal** (`exercise-picker-modal`): Shown when long-pressing a tile. Contains a search input (`exercise-picker-search`), cancel button (`exercise-picker-cancel`), a list of exercise options (`exercise-option-{name}`), and a free-entry option (`exercise-picker-free-entry`) for custom exercise names.
 

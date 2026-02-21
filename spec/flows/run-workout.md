@@ -11,9 +11,10 @@
 2. User taps the **Start Workout** button.
 3. `sessionStore.startWorkout(plan)` creates a new session from the plan via `createSessionFromPlan()`.
 4. The system checks for an existing active session. If one exists, an error is thrown.
-5. The active workout screen is displayed showing:
+5. **Navigation to Active Workout**: The app MUST navigate to the active workout screen (`/workout/active`). This is a critical navigation transition — the user must see the active workout UI after tapping "Start Workout". If the session is created but the screen does not change, the workout is effectively unusable.
+6. The active workout screen is displayed showing:
    - Current exercise name.
-   - Set information (weight x reps).
+   - Set information with **weight AND reps** (e.g., "135 lbs x 5"). Weight must not be omitted.
    - Progress indicator across all exercises and sets.
 6. User works through sets using the following actions:
    - **completeSet()**: Saves actual values for the set, marks it as completed, and auto-advances to the next set.
