@@ -504,7 +504,37 @@ export default function SetRow({
                 />
               )}
 
-              {(set.targetReps !== undefined || set.targetWeight !== undefined) && (
+              {/* Timed sets (no weight): show time input */}
+              {set.targetTime !== undefined && set.targetWeight === undefined && (
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Time</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={values.time}
+                      onChangeText={(v) => onUpdateEditValue(set.id, 'time', v)}
+                      keyboardType="numeric"
+                      placeholder="0"
+                    />
+                    <Text style={styles.inputUnit}>seconds</Text>
+                  </View>
+                  {set.targetReps !== undefined && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={values.reps}
+                        onChangeText={(v) => onUpdateEditValue(set.id, 'reps', v)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Weighted sets: show weight + reps */}
+              {set.targetWeight !== undefined && (
                 <View style={styles.inputRow}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Weight</Text>
@@ -517,6 +547,24 @@ export default function SetRow({
                     />
                     <Text style={styles.inputUnit}>{set.targetWeightUnit || 'lbs'}</Text>
                   </View>
+                  {set.targetReps !== undefined && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={values.reps}
+                        onChangeText={(v) => onUpdateEditValue(set.id, 'reps', v)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Bodyweight rep sets (no weight, no time): show reps only */}
+              {set.targetWeight === undefined && set.targetTime === undefined && set.targetReps !== undefined && (
+                <View style={styles.inputRow}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Reps</Text>
                     <TextInput
@@ -530,7 +578,8 @@ export default function SetRow({
                 </View>
               )}
 
-              {set.targetTime !== undefined && isEditing && (
+              {/* Time input for editing weighted+timed sets */}
+              {set.targetTime !== undefined && set.targetWeight !== undefined && isEditing && (
                 <View style={styles.inputRow}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Time</Text>

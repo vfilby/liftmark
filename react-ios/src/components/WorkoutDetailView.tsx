@@ -215,6 +215,9 @@ export function WorkoutDetailView({
       flex: 1,
       backgroundColor: colors.background,
     },
+    scrollContainer: {
+      flex: 1,
+    },
     header: {
       backgroundColor: colors.card,
       padding: 20,
@@ -402,8 +405,14 @@ export function WorkoutDetailView({
     cooldownSetRow: {
       borderLeftColor: colors.sectionCooldown,
     },
+    startWorkoutFooter: {
+      padding: 16,
+      paddingBottom: 32,
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
     startWorkoutButton: {
-      marginTop: 16,
       backgroundColor: colors.primary,
       paddingVertical: 14,
       paddingHorizontal: 20,
@@ -439,7 +448,8 @@ export function WorkoutDetailView({
   });
 
   return (
-    <ScrollView style={styles.container} testID="workout-detail-view">
+    <View style={styles.container}>
+    <ScrollView style={styles.scrollContainer} testID="workout-detail-view">
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Text style={styles.title}>{workout.name}</Text>
@@ -493,19 +503,6 @@ export function WorkoutDetailView({
             </View>
           )}
         </View>
-
-        {onStartWorkout && (
-          <TouchableOpacity
-            style={[styles.startWorkoutButton, isStarting && styles.startWorkoutButtonDisabled]}
-            onPress={onStartWorkout}
-            disabled={isStarting}
-            testID="start-workout-button"
-          >
-            <Text style={styles.startWorkoutButtonText}>
-              {isStarting ? 'Starting...' : 'Start Workout'}
-            </Text>
-          </TouchableOpacity>
-        )}
 
         {onReprocess && workout.sourceMarkdown && (
           <TouchableOpacity
@@ -669,5 +666,21 @@ export function WorkoutDetailView({
         })}
       </View>
     </ScrollView>
+
+    {onStartWorkout && (
+      <View style={styles.startWorkoutFooter}>
+        <TouchableOpacity
+          style={[styles.startWorkoutButton, isStarting && styles.startWorkoutButtonDisabled]}
+          onPress={onStartWorkout}
+          disabled={isStarting}
+          testID="start-workout-button"
+        >
+          <Text style={styles.startWorkoutButtonText}>
+            {isStarting ? 'Starting...' : 'Start Workout'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )}
+    </View>
   );
 }

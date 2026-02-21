@@ -119,6 +119,8 @@ export default function ActiveWorkoutScreen() {
   // Track add exercise modal
   const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
   const [newExerciseMarkdown, setNewExerciseMarkdown] = useState('');
+  // Track manually toggled exercise collapse states (overrides auto-collapse)
+  const [manualCollapseOverrides, setManualCollapseOverrides] = useState<Record<string, boolean>>({});
   // When true, show the current set as "Up Next" preview instead of full form
   const [showUpNextPreview, setShowUpNextPreview] = useState(false);
   // Track the last completed set for positioning the rest timer after it
@@ -137,6 +139,47 @@ export default function ActiveWorkoutScreen() {
     }
     return null;
   }, [activeSession, getTrackableExercises]);
+
+  // Determine which exercise contains the current active set
+  const activeExerciseId = useMemo(() => {
+    if (!activeSession || !currentSetId) return null;
+    const trackable = getTrackableExercises();
+    for (const exercise of trackable) {
+      for (const set of exercise.sets) {
+        if (set.id === currentSetId) {
+          return exercise.id;
+        }
+      }
+    }
+    return null;
+  }, [activeSession, currentSetId, getTrackableExercises]);
+
+  // Determine collapsed state for each exercise
+  const isExerciseCollapsed = useCallback((exercise: SessionExercise): boolean => {
+    // If user manually toggled, respect that
+    if (manualCollapseOverrides[exercise.id] !== undefined) {
+      return manualCollapseOverrides[exercise.id];
+    }
+    // Active exercise is always expanded
+    if (exercise.id === activeExerciseId) return false;
+    // Auto-collapse completed exercises (all sets completed or skipped)
+    const allDone = exercise.sets.length > 0 && exercise.sets.every(
+      s => s.status === 'completed' || s.status === 'skipped'
+    );
+    return allDone;
+  }, [manualCollapseOverrides, activeExerciseId]);
+
+  const toggleExerciseCollapse = useCallback((exerciseId: string) => {
+    setManualCollapseOverrides(prev => {
+      const current = prev[exerciseId];
+      if (current === undefined) {
+        // Was auto-collapsed, user wants to expand
+        return { ...prev, [exerciseId]: false };
+      }
+      // Toggle the manual override
+      return { ...prev, [exerciseId]: !current };
+    });
+  }, []);
 
   // Group exercises by sections, then by superset/single within each section
   const workoutSections = useMemo((): WorkoutSection[] => {
@@ -406,7 +449,42 @@ export default function ActiveWorkoutScreen() {
     const { completed, total } = getProgress();
     const remaining = total - completed;
 
-    if (remaining > 0) {
+    // Count skipped sets across all exercises
+    const skippedCount = activeSession?.exercises.reduce(
+      (sum, ex) => sum + ex.sets.filter(s => s.status === 'skipped').length,
+      0
+    ) ?? 0;
+    const completedCount = activeSession?.exercises.reduce(
+      (sum, ex) => sum + ex.sets.filter(s => s.status === 'completed').length,
+      0
+    ) ?? 0;
+    const majoritySkipped = skippedCount > total / 2 && completedCount < total / 2;
+
+    if (majoritySkipped) {
+      // Majority of sets were skipped — offer to discard
+      Alert.alert(
+        'Discard Workout?',
+        `Most sets were skipped (${skippedCount} of ${total}). Do you want to discard this workout?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Log Anyway',
+            onPress: async () => {
+              await completeWorkout();
+              router.replace('/workout/summary');
+            },
+          },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: async () => {
+              await cancelWorkout();
+              router.back();
+            },
+          },
+        ]
+      );
+    } else if (remaining > 0) {
       Alert.alert(
         'Finish Workout?',
         `You have ${remaining} set${remaining > 1 ? 's' : ''} remaining. Are you sure you want to finish?`,
@@ -434,20 +512,24 @@ export default function ActiveWorkoutScreen() {
         router.replace('/workout/summary');
       });
     }
-  }, [getProgress, completeWorkout, cancelWorkout, router]);
+  }, [getProgress, completeWorkout, cancelWorkout, router, activeSession]);
 
   const handleCompleteSet = useCallback(async (set: SessionSet) => {
     const values = editValues[set.id];
     const weight = values?.weight ? parseFloat(values.weight) : undefined;
     const reps = values?.reps ? parseInt(values.reps, 10) : undefined;
 
-    // For timed exercises, use timer elapsed time if available, otherwise use manual input
+    // For timed exercises, use timer elapsed time if available, otherwise use manual input, then targetTime
     let time: number | undefined;
     if (exerciseTimer && exerciseTimer.setId === set.id) {
+      // Timer was started: capture elapsed seconds before clearing
       time = exerciseTimer.elapsedSeconds;
       clearExerciseTimer();
-    } else {
-      time = values?.time ? parseInt(values.time, 10) : undefined;
+    } else if (values?.time) {
+      time = parseInt(values.time, 10);
+    } else if (set.targetTime !== undefined) {
+      // Timer was NOT started: fall back to targetTime
+      time = set.targetTime;
     }
 
     // Stop any existing rest timer before completing the set
@@ -496,6 +578,11 @@ export default function ActiveWorkoutScreen() {
       clearExerciseTimer();
     }
 
+    // Dismiss any running rest timer (user is moving on)
+    if (restTimer) {
+      stopRestTimer();
+    }
+
     // Clear editing state if this was the set being edited
     if (editingSetId === set.id) {
       setEditingSetId(null);
@@ -507,8 +594,13 @@ export default function ActiveWorkoutScreen() {
     const { completed, total } = getProgress();
     if (completed === total) {
       handleFinish();
+    } else {
+      // Clear previous rest state
+      setSuggestedRestSeconds(null);
+      setShowUpNextPreview(false);
+      setLastCompletedSetId(null);
     }
-  }, [skipSet, getProgress, handleFinish, editingSetId, exerciseTimer, clearExerciseTimer]);
+  }, [skipSet, getProgress, handleFinish, editingSetId, exerciseTimer, clearExerciseTimer, restTimer, stopRestTimer]);
 
   const handleSetPress = useCallback((set: SessionSet) => {
     // Clear preview state when user taps any set, but keep timer running
@@ -929,7 +1021,80 @@ export default function ActiveWorkoutScreen() {
       padding: 8,
       marginLeft: 8,
     },
+    // Collapsed exercise styles
+    collapsedExercise: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    collapsedExerciseNumber: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginRight: 10,
+      minWidth: 20,
+    },
+    collapsedExerciseInfo: {
+      flex: 1,
+    },
+    collapsedExerciseName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    collapsedExerciseSummary: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    collapsedBadge: {
+      backgroundColor: colors.successLight,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+      marginLeft: 8,
+    },
+    collapsedBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.success,
+    },
+    collapseChevron: {
+      marginLeft: 4,
+    },
   });
+
+  // Helper to render a collapsed exercise
+  const renderCollapsedExercise = (exercise: SessionExercise, globalIndex: number, numberColor: string) => {
+    const completedSets = exercise.sets.filter(s => s.status === 'completed').length;
+    const totalSets = exercise.sets.length;
+    const allCompleted = completedSets === totalSets;
+    return (
+      <TouchableOpacity
+        key={exercise.id}
+        style={styles.collapsedExercise}
+        onPress={() => toggleExerciseCollapse(exercise.id)}
+        testID={`exercise-collapsed-${exercise.id}`}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.collapsedExerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
+        <View style={styles.collapsedExerciseInfo}>
+          <Text style={styles.collapsedExerciseName} numberOfLines={1}>{exercise.exerciseName}</Text>
+          <Text style={styles.collapsedExerciseSummary}>
+            {completedSets}/{totalSets} sets completed
+          </Text>
+        </View>
+        <View style={styles.collapsedBadge}>
+          <Text style={styles.collapsedBadgeText}>{allCompleted ? 'Done' : 'Partial'}</Text>
+        </View>
+        <Ionicons name="chevron-down" size={18} color={colors.textSecondary} style={styles.collapseChevron} />
+      </TouchableOpacity>
+    );
+  };
 
   // Loading/empty states
   if (!activeSession) {
@@ -1043,8 +1208,46 @@ export default function ActiveWorkoutScreen() {
                 const numberColor = sectionColor;
 
                 if (group.type === 'superset') {
+                  // Check if all exercises in the superset are done
+                  const supersetAllDone = group.exercises.every(ex =>
+                    ex.sets.length > 0 && ex.sets.every(s => s.status === 'completed' || s.status === 'skipped')
+                  );
+                  const supersetKey = `superset-${globalIndex}`;
+                  const supersetCollapsed = supersetAllDone &&
+                    !group.exercises.some(ex => ex.id === activeExerciseId) &&
+                    manualCollapseOverrides[supersetKey] !== false;
+
+                  if (supersetCollapsed && manualCollapseOverrides[supersetKey] === undefined) {
+                    // Collapsed superset summary
+                    const totalSets = group.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+                    const completedSets = group.exercises.reduce(
+                      (sum, ex) => sum + ex.sets.filter(s => s.status === 'completed').length, 0
+                    );
+                    return (
+                      <TouchableOpacity
+                        key={supersetKey}
+                        style={styles.collapsedExercise}
+                        onPress={() => setManualCollapseOverrides(prev => ({ ...prev, [supersetKey]: false }))}
+                        testID={`exercise-collapsed-${supersetKey}`}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.collapsedExerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
+                        <View style={styles.collapsedExerciseInfo}>
+                          <Text style={styles.collapsedExerciseName} numberOfLines={1}>{group.groupName}</Text>
+                          <Text style={styles.collapsedExerciseSummary}>
+                            {completedSets}/{totalSets} sets completed
+                          </Text>
+                        </View>
+                        <View style={styles.collapsedBadge}>
+                          <Text style={styles.collapsedBadgeText}>Done</Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={18} color={colors.textSecondary} style={styles.collapseChevron} />
+                      </TouchableOpacity>
+                    );
+                  }
+
                   return (
-                    <View key={`superset-${globalIndex}`} style={styles.exerciseSection}>
+                    <View key={supersetKey} style={styles.exerciseSection}>
                       {/* Superset Header */}
                       <View style={styles.exerciseHeader}>
                         <Text style={[styles.exerciseNumber, { color: numberColor }]}>{globalIndex + 1}</Text>
@@ -1067,6 +1270,14 @@ export default function ActiveWorkoutScreen() {
                               </View>
                             ))}
                           </View>
+                          {supersetAllDone && (
+                            <TouchableOpacity
+                              onPress={() => setManualCollapseOverrides(prev => ({ ...prev, [supersetKey]: true }))}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Ionicons name="chevron-up" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
 
@@ -1093,6 +1304,11 @@ export default function ActiveWorkoutScreen() {
                 } else {
                   // Render single exercise
                   const exercise = group.exercises[0];
+                  const collapsed = isExerciseCollapsed(exercise);
+
+                  if (collapsed) {
+                    return renderCollapsedExercise(exercise, globalIndex, numberColor);
+                  }
 
                   return (
                     <View key={exercise.id} style={styles.exerciseSection}>
@@ -1113,6 +1329,16 @@ export default function ActiveWorkoutScreen() {
                           )}
                           {exercise.notes && (
                             <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
+                          )}
+                          {/* Collapse toggle for expanded completed exercises */}
+                          {exercise.sets.length > 0 && exercise.sets.every(s => s.status === 'completed' || s.status === 'skipped') && (
+                            <TouchableOpacity
+                              onPress={() => toggleExerciseCollapse(exercise.id)}
+                              testID={`exercise-toggle-${exercise.id}`}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Ionicons name="chevron-up" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
                           )}
                         </View>
                       </View>
