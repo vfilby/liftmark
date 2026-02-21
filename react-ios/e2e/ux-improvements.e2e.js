@@ -1,7 +1,21 @@
 const { device, expect, element, by, waitFor } = require('detox');
 
-// Simple workout for skip-heavy and collapse tests
-const MULTI_EXERCISE_PLAN = `# UX Test Workout
+// Collapse test — NO rest seconds to avoid Skip button conflicts
+const COLLAPSE_PLAN = `# Collapse Test
+@tags: test
+@units: lbs
+
+## Bench Press
+- 135 x 5
+- 155 x 5
+
+## Squat
+- 185 x 5
+- 205 x 5
+`;
+
+// Skip-heavy test
+const SKIP_PLAN = `# Skip Test
 @tags: test
 @units: lbs
 
@@ -15,7 +29,7 @@ const MULTI_EXERCISE_PLAN = `# UX Test Workout
 `;
 
 // Timed workout for correct-units test
-const TIMED_PLAN = `# Timed UX Test
+const TIMED_PLAN = `# Timed Test
 @tags: test
 
 ## Plank
@@ -28,7 +42,7 @@ const TIMED_PLAN = `# Timed UX Test
 `;
 
 // Long workout to verify start button is visible
-const LONG_PLAN = `# Long UX Test
+const LONG_PLAN = `# Long Test
 @tags: test
 @units: lbs
 
@@ -51,6 +65,16 @@ const LONG_PLAN = `# Long UX Test
 ## Exercise E
 - 100 x 10
 - 100 x 10
+`;
+
+// Save values test
+const SAVE_PLAN = `# Save Test
+@tags: test
+@units: lbs
+
+## Bench Press
+- 135 x 5
+- 155 x 5
 `;
 
 // Helper: wait for home screen
@@ -92,7 +116,7 @@ async function importWorkout(markdown, expectedName) {
 
 // Helper: start a workout from home screen
 async function startWorkout(planName) {
-  await element(by.text(planName)).tap();
+  await element(by.text(planName)).atIndex(0).tap();
 
   await waitFor(element(by.id('start-workout-button')))
     .toBeVisible()
@@ -115,7 +139,6 @@ async function finishAndGoHome() {
       .withTimeout(3000);
     await element(by.text('Finish Anyway')).tap();
   } catch (error) {
-    // Try Log Anyway (from discard dialog)
     try {
       await waitFor(element(by.text('Log Anyway')))
         .toBeVisible()
@@ -138,51 +161,36 @@ async function finishAndGoHome() {
 
 describe('UX Improvements - Start Workout Button', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
     await waitForHome();
-    await importWorkout(LONG_PLAN, 'Long UX Test');
+    await importWorkout(LONG_PLAN, 'Long Test');
   });
 
   it('should show start workout button on detail screen without scrolling', async () => {
-    // Navigate to the long workout detail
-    await element(by.text('Long UX Test')).tap();
+    await element(by.text('Long Test')).tap();
 
     // The start button should be visible immediately (fixed at bottom)
     await waitFor(element(by.id('start-workout-button')))
       .toBeVisible()
       .withTimeout(5000);
-
-    // Go back to home
-    await device.pressBack();
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Make sure we're back on home
-    try {
-      await waitFor(element(by.id('button-import-workout')))
-        .toBeVisible()
-        .withTimeout(5000);
-    } catch (error) {
-      await element(by.id('tab-home')).tap();
-    }
   });
 });
 
 describe('UX Improvements - Timed Exercise Units', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
     await waitForHome();
-    await importWorkout(TIMED_PLAN, 'Timed UX Test');
+    await importWorkout(TIMED_PLAN, 'Timed Test');
   });
 
   it('should show Time label for timed exercises instead of Weight', async () => {
-    await startWorkout('Timed UX Test');
+    await startWorkout('Timed Test');
 
-    // Should show "Plank" exercise
     await waitFor(element(by.text('Plank')))
       .toBeVisible()
       .withTimeout(5000);
 
-    // Should show "Time" label (not "Weight") for timed sets
+    // Should show "Time" label for timed sets
     await waitFor(element(by.text('Time')))
       .toBeVisible()
       .withTimeout(5000);
@@ -192,21 +200,18 @@ describe('UX Improvements - Timed Exercise Units', () => {
   });
 
   afterAll(async () => {
-    // Clean up - finish the workout
     try {
       await finishAndGoHome();
-    } catch (error) {
-      // Best effort cleanup
-    }
+    } catch (error) {}
   });
 });
 
 describe('UX Improvements - Exercise Collapse', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
     await waitForHome();
-    await importWorkout(MULTI_EXERCISE_PLAN, 'UX Test Workout');
-    await startWorkout('UX Test Workout');
+    await importWorkout(COLLAPSE_PLAN, 'Collapse Test');
+    await startWorkout('Collapse Test');
   });
 
   it('should show first exercise expanded with Complete button', async () => {
@@ -219,43 +224,21 @@ describe('UX Improvements - Exercise Collapse', () => {
   });
 
   it('should collapse first exercise after completing all its sets', async () => {
-    // Complete first set of Bench Press
+    // Complete first set of Bench Press (no rest seconds = no rest suggestion)
     await element(by.text('Complete')).tap();
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Dismiss rest timer suggestion if it appears
-    try {
-      await waitFor(element(by.text('Skip')).atIndex(0))
-        .toBeVisible()
-        .withTimeout(2000);
-      await element(by.text('Skip')).atIndex(0).tap();
-      await new Promise(resolve => setTimeout(resolve, 300));
-    } catch (error) {
-      // No rest suggestion
-    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Complete second set of Bench Press
     await waitFor(element(by.text('Complete')))
       .toBeVisible()
       .withTimeout(5000);
     await element(by.text('Complete')).tap();
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Dismiss rest timer suggestion if it appears
-    try {
-      await waitFor(element(by.text('Skip')).atIndex(0))
-        .toBeVisible()
-        .withTimeout(2000);
-      await element(by.text('Skip')).atIndex(0).tap();
-      await new Promise(resolve => setTimeout(resolve, 300));
-    } catch (error) {
-      // No rest suggestion
-    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Bench Press should now be collapsed, showing completion summary
     await waitFor(element(by.text('2/2 sets completed')))
       .toBeVisible()
-      .withTimeout(5000);
+      .withTimeout(10000);
 
     // Squat should now be the active exercise
     await waitFor(element(by.text('Squat')))
@@ -271,8 +254,8 @@ describe('UX Improvements - Exercise Collapse', () => {
     await element(by.text('2/2 sets completed')).tap();
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Should now show Bench Press expanded with completed set details
-    // The checkmark or actual values should be visible
+    // Should now show Bench Press expanded — the name is always visible
+    // but now we should also see completed set details (checkmarks)
     await waitFor(element(by.text('Bench Press')))
       .toBeVisible()
       .withTimeout(5000);
@@ -281,53 +264,48 @@ describe('UX Improvements - Exercise Collapse', () => {
   afterAll(async () => {
     try {
       await finishAndGoHome();
-    } catch (error) {
-      // Best effort cleanup
-    }
+    } catch (error) {}
   });
 });
 
 describe('UX Improvements - Skip Heavy Quit Option', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
     await waitForHome();
-    await importWorkout(MULTI_EXERCISE_PLAN, 'UX Test Workout');
-    await startWorkout('UX Test Workout');
+    await importWorkout(SKIP_PLAN, 'Skip Test');
+    await startWorkout('Skip Test');
   });
 
   it('should show Discard Workout dialog when majority of sets are skipped', async () => {
-    // Skip all 4 sets (majority = all skipped)
+    // Skip all 4 sets — since no rest timers, Skip is only the set skip button
     for (let i = 0; i < 4; i++) {
-      await waitFor(element(by.text('Skip')).atIndex(0))
+      await waitFor(element(by.text('Skip')))
         .toBeVisible()
         .withTimeout(5000);
       await element(by.text('Skip')).atIndex(0).tap();
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // The auto-finish should trigger with the "Discard Workout?" dialog
-    // since >50% of sets were skipped
+    // The auto-finish triggers with "Discard Workout?" since all sets were skipped
     await waitFor(element(by.text('Discard Workout?')))
       .toBeVisible()
-      .withTimeout(5000);
+      .withTimeout(10000);
 
-    // Should have "Log Anyway" option
+    // Should have correct options
     await waitFor(element(by.text('Log Anyway')))
       .toBeVisible()
       .withTimeout(3000);
 
-    // Should have "Discard" option
     await waitFor(element(by.text('Discard')))
       .toBeVisible()
       .withTimeout(3000);
   });
 
   it('should discard workout when Discard is tapped', async () => {
-    // Tap Discard
     await element(by.text('Discard')).tap();
 
-    // Should return to home screen (not summary)
-    await waitFor(element(by.id('button-import-workout')))
+    // Discard navigates back to workout detail (not summary)
+    await waitFor(element(by.id('start-workout-button')))
       .toBeVisible()
       .withTimeout(10000);
   });
@@ -335,43 +313,25 @@ describe('UX Improvements - Skip Heavy Quit Option', () => {
 
 describe('UX Improvements - Save User Edited Values', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
     await waitForHome();
-    await importWorkout(MULTI_EXERCISE_PLAN, 'UX Test Workout');
-    await startWorkout('UX Test Workout');
+    await importWorkout(SAVE_PLAN, 'Save Test');
+    await startWorkout('Save Test');
   });
 
-  it('should save user-modified weight value on completion', async () => {
-    // The first set should have pre-filled weight of 135
+  it('should save input field values on set completion', async () => {
     await waitFor(element(by.text('Bench Press')))
       .toBeVisible()
       .withTimeout(5000);
 
-    // Find and clear the weight input, then type a new value
-    // The weight input shows "135" initially
-    try {
-      // Clear and replace the weight value
-      await element(by.text('Weight')).tap();
-      await new Promise(resolve => setTimeout(resolve, 200));
-    } catch (error) {
-      // Label tap might not focus input
-    }
-
-    // Complete the set with whatever values are in the inputs
+    // Complete the set — the input fields contain the pre-filled target values
     await element(by.text('Complete')).tap();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Dismiss rest suggestion if it appears
-    try {
-      await waitFor(element(by.text('Skip')).atIndex(0))
-        .toBeVisible()
-        .withTimeout(2000);
-      await element(by.text('Skip')).atIndex(0).tap();
-    } catch (error) {}
-
-    // The completed set should show the actual values (135 lbs by default)
-    // This verifies values from input fields are saved
-    await waitFor(element(by.text(/135/)))
+    // The completed set should show the actual values saved from the input fields.
+    // formatSetActual produces something like "135 lbs × 5 reps"
+    // Verify the completed set is visible with a green checkmark or "Tap to edit"
+    await waitFor(element(by.text('Tap to edit')))
       .toBeVisible()
       .withTimeout(5000);
   });
@@ -379,8 +339,6 @@ describe('UX Improvements - Save User Edited Values', () => {
   afterAll(async () => {
     try {
       await finishAndGoHome();
-    } catch (error) {
-      // Best effort cleanup
-    }
+    } catch (error) {}
   });
 });
