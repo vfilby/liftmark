@@ -1,0 +1,104 @@
+# LMWF Parser Service Specification
+
+## Purpose
+
+Parse LiftMark Workout Format (LMWF) markdown into WorkoutPlan objects. LMWF is a custom markdown-based format that represents workout plans using headers for structure, list items for sets, and @-prefixed metadata for configuration.
+
+## Public API
+
+### `parseWorkout(markdown: string): ParseResult<WorkoutPlan>`
+
+Parse markdown text into a workout plan. Returns a result object containing the parsed plan (if successful), validation errors, and validation warnings.
+
+## Behavior Rules
+
+### Document Structure
+
+- One workout per document.
+- Flexible header levels: the workout can be any H1-H6 header.
+- Exercises must be exactly one header level below the workout header.
+- The workout header is detected as the first header that has child headers containing list items (sets).
+- Freeform text after headers is captured as notes for that header's context (workout notes or exercise notes).
+
+### Workout Metadata
+
+- `@tags:` comma-separated tags attached to the workout (e.g., `@tags: strength, upper`).
+- `@units:` weight unit for the workout, either `lbs` or `kg`. Aliases `lb` and `kgs` are accepted and normalized.
+
+### Exercises
+
+- Detected as headers one level below the workout header.
+- `@type:` optional equipment type annotation on exercises.
+
+### Supersets
+
+- Headers containing the word "superset" (case-insensitive) are treated as superset groups.
+- Child exercise headers within a superset can be at ANY deeper header level.
+
+### Sections
+
+- Nested headers that do not contain the "superset" keyword are treated as organizational sections.
+
+### Set Formats
+
+| Format | Example | Meaning |
+|---|---|---|
+| `weight x reps` | `225 x 5` | Weighted set |
+| `weight unit x reps` | `225 lbs x 5` | Weighted set with explicit unit |
+| `bw x reps` or `x reps` | `bw x 10` | Bodyweight set |
+| Single number | `15` | Bodyweight reps |
+| `time` | `60s`, `2m` | Timed set |
+| `weight x time` | `135 x 30s` | Weighted timed hold |
+| `weight for time` | `135 for 30s` | Weighted timed hold (alternate syntax) |
+| `AMRAP` | `AMRAP` | As many reps as possible (bodyweight) |
+| `weight x AMRAP` | `225 x AMRAP` | Weighted AMRAP |
+
+### Set Modifiers
+
+Modifiers use the `@` prefix and appear after set content on the same line.
+
+| Modifier | Type | Description |
+|---|---|---|
+| `@rpe` | Value (1-10) | Rate of perceived exertion |
+| `@rest` | Time value | Rest period; triggers countdown timer in app |
+| `@tempo` | X-X-X-X | Eccentric-pause-concentric-pause tempo |
+| `@dropset` | Flag | Marks set as a drop set |
+| `@perside` | Flag | Marks set as per-side (unilateral) |
+
+Trailing text after all modifiers on a set line is captured as set notes.
+
+### Line Preprocessing
+
+- Normalizes line endings: CRLF and CR are converted to LF.
+- Parses headers (lines starting with `#`), list items (lines starting with `-`), and metadata lines (lines starting with `@`).
+
+## Validation Errors (Blocking)
+
+These prevent a successful parse and must be reported in the errors array:
+
+- No workout header found in the document.
+- No exercises found in the workout.
+- Exercise has no sets.
+- Negative weight value.
+- Invalid `@units` value (not lbs, lb, kg, or kgs).
+- Invalid set format (cannot be parsed as any recognized format).
+- Invalid RPE value (not in range 1-10).
+- Invalid rest time format.
+- Invalid tempo format (not X-X-X-X pattern).
+
+## Validation Warnings (Non-blocking)
+
+These are reported but do not prevent parsing:
+
+- Very high rep count (greater than 100).
+- Very short rest period (less than 10 seconds).
+- Very long rest period (greater than 600 seconds).
+- Unknown modifier (unrecognized @-prefixed token on a set line).
+
+## Dependencies
+
+- `generateId()` from `utils/id` for assigning unique identifiers to parsed entities.
+
+## Error Handling
+
+The parser returns a `ParseResult` object that contains errors and warnings arrays. It does not throw exceptions for invalid input; all parse failures are reported through the result object.

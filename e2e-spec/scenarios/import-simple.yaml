@@ -1,0 +1,39 @@
+name: "Simple Import Test"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "should import a workout plan"
+    steps:
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "simple-workout.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      - action: waitForText
+        text: "Test Workout"
+        timeout: 10000

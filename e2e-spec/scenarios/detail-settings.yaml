@@ -1,0 +1,36 @@
+name: "Detail and settings screens"
+
+setup:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "shows history detail screen"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      # Only test if there are history items
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "history-session-card"
+            timeout: 3000
+          - action: tapIndex
+            target: "history-session-card"
+            index: 0
+          - action: waitFor
+            target: "history-detail-screen"
+            timeout: 5000
+        catch: []

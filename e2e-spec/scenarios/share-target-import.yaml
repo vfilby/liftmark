@@ -1,0 +1,40 @@
+name: "Share Target Import"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "should import a workout via liftmark:// deep link"
+    steps:
+      # Write fixture file into simulator app container and open via deep link
+      - action: execScript
+        script: "writeSharedFile"
+        args:
+          fixture: "share-target-test.md"
+          filename: "share-target-test.md"
+      - action: openURL
+        url: "liftmark://{sharedFilePath}"
+      # The deep link should redirect to import modal with content pre-filled
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      - action: waitForText
+        text: "Share Target Test"
+        timeout: 10000

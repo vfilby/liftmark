@@ -40,8 +40,8 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+/react-ios/ios
+/react-ios/android
 
 # logs
 logs/

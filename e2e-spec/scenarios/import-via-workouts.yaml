@@ -1,0 +1,23 @@
+name: "Import Via Workouts Tab"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "should navigate to workouts tab"
+    steps:
+      - action: tap
+        target: "tab-workouts"
+      - action: waitFor
+        target: "workouts-screen"
+        timeout: 5000

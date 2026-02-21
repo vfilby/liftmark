@@ -1,0 +1,109 @@
+name: "Active Workout - Focused Flow"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  # Wait for app to load
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  # Import the test workout plan
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "active-workout-test.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  - action: waitForText
+    text: "Active Workout Test"
+    timeout: 10000
+
+tests:
+  - name: "should start a workout and show active workout screen"
+    steps:
+      - action: tapText
+        text: "Active Workout Test"
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: tap
+        target: "start-workout-button"
+      # Should show active workout screen with workout name
+      - action: waitForText
+        text: "Active Workout Test"
+        timeout: 10000
+      # Should show first exercise
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      # Should show progress indicator
+      - action: waitFor
+        target: "active-workout-progress"
+        timeout: 5000
+
+  - name: "should show set information"
+    steps:
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+
+  - name: "should have finish workout button"
+    steps:
+      - action: waitFor
+        target: "active-workout-finish-button"
+        timeout: 5000
+
+  - name: "should finish workout and show summary"
+    steps:
+      - action: tap
+        target: "active-workout-finish-button"
+      # Handle incomplete warning
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Finish Anyway"
+            timeout: 3000
+          - action: tapText
+            text: "Finish Anyway"
+        catch: []
+      # Should show workout summary
+      - action: waitFor
+        target: "workout-summary-done-button"
+        timeout: 10000
+
+  - name: "should navigate home from summary"
+    steps:
+      - action: tap
+        target: "workout-summary-done-button"
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 10000
+
+  - name: "should show completed workout in history"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      - action: waitForText
+        text: "Active Workout Test"
+        timeout: 5000

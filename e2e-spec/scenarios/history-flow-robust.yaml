@@ -1,0 +1,101 @@
+name: "History Flow - Robust"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  # Wait for app to load
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  # Import a test workout
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "history-test-workout.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  # Start and finish the workout
+  - action: waitForText
+    text: "History Test Workout"
+    timeout: 10000
+  - action: tapText
+    text: "History Test Workout"
+  - action: waitFor
+    target: "start-workout-button"
+    timeout: 5000
+  - action: tap
+    target: "start-workout-button"
+  - action: waitForText
+    text: "History Test Workout"
+    timeout: 10000
+  - action: waitFor
+    target: "active-workout-finish-button"
+    timeout: 5000
+  - action: tap
+    target: "active-workout-finish-button"
+  - action: tryCatch
+    try:
+      - action: waitForText
+        text: "Finish Anyway"
+        timeout: 3000
+      - action: tapText
+        text: "Finish Anyway"
+    catch: []
+  - action: waitFor
+    target: "workout-summary-done-button"
+    timeout: 10000
+  - action: tap
+    target: "workout-summary-done-button"
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+
+tests:
+  - name: "should navigate to history tab"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+
+  - name: "should show completed workout in history"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: delay
+        ms: 500
+      - action: waitForText
+        text: "History Test Workout"
+        timeout: 5000
+
+  - name: "should open workout detail from history"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: delay
+        ms: 500
+      - action: tapIndex
+        target: "history-session-card"
+        index: 0
+      - action: waitForText
+        text: "History Test Workout"
+        timeout: 5000

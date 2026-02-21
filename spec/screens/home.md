@@ -1,0 +1,57 @@
+# Home Screen
+
+## Purpose
+Main dashboard showing max lift tiles, recent workout plans, and an active workout resume banner. Serves as the primary landing page after app launch.
+
+## Route
+`/(tabs)/index` — First tab in the bottom tab bar.
+
+## Layout
+- **Header**: None (tab header provided by navigator)
+- **Body**: ScrollView containing:
+  1. Resume Workout Banner (conditional)
+  2. Max Lifts section (2x2 grid of tiles)
+  3. Recent Plans section (up to 3 plan cards)
+- **Footer**: Fixed "Create Plan" button pinned to bottom
+
+## UI Elements
+
+| Element | testID | Type |
+|---------|--------|------|
+| Screen container | `home-screen` | View |
+| Resume banner | `resume-workout-banner` | TouchableOpacity |
+| Max lift tile (per index) | `max-lift-tile-{index}` | TouchableOpacity |
+| Recent plans section | `recent-plans` | View |
+| Empty state | `empty-state` | View |
+| Plan card (per plan) | `workout-card-{plan.id}` | TouchableOpacity |
+| Create Plan button | `button-import-workout` | TouchableOpacity |
+| Exercise picker modal | (from ExercisePickerModal) | Modal |
+
+## Data Dependencies
+- **workoutPlanStore**: `plans`, `loadPlans`
+- **sessionStore**: `activeSession`, `resumeSession`, `getProgress`
+- **settingsStore**: `settings` (reads `homeTiles`), `updateSettings`
+- **sessionRepository**: `getExerciseBestWeights()` for max lift tile data
+
+## User Interactions
+- **Tap resume banner** → navigates to `/workout/active`
+- **Tap plan card** → navigates to `/workout/{plan.id}`
+- **Tap "Create Plan" button** → navigates to `/modal/import`
+- **Long-press max lift tile** (400ms delay) → opens ExercisePickerModal with haptic feedback
+- **Select exercise in picker** → updates `homeTiles` in settings for that tile index
+
+## Navigation
+- `/workout/active` — via resume banner
+- `/workout/{id}` — via plan card tap
+- `/modal/import` — via Create Plan button
+
+## State
+- `hasActiveSession` — controls resume banner visibility
+- `bestWeights` — Map of exercise name to best weight/reps/unit, populates tile values
+- `editingTileIndex` — which tile is being customized (null = picker hidden)
+- `homeTiles` — array of 4 exercise names from settings (default: Squat, Deadlift, Bench Press, Overhead Press)
+
+## Error/Empty States
+- **No plans**: Shows empty state view with "No plans yet" / "Import your first workout plan to get started"
+- **No best weight for tile**: Shows em dash (—) instead of weight
+- **No active session**: Resume banner hidden

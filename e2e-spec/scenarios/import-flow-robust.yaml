@@ -1,0 +1,235 @@
+name: "Import Flow - Robust"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "should import a basic workout plan"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "import-test-plan.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      - action: waitForText
+        text: "Import Test Plan"
+        timeout: 10000
+
+  - name: "should import a superset plan"
+    steps:
+      # Dismiss any open modals first
+      - action: tryCatch
+        try:
+          - action: tapText
+            text: "Discard"
+          - action: delay
+            ms: 500
+        catch: []
+      - action: tryCatch
+        try:
+          - action: tap
+            target: "button-cancel"
+          - action: delay
+            ms: 500
+          - action: tryCatch
+            try:
+              - action: tapText
+                text: "Discard"
+              - action: delay
+                ms: 500
+            catch: []
+        catch: []
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "arms-superset.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      - action: waitForText
+        text: "Arms Superset"
+        timeout: 10000
+
+  - name: "should import a time-based plan"
+    steps:
+      - action: tryCatch
+        try:
+          - action: tapText
+            text: "Discard"
+          - action: delay
+            ms: 500
+        catch: []
+      - action: tryCatch
+        try:
+          - action: tap
+            target: "button-cancel"
+          - action: delay
+            ms: 500
+          - action: tryCatch
+            try:
+              - action: tapText
+                text: "Discard"
+              - action: delay
+                ms: 500
+            catch: []
+        catch: []
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "core-workout.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      - action: waitForText
+        text: "Core Workout"
+        timeout: 10000
+
+  - name: "should see all imported plans on workouts screen"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: tap
+        target: "tab-workouts"
+      - action: delay
+        ms: 1000
+      - action: waitForText
+        text: "Import Test Plan"
+        timeout: 5000
+      - action: waitForText
+        text: "Arms Superset"
+        timeout: 5000
+      - action: waitForText
+        text: "Core Workout"
+        timeout: 5000
+
+  - name: "should show error for invalid markdown"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        value: "# Invalid\nNo exercises"
+      - action: tap
+        target: "button-import"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "OK"
+            timeout: 5000
+          - action: tapText
+            text: "OK"
+        catch: []
+      # Should still have import modal
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 3000
+      - action: tap
+        target: "button-cancel"
+      # Handle discard dialog
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard"
+            timeout: 2000
+          - action: tapText
+            text: "Discard"
+        catch: []
+      - action: delay
+        ms: 500
+
+  - name: "should be able to cancel import with unsaved changes"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        value: "# Test Plan\n\n## Exercise\n- 100 x 5"
+      - action: tap
+        target: "button-cancel"
+      - action: waitForText
+        text: "Discard"
+        timeout: 5000
+      - action: tapText
+        text: "Discard"
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000

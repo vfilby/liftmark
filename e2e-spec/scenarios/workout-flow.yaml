@@ -1,0 +1,95 @@
+name: "Workout flow screens"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+
+tests:
+  - name: "covers workout detail, active workout, and summary flows"
+    steps:
+      # Wait for home screen
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+
+      # Go to home and import workout
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "detox-flow-workout.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+
+      # Tap on the workout in recent plans
+      - action: waitForText
+        text: "Detox Flow Workout"
+        timeout: 10000
+      - action: tapText
+        text: "Detox Flow Workout"
+
+      # Wait for detail screen and start workout
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 10000
+      - action: tap
+        target: "start-workout-button"
+
+      # Active workout screen
+      - action: waitFor
+        target: "active-workout-progress"
+        timeout: 10000
+      - action: waitFor
+        target: "active-workout-finish-button"
+        timeout: 5000
+      - action: tap
+        target: "active-workout-finish-button"
+
+      # Handle "Finish Anyway" dialog if present
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Finish Anyway"
+            timeout: 3000
+          - action: tapText
+            text: "Finish Anyway"
+        catch: []
+
+      # Wait for summary and dismiss
+      - action: waitFor
+        target: "workout-summary-done-button"
+        timeout: 10000
+      - action: tap
+        target: "workout-summary-done-button"
+
+      # Verify back on home
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 10000
+        catch:
+          - action: waitFor
+            target: "button-import-workout"
+            timeout: 5000

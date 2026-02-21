@@ -1,0 +1,17 @@
+name: "Smoke"
+
+tests:
+  - name: "app launches and shows home screen"
+    tags: ["smoke"]
+    steps:
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000

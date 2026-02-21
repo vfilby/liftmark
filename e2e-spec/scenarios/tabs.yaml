@@ -1,0 +1,50 @@
+name: "Tab navigation"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "shows each main tab screen and navigates between them"
+    steps:
+      # Verify home screen content
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+      # Navigate to workouts tab
+      - action: tap
+        target: "tab-workouts"
+      - action: waitFor
+        target: "search-input"
+        timeout: 5000
+
+      # Navigate to history tab
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+
+      # Navigate to settings tab
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+
+      # Navigate back to home
+      - action: tap
+        target: "tab-home"
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000

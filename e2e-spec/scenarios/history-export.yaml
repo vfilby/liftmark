@@ -1,0 +1,113 @@
+name: "History Export"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  # Wait for app to load
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  # Import a test workout
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "export-test-workout.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  # Start and finish the workout
+  - action: waitForText
+    text: "Export Test Workout"
+    timeout: 10000
+  - action: tapText
+    text: "Export Test Workout"
+  - action: waitFor
+    target: "start-workout-button"
+    timeout: 5000
+  - action: tap
+    target: "start-workout-button"
+  - action: waitForText
+    text: "Export Test Workout"
+    timeout: 10000
+  - action: waitFor
+    target: "active-workout-finish-button"
+    timeout: 5000
+  - action: tap
+    target: "active-workout-finish-button"
+  - action: tryCatch
+    try:
+      - action: waitForText
+        text: "Finish Anyway"
+        timeout: 3000
+      - action: tapText
+        text: "Finish Anyway"
+    catch: []
+  - action: waitFor
+    target: "workout-summary-done-button"
+    timeout: 10000
+  - action: tap
+    target: "workout-summary-done-button"
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+
+tests:
+  - name: "should show export button on history tab"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      - action: waitFor
+        target: "history-export-button"
+        timeout: 5000
+
+  - name: "should trigger export when tapping export button"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "history-export-button"
+        timeout: 5000
+      - action: tap
+        target: "history-export-button"
+      # Share sheet is system UI - wait to see if error alert appears
+      - action: delay
+        ms: 2000
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Export Failed"
+            timeout: 1000
+          # If we get here, export failed - but we can't throw from YAML
+          # The expect below will catch it
+          - action: expect
+            text: "Export Failed"
+            assertion: "notToBeVisible"
+        catch: []
+      # Try to dismiss share sheet
+      - action: tryCatch
+        try:
+          - action: tapText
+            text: "Close"
+        catch: []

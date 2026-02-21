@@ -1,0 +1,149 @@
+name: "Home screen tile customization"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "shows default tiles on first launch"
+    steps:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+      - action: expect
+        target: "max-lift-tile-1"
+        assertion: "toBeVisible"
+      - action: expect
+        target: "max-lift-tile-2"
+        assertion: "toBeVisible"
+      - action: expect
+        target: "max-lift-tile-3"
+        assertion: "toBeVisible"
+      # Verify default exercise names
+      - action: expect
+        text: "Squat"
+        assertion: "toBeVisible"
+      - action: expect
+        text: "Deadlift"
+        assertion: "toBeVisible"
+      - action: expect
+        text: "Bench Press"
+        assertion: "toBeVisible"
+      - action: expect
+        text: "Overhead Press"
+        assertion: "toBeVisible"
+
+  - name: "opens exercise picker on long press and can cancel"
+    steps:
+      - action: longPress
+        target: "max-lift-tile-0"
+      - action: waitFor
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: expect
+        target: "exercise-picker-search"
+        assertion: "toBeVisible"
+      - action: expect
+        target: "exercise-picker-cancel"
+        assertion: "toBeVisible"
+      - action: tap
+        target: "exercise-picker-cancel"
+      - action: waitForNot
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: expect
+        text: "Squat"
+        assertion: "toBeVisible"
+
+  - name: "can select a common exercise from the list"
+    steps:
+      - action: longPress
+        target: "max-lift-tile-3"
+      - action: waitFor
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: waitFor
+        target: "exercise-option-Pull-Up"
+        timeout: 5000
+      - action: tap
+        target: "exercise-option-Pull-Up"
+      - action: waitForNot
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: waitForText
+        text: "Pull-Up"
+        timeout: 5000
+
+  - name: "can search and select a filtered exercise"
+    steps:
+      - action: longPress
+        target: "max-lift-tile-1"
+      - action: waitFor
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: typeText
+        target: "exercise-picker-search"
+        value: "lat pull"
+      - action: waitFor
+        target: "exercise-option-Lat Pulldown"
+        timeout: 5000
+      - action: tap
+        target: "exercise-option-Lat Pulldown"
+      - action: waitForText
+        text: "Lat Pulldown"
+        timeout: 5000
+
+  - name: "can enter a custom exercise via free text"
+    steps:
+      - action: longPress
+        target: "max-lift-tile-2"
+      - action: waitFor
+        target: "exercise-picker-modal"
+        timeout: 5000
+      - action: typeText
+        target: "exercise-picker-search"
+        value: "Zercher Squat"
+      - action: waitFor
+        target: "exercise-picker-free-entry"
+        timeout: 5000
+      - action: tap
+        target: "exercise-picker-free-entry"
+      - action: waitForText
+        text: "Zercher Squat"
+        timeout: 5000
+
+  - name: "persists tile changes across app restarts"
+    steps:
+      # Tiles should be: Squat, Lat Pulldown, Zercher Squat, Pull-Up (from previous tests)
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 10000
+      - action: waitForText
+        text: "Lat Pulldown"
+        timeout: 5000
+      - action: expect
+        text: "Zercher Squat"
+        assertion: "toBeVisible"
+      - action: expect
+        text: "Pull-Up"
+        assertion: "toBeVisible"
+      - action: expect
+        text: "Squat"
+        assertion: "toBeVisible"
