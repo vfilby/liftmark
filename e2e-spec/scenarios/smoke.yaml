@@ -15,3 +15,77 @@ tests:
           - action: waitFor
             target: "max-lift-tile-0"
             timeout: 5000
+
+  # Issue 5: Create Plan button must be visible above the tab bar
+  - name: "Create Plan button is visible and not hidden behind tab bar"
+    tags: ["smoke"]
+    steps:
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+      # The Create Plan button must be visible without scrolling.
+      # If it is behind the tab bar (including translucent/glass tab bars),
+      # this assertion will fail because the element is not tappable.
+      - action: expect
+        target: "button-import-workout"
+        assertion: "toBeVisible"
+      # Verify it is actually tappable (not just "exists" behind an overlay)
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      # Cancel out of import
+      - action: tap
+        target: "button-cancel"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard"
+            timeout: 2000
+          - action: tapText
+            text: "Discard"
+        catch: []
+
+  - name: "all four tab screens are reachable"
+    tags: ["smoke"]
+    steps:
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+      - action: tap
+        target: "tab-workouts"
+      - action: waitFor
+        target: "workouts-screen"
+        timeout: 5000
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      - action: tap
+        target: "tab-home"
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000

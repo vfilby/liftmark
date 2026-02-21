@@ -49,17 +49,44 @@ tests:
       - action: tapText
         text: "Detox Flow Workout"
 
-      # Wait for detail screen and start workout
+      # Issue 7: Workout detail must show weight values
+      # The fixture has "135 x 5" — verify weight "135" is visible on detail screen
       - action: waitFor
         target: "start-workout-button"
         timeout: 10000
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+
+      # Issue 6: Tapping Start Workout MUST navigate to active workout screen
       - action: tap
         target: "start-workout-button"
 
-      # Active workout screen
+      # The active workout screen MUST appear — this is the critical navigation
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
       - action: waitFor
         target: "active-workout-progress"
-        timeout: 10000
+        timeout: 5000
+      # Verify the workout name is visible on active screen
+      - action: waitForText
+        text: "Detox Flow Workout"
+        timeout: 5000
+      # Verify exercise name is shown
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+
+      # Issue 7: Weight must be visible on active workout screen too
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+
+      # Finish the workout
       - action: waitFor
         target: "active-workout-finish-button"
         timeout: 5000
@@ -74,7 +101,16 @@ tests:
             timeout: 3000
           - action: tapText
             text: "Finish Anyway"
-        catch: []
+        catch:
+          # If no dialog, tap "Finish" in the confirmation alert
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish"
+                timeout: 3000
+              - action: tapText
+                text: "Finish"
+            catch: []
 
       # Wait for summary and dismiss
       - action: waitFor

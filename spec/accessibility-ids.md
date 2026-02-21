@@ -253,7 +253,7 @@ The following IDs are referenced in E2E test files under `e2e/`:
 | `tab-home` | workout-flow, import-flow-robust |
 | `tab-workouts` | import-via-workouts, tabs, import-flow-robust |
 | `tab-history` | history-export, detail-settings, tabs, active-workout-focused, history-flow-robust |
-| `tab-settings` | tabs, detail-settings |
+| `tab-settings` | tabs, detail-settings, smoke |
 | `button-import-workout` | workout-flow, history-export, active-workout-focused, import-flow-robust, history-flow-robust, import-simple |
 | `input-markdown` | workout-flow, history-export, active-workout-focused, share-target-import, import-flow-robust, history-flow-robust, import-simple |
 | `button-import` | workout-flow, history-export, active-workout-focused, share-target-import, import-flow-robust, history-flow-robust, import-simple |
@@ -274,6 +274,25 @@ The following IDs are referenced in E2E test files under `e2e/`:
 | `exercise-picker-cancel` | home-tiles |
 | `exercise-picker-free-entry` | home-tiles |
 | `exercise-option-{name}` | home-tiles (e.g., `exercise-option-Pull-Up`, `exercise-option-Lat Pulldown`) |
+| `active-workout-screen` | workout-flow, active-workout-focused |
+| `workout-detail-view` | import-simple, active-workout-focused |
+| `settings-screen` | tabs, detail-settings, smoke |
+| `button-theme-light` | detail-settings |
+| `button-theme-dark` | detail-settings |
+| `button-theme-auto` | detail-settings |
+| `sync-settings-button` | detail-settings |
+| `sync-settings-screen` | detail-settings |
+| `sync-status-badge` | detail-settings |
+| `sync-status-label` | detail-settings |
+| `sync-info-text` | detail-settings |
+| `sync-check-status` | detail-settings |
+| `switch-healthkit` | detail-settings |
+| `healthkit-status-label` | detail-settings |
+| `healthkit-open-settings` | detail-settings |
+| `switch-live-activities` | detail-settings |
+| `live-activities-status-label` | detail-settings |
+| `live-activities-open-settings` | detail-settings |
+| `workouts-screen` | import-via-workouts, smoke |
 
 ### IDs in Code but NOT in E2E Tests
 
@@ -287,11 +306,11 @@ The following IDs exist in the codebase but are not currently referenced in any 
 
 **Settings Screen**: `settings-loading`, `workout-settings-button`, `gym-item`, `set-default-{gym.id}`, `add-gym-button`, `input-custom-prompt`, `input-api-key`, `toggle-api-key-visibility`, `save-api-key-button`, `remove-api-key-button`, `open-claude-button`, `button-options-section`, `switch-show-open-in-claude`, `debug-logs-button`
 
-**iCloud Sync Screen**: `sync-status-description`, `switch-enable-sync`, `sync-last-synced`, `sync-now-button`, `sync-check-status`
+**iCloud Sync Screen**: `sync-status-description`, `switch-enable-sync`, `sync-last-synced`, `sync-now-button`
 
-**Workout Detail**: `workout-detail-loading`, `workout-detail-view`, `favorite-button-detail`, `superset-{index}`, `exercise-{exercise.id}`, `set-{set.id}`
+**Workout Detail**: `workout-detail-loading`, `favorite-button-detail`, `superset-{index}`, `exercise-{exercise.id}`, `set-{set.id}`
 
-**Active Workout**: `active-workout-screen`, `active-workout-header`, `active-workout-pause-button`, `active-workout-add-exercise-button`, `active-workout-scroll`
+**Active Workout**: `active-workout-header`, `active-workout-pause-button`, `active-workout-add-exercise-button`, `active-workout-scroll`
 
 **Workout Summary**: `workout-summary-screen`, `workout-summary-scroll`, `workout-summary-success-header`, `workout-summary-highlights`, `workout-summary-stats`, `workout-summary-completion`, `workout-summary-exercises`
 

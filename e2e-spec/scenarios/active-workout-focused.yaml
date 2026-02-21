@@ -37,41 +37,78 @@ setupOnce:
     timeout: 10000
 
 tests:
-  - name: "should start a workout and show active workout screen"
+  # Issue 7: Workout detail must display weight values from imported plan
+  - name: "workout detail shows exercise weights after import"
     steps:
       - action: tapText
         text: "Active Workout Test"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      # Verify exercise name is shown
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      # The fixture has "135 x 5" — weight MUST be visible on the detail screen
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+      # The fixture also has "155 x 5"
+      - action: waitForText
+        text: "155"
+        timeout: 5000
+      # Dumbbell Row has "50 x 10"
+      - action: waitForText
+        text: "Dumbbell Row"
+        timeout: 5000
+
+  # Issue 6: Start Workout must navigate to the active workout screen
+  - name: "start workout navigates to active workout screen"
+    steps:
       - action: waitFor
         target: "start-workout-button"
         timeout: 5000
       - action: tap
         target: "start-workout-button"
-      # Should show active workout screen with workout name
+      # CRITICAL: The active workout screen MUST appear
+      # If the session is created but navigation fails, this test catches it
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      # Verify the workout name is displayed
       - action: waitForText
         text: "Active Workout Test"
-        timeout: 10000
-      # Should show first exercise
+        timeout: 5000
+
+  # Issue 7: Active workout screen must show weight values in set rows
+  - name: "active workout displays weight and reps for sets"
+    steps:
+      # Verify exercise name
       - action: waitForText
         text: "Bench Press"
         timeout: 5000
-      # Should show progress indicator
+      # Weight "135" from "135 x 5" must be visible — not just "x 5"
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+      # Reps must also be visible
+      - action: waitForText
+        text: "5"
+        timeout: 5000
+
+  - name: "active workout shows progress indicator"
+    steps:
       - action: waitFor
         target: "active-workout-progress"
         timeout: 5000
 
-  - name: "should show set information"
-    steps:
-      - action: waitForText
-        text: "135"
-        timeout: 5000
-
-  - name: "should have finish workout button"
+  - name: "active workout has finish button"
     steps:
       - action: waitFor
         target: "active-workout-finish-button"
         timeout: 5000
 
-  - name: "should finish workout and show summary"
+  - name: "finish workout shows summary screen"
     steps:
       - action: tap
         target: "active-workout-finish-button"
@@ -83,13 +120,21 @@ tests:
             timeout: 3000
           - action: tapText
             text: "Finish Anyway"
-        catch: []
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish"
+                timeout: 3000
+              - action: tapText
+                text: "Finish"
+            catch: []
       # Should show workout summary
       - action: waitFor
         target: "workout-summary-done-button"
         timeout: 10000
 
-  - name: "should navigate home from summary"
+  - name: "summary navigates back to home"
     steps:
       - action: tap
         target: "workout-summary-done-button"
@@ -97,7 +142,7 @@ tests:
         target: "button-import-workout"
         timeout: 10000
 
-  - name: "should show completed workout in history"
+  - name: "completed workout appears in history"
     steps:
       - action: tap
         target: "tab-history"

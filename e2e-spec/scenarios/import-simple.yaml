@@ -37,3 +37,33 @@ tests:
       - action: waitForText
         text: "Test Workout"
         timeout: 10000
+
+  # Issue 7: After importing, the workout detail must show weight values
+  - name: "imported workout detail shows weight values"
+    steps:
+      # Navigate to the workout detail
+      - action: tapText
+        text: "Test Workout"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 10000
+      # The fixture has "Bench Press: 135 x 5, 155 x 5" and "Squat: 185 x 5, 205 x 5"
+      # All weights MUST be visible — not just the reps
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+      - action: waitForText
+        text: "155"
+        timeout: 5000
+      - action: waitForText
+        text: "Squat"
+        timeout: 5000
+      - action: waitForText
+        text: "185"
+        timeout: 5000
+      - action: waitForText
+        text: "205"
+        timeout: 5000

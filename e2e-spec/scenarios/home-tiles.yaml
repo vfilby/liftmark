@@ -42,6 +42,29 @@ tests:
         text: "Overhead Press"
         assertion: "toBeVisible"
 
+  # Issue 5: Create Plan button must be visible and tappable above the tab bar
+  - name: "Create Plan button is visible and not hidden behind tab bar"
+    steps:
+      - action: expect
+        target: "button-import-workout"
+        assertion: "toBeVisible"
+      # Verify it's actually tappable by tapping and checking the modal opens
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 5000
+      - action: tap
+        target: "button-cancel"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard"
+            timeout: 2000
+          - action: tapText
+            text: "Discard"
+        catch: []
+
   - name: "opens exercise picker on long press and can cancel"
     steps:
       - action: longPress

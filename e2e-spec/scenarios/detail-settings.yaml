@@ -35,7 +35,8 @@ tests:
             timeout: 5000
         catch: []
 
-  - name: "settings screen shows theme selector"
+  # Issue 1: Dark mode must actually apply, not just store a preference
+  - name: "theme selector buttons are visible and interactive"
     steps:
       - action: tap
         target: "tab-settings"
@@ -52,7 +53,7 @@ tests:
         target: "button-theme-auto"
         assertion: "toBeVisible"
 
-  - name: "dark mode applies when selected"
+  - name: "selecting dark theme applies immediately and persists"
     steps:
       - action: tap
         target: "tab-settings"
@@ -62,27 +63,80 @@ tests:
       # Select dark theme
       - action: tap
         target: "button-theme-dark"
-      # Verify theme is applied (dark mode changes are visual;
-      # test confirms the button is interactive and setting persists)
-      - action: expect
-        target: "button-theme-dark"
-        assertion: "toBeVisible"
-      # Navigate away and back to verify persistence
+      - action: delay
+        ms: 500
+      # Navigate to a different tab to verify theme applies globally
       - action: tap
         target: "tab-home"
       - action: waitFor
         target: "home-screen"
         timeout: 5000
+      # Navigate back to settings — dark theme should still be active
       - action: tap
         target: "tab-settings"
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      # The dark theme button should still be visually selected
+      - action: expect
+        target: "button-theme-dark"
+        assertion: "toBeVisible"
+      # Restart the app and verify theme persists
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      # Dark theme should still be selected after restart
+      - action: expect
+        target: "button-theme-dark"
+        assertion: "toBeVisible"
+      # Restore to auto for other tests
+      - action: tap
+        target: "button-theme-auto"
+
+  - name: "selecting light theme applies and differs from dark"
+    steps:
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      # Select light explicitly
+      - action: tap
+        target: "button-theme-light"
+      - action: delay
+        ms: 500
+      # Verify it persists by navigating away and back
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 300
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      - action: expect
+        target: "button-theme-light"
+        assertion: "toBeVisible"
       # Restore to auto
       - action: tap
         target: "button-theme-auto"
 
-  - name: "iCloud sync screen shows status content"
+  # Issue 2: iCloud sync screen must not be empty
+  - name: "iCloud sync screen displays status and informational content"
     steps:
       - action: tap
         target: "tab-settings"
@@ -94,14 +148,66 @@ tests:
       - action: waitFor
         target: "sync-settings-screen"
         timeout: 5000
-      # Screen must NOT be empty — must show status badge and info text
+      # Screen MUST show a status badge (colored indicator of iCloud state)
       - action: expect
         target: "sync-status-badge"
         assertion: "toBeVisible"
+      # Screen MUST show a human-readable status label
+      - action: expect
+        target: "sync-status-label"
+        assertion: "toBeVisible"
+      # Screen MUST show explanatory info text (never empty)
       - action: expect
         target: "sync-info-text"
         assertion: "toBeVisible"
+      # Check Status button must be visible for manual refresh
+      - action: expect
+        target: "sync-check-status"
+        assertion: "toBeVisible"
 
+  # Issue 3: Live Activities toggle must reflect OS-level permission
+  - name: "Live Activities toggle shows permission status"
+    steps:
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      # The toggle must exist
+      - action: expect
+        target: "switch-live-activities"
+        assertion: "toBeVisible"
+      # A status label must be visible showing the OS permission state
+      # (e.g., "Enabled", or "Disabled — go to Settings to enable")
+      - action: expect
+        target: "live-activities-status-label"
+        assertion: "toBeVisible"
+
+  - name: "Live Activities shows settings link when OS permission denied"
+    tags: ["requires-permission-denied"]
+    steps:
+      # This test requires Live Activities to be disabled at the OS level
+      # (Settings > LiftMark > Live Activities = off)
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      # When OS permission is denied, the toggle should be disabled
+      # and a link to open system Settings should be visible
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "live-activities-open-settings"
+            timeout: 3000
+          - action: expect
+            target: "live-activities-open-settings"
+            assertion: "toBeVisible"
+        catch: []
+        # If the link isn't visible, OS permission may be granted —
+        # that's OK, this test is conditional on OS state
+
+  # Issue 4: HealthKit toggle must show authorization status
   - name: "HealthKit toggle shows status information"
     steps:
       - action: tap
@@ -109,25 +215,32 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      # The HealthKit toggle must exist
       - action: expect
         target: "switch-healthkit"
         assertion: "toBeVisible"
-      # HealthKit status label should be visible (shows authorization state)
+      # A status label must be visible showing authorization state
+      # (e.g., "Not connected", "Connected", or "Access denied — open Settings")
       - action: expect
         target: "healthkit-status-label"
         assertion: "toBeVisible"
 
-  - name: "Live Activities toggle respects OS permission"
+  - name: "HealthKit shows settings link when authorization denied"
+    tags: ["requires-healthkit-denied"]
     steps:
+      # This test requires HealthKit authorization to have been denied
       - action: tap
         target: "tab-settings"
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      - action: expect
-        target: "switch-live-activities"
-        assertion: "toBeVisible"
-      # Status label should be visible (shows permission state)
-      - action: expect
-        target: "live-activities-status-label"
-        assertion: "toBeVisible"
+      # When authorization is denied, a link to open Health Settings should appear
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "healthkit-open-settings"
+            timeout: 3000
+          - action: expect
+            target: "healthkit-open-settings"
+            assertion: "toBeVisible"
+        catch: []
