@@ -8,9 +8,11 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 
 ## Layout
 - **Body**: WorkoutDetailView component (ScrollView) containing:
-  1. **Header card**: Plan name, favorite button, description, tags, meta stats (exercises count, total sets, units), Start Workout button, Reprocess button
+  1. **Header card**: Plan name, favorite button, description, tags, meta stats (exercises count, total sets, units), Reprocess button
   2. **Exercises section**: Grouped by sections (warmup/cooldown/default) with exercise cards showing set details
-- **Footer**: None (Start button is in header card)
+- **Footer**: Fixed "Start Workout" button pinned to the bottom of the screen, outside the ScrollView
+
+**Critical**: The "Start Workout" button must be **always visible without scrolling**. It must be positioned as a fixed/sticky element pinned to the bottom of the screen, outside the ScrollView content area. The button must not require the user to scroll past all exercises to reach it. This is essential for long workout plans with many exercises.
 
 ## UI Elements
 

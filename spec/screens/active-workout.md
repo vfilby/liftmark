@@ -35,7 +35,8 @@ Primary workout execution screen. Displays all exercises and sets for the active
 ### Set Completion
 - **Tap current set** → no-op (already expanded)
 - **Edit weight/reps fields** → updates edit values; weight propagates to remaining pending sets in same exercise
-- **Tap "Complete"** → records actual values, advances to next set
+- **Tap "Complete"** → records actual values from input fields, advances to next set
+  - **Critical**: The actual values saved MUST be whatever the user has entered in the input fields at the time of tapping "Complete". If the user edited weight from 225 to 230, save 230. If the user edited reps from 5 to 6, save 6. The input fields are the source of truth, not the original target values.
   - If rest seconds defined and auto-start enabled: starts rest timer automatically
   - If rest seconds defined and auto-start disabled: shows Start/Skip rest suggestion
   - If all sets complete: triggers Finish flow
@@ -52,11 +53,15 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap "Skip"** → dismisses rest suggestion
 - **Tap "Stop"** → stops running timer
 - Timer completion plays completion sound, clears "Up Next" preview
+- **Auto-dismiss on next set**: If a rest timer is currently running and the user completes or skips the next set before the timer finishes, the running rest timer is dismissed. If the newly completed set also has `restSeconds` defined, a new rest timer starts for that set's rest duration. The user's action of completing the next set implicitly signals they are done resting.
 
 ### Exercise Timer (timed sets)
 - ExerciseTimer component appears for sets with `targetTime`
 - **Tap Start** → begins counting up toward target
 - **Tap Stop** → stops timer; elapsed time used as actual time on Complete
+- **On set completion (timed sets)**:
+  - If the exercise timer was started: log `actualTime` as the elapsed seconds from the timer at the moment of completion (do not reset before capturing)
+  - If the exercise timer was NOT started: log `actualTime` as the `targetTime` value
 
 ### Plate Calculator
 - For barbell exercises: shows plate breakdown in blue info box above inputs
@@ -64,10 +69,15 @@ Primary workout execution screen. Displays all exercises and sets for the active
 ### Header Actions
 - **Tap "Pause"** → confirmation alert → saves progress → navigates back
 - **Tap "+" (Add Exercise)** → opens AddExerciseModal
-- **Tap "Finish"** → if remaining sets: 3-option alert (Continue / Finish Anyway / Discard)
-  - Finish Anyway → completes workout → navigates to `/workout/summary`
-  - Discard → cancels workout → navigates back
+- **Tap "Finish"** → behavior depends on workout state:
   - All complete → directly completes → navigates to `/workout/summary`
+  - Incomplete sets remain → 3-option alert (Continue / Finish Anyway / Discard)
+    - Finish Anyway → completes workout → navigates to `/workout/summary`
+    - Discard → cancels workout → navigates back
+  - **Majority skipped** → if >50% of total sets are skipped and <50% are completed, show a "Discard Workout?" confirmation with options:
+    - "Discard" (destructive) → cancels session without logging, navigates back
+    - "Log Anyway" → completes workout normally → navigates to `/workout/summary`
+    - "Cancel" → returns to active workout
 
 ### Exercise Editing
 - **Tap pencil icon** on exercise → opens EditExerciseModal
@@ -77,6 +87,18 @@ Primary workout execution screen. Displays all exercises and sets for the active
 ### Add Exercise
 - **Tap "+" in header** → opens AddExerciseModal with markdown template
 - Enter exercise markdown → **Save** → parses and adds exercise to session
+
+### Exercise Collapse Behavior
+- Completed exercises (all sets completed or skipped) automatically collapse to a compact summary showing: exercise name, completion status badge, and a brief summary (e.g., "3/3 sets completed")
+- Collapsed exercises can be tapped to expand and view full set detail
+- When an exercise's last set is completed, it collapses and scroll focus moves to the next exercise
+- The currently active exercise (containing the current pending set) is always expanded
+- User can manually expand/collapse any exercise
+
+| Element | testID | Type |
+|---------|--------|------|
+| Collapsed exercise summary | `exercise-collapsed-{exerciseId}` | TouchableOpacity |
+| Collapse/expand toggle | `exercise-toggle-{exerciseId}` | TouchableOpacity |
 
 ### YouTube Links
 - **Tap external link icon** next to exercise name → opens YouTube search
@@ -113,12 +135,17 @@ Renders individual sets with multiple visual states:
 
 **Critical**: Every set row MUST display the weight when it exists in the set data (`targetWeight` for pending/current sets, `actualWeight` for completed sets). A set row that shows only reps (e.g., "x 5") when weight data exists (e.g., 135 lbs) is a bug. The weight is the primary data point for strength training and must always be visible.
 
-| Set State | Weight Display | Reps Display |
-|-----------|---------------|-------------|
-| Pending | Target weight + unit (e.g., "135 lbs") | Target reps (e.g., "x 5") |
-| Current | Pre-filled in weight input field | Pre-filled in reps input field |
-| Completed | Actual weight + unit | Actual reps |
-| Skipped | "Skipped" label (no weight/reps) | — |
+Set rows must display contextually appropriate fields based on exercise type:
+- **Weighted sets** (`targetWeight` exists): show weight field with unit (lbs/kg) and reps field
+- **Timed sets** (`targetTime` exists, no `targetWeight`): show time field labeled as "time", not "weight"
+- **Bodyweight rep sets** (no `targetWeight`, `targetReps` exists): show reps only, no weight field
+
+| Set State | Weight Display | Reps Display | Time Display |
+|-----------|---------------|-------------|-------------|
+| Pending | Target weight + unit (e.g., "135 lbs") | Target reps (e.g., "x 5") | Target time (e.g., "60s") |
+| Current | Pre-filled in weight input field | Pre-filled in reps input field | Pre-filled in time input field |
+| Completed | Actual weight + unit | Actual reps | Actual time |
+| Skipped | "Skipped" label (no weight/reps) | — | — |
 
 ### Rest Timer inline
 - Shows after the last completed set when rest is needed
