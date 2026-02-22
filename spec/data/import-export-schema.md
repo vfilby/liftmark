@@ -8,6 +8,8 @@
 
 ## JSON Export Format
 
+> **Machine-readable schemas**: [`schemas/liftmark-export-single.schema.json`](schemas/liftmark-export-single.schema.json) and [`schemas/liftmark-export-multi.schema.json`](schemas/liftmark-export-multi.schema.json) (JSON Schema draft 2020-12). Use `tools/validate_export.py` to validate export files.
+
 ### Multi-Session Export
 
 Exported by `exportSessionsAsJson()`. Contains all completed workout sessions.

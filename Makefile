@@ -1,6 +1,6 @@
 # LiftMark Multi-Platform Build
 
-.PHONY: help react-install react-test react-ios react-server swift-build swift-test test-all test-react-e2e test-swift-e2e
+.PHONY: help react-install react-test react-ios react-server swift-build swift-test test-all test-react-e2e test-swift-e2e tools-test tools-validate tools-generate
 
 help:
 	@echo "LiftMark Multi-Platform Build"
@@ -19,6 +19,11 @@ help:
 	@echo "  make test-all         - Run all test suites"
 	@echo "  make test-react-e2e   - Detox E2E against React app"
 	@echo "  make test-swift-e2e   - XCUITest against Swift app"
+	@echo ""
+	@echo "Tools:"
+	@echo "  make tools-test       - Run tools tests"
+	@echo "  make tools-validate   - Validate JSON export (FILE=path.json)"
+	@echo "  make tools-generate   - Generate export fixture (ARGS='--single -o out.json')"
 
 react-install:
 	cd react-ios && npm install
@@ -45,3 +50,14 @@ test-react-e2e:
 
 test-swift-e2e:
 	cd swift-ios && make uitest
+
+# Tools
+tools-test:
+	cd tools && make test
+
+tools-validate:
+	@if [ -z "$(FILE)" ]; then echo "Usage: make tools-validate FILE=path/to/file.json"; exit 1; fi
+	python tools/validate_export.py $(FILE)
+
+tools-generate:
+	python tools/generate_export.py $(ARGS)
