@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workout Summary — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --orange: #FF9500;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --orange: #FF9F0A;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 0; }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--cardBg); border-radius: var(--radiusMD); overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════
+     Workout Summary specific styles
+     ══════════════════════════════════════════ */
+
+  .summary-content {
+    padding: var(--spacingLG);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacingMD);
+  }
+
+  /* Success header */
+  .success-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px var(--spacingLG) 24px;
+  }
+  .success-checkmark {
+    width: 70px; height: 70px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .success-checkmark svg { width: 38px; height: 38px; }
+  .success-title {
+    font-size: 26px; font-weight: 700; margin-bottom: 6px;
+  }
+  .success-subtitle {
+    font-size: 15px; color: var(--textSecondary);
+  }
+
+  /* Highlights card */
+  .highlights-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG);
+    text-align: center;
+  }
+  .highlights-title {
+    font-size: 17px; font-weight: 600; margin-bottom: 8px;
+  }
+  .highlights-empty {
+    font-size: 14px; color: var(--textSecondary); line-height: 1.5;
+  }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacingSM);
+  }
+  .stat-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG) var(--spacingSM);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-icon {
+    color: var(--grey1);
+    margin-bottom: 4px;
+  }
+  .stat-icon svg { width: 22px; height: 22px; }
+  .stat-value {
+    font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 13px; color: var(--textSecondary); font-weight: 500;
+  }
+
+  /* Completion card */
+  .completion-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG);
+  }
+  .completion-title {
+    font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 12px;
+  }
+  .completion-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 14px;
+  }
+  .completion-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .completion-stat-value {
+    font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .completion-stat-value.green { color: var(--green); }
+  .completion-stat-value.blue { color: var(--blue); }
+  .completion-stat-label {
+    font-size: 12px; color: var(--textSecondary);
+  }
+  .completion-bar {
+    height: 8px; border-radius: 4px; background: var(--grey4); overflow: hidden;
+  }
+  .completion-bar-fill {
+    height: 100%; border-radius: 4px; background: var(--orange);
+  }
+
+  /* Exercises section */
+  .exercises-section {
+    padding: 0;
+  }
+  .exercises-heading {
+    font-size: 20px; font-weight: 700; margin-bottom: var(--spacingSM);
+  }
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacingMD);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .exercise-row:last-child { border-bottom: none; }
+  .exercise-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--grey3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .exercise-name {
+    font-size: 15px; font-weight: 500; flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .exercise-sets {
+    font-size: 14px; color: var(--textSecondary); text-align: right; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+  }
+  .exercise-sets.complete { color: var(--green); }
+  .exercise-weight {
+    font-size: 12px; color: var(--textSecondary);
+  }
+
+  /* Done button */
+  .btn-done {
+    width: 100%;
+    height: 50px;
+    background: var(--blue);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radiusMD);
+    cursor: pointer;
+    margin-top: var(--spacingSM);
+  }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0 20px;
+    background: var(--cardBg);
+    border-top: 1px solid var(--grey5);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--grey1);
+    text-decoration: none;
+  }
+  .tab-item.active { color: var(--blue); }
+  .tab-item svg { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Workout Summary Screen</div>
+  <div class="page-subtitle">Wireframe reference — post-workout completion view</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. WORKOUT COMPLETE — FULL SCROLL                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Workout Complete</div>
+  <div class="example-desc">Full scrolled view of the workout summary: success header, highlights (empty state), stats grid, completion breakdown, exercise list, and Done button.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <div class="summary-content">
+
+        <!-- ── Success Header ── -->
+        <div class="success-header">
+          <div class="success-checkmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div class="success-title">Workout Complete!</div>
+          <div class="success-subtitle">Push Day - Week 2</div>
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-success-header</span>
+        </div>
+
+        <!-- ── Highlights (empty state) ── -->
+        <div class="highlights-card">
+          <div class="highlights-title">Highlights</div>
+          <div class="highlights-empty">Complete more workouts to see highlights and personal records.</div>
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-highlights (empty state)</span>
+        </div>
+
+        <!-- ── Stats Grid ── -->
+        <div class="stats-grid">
+          <!-- Duration -->
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="stat-value">2h 8m</div>
+            <div class="stat-label">Duration</div>
+          </div>
+          <!-- Sets -->
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+            </div>
+            <div class="stat-value">21</div>
+            <div class="stat-label">Sets</div>
+          </div>
+          <!-- Reps -->
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4v16H4z"/><path d="M12 7h2"/><path d="M12 11h2"/><path d="M12 15h2"/><path d="M18 4v16"/></svg>
+            </div>
+            <div class="stat-value">179</div>
+            <div class="stat-label">Reps</div>
+          </div>
+          <!-- Volume -->
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg>
+            </div>
+            <div class="stat-value">12.7k</div>
+            <div class="stat-label">Volume (<span class="unit">lbs</span>)</div>
+          </div>
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-stats</span>
+        </div>
+
+        <!-- ── Completion Card ── -->
+        <div class="completion-card">
+          <div class="completion-title">Completion</div>
+          <div class="completion-stats">
+            <div class="completion-stat">
+              <div class="completion-stat-value green">21</div>
+              <div class="completion-stat-label">Completed</div>
+            </div>
+            <div class="completion-stat">
+              <div class="completion-stat-value">3</div>
+              <div class="completion-stat-label">Skipped</div>
+            </div>
+            <div class="completion-stat">
+              <div class="completion-stat-value blue">75%</div>
+              <div class="completion-stat-label">Rate</div>
+            </div>
+          </div>
+          <div class="completion-bar">
+            <div class="completion-bar-fill" style="width: 75%"></div>
+          </div>
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-completion</span>
+        </div>
+
+        <!-- ── Exercises Section ── -->
+        <div class="exercises-section">
+          <div class="exercises-heading">Exercises</div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">1</div>
+            <div class="exercise-name">Warm up Arms</div>
+            <div class="exercise-sets">
+              <span>1/2 sets</span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">2</div>
+            <div class="exercise-name">Barbell Bench Press</div>
+            <div class="exercise-sets complete">
+              <span>5/5 sets</span>
+              <span class="exercise-weight">255 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">3</div>
+            <div class="exercise-name">Overhead Press</div>
+            <div class="exercise-sets complete">
+              <span>3/3 sets</span>
+              <span class="exercise-weight">135 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">4</div>
+            <div class="exercise-name">Incline Dumbbell Press</div>
+            <div class="exercise-sets complete">
+              <span>3/3 sets</span>
+              <span class="exercise-weight">80 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">5</div>
+            <div class="exercise-name">Superset: Triceps</div>
+            <div class="exercise-sets complete">
+              <span>0/0 sets</span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">6</div>
+            <div class="exercise-name">Tricep Pushdown</div>
+            <div class="exercise-sets complete">
+              <span>3/3 sets</span>
+              <span class="exercise-weight">60 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">7</div>
+            <div class="exercise-name">Overhead Tricep Extension</div>
+            <div class="exercise-sets complete">
+              <span>3/3 sets</span>
+              <span class="exercise-weight">50 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">8</div>
+            <div class="exercise-name">Lateral Raise</div>
+            <div class="exercise-sets">
+              <span>3/5 sets</span>
+              <span class="exercise-weight">25 <span class="unit">lbs</span></span>
+            </div>
+          </div>
+
+          <div class="exercise-row">
+            <div class="exercise-badge">9</div>
+            <div class="exercise-name">Face Pull</div>
+            <div class="exercise-sets">
+              <span>0/4 sets</span>
+            </div>
+          </div>
+
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-exercises</span>
+        </div>
+
+        <!-- ── Done Button ── -->
+        <button class="btn-done">Done</button>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">workout-summary-done-button</span>
+        </div>
+
+      </div>
+
+      <!-- ── Tab Bar ── -->
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg>
+          <span>LiftMark</span>
+        </div>
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg>
+          <span>Plans</span>
+        </div>
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg>
+          <span>Workouts</span>
+        </div>
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          <span>Settings</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+  }
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>

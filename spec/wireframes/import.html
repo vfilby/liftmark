@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Workout Modal — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+    --editorBg: #e8e8ed;
+    --editorText: #1c1c1e;
+    --editorPlaceholder: #8e8e93;
+    --statusGreenBg: rgba(52,199,89,.12);
+    --statusGreenText: #34c759;
+    --statusRedBg: rgba(255,59,48,.12);
+    --statusRedText: #ff3b30;
+    --statusOrangeBg: rgba(255,159,10,.12);
+    --statusOrangeText: #ff9f0a;
+    --pillBg: rgba(0,122,255,.15);
+    --pillText: #007aff;
+    --dividerColor: #d1d1d6;
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+    --editorBg: #1c1c1e;
+    --editorText: #f5f5f7;
+    --editorPlaceholder: #636366;
+    --statusGreenBg: rgba(48,209,88,.15);
+    --statusGreenText: #30d158;
+    --statusRedBg: rgba(255,69,58,.15);
+    --statusRedText: #ff453a;
+    --statusOrangeBg: rgba(255,214,10,.12);
+    --statusOrangeText: #ffd60a;
+    --pillBg: rgba(10,132,255,.25);
+    --pillText: #0a84ff;
+    --dividerColor: #3a3a3c;
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; position: relative; }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ═══════════════════════════════════════════
+     Import Modal specific styles
+     ═══════════════════════════════════════════ */
+
+  /* Modal header bar */
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--cardBg);
+  }
+  .modal-header-title {
+    font-size: 17px; font-weight: 600; flex: 1; text-align: center;
+    white-space: nowrap;
+  }
+  .modal-header-btn {
+    font-size: 17px; font-weight: 400; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    min-width: 60px;
+  }
+  .modal-header-btn.right { text-align: right; font-weight: 600; }
+  .modal-header-btn.disabled { color: var(--grey2); cursor: default; }
+
+  /* Action pills row */
+  .action-pills {
+    display: flex; gap: 10px;
+    padding: 10px 16px 12px;
+    background: var(--cardBg);
+  }
+  .action-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--pillBg);
+    color: var(--pillText);
+    font-size: 15px; font-weight: 500;
+    border: none; cursor: pointer;
+  }
+  .action-pill svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* Divider between header area and editor */
+  .header-divider {
+    height: 1px;
+    background: var(--dividerColor);
+    margin: 0;
+  }
+
+  /* Editor area */
+  .editor-area {
+    flex: 1;
+    background: var(--editorBg);
+    padding: 16px;
+    min-height: 520px;
+    position: relative;
+  }
+  .editor-text {
+    font-family: "SF Mono", "Menlo", "Courier New", monospace;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--editorText);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .editor-text.placeholder {
+    color: var(--editorPlaceholder);
+  }
+
+  /* Status bars at the bottom */
+  .status-bar-stack {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+  }
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    font-size: 13px; font-weight: 500;
+    line-height: 1.3;
+  }
+  .status-bar svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .status-bar-green {
+    background: var(--statusGreenBg);
+    color: var(--statusGreenText);
+  }
+  .status-bar-red {
+    background: var(--statusRedBg);
+    color: var(--statusRedText);
+  }
+  .status-bar-orange {
+    background: var(--statusOrangeBg);
+    color: var(--statusOrangeText);
+  }
+
+  /* Ensure the screen is tall enough to be realistic */
+  .import-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 780px;
+    position: relative;
+  }
+  .import-screen .editor-area { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Import Workout Modal</div>
+  <div class="page-subtitle">Wireframe reference — empty, error, valid, and warning states</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+</div>
+
+<div class="gallery">
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. EMPTY STATE (Placeholder visible)                          ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Empty State</div>
+  <div class="example-desc">Placeholder text visible in the editor. Import button is disabled. Paste and Copy Prompt action pills shown below header.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+      <div class="import-screen">
+
+        <!-- Modal header -->
+        <div class="modal-header">
+          <button class="modal-header-btn">Cancel</button>
+          <div class="modal-header-title">Import Workout</div>
+          <button class="modal-header-btn right disabled">Import</button>
+        </div>
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-2px; left:0;">button-cancel</span>
+          <span class="anno-label" style="top:-2px; right:0;">button-import (disabled)</span>
+        </div>
+
+        <!-- Action pills -->
+        <div class="action-pills">
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="11" height="14" rx="2"/><path d="M5 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
+            Paste
+          </button>
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Copy Prompt
+          </button>
+        </div>
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-2px; left:0;">button-paste</span>
+          <span class="anno-label" style="top:-2px; left:120px;">button-copy-prompt</span>
+        </div>
+
+        <!-- Divider -->
+        <div class="header-divider"></div>
+
+        <!-- Editor with placeholder -->
+        <div class="editor-area">
+          <div class="editor-text placeholder">Paste your workout in LiftMark format:
+
+# Push Day
+@tags: strength, upper
+@units: lbs
+
+## Bench Press [barbell]
+- 135 x 5
+- 185 x 5
+- 225 x 5</div>
+        </div>
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-20px; left:16px;">input-markdown (placeholder)</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. VALIDATION ERROR                                           ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Validation Error</div>
+  <div class="example-desc">User has typed invalid content. Red status bar appears at bottom with error message. Import button remains disabled.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+      <div class="import-screen">
+
+        <!-- Modal header -->
+        <div class="modal-header">
+          <button class="modal-header-btn">Cancel</button>
+          <div class="modal-header-title">Import Workout</div>
+          <button class="modal-header-btn right disabled">Import</button>
+        </div>
+
+        <!-- Action pills -->
+        <div class="action-pills">
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="11" height="14" rx="2"/><path d="M5 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
+            Paste
+          </button>
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Copy Prompt
+          </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="header-divider"></div>
+
+        <!-- Editor with invalid content -->
+        <div class="editor-area">
+          <div class="editor-text">#</div>
+        </div>
+
+        <!-- Error status bar -->
+        <div class="status-bar-stack">
+          <div class="status-bar status-bar-red">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z"/></svg>
+            No workout header found. Must have a header (# Workout Name) with exercises below it.
+          </div>
+        </div>
+
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-2px; left:0;">Validation error — parse failed</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  3. VALID SIMPLE WORKOUT                                       ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Valid Simple Workout</div>
+  <div class="example-desc">A minimal valid workout. Green status bar confirms parse success with summary. Import button is now active (blue).</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+      <div class="import-screen">
+
+        <!-- Modal header -->
+        <div class="modal-header">
+          <button class="modal-header-btn">Cancel</button>
+          <div class="modal-header-title">Import Workout</div>
+          <button class="modal-header-btn right" style="color: var(--blue);">Import</button>
+        </div>
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-2px; right:0;">button-import (active)</span>
+        </div>
+
+        <!-- Action pills -->
+        <div class="action-pills">
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="11" height="14" rx="2"/><path d="M5 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
+            Paste
+          </button>
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Copy Prompt
+          </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="header-divider"></div>
+
+        <!-- Editor with valid content -->
+        <div class="editor-area">
+          <div class="editor-text"># Push day
+
+## Pushups
+
+- 6
+- 5</div>
+        </div>
+
+        <!-- Green status bar -->
+        <div class="status-bar-stack">
+          <div class="status-bar status-bar-green">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Push day - 1 exercises, 2 sets
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  4. VALID COMPLEX WORKOUT WITH WARNING                         ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Valid Workout with Warning</div>
+  <div class="example-desc">A longer workout that parses successfully but has a warning (unknown modifier). Green + orange status bars stacked at bottom. Import button active.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+      <div class="import-screen">
+
+        <!-- Modal header -->
+        <div class="modal-header">
+          <button class="modal-header-btn">Cancel</button>
+          <div class="modal-header-title">Import Workout</div>
+          <button class="modal-header-btn right" style="color: var(--blue);">Import</button>
+        </div>
+
+        <!-- Action pills -->
+        <div class="action-pills">
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="11" height="14" rx="2"/><path d="M5 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
+            Paste
+          </button>
+          <button class="action-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Copy Prompt
+          </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="header-divider"></div>
+
+        <!-- Editor with complex content -->
+        <div class="editor-area">
+          <div class="editor-text">@units: lbs
+
+Feeling strong today! Sleep was solid (8 hours), had a good pre-workout meal.
+Going to push for a new PR on bench press if I'm feeling it on the last set.
+
+## Warm up Arms
+
+- 60s
+- 30s
+
+## Barbell Bench Press
+
+Competition pause on all working sets - full stop at chest for 1 second.
+Bar path felt great on warmups. Last set was really hard, probably 9/10 effort.
+
+- 135 x 5 @rest: 90s
+- 185 x 5 @rest: 120s
+- 225 x 5 @rest: 180s
+- 245 x 3 @rst: 180s</div>
+        </div>
+
+        <!-- Stacked status bars -->
+        <div class="status-bar-stack">
+          <div class="status-bar status-bar-green">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Push Day - Week 2 - 2 exercises, 7 sets
+          </div>
+          <div class="status-bar status-bar-orange">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z"/></svg>
+            Line 22: Unknown modifier: @rst
+          </div>
+        </div>
+
+        <div style="position:relative; padding:0 16px;">
+          <span class="anno-label" style="top:-2px; left:0;">Stacked: green success + orange warning</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+</script>
+</body>
+</html>

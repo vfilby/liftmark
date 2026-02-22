@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History (Workouts) — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 24px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--cardBg); border-bottom: 1px solid var(--grey5);
+    color: var(--textPrimary);
+  }
+  .header-left, .header-right { display: flex; align-items: center; gap: var(--spacingSM); }
+  .header-center {
+    font-size: 17px; font-weight: 600; flex: 1; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .btn-text {
+    font-size: 15px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+  }
+  .btn-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; background: none; border: none;
+    color: var(--blue); cursor: pointer;
+  }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex; align-items: center; justify-content: space-around;
+    background: var(--cardBg); border-top: 1px solid var(--grey5);
+    padding: var(--spacingSM) 0 calc(var(--spacingSM) + 4px);
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; color: var(--grey1); text-decoration: none;
+    background: none; border: none; cursor: pointer; padding: 4px 8px;
+  }
+  .tab-item.active { color: var(--blue); }
+  .tab-item svg { width: 22px; height: 22px; }
+
+  /* ── Session Card ── */
+  .session-list {
+    padding: var(--spacingSM) var(--spacingLG) var(--spacingXL);
+    display: flex; flex-direction: column; gap: var(--spacingSM);
+  }
+  .session-card {
+    background: var(--cardBg); border-radius: var(--radiusMD);
+    padding: var(--spacingMD) var(--spacingLG);
+    cursor: pointer;
+  }
+  .session-card-top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 2px;
+  }
+  .session-name {
+    font-size: 17px; font-weight: 600; color: var(--textPrimary);
+  }
+  .session-date {
+    font-size: 13px; color: var(--textSecondary); font-weight: 500;
+    flex-shrink: 0; margin-left: var(--spacingSM);
+  }
+  .session-time {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 4px;
+  }
+  .session-stats {
+    font-size: 13px; color: var(--grey1);
+  }
+  .session-stats .unit {
+    /* inherit */
+  }
+
+  /* ── Empty State ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px var(--spacingLG);
+    text-align: center;
+  }
+  .empty-icon {
+    width: 64px; height: 64px; color: var(--grey3); margin-bottom: var(--spacingLG);
+  }
+  .empty-title {
+    font-size: 20px; font-weight: 600; color: var(--textPrimary); margin-bottom: var(--spacingSM);
+  }
+  .empty-desc {
+    font-size: 15px; color: var(--textSecondary);
+  }
+
+  /* ── Large title ── */
+  .large-title {
+    font-size: 34px; font-weight: 700; color: var(--textPrimary);
+    padding: var(--spacingSM) var(--spacingLG) var(--spacingMD);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">History (Workouts) Screen</div>
+  <div class="page-subtitle">Wireframe reference — session list and empty state</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. HISTORY WITH SESSIONS                                      ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">History with Sessions</div>
+  <div class="example-desc">Chronological list of completed workout sessions with name, relative date, time, duration, and stats.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Large title + export button -->
+      <div class="anno" style="display:contents">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding: var(--spacingSM) var(--spacingLG) 0;">
+          <div class="large-title" style="padding:0;">Workouts</div>
+          <button class="btn-icon" title="Export">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </button>
+        </div>
+        <div style="position:relative; padding: 0 var(--spacingLG);">
+          <span class="anno-label" style="top:-2px; right:16px;">history-export-button</span>
+        </div>
+      </div>
+
+      <div class="session-list">
+
+        <!-- Session 1: Today -->
+        <div>
+          <span class="section-label">history-session-card &middot; tap navigates to detail</span>
+          <div class="session-card">
+            <div class="session-card-top">
+              <span class="session-name">Push Day A</span>
+              <span class="session-date">Today</span>
+            </div>
+            <div class="session-time">10:30 AM &middot; 47 min</div>
+            <div class="session-stats">15 sets &middot; 5 exercises &middot; 12,450 <span class="unit">lbs</span></div>
+          </div>
+        </div>
+
+        <!-- Session 2: Yesterday -->
+        <div class="session-card">
+          <div class="session-card-top">
+            <span class="session-name">Pull Day B</span>
+            <span class="session-date">Yesterday</span>
+          </div>
+          <div class="session-time">6:15 AM &middot; 52 min</div>
+          <div class="session-stats">18 sets &middot; 6 exercises &middot; 14,200 <span class="unit">lbs</span></div>
+        </div>
+
+        <!-- Session 3: Monday -->
+        <div class="session-card">
+          <div class="session-card-top">
+            <span class="session-name">Leg Day</span>
+            <span class="session-date">Monday</span>
+          </div>
+          <div class="session-time">7:00 AM &middot; 58 min</div>
+          <div class="session-stats">16 sets &middot; 5 exercises &middot; 18,750 <span class="unit">lbs</span></div>
+        </div>
+
+        <!-- Session 4: Last Friday -->
+        <div class="session-card">
+          <div class="session-card-top">
+            <span class="session-name">Push Day A</span>
+            <span class="session-date">Last Friday</span>
+          </div>
+          <div class="session-time">5:45 PM &middot; 43 min</div>
+          <div class="session-stats">12 sets &middot; 4 exercises &middot; 10,800 <span class="unit">lbs</span></div>
+        </div>
+
+        <!-- Session 5: Feb 10 -->
+        <div class="session-card">
+          <div class="session-card-top">
+            <span class="session-name">Upper Body</span>
+            <span class="session-date">Feb 10</span>
+          </div>
+          <div class="session-time">8:00 AM &middot; 35 min</div>
+          <div class="session-stats">10 sets &middot; 4 exercises &middot; 8,600 <span class="unit">lbs</span></div>
+        </div>
+
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg>
+          LiftMark
+        </button>
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg>
+          Plans
+        </button>
+        <button class="tab-item active">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="8" y="11" width="8" height="2"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg>
+          Workouts
+        </button>
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          Settings
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. EMPTY STATE                                                ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Empty State</div>
+  <div class="example-desc">Shown when no completed workout sessions exist yet.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+
+      <!-- Large title -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: var(--spacingSM) var(--spacingLG) 0;">
+        <div class="large-title" style="padding:0;">Workouts</div>
+        <button class="btn-icon" title="Export" style="opacity:0.4;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="anno" style="display:contents">
+        <div class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div class="empty-title">No Workouts Yet</div>
+          <div class="empty-desc">Complete a workout to see it here</div>
+        </div>
+        <div style="position:relative; padding: 0 var(--spacingLG);">
+          <span class="anno-label" style="top:-8px; left:16px;">history-empty-state</span>
+        </div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar" style="margin-top: auto;">
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg>
+          LiftMark
+        </button>
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg>
+          Plans
+        </button>
+        <button class="tab-item active">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="8" y="11" width="8" height="2"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg>
+          Workouts
+        </button>
+        <button class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          Settings
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+  }
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 24px; }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ── Settings-specific styles ── */
+
+  /* Large title */
+  .settings-title {
+    font-size: 34px; font-weight: 700; color: var(--textPrimary);
+    padding: var(--spacingLG) var(--spacingLG) var(--spacingSM);
+  }
+
+  /* Grouped section */
+  .settings-section {
+    margin: var(--spacingLG) var(--spacingLG) 0;
+  }
+  .settings-section-header {
+    font-size: 13px; font-weight: 600; color: var(--textSecondary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0 var(--spacingLG) var(--spacingSM);
+  }
+  .settings-card {
+    background: var(--cardBg); border-radius: var(--radiusMD); overflow: hidden;
+  }
+
+  /* Row styles */
+  .settings-row {
+    display: flex; align-items: center;
+    padding: var(--spacingMD) var(--spacingLG);
+    min-height: 44px;
+    gap: var(--spacingSM);
+  }
+  .settings-row + .settings-row {
+    border-top: 1px solid var(--grey5);
+  }
+  .settings-row-label {
+    font-size: 17px; color: var(--textPrimary); flex: 1;
+  }
+  .settings-row-value {
+    font-size: 17px; color: var(--textSecondary);
+  }
+  .settings-chevron {
+    font-size: 18px; color: var(--grey3); font-weight: 300; margin-left: 4px;
+  }
+
+  /* Segment control */
+  .segment-control {
+    display: flex; background: var(--grey5); border-radius: var(--radiusSM);
+    padding: 2px; gap: 2px; flex: 1;
+  }
+  .segment-btn {
+    flex: 1; padding: 7px 0; text-align: center;
+    font-size: 13px; font-weight: 600; color: var(--textPrimary);
+    border: none; background: transparent; border-radius: 6px;
+    cursor: pointer; transition: background .15s, color .15s;
+  }
+  .segment-btn.active {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+
+  /* Toggle switch */
+  .toggle-switch {
+    width: 51px; height: 31px; border-radius: 16px;
+    background: var(--grey3); position: relative; flex-shrink: 0;
+    transition: background .2s; cursor: pointer;
+  }
+  .toggle-switch.on { background: var(--green); }
+  .toggle-knob {
+    width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; position: absolute; top: 2px; left: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    transition: transform .2s;
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
+  /* Star icon */
+  .star-icon {
+    font-size: 18px; color: var(--yellow); flex-shrink: 0;
+  }
+  .star-icon.empty {
+    color: var(--grey3);
+  }
+
+  /* Gym row */
+  .gym-name {
+    font-size: 17px; color: var(--textPrimary); flex: 1;
+  }
+  .gym-default-badge {
+    font-size: 11px; color: var(--yellow); font-weight: 600;
+    background: rgba(255,159,10,.12); padding: 2px 8px; border-radius: 4px;
+  }
+
+  /* Action buttons */
+  .settings-btn {
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--spacingMD) var(--spacingLG);
+    font-size: 17px; font-weight: 400; color: var(--blue);
+    cursor: pointer; min-height: 44px;
+  }
+  .settings-btn + .settings-btn {
+    border-top: 1px solid var(--grey5);
+  }
+
+  /* Multiline text field */
+  .text-field {
+    width: 100%; min-height: 60px; padding: var(--spacingSM) var(--spacingMD);
+    font-size: 15px; font-family: inherit; color: var(--inputText);
+    background: var(--inputBg); border: 1.5px solid var(--grey4);
+    border-radius: var(--radiusSM); resize: none;
+    line-height: 1.4;
+  }
+
+  /* Masked input row */
+  .masked-field {
+    flex: 1; height: 36px; padding: 0 var(--spacingMD);
+    font-size: 15px; font-family: inherit; color: var(--inputText);
+    background: var(--inputBg); border: 1.5px solid var(--grey4);
+    border-radius: var(--radiusSM); letter-spacing: 3px;
+  }
+
+  /* Small action buttons */
+  .btn-sm {
+    font-size: 14px; font-weight: 600; padding: 6px 14px;
+    border-radius: var(--radiusSM); border: none; cursor: pointer;
+  }
+  .btn-sm-primary { background: var(--blue); color: #fff; }
+  .btn-sm-danger { background: none; color: var(--red); border: 1.5px solid var(--red); }
+
+  /* Version info */
+  .version-info {
+    text-align: center; padding: var(--spacingLG);
+    font-size: 13px; color: var(--textSecondary);
+  }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex; align-items: center; justify-content: space-around;
+    background: var(--cardBg); border-top: 1px solid var(--grey5);
+    padding: var(--spacingSM) 0 var(--spacingXL);
+    position: sticky; bottom: 0;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; color: var(--grey1); min-width: 64px;
+  }
+  .tab-item.active { color: var(--blue); }
+  .tab-icon {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Nav header for sub-screens ── */
+  .nav-header {
+    display: flex; align-items: center;
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--cardBg); border-bottom: 1px solid var(--grey5);
+    gap: var(--spacingSM);
+  }
+  .nav-back {
+    font-size: 17px; color: var(--blue); cursor: pointer;
+    display: flex; align-items: center; gap: 4px; font-weight: 400;
+    background: none; border: none;
+  }
+  .nav-title {
+    font-size: 17px; font-weight: 600; color: var(--textPrimary);
+    flex: 1; text-align: center; margin-right: 40px;
+  }
+
+  /* ── Field label inside card ── */
+  .field-label {
+    font-size: 13px; color: var(--textSecondary); font-weight: 500;
+    padding: var(--spacingMD) var(--spacingLG) var(--spacingXS);
+  }
+  .field-body {
+    padding: 0 var(--spacingLG) var(--spacingMD);
+  }
+  .field-body-row {
+    display: flex; gap: var(--spacingSM); align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Settings Screen</div>
+  <div class="page-subtitle">Wireframe reference — grouped list configuration UI</div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. SETTINGS MAIN — TOP HALF                                    ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Settings Main (Top)</div>
+  <div class="example-desc">Appearance theme selector, Workout Settings nav row, and Gym management section with default gym star.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+
+      <!-- Large title -->
+      <div class="settings-title">Settings</div>
+
+      <!-- Appearance section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Appearance</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <span class="settings-row-label">Theme</span>
+            <div class="segment-control" style="flex: 0 0 200px;">
+              <button class="segment-btn">Light</button>
+              <button class="segment-btn active">Dark</button>
+              <button class="segment-btn">Auto</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">button-theme-light / dark / auto</span>
+        </div>
+      </div>
+
+      <!-- Workout section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Workout</div>
+        <div class="settings-card">
+          <div class="settings-row" style="cursor:pointer">
+            <span class="settings-row-label">Workout Settings</span>
+            <span class="settings-chevron">&#x203A;</span>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">workout-settings-button &middot; navigates to /settings/workout</span>
+        </div>
+      </div>
+
+      <!-- Gym section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Gym</div>
+        <div class="settings-card">
+          <!-- Default gym -->
+          <div class="settings-row" style="cursor:pointer">
+            <span class="star-icon">&#9733;</span>
+            <span class="gym-name">Home Gym</span>
+            <span class="gym-default-badge">Default</span>
+            <span class="settings-chevron">&#x203A;</span>
+          </div>
+          <!-- Non-default gym -->
+          <div class="settings-row" style="cursor:pointer">
+            <span class="star-icon empty">&#9734;</span>
+            <span class="gym-name">Planet Fitness</span>
+            <span class="settings-chevron">&#x203A;</span>
+          </div>
+          <!-- Non-default gym -->
+          <div class="settings-row" style="cursor:pointer">
+            <span class="star-icon empty">&#9734;</span>
+            <span class="gym-name">Gold's Gym</span>
+            <span class="settings-chevron">&#x203A;</span>
+          </div>
+          <!-- Add gym -->
+          <div class="settings-btn">
+            + Add Gym
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">gym-item &middot; star sets default &middot; add-gym-button</span>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div style="height: 40px;"></div>
+      <div class="tab-bar">
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg></div>
+          LiftMark
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg></div>
+          Plans
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg></div>
+          Workouts
+        </div>
+        <div class="tab-item active">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+          Settings
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. SETTINGS MAIN — BOTTOM HALF                                 ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Settings Main (Bottom)</div>
+  <div class="example-desc">Integrations toggles, AI Assistance with API key, Data Management export/import, and About section.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+
+      <!-- Integrations section -->
+      <div class="settings-section" style="margin-top: var(--spacingSM);">
+        <div class="settings-section-header">Integrations</div>
+        <div class="settings-card">
+          <!-- iCloud Sync nav -->
+          <div class="settings-row" style="cursor:pointer">
+            <span class="settings-row-label">iCloud Sync</span>
+            <span class="settings-chevron">&#x203A;</span>
+          </div>
+          <!-- HealthKit toggle -->
+          <div class="settings-row">
+            <span class="settings-row-label">Apple Health</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <!-- Live Activities toggle -->
+          <div class="settings-row">
+            <span class="settings-row-label">Live Activities</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">sync-settings-button &middot; switch-healthkit &middot; switch-live-activities</span>
+        </div>
+      </div>
+
+      <!-- AI Assistance section -->
+      <div class="settings-section">
+        <div class="settings-section-header">AI Assistance</div>
+        <div class="settings-card">
+          <!-- Custom prompt -->
+          <div class="field-label">Custom Prompt</div>
+          <div class="field-body">
+            <textarea class="text-field" readonly rows="2">Focus on compound movements and progressive overload for strength gains.</textarea>
+          </div>
+          <!-- API Key -->
+          <div class="field-label" style="border-top: 1px solid var(--grey5);">API Key</div>
+          <div class="field-body">
+            <div class="field-body-row">
+              <input class="masked-field" value="sk-ant-••••••••••••" readonly>
+              <button class="btn-sm btn-sm-primary">Save</button>
+              <button class="btn-sm btn-sm-danger">Remove</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">input-custom-prompt &middot; input-api-key &middot; save/remove-api-key-button</span>
+        </div>
+      </div>
+
+      <!-- Data Management section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Data Management</div>
+        <div class="settings-card">
+          <div class="settings-btn">Export Database</div>
+          <div class="settings-btn">Import Workouts</div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">export-database-button &middot; import-workouts-button</span>
+        </div>
+      </div>
+
+      <!-- About section -->
+      <div class="settings-section">
+        <div class="settings-section-header">About</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <span class="settings-row-label">Version</span>
+            <span class="settings-row-value">1.4.2</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-row-label">Build</span>
+            <span class="settings-row-value">47</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-info">LiftMark</div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg></div>
+          LiftMark
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg></div>
+          Plans
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg></div>
+          Workouts
+        </div>
+        <div class="tab-item active">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+          Settings
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  3. WORKOUT SETTINGS SUB-SCREEN                                 ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Workout Settings</div>
+  <div class="example-desc">Sub-screen pushed from Settings. Units segment picker, timer and screen preferences. No tab bar (pushed navigation).</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Nav header with back button -->
+      <div class="nav-header">
+        <button class="nav-back">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <div class="nav-title">Workout Settings</div>
+      </div>
+
+      <!-- Units section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Units</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <span class="settings-row-label">Weight Unit</span>
+            <div class="segment-control" style="flex: 0 0 140px;">
+              <button class="segment-btn active unit-seg-lbs">LBS</button>
+              <button class="segment-btn unit-seg-kg">KG</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">button-unit-lbs / button-unit-kg</span>
+        </div>
+      </div>
+
+      <!-- Timer section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Timer</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <span class="settings-row-label">Auto-start rest timer</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-row-label">Workout timer</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">switch-auto-start-rest &middot; switch-workout-timer</span>
+        </div>
+      </div>
+
+      <!-- Screen section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Screen</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <span class="settings-row-label">Keep screen awake</span>
+            <div class="toggle-switch">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">switch-keep-screen-awake &middot; off by default</span>
+        </div>
+      </div>
+
+      <!-- No tab bar on pushed sub-screens -->
+
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+    // Update segment buttons in Workout Settings
+    const lbsSeg = document.querySelector('.unit-seg-lbs');
+    const kgSeg = document.querySelector('.unit-seg-kg');
+    if (lbsSeg && kgSeg) {
+      lbsSeg.classList.toggle('active', unit === 'lbs');
+      kgSeg.classList.toggle('active', unit === 'kg');
+    }
+  }
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>

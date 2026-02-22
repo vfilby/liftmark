@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plans (Workouts) — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 24px; }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ── Tab header ── */
+  .tab-header {
+    padding: var(--spacingLG) var(--spacingLG) var(--spacingSM);
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .tab-header-title {
+    font-size: 34px; font-weight: 700; color: var(--textPrimary);
+  }
+  .tab-header-action {
+    font-size: 17px; font-weight: 400; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .tab-header-action svg { width: 20px; height: 20px; }
+
+  /* ── Search bar ── */
+  .search-bar {
+    margin: var(--spacingSM) var(--spacingLG);
+    display: flex; align-items: center; gap: var(--spacingSM);
+    background: var(--inputBg); border-radius: 20px;
+    padding: var(--spacingSM) var(--spacingMD);
+    border: 1.5px solid var(--grey4);
+  }
+  .search-icon { color: var(--grey2); font-size: 14px; flex-shrink: 0; }
+  .search-input {
+    flex: 1; border: none; background: transparent; font-size: 15px;
+    color: var(--inputText); outline: none; font-family: inherit;
+  }
+  .search-input::placeholder { color: var(--grey2); }
+
+  /* ── Filter toggle button ── */
+  .filter-toggle {
+    margin: var(--spacingSM) var(--spacingLG) 0;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: var(--spacingXS) 0;
+  }
+  .filter-chevron { font-size: 12px; transition: transform .2s; }
+  .filter-chevron.expanded { transform: rotate(90deg); }
+
+  /* ── Filter panel ── */
+  .filter-panel {
+    margin: var(--spacingSM) var(--spacingLG);
+    background: var(--cardBg); border-radius: var(--radiusMD);
+    padding: var(--spacingMD) var(--spacingLG);
+    display: flex; flex-direction: column; gap: var(--spacingMD);
+  }
+  .filter-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .filter-label { font-size: 15px; font-weight: 500; color: var(--textPrimary); }
+  .filter-switch {
+    width: 51px; height: 31px; border-radius: 16px;
+    background: var(--grey4); position: relative; cursor: pointer; border: none;
+    transition: background .2s;
+  }
+  .filter-switch.on { background: var(--green); }
+  .filter-switch-knob {
+    width: 27px; height: 27px; border-radius: 50%; background: #fff;
+    position: absolute; top: 2px; left: 2px; transition: left .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .filter-switch.on .filter-switch-knob { left: 22px; }
+  .filter-section-title {
+    font-size: 12px; font-weight: 600; color: var(--grey1);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .gym-list { display: flex; flex-direction: column; gap: var(--spacingXS); }
+  .gym-option {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingSM) var(--spacingMD);
+    border-radius: var(--radiusSM); cursor: pointer;
+    font-size: 15px; color: var(--textPrimary);
+  }
+  .gym-option.selected { background: rgba(0,122,255,.1); }
+  .gym-radio {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--grey3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gym-option.selected .gym-radio {
+    border-color: var(--blue);
+  }
+  .gym-radio-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--blue); display: none;
+  }
+  .gym-option.selected .gym-radio-dot { display: block; }
+
+  /* ── Plan cards ── */
+  .plan-list {
+    padding: var(--spacingSM) var(--spacingLG) var(--spacingXL);
+    display: flex; flex-direction: column; gap: var(--spacingSM);
+  }
+  .plan-card {
+    background: var(--cardBg); border-radius: var(--radiusMD);
+    padding: var(--spacingMD) var(--spacingLG);
+    display: flex; align-items: center; gap: var(--spacingMD);
+    cursor: pointer;
+  }
+  .plan-info { flex: 1; min-width: 0; }
+  .plan-name {
+    font-size: 17px; font-weight: 600; color: var(--textPrimary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .plan-tags {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .tag-pill {
+    font-size: 11px; font-weight: 600; color: var(--blue);
+    background: rgba(0,122,255,.1); padding: 2px 8px; border-radius: 10px;
+    text-transform: lowercase;
+  }
+  .btn-favorite {
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+  }
+  .heart-outline { color: var(--grey3); }
+  .heart-filled { color: var(--yellow); }
+  .chevron-right { color: var(--grey3); font-size: 18px; flex-shrink: 0; }
+
+  /* ── Swipe delete ── */
+  .swipe-container {
+    position: relative; overflow: hidden;
+  }
+  .swipe-delete-bg {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 90px;
+    background: var(--red); display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 15px; font-weight: 600;
+    border-radius: 0 var(--radiusMD) var(--radiusMD) 0;
+  }
+  .swipe-card-shifted {
+    transform: translateX(-90px);
+    transition: transform .2s;
+    border-radius: var(--radiusMD) 0 0 var(--radiusMD);
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex; align-items: stretch;
+    background: var(--cardBg); border-top: 1px solid var(--grey5);
+    padding: var(--spacingSM) 0 calc(var(--spacingSM) + 16px);
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 500; color: var(--grey1);
+    padding: var(--spacingXS) 0; text-decoration: none; cursor: pointer;
+  }
+  .tab-item.active { color: var(--blue); }
+  .tab-icon {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px var(--spacingXL);
+    text-align: center;
+  }
+  .empty-icon {
+    font-size: 48px; margin-bottom: var(--spacingLG); color: var(--grey3);
+  }
+  .empty-title {
+    font-size: 20px; font-weight: 600; color: var(--textPrimary); margin-bottom: var(--spacingSM);
+  }
+  .empty-desc {
+    font-size: 15px; color: var(--grey1); margin-bottom: var(--spacingXL); line-height: 1.5;
+  }
+  .btn-import {
+    padding: var(--spacingMD) 28px; background: var(--blue); color: #fff;
+    font-size: 17px; font-weight: 600; border: none; border-radius: var(--radiusSM);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Plans (Workouts) Screen</div>
+  <div class="page-subtitle">Wireframe reference — browse, search, filter, and manage workout plans</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. PLANS LIST WITH CONTENT                                     ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Plans List with Content</div>
+  <div class="example-desc">Tab header, search bar, filter toggle, and a scrollable list of workout plan cards with tags and favorite hearts.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+
+      <!-- Tab header -->
+      <div class="tab-header">
+        <div class="tab-header-title">Plans</div>
+        <button class="tab-header-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Import</button>
+      </div>
+
+      <!-- Search bar -->
+      <div class="anno" style="display:contents">
+        <div class="search-bar">
+          <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg></span>
+          <input class="search-input" placeholder="Search plans..." readonly>
+        </div>
+        <div style="position:relative; padding: 0 16px;">
+          <span class="anno-label" style="position:relative;">search-input</span>
+        </div>
+      </div>
+
+      <!-- Filter toggle -->
+      <div class="anno" style="display:contents">
+        <button class="filter-toggle">
+          <span class="filter-chevron">&#x203A;</span>
+          Show Filters
+        </button>
+        <div style="position:relative; padding: 0 16px;">
+          <span class="anno-label" style="position:relative;">filter-toggle</span>
+        </div>
+      </div>
+
+      <!-- Plan cards -->
+      <div class="plan-list">
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Push Day A</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">upper</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Pull Day B</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">back</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--grey3)" stroke-width="2"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Leg Day</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">lower</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Full Body Conditioning</div>
+            <div class="plan-tags">
+              <span class="tag-pill">conditioning</span>
+              <span class="tag-pill">full body</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--grey3)" stroke-width="2"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Upper Hypertrophy</div>
+            <div class="plan-tags">
+              <span class="tag-pill">hypertrophy</span>
+              <span class="tag-pill">upper</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--grey3)" stroke-width="2"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-inline">workout-card-{item.id} &middot; tap navigates to /workout/{id}</span>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg></div>
+          LiftMark
+        </div>
+        <div class="tab-item active">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="0.5"><rect x="8" y="2" width="12" height="16" rx="2" opacity="0.3"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4" fill="none" stroke="var(--cardBg, #fff)" stroke-width="1.5"/></svg></div>
+          Plans
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg></div>
+          Workouts
+        </div>
+        <div class="tab-item">
+          <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
+          Settings
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. FILTERS EXPANDED                                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Filters Expanded</div>
+  <div class="example-desc">Filter panel showing favorites toggle, equipment toggle, and gym selector with radio options.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Tab header -->
+      <div class="tab-header">
+        <div class="tab-header-title">Plans</div>
+        <button class="tab-header-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Import</button>
+      </div>
+
+      <!-- Search bar -->
+      <div class="search-bar">
+        <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg></span>
+        <input class="search-input" placeholder="Search plans..." readonly>
+      </div>
+
+      <!-- Filter toggle (expanded) -->
+      <button class="filter-toggle">
+        <span class="filter-chevron expanded">&#x203A;</span>
+        Hide Filters
+      </button>
+
+      <!-- Filter panel -->
+      <div class="filter-panel">
+        <div class="filter-row">
+          <span class="filter-label">Favorites Only</span>
+          <div class="filter-switch on">
+            <div class="filter-switch-knob"></div>
+          </div>
+        </div>
+        <div style="padding:2px 0 0 0">
+          <span class="anno-inline">switch-filter-favorites</span>
+        </div>
+
+        <div class="filter-row">
+          <span class="filter-label">Filter by Equipment</span>
+          <div class="filter-switch">
+            <div class="filter-switch-knob"></div>
+          </div>
+        </div>
+        <div style="padding:2px 0 0 0">
+          <span class="anno-inline">switch-filter-equipment</span>
+        </div>
+
+        <div class="filter-section-title">Gym</div>
+        <div class="gym-list">
+          <div class="gym-option selected">
+            <div class="gym-radio"><div class="gym-radio-dot"></div></div>
+            Home Gym
+          </div>
+          <div class="gym-option">
+            <div class="gym-radio"><div class="gym-radio-dot"></div></div>
+            Gold's Gym Downtown
+          </div>
+          <div class="gym-option">
+            <div class="gym-radio"><div class="gym-radio-dot"></div></div>
+            YMCA Westside
+          </div>
+        </div>
+        <div style="padding:2px 0 0 0">
+          <span class="anno-inline">gym-option-{gym.id} &middot; selects gym for equipment filtering</span>
+        </div>
+      </div>
+
+      <!-- Filtered plan cards -->
+      <div class="plan-list">
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Push Day A</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">upper</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Leg Day</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">lower</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  3. EMPTY STATE                                                  ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Empty State</div>
+  <div class="example-desc">Shown when no workout plans have been imported yet. Prompts the user to import their first plan.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen">
+
+      <!-- Tab header -->
+      <div class="tab-header">
+        <div class="tab-header-title">Plans</div>
+        <button class="tab-header-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Import</button>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7v10M12 7v10M16 7v10"/></svg></div>
+        <div class="empty-title">No plans yet</div>
+        <div class="empty-desc">Import your first workout plan to get started</div>
+        <button class="btn-import">Import Plan</button>
+        <div style="padding:12px 0 0 0">
+          <span class="anno-inline">empty-state &middot; button-import-empty navigates to /modal/import</span>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div style="position: absolute; bottom: 0; left: 0; right: 0;">
+        <div class="tab-bar">
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg></div>
+            LiftMark
+          </div>
+          <div class="tab-item active">
+            <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="0.5"><rect x="8" y="2" width="12" height="16" rx="2" opacity="0.3"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4" fill="none" stroke="var(--cardBg, #fff)" stroke-width="1.5"/></svg></div>
+            Plans
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg></div>
+            Workouts
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
+            Settings
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  4. SWIPE TO DELETE                                              ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Swipe to Delete</div>
+  <div class="example-desc">A plan card mid-swipe-left, revealing the red Delete action behind it. The card translates left to expose the delete button.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Tab header -->
+      <div class="tab-header">
+        <div class="tab-header-title">Plans</div>
+        <button class="tab-header-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Import</button>
+      </div>
+
+      <!-- Search bar -->
+      <div class="search-bar">
+        <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg></span>
+        <input class="search-input" placeholder="Search plans..." readonly>
+      </div>
+
+      <button class="filter-toggle">
+        <span class="filter-chevron">&#x203A;</span>
+        Show Filters
+      </button>
+
+      <!-- Plan cards with one swiped -->
+      <div class="plan-list">
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Push Day A</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">upper</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <!-- Swiped card -->
+        <div class="swipe-container">
+          <div class="swipe-delete-bg">Delete</div>
+          <div class="plan-card swipe-card-shifted">
+            <div class="plan-info">
+              <div class="plan-name">Pull Day B</div>
+              <div class="plan-tags">
+                <span class="tag-pill">strength</span>
+                <span class="tag-pill">back</span>
+              </div>
+            </div>
+            <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--grey3)" stroke-width="2"/></svg></button>
+            <span class="chevron-right">&#x203A;</span>
+          </div>
+        </div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-inline">delete-{item.id} &middot; swipe left reveals delete action</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Leg Day</div>
+            <div class="plan-tags">
+              <span class="tag-pill">strength</span>
+              <span class="tag-pill">lower</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-info">
+            <div class="plan-name">Full Body Conditioning</div>
+            <div class="plan-tags">
+              <span class="tag-pill">conditioning</span>
+              <span class="tag-pill">full body</span>
+            </div>
+          </div>
+          <button class="btn-favorite"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--grey3)" stroke-width="2"/></svg></button>
+          <span class="chevron-right">&#x203A;</span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+</script>
+</body>
+</html>
