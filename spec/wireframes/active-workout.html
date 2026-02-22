@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Workout — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+    --setCurrentBg: rgba(0,122,255,.06);
+    --setCurrentBorder: rgba(0,122,255,.2);
+    --setCompletedBg: rgba(52,199,89,.08);
+    --setSkippedBg: rgba(255,159,10,.08);
+    --restBg: rgba(0,122,255,.06);
+    --restBorder: rgba(0,122,255,.2);
+    --timerBg: rgba(0,122,255,.04);
+    --timerBorder: rgba(0,122,255,.12);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+    --setCurrentBg: rgba(10,132,255,.15);
+    --setCurrentBorder: rgba(10,132,255,.3);
+    --setCompletedBg: rgba(48,209,88,.12);
+    --setSkippedBg: rgba(255,214,10,.1);
+    --restBg: rgba(10,132,255,.1);
+    --restBorder: rgba(10,132,255,.25);
+    --timerBg: rgba(10,132,255,.08);
+    --timerBorder: rgba(10,132,255,.18);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px;
+    background: var(--notchBg);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 24px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--cardBg); border-bottom: 1px solid var(--grey5);
+    color: var(--textPrimary);
+  }
+  .header-left, .header-right { display: flex; align-items: center; gap: var(--spacingSM); }
+  .header-center {
+    font-size: 17px; font-weight: 600; flex: 1; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .btn-text {
+    font-size: 15px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+  }
+  .btn-finish {
+    font-size: 15px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+  }
+
+  /* ── Progress bar ── */
+  .progress-section {
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--cardBg); border-bottom: 1px solid var(--grey5);
+  }
+  .progress-bar-track { height: 6px; background: var(--grey5); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--blue); border-radius: 3px; }
+  .progress-label { font-size: 12px; color: var(--grey1); margin-top: 4px; text-align: center; }
+
+  /* ── Exercise cards ── */
+  .exercise-list {
+    padding: var(--spacingSM) var(--spacingLG) var(--spacingXL);
+    display: flex; flex-direction: column; gap: var(--spacingSM);
+  }
+  .card {
+    background: var(--cardBg); border-radius: var(--radiusMD); overflow: hidden;
+  }
+
+  /* Card header */
+  .card-header {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingMD) var(--spacingLG);
+  }
+  .badge {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+    background: var(--grey3);
+  }
+  .badge-green  { }
+  .badge-blue   { }
+  .badge-grey   { color: var(--grey1); }
+  .card-title { font-size: 17px; font-weight: 600; flex: 1; }
+  .card-icons { display: flex; gap: 6px; align-items: center; }
+  .card-icon {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    color: var(--grey2); font-size: 14px;
+  }
+  .chevron { color: var(--grey3); font-size: 16px; margin-left: auto; }
+  .card-summary { font-size: 13px; color: var(--grey1); margin-left: auto; white-space: nowrap; }
+
+  /* Exercise notes */
+  .card-notes {
+    padding: 0 var(--spacingLG) var(--spacingSM);
+    font-size: 13px; font-style: italic; color: var(--grey1); line-height: 1.5;
+    padding-left: calc(var(--spacingLG) + 28px + var(--spacingSM));
+  }
+
+  /* ── Set rows ── */
+  .set-list { padding: 0 var(--spacingSM) var(--spacingSM); }
+  .set-row {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingXS) var(--spacingSM);
+    border-radius: var(--radiusSM); font-size: 15px; min-height: 36px;
+  }
+  .set-number {
+    width: 22px; text-align: center; font-weight: 600; color: var(--grey1);
+    font-variant-numeric: tabular-nums; flex-shrink: 0;
+  }
+  .set-values { flex: 1; font-variant-numeric: tabular-nums; }
+
+  /* Status icons for completed/skipped sets */
+  .set-status-icon {
+    width: 22px; height: 22px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .set-status-icon svg { width: 22px; height: 22px; }
+
+  /* Current set indicator (blue arrow circle) */
+  .set-current-indicator {
+    width: 22px; height: 22px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .set-current-indicator svg { width: 22px; height: 22px; }
+
+  /* Current set (active) */
+  .set-current {
+    background: var(--setCurrentBg); border: 1.5px solid var(--setCurrentBorder);
+    border-radius: var(--radiusSM); padding: var(--spacingSM); margin: var(--spacingXS) 0;
+  }
+  .set-current-top { display: flex; align-items: center; gap: var(--spacingSM); margin-bottom: var(--spacingMD); }
+  /* The input-group has a ~15px label above the 40px field, shifting its center down.
+     Nudge non-label elements down by half the label height so midpoints align with the input center. */
+  .set-current-top .set-current-indicator,
+  .set-current-top .btn-skip,
+  .set-current-top .input-x { transform: translateY(7px); }
+  .input-field {
+    width: 72px; height: 40px; border: 1.5px solid var(--grey4); border-radius: var(--radiusSM);
+    text-align: center; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
+    font-family: inherit; background: var(--inputBg); color: var(--inputText);
+  }
+  .input-label { font-size: 11px; color: var(--grey1); text-align: center; margin-bottom: 2px; }
+  .input-group { display: flex; flex-direction: column; align-items: center; }
+  .input-x { font-size: 16px; color: var(--grey2); font-weight: 500; padding: 0 2px; align-self: center; }
+  .btn-skip {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--yellow);
+    background: none; border: none;
+    width: 40px; height: 40px; cursor: pointer; margin-left: auto; flex-shrink: 0;
+  }
+  .btn-skip svg { width: 22px; height: 22px; }
+  .set-current-target {
+    font-size: 12px; color: var(--grey2); padding: 0 0 var(--spacingSM); margin-top: calc(-1 * var(--spacingXS)); text-align: center;
+  }
+  .btn-complete {
+    width: 100%; height: 44px; background: var(--green); color: #fff;
+    font-size: 17px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-complete svg { width: 20px; height: 20px; }
+
+  /* Completed set */
+  .set-completed { border-radius: var(--radiusSM); }
+  .set-completed .set-values { color: var(--green); font-weight: 500; }
+
+  /* Skipped set */
+  .set-skipped { border-radius: var(--radiusSM); }
+  .set-skipped .set-values { color: var(--yellow); font-weight: 500; }
+
+  /* Pending set */
+  .set-pending .set-values { color: var(--grey1); }
+
+  /* ── Rest timer inline ── */
+  .rest-timer {
+    display: flex; align-items: center; justify-content: center; gap: var(--spacingMD);
+    padding: var(--spacingLG) var(--spacingLG); margin: var(--spacingSM) 0;
+    background: var(--restBg); border-radius: var(--radiusSM); border: 1px dashed var(--restBorder);
+  }
+  .rest-timer-time {
+    font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--blue);
+  }
+  .btn-stop {
+    font-size: 13px; font-weight: 600; color: var(--red);
+    background: none; border: 1.5px solid var(--red); border-radius: var(--radiusSM);
+    padding: 5px 12px; cursor: pointer;
+  }
+  .btn-rest-start {
+    font-size: 13px; font-weight: 600; color: var(--blue);
+    background: none; border: 1.5px solid var(--blue); border-radius: var(--radiusSM);
+    padding: 5px 12px; cursor: pointer;
+  }
+  .btn-rest-skip {
+    font-size: 13px; font-weight: 500; color: var(--grey1);
+    background: none; border: 1.5px solid var(--grey3); border-radius: var(--radiusSM);
+    padding: 5px 12px; cursor: pointer;
+  }
+  .rest-suggestion-label {
+    font-size: 15px; font-weight: 500; color: var(--textPrimary);
+  }
+
+  /* ── Rest placeholder ── */
+  .rest-placeholder {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    font-size: 12px; color: var(--grey3); padding: 4px 0;
+  }
+  .rest-placeholder::before, .rest-placeholder::after {
+    content: ''; flex: 1; height: 1px; background: var(--grey4);
+  }
+
+  /* ── Exercise Timer (timed set) ── */
+  .exercise-timer {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingMD); padding-top: var(--spacingXL);
+    background: var(--setCurrentBg); border: 1.5px solid var(--setCurrentBorder);
+    border-radius: var(--radiusSM); margin: var(--spacingXS) 0;
+  }
+  .exercise-timer .btn-skip {
+    position: absolute; top: var(--spacingSM); right: var(--spacingSM);
+    margin-left: 0;
+  }
+  .timer-display {
+    font-size: 40px; font-weight: 300; font-variant-numeric: tabular-nums;
+    color: var(--blue); letter-spacing: 1px;
+  }
+  .timer-display-done { color: var(--green); }
+  .timer-target { font-size: 12px; color: var(--grey2); }
+  .timer-buttons { display: flex; gap: var(--spacingSM); width: 100%; }
+  .btn-timer-start {
+    flex: 1; height: 40px; background: var(--blue); color: #fff;
+    font-size: 15px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+  }
+  .btn-timer-pause {
+    flex: 1; height: 40px; background: var(--yellow); color: #fff;
+    font-size: 15px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+  }
+  .btn-timer-done {
+    flex: 1; height: 40px; background: var(--green); color: #fff;
+    font-size: 15px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+  }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Active Workout Screen</div>
+  <div class="page-subtitle">Wireframe reference — all key UI states</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. FULL WORKOUT OVERVIEW                                      ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Full Workout Overview</div>
+  <div class="example-desc">Header, progress bar, and all exercise card states: completed/collapsed, active/expanded, and pending/collapsed.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Header -->
+      <div class="anno" style="display:contents">
+        <div class="header">
+          <div class="header-left">
+            <button class="btn-text">&#9646;&#9646; Pause</button>
+          </div>
+          <div class="header-center">Push Day A</div>
+          <div class="header-right">
+            <button class="btn-finish">+ Finish</button>
+          </div>
+        </div>
+        <div style="position:relative">
+          <span class="anno-label" style="top:-28px; right:160px;">active-workout-pause-button</span>
+          <span class="anno-label" style="top:-28px; right:4px;">active-workout-finish-button</span>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-section">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 21.4%"></div>
+        </div>
+        <div class="progress-label">6 / 28 sets completed</div>
+      </div>
+      <div style="padding:0 16px">
+        <span class="anno-label">active-workout-progress</span>
+      </div>
+
+      <div class="exercise-list">
+
+        <!-- Completed / collapsed -->
+        <div>
+          <span class="section-label">Completed &amp; collapsed exercise</span>
+          <div class="card">
+            <div class="card-header" style="cursor:pointer">
+              <div class="badge badge-green">1</div>
+              <div class="card-title">Bench Press</div>
+              <span class="card-summary">3/3 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">exercise-collapsed-{id} &middot; tap to expand</span>
+          </div>
+        </div>
+
+        <!-- Active / expanded (weighted, with notes) -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Active exercise — with notes, weighted sets</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">2</div>
+              <div class="card-title">Incline DB Press</div>
+              <div class="card-icons">
+                <span class="card-icon" title="Edit exercise">&#9998;</span>
+                <span class="card-icon" title="YouTube search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg></span>
+              </div>
+            </div>
+            <div class="card-notes">30X1 tempo. Keep elbows at 45 degrees.</div>
+
+            <div class="set-list">
+              <div class="set-row set-completed">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="set-values">50 <span class="unit">lbs</span> &times; 8</span>
+              </div>
+
+              <!-- Current set with per-set note -->
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="55" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="8" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+
+              <div class="rest-placeholder">Rest 90s</div>
+
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending / collapsed -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Pending exercises — collapsed, greyed out</span>
+          <div class="card" style="opacity: 0.6;">
+            <div class="card-header" style="cursor:pointer">
+              <div class="badge badge-grey">3</div>
+              <div class="card-title" style="color: var(--grey1);">Lateral Raises</div>
+              <span class="card-summary">0/3 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="opacity: 0.6;">
+            <div class="card-header" style="cursor:pointer">
+              <div class="badge badge-grey">4</div>
+              <div class="card-title" style="color: var(--grey1);">Tricep Pushdowns</div>
+              <span class="card-summary">0/4 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Spacing reference -->
+      <div class="spacing-ref" style="padding: 0 16px 20px;">
+        <hr class="section-divider">
+        <span class="section-label">Spacing tokens</span>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-family: 'SF Mono', Menlo, monospace; color: var(--grey1); padding-top: 4px;">
+          <div>spacingXS = 4pt</div>
+          <div>spacingSM = 8pt</div>
+          <div>spacingMD = 12pt</div>
+          <div>spacingLG = 16pt</div>
+          <div>spacingXL = 20pt</div>
+          <div>radiusSM = 8pt</div>
+          <div>radiusMD = 12pt</div>
+          <div>Min tap = 44pt</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. EXERCISE WITH NOTES vs WITHOUT NOTES                       ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Notes vs No Notes</div>
+  <div class="example-desc">Exercise cards with and without notes. Notes appear as italic caption below the exercise name, indented to align with the title.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <!-- With notes -->
+        <div>
+          <span class="section-label">Exercise with notes</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Bench Press</div>
+              <div class="card-icons">
+                <span class="card-icon">&#9998;</span>
+                <span class="card-icon" title="YouTube search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg></span>
+              </div>
+            </div>
+            <div class="card-notes">Competition pause &mdash; full stop at chest for 1 second.</div>
+            <div class="set-list">
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="185" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">card-notes indented to align with card-title (badge + gap offset)</span>
+          </div>
+        </div>
+
+        <!-- Without notes -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Exercise without notes</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">2</div>
+              <div class="card-title">Overhead Press</div>
+              <div class="card-icons">
+                <span class="card-icon">&#9998;</span>
+                <span class="card-icon" title="YouTube search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg></span>
+              </div>
+            </div>
+            <!-- No .card-notes element -->
+            <div class="set-list">
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="95" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="8" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <!-- No set note, no target hint — inputs match plan -->
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">95 <span class="unit">lbs</span> &times; 8</span>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">95 <span class="unit">lbs</span> &times; 8</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">No notes — sets start directly after card-header</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  3. EXERCISE TIMER STATES                                      ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Exercise Timer States</div>
+  <div class="example-desc">Timed sets show an ExerciseTimerView instead of weight/reps inputs. Three states: pre-start, running, and completed (target reached).</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <!-- Timer: Pre-start -->
+        <div>
+          <span class="section-label">Timer state: pre-start</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Plank</div>
+              <div class="card-icons"><span class="card-icon">&#9998;</span></div>
+            </div>
+            <div class="set-list">
+              <div class="exercise-timer">
+                <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                <div class="timer-display">0:00</div>
+                <div class="timer-target">Target: 60s</div>
+                <div class="timer-buttons">
+                  <button class="btn-timer-start">Start</button>
+                </div>
+              </div>
+              <span class="anno-inline">exercise-timer-start-button &middot; Done not yet visible</span>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">60s</span>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">60s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timer: Running -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Timer state: running (mid-count)</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Plank</div>
+              <div class="card-icons"><span class="card-icon">&#9998;</span></div>
+            </div>
+            <div class="set-list">
+              <div class="exercise-timer">
+                <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                <div class="timer-display">0:34</div>
+                <div class="timer-target">Target: 60s</div>
+                <div class="timer-buttons">
+                  <button class="btn-timer-pause">Pause</button>
+                  <button class="btn-timer-done">Done</button>
+                </div>
+              </div>
+              <span class="anno-inline">Pause replaces Start &middot; Done appears once started</span>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">60s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timer: Target reached -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Timer state: target reached (still running)</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Plank</div>
+              <div class="card-icons"><span class="card-icon">&#9998;</span></div>
+            </div>
+            <div class="set-list">
+              <div class="exercise-timer">
+                <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                <div class="timer-display timer-display-done">1:03</div>
+                <div class="timer-target" style="color: var(--green);">Target: 60s &#10003;</div>
+                <div class="timer-buttons">
+                  <button class="btn-timer-pause">Pause</button>
+                  <button class="btn-timer-done">Done</button>
+                </div>
+              </div>
+              <span class="anno-inline">Timer turns green when target exceeded &middot; user taps Done to log</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  4. ACTIVE SET: WITH TARGET HINT vs WITHOUT                    ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Active Set Target Hint</div>
+  <div class="example-desc">The current set shows a "Target" hint below the inputs when the user has edited values away from the original target. When values match the target, the hint is hidden.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <!-- With target hint (user edited values) -->
+        <div>
+          <span class="section-label">User edited weight: hint visible</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Bench Press</div>
+            </div>
+            <div class="set-list">
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="230" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <div class="set-current-target">Target: 225 <span class="unit">lbs</span> &times; 5</div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <span class="anno-inline">Target hint shown — input (230) differs from plan (225)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Without target hint (values match target) -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Values match target: no hint</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">2</div>
+              <div class="card-title">Squat</div>
+            </div>
+            <div class="set-list">
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="225" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <!-- No .set-current-target row -->
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <span class="anno-inline">No target hint — inputs match plan exactly</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bodyweight (reps only, no weight field) -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Bodyweight exercise: reps only</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">3</div>
+              <div class="card-title">Pull-ups</div>
+            </div>
+            <div class="set-list">
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="10" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <span class="anno-inline">No targetWeight — only reps input shown</span>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">&times; 10</span>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">&times; 8</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  5. REST TIMER STATES                                          ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Rest Timer States</div>
+  <div class="example-desc">Rest timer starts automatically after set completion. Two states: active countdown (with Skip), and the rest placeholder between pending sets.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <!-- Rest timer running (auto-started after set completion) -->
+        <div>
+          <span class="section-label">Rest timer: active countdown (auto-started)</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Bench Press</div>
+            </div>
+            <div class="set-list">
+              <div class="set-row set-completed">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+
+              <div class="rest-timer">
+                <span class="rest-timer-time">0:47</span>
+                <button class="btn-stop">Stop</button>
+              </div>
+              <span class="anno-inline">Auto-started on set completion — dismissed if user completes next set</span>
+
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="185" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+
+              <div class="rest-placeholder">Rest 90s</div>
+
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rest placeholder between pending sets -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Rest placeholder between pending sets</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">2</div>
+              <div class="card-title">Squat</div>
+            </div>
+            <div class="set-list">
+              <div class="set-row set-pending">
+                <span class="set-number">1</span>
+                <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+              <div class="rest-placeholder">Rest 120s</div>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+              <div class="rest-placeholder">Rest 120s</div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">Faint dividers show planned rest between pending sets</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  6. SET ROW STATES                                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Set Row States</div>
+  <div class="example-desc">All visual states a set row can be in: pending, current (active), completed, skipped, and editing a completed set.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Bench Press</div>
+            </div>
+            <div class="set-list">
+
+              <!-- Completed -->
+              <span class="section-label">Completed</span>
+              <div class="set-row set-completed">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+
+              <!-- Skipped -->
+              <span class="section-label" style="margin-top:8px">Skipped</span>
+              <div class="set-row set-skipped">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--yellow)"/><rect x="7" y="11" width="10" height="2.5" rx="1" fill="#fff"/></svg></span>
+                <span class="set-values">185 <span class="unit">lbs</span> &times; 5 &mdash; Skipped</span>
+              </div>
+
+              <!-- Editing a completed set (tapped) -->
+              <span class="section-label" style="margin-top:8px">Editing completed set (tapped)</span>
+              <div style="border: 1px solid var(--grey4); border-radius: var(--radiusSM); padding: var(--spacingSM); margin: var(--spacingXS) 0;">
+                <div class="set-current-top">
+                  <span class="set-status-icon" style="transform: translateY(7px);"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="225" readonly>
+                  </div>
+                  <span class="input-x" style="transform: translateY(7px);">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; color:#fff; background:var(--blue); border:none; border-radius:var(--radiusSM); cursor:pointer; margin-left:auto; transform: translateY(7px); flex-shrink:0;" title="Update"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></button>
+                  <button style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; color:var(--grey1); background:none; border:1px solid var(--grey3); border-radius:var(--radiusSM); cursor:pointer; transform: translateY(7px); flex-shrink:0;" title="Cancel"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6l-12 12"/></svg></button>
+                </div>
+              </div>
+              <span class="anno-inline">Tap completed/skipped set to edit — status icon replaces arrow indicator</span>
+
+              <!-- Editing a skipped set (tapped) -->
+              <span class="section-label" style="margin-top:8px">Editing skipped set (tapped)</span>
+              <div style="border: 1px solid var(--grey4); border-radius: var(--radiusSM); padding: var(--spacingSM); margin: var(--spacingXS) 0;">
+                <div class="set-current-top">
+                  <span class="set-status-icon" style="transform: translateY(7px);"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--yellow)"/><rect x="7" y="11" width="10" height="2.5" rx="1" fill="#fff"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="245" readonly>
+                  </div>
+                  <span class="input-x" style="transform: translateY(7px);">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="3" readonly>
+                  </div>
+                  <button style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; color:#fff; background:var(--blue); border:none; border-radius:var(--radiusSM); cursor:pointer; margin-left:auto; transform: translateY(7px); flex-shrink:0;" title="Update"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></button>
+                  <button style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; color:var(--grey1); background:none; border:1px solid var(--grey3); border-radius:var(--radiusSM); cursor:pointer; transform: translateY(7px); flex-shrink:0;" title="Cancel"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6l-12 12"/></svg></button>
+                </div>
+              </div>
+
+              <!-- Current -->
+              <span class="section-label" style="margin-top:8px">Current (active)</span>
+              <div class="set-current">
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="225" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="5" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+
+              <!-- Pending -->
+              <span class="section-label" style="margin-top:8px">Pending</span>
+              <div class="set-row set-pending">
+                <span class="set-number">5</span>
+                <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+  }
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>
