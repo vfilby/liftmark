@@ -7,6 +7,7 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 `/workout/summary` — Navigated to via `router.replace()` after completing a workout.
 
 ## Layout
+- **Header**: Share button (share icon) in headerRight
 - **Body**: ScrollView containing:
   1. Success header card (checkmark + "Workout Complete!" + workout name)
   2. Workout Highlights (conditional — PRs, streaks, volume/weight increases)
@@ -20,6 +21,7 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 | Element | testID | Type |
 |---------|--------|------|
 | Screen container | `workout-summary-screen` | View |
+| Share button (header) | `share-session-button` | TouchableOpacity |
 | Scroll view | `workout-summary-scroll` | ScrollView |
 | Success header | `workout-summary-success-header` | View |
 | Highlights section | `workout-summary-highlights` | View |
@@ -28,21 +30,13 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 | Exercise list | `workout-summary-exercises` | View |
 | Done button | `workout-summary-done-button` | TouchableOpacity |
 
-## Data Dependencies
-- **sessionStore**: `activeSession`, `pauseSession`, `getProgress`, `getTrackableExercises`
-- **workoutHighlightsService**: `calculateWorkoutHighlights(session)` — computes PRs, volume increases, streaks, weight increases
-- **WorkoutHighlights component**: renders highlight cards
-
 ## User Interactions
+- **Tap share button (header)** → exports completed session as JSON via `exportSingleSessionAsJson` → share sheet
 - **Tap "Done"** → clears session from store → navigates to `/(tabs)` (home)
 - **Tap YouTube icon** on exercise → opens YouTube search for that exercise
 
 ## Navigation
 - `/(tabs)` — via Done button (uses `router.replace`)
-
-## State
-- `highlights` — array of WorkoutHighlight objects (PRs, streaks, etc.)
-- `loadingHighlights` — loading state while calculating highlights
 
 ## Computed Values
 - Duration formatted from `activeSession.duration`
@@ -54,6 +48,7 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 - **No active session**: LoadingView, then redirects to home via `router.replace('/(tabs)')`
 - **No highlights**: Highlights section hidden (not rendered)
 - **Highlight calculation error**: Silently falls back to empty highlights array
+- **Export failure**: Alert with error message
 
 ## WorkoutHighlights Component
 Renders when highlights array is non-empty:

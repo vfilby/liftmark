@@ -14,6 +14,10 @@ Export all completed workout sessions as a single JSON file. Returns the file UR
 
 Export a single workout session as a JSON file. Returns the file URI of the written file.
 
+### `exportPlanAsMarkdown(plan): Promise<string>`
+
+Export a workout plan's original markdown source as a `.md` file. Returns the file URI of the written file. Throws if `plan.sourceMarkdown` is null or undefined.
+
 ### `buildSessionFileName(name, date): string`
 
 Build a sanitized filename from a workout name and date string.
@@ -54,6 +58,7 @@ Internal database IDs and foreign keys are stripped from the output.
 
 - Bulk export: `liftmark_workouts_{timestamp}.json`
 - Single export: `workout-{sanitized-name}-{date}.json`
+- Plan markdown export: `plan-{sanitized-name}.md`
 
 ### Name Sanitization
 
@@ -77,4 +82,5 @@ All exported files are written to the app's cache directory.
 ## Error Handling
 
 - Throws `ExportError("No completed workouts to export")` when `exportSessionsAsJson()` is called with no completed sessions available.
+- Throws `ExportError("No markdown source available")` when `exportPlanAsMarkdown()` is called and `plan.sourceMarkdown` is null or undefined.
 - File system errors propagate as exceptions.

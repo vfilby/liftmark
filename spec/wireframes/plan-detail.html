@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Detail — Wireframe</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header { text-align: center; margin-bottom: 24px; }
+  .page-title { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: var(--textSecondary); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex; gap: 12px; justify-content: center; margin-bottom: 32px;
+    align-items: center; position: sticky; top: 0; z-index: 100;
+    background: var(--pageBg); padding: 12px 0; border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Gallery ── */
+  .gallery { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; }
+  .example { display: flex; flex-direction: column; align-items: center; }
+  .example-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center; }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 390px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px; --spacingSM: 8px; --spacingMD: 12px; --spacingLG: 16px; --spacingXL: 20px;
+    --radiusSM: 8px; --radiusMD: 12px;
+    --blue: #007aff; --green: #34c759; --yellow: #ff9f0a; --red: #ff3b30;
+    --orange: #FF9500; --purple: #af52de;
+    --grey1: #8e8e93; --grey2: #aeaeb2; --grey3: #c7c7cc; --grey4: #d1d1d6;
+    --grey5: #e5e5ea; --grey6: #f2f2f7;
+    --cardBg: #fff; --pageBg: #e8e8ed; --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e; --textSecondary: #8e8e93;
+    --deviceBorder: #bbb; --notchBg: #1c1c1e;
+    --inputBg: #fff; --inputText: #1c1c1e;
+    --annoColor: #9b59b6; --annoBg: rgba(155,89,182,.08); --annoBorder: rgba(155,89,182,.2);
+    --warmup: #FF9500; --cooldown: #5AC8FA;
+    --warmupLighter: rgba(255,149,0,.12);
+    --cooldownLighter: rgba(90,200,250,.12);
+    --blueLighter: rgba(0,122,255,.12);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff; --green: #30d158; --yellow: #ffd60a; --red: #ff453a;
+    --orange: #FF9F0A; --purple: #bf5af2;
+    --grey1: #98989d; --grey2: #636366; --grey3: #48484a; --grey4: #3a3a3c;
+    --grey5: #2c2c2e; --grey6: #1c1c1e;
+    --cardBg: #2c2c2e; --pageBg: #000; --screenBg: #000;
+    --textPrimary: #f5f5f7; --textSecondary: #98989d;
+    --deviceBorder: #48484a; --notchBg: #000;
+    --inputBg: #3a3a3c; --inputText: #f5f5f7;
+    --annoColor: #bb86fc; --annoBg: rgba(187,134,252,.12); --annoBorder: rgba(187,134,252,.25);
+    --warmup: #FF9F0A; --cooldown: #64D2FF;
+    --warmupLighter: rgba(255,159,10,.15);
+    --cooldownLighter: rgba(100,210,255,.15);
+    --blueLighter: rgba(10,132,255,.15);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label, :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label, :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── Device Frame ── */
+  .device {
+    width: 390px; background: var(--screenBg); border-radius: 44px;
+    border: 3px solid var(--deviceBorder); overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15); position: relative;
+  }
+  .device-notch {
+    width: 126px; height: 34px; background: var(--notchBg);
+    border-radius: 0 0 18px 18px; margin: 0 auto;
+  }
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 0; }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+
+  /* ── Nav Bar (matches history-detail) ── */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacingSM) var(--spacingLG);
+    min-height: 44px;
+  }
+  .nav-bar-left {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--blue); font-size: 17px; font-weight: 400;
+  }
+  .nav-bar-title {
+    font-size: 17px; font-weight: 600;
+    flex: 1; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 0 8px;
+  }
+  .btn-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; background: none; border: none;
+    color: var(--blue); cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════
+     Plan Detail specific styles
+     ══════════════════════════════════════════ */
+
+  /* Content wrapper (matches history-detail .detail-content) */
+  .detail-content {
+    padding: var(--spacingLG);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacingMD);
+  }
+
+  /* Plan header card */
+  .header-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG);
+  }
+  .plan-header-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: var(--spacingSM);
+  }
+  .plan-name {
+    font-size: 22px; font-weight: 700; flex: 1; margin-right: 12px;
+  }
+  .btn-favorite {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+  }
+  .plan-description {
+    font-size: 15px; color: var(--textSecondary); margin-bottom: var(--spacingMD);
+    line-height: 1.4;
+  }
+
+  /* Tags (matches plans.html .tag-pill) */
+  .plan-tags {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--spacingLG);
+  }
+  .tag-pill {
+    font-size: 11px; font-weight: 600; color: var(--blue);
+    background: rgba(0,122,255,.1); padding: 2px 8px; border-radius: 10px;
+    text-transform: lowercase;
+  }
+
+  /* Stats grid (matches history-detail .stats-grid) */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--spacingSM);
+  }
+  .stat-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG) var(--spacingSM);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-value {
+    font-size: 22px; font-weight: 700; color: var(--blue);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 13px; color: var(--textSecondary); font-weight: 500;
+  }
+
+  /* Reprocess button */
+  .btn-reprocess {
+    width: 100%; padding: 12px var(--spacingLG);
+    background: var(--cardBg); border: 1px solid var(--grey4); border-radius: var(--radiusSM);
+    font-size: 14px; font-weight: 500; color: var(--textSecondary);
+    cursor: pointer; text-align: center;
+  }
+
+  /* Exercises heading (matches history-detail) */
+  .exercises-heading {
+    font-size: 16px; font-weight: 600; color: var(--textSecondary);
+    margin-bottom: var(--spacingSM);
+  }
+
+  /* Section dividers (warmup/cooldown) */
+  .workout-section-header {
+    display: flex; align-items: center;
+    margin: var(--spacingMD) 0; padding: 0 4px;
+  }
+  .workout-section-line { flex: 1; height: 1px; }
+  .workout-section-text {
+    padding: 0 12px; font-size: 14px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  /* Exercise card (matches history-detail .exercise-card) */
+  .exercise-card {
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: var(--spacingLG);
+    margin-bottom: var(--spacingMD);
+  }
+  .exercise-header {
+    display: flex; gap: var(--spacingMD); margin-bottom: var(--spacingMD);
+  }
+  .exercise-number {
+    font-size: 16px; font-weight: 700; color: var(--blue);
+    min-width: 20px;
+  }
+  .exercise-number.warmup { color: var(--warmup); }
+  .exercise-number.cooldown { color: var(--cooldown); }
+  .exercise-info { flex: 1; }
+  .exercise-name {
+    font-size: 16px; font-weight: 600;
+  }
+  .exercise-equipment {
+    font-size: 13px; color: var(--textSecondary); margin-top: 2px;
+  }
+  .exercise-notes {
+    font-size: 13px; font-style: italic; color: var(--grey1);
+    margin-top: 2px; line-height: 1.5;
+  }
+
+  /* Set rows (matches history-detail) */
+  .sets-container {
+    margin-left: 32px;
+  }
+  .set-row {
+    display: flex; align-items: center; gap: var(--spacingMD);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .set-row:last-child { border-bottom: none; }
+  .set-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .set-badge.target {
+    background: var(--blueLighter); color: var(--blue);
+  }
+  .set-badge.warmup {
+    background: var(--warmupLighter); color: var(--warmup);
+  }
+  .set-badge.cooldown {
+    background: var(--cooldownLighter); color: var(--cooldown);
+  }
+  .set-result {
+    font-size: 15px; color: var(--textSecondary);
+  }
+
+  /* Inline set badges (drop, per side, tempo) */
+  .set-badge-inline {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 1px 6px; border-radius: 4px; margin-left: 4px; vertical-align: middle;
+  }
+  .set-badge-drop { background: rgba(255,59,48,.1); color: var(--red); }
+  .set-badge-perside { background: rgba(0,122,255,.1); color: var(--blue); }
+
+  /* Superset (matches history-detail .superset-badge) */
+  .superset-badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    color: var(--purple); background: rgba(175,82,222,.1);
+    padding: 2px 8px; border-radius: 4px;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .superset-names {
+    font-size: 13px; color: var(--textSecondary); margin-top: 2px;
+  }
+  .set-exercise-label {
+    font-size: 12px; color: var(--textSecondary); margin-bottom: 2px;
+  }
+
+  /* Start Workout footer (pinned) */
+  .start-footer {
+    padding: var(--spacingLG); padding-bottom: 32px;
+    background: var(--screenBg); border-top: 1px solid var(--grey5);
+  }
+  .btn-start {
+    width: 100%; height: 50px;
+    background: var(--blue); color: #fff;
+    font-size: 17px; font-weight: 600;
+    border: none; border-radius: var(--radiusMD); cursor: pointer;
+  }
+
+  /* ── Tab Bar (matches history-detail) ── */
+  .tab-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0 20px;
+    background: var(--cardBg);
+    border-top: 1px solid var(--grey5);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--grey1);
+    text-decoration: none;
+  }
+  .tab-item.active { color: var(--blue); }
+  .tab-item svg { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Plan Detail Screen</div>
+  <div class="page-subtitle">Wireframe reference — workout plan template with exercises, sets, and sections</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. PLAN DETAIL — FULL VIEW                                     ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Plan Detail</div>
+  <div class="example-desc">Full plan view: header card with name, favorite, description, tags, meta stats; exercises with target sets grouped by section; pinned Start Workout button.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- ── Nav Bar (matches history-detail) ── -->
+      <div class="anno" style="display:contents">
+        <div class="nav-bar">
+          <div class="nav-bar-left">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <span style="font-size:17px;">Plans</span>
+          </div>
+          <div class="nav-bar-title">Push Day</div>
+          <button class="btn-icon" title="Share">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </button>
+        </div>
+        <div style="position:relative; padding: 0 var(--spacingLG);">
+          <span class="anno-label" style="top:-2px; right:16px;">share-plan-button</span>
+        </div>
+      </div>
+
+      <div class="detail-content">
+
+        <!-- ── Plan Header Card ── -->
+        <div class="header-card">
+          <div class="plan-header-top">
+            <div class="plan-name">Push Day</div>
+            <button class="btn-favorite" title="Favorite">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="var(--yellow)"/></svg>
+            </button>
+          </div>
+          <div style="position:relative;">
+            <span class="anno-label" style="top:-38px; right:52px;">favorite-button-detail</span>
+          </div>
+
+          <div class="plan-description">Heavy compound pushing day — bench, OHP, accessories.</div>
+
+          <div class="plan-tags">
+            <span class="tag-pill">strength</span>
+            <span class="tag-pill">upper</span>
+            <span class="tag-pill">push</span>
+          </div>
+          <div style="padding:0 0 4px 0">
+            <span class="section-label">tags</span>
+          </div>
+        </div>
+
+        <!-- ── Stats Grid (matches history-detail) ── -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">7</div>
+            <div class="stat-label">Exercises</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">24</div>
+            <div class="stat-label">Sets</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">LBS</div>
+            <div class="stat-label">Units</div>
+          </div>
+        </div>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">stats grid (exercises, sets, units)</span>
+        </div>
+
+        <!-- ── Reprocess ── -->
+        <button class="btn-reprocess">Reprocess from Markdown</button>
+        <div style="padding:0 0 0 4px">
+          <span class="section-label">reprocess button (if sourceMarkdown exists)</span>
+        </div>
+
+        <!-- ── Exercises ── -->
+        <div>
+          <div class="exercises-heading">Exercises</div>
+
+          <!-- ── Warmup Section ── -->
+          <div class="workout-section-header">
+            <div class="workout-section-line" style="background:var(--warmup);"></div>
+            <div class="workout-section-text" style="color:var(--warmup);">Warm Up</div>
+            <div class="workout-section-line" style="background:var(--warmup);"></div>
+          </div>
+          <div style="padding:0 0 4px 4px">
+            <span class="section-label">section header (warmup color)</span>
+          </div>
+
+          <!-- Exercise 1: Warm Up Arms -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number warmup">1</div>
+              <div class="exercise-info">
+                <div class="exercise-name">Warm Up Arms</div>
+                <div class="exercise-notes">Light band work, get blood flowing</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge warmup">1</div>
+                <div class="set-result">60s</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge warmup">2</div>
+                <div class="set-result">60s</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Main Section ── -->
+          <div class="workout-section-header">
+            <div class="workout-section-line" style="background:var(--blue);"></div>
+            <div class="workout-section-text" style="color:var(--blue);">Main</div>
+            <div class="workout-section-line" style="background:var(--blue);"></div>
+          </div>
+
+          <!-- Exercise 2: Bench Press -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number">2</div>
+              <div class="exercise-info">
+                <div class="exercise-name">Barbell Bench Press</div>
+                <div class="exercise-equipment">Barbell</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge target">1</div>
+                <div class="set-result">135 <span class="unit">lbs</span> × 8 reps</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">2</div>
+                <div class="set-result">185 <span class="unit">lbs</span> × 5 reps · RPE 7</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">3</div>
+                <div class="set-result">225 <span class="unit">lbs</span> × 5 reps · RPE 8</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">4</div>
+                <div class="set-result">255 <span class="unit">lbs</span> × 3 reps · RPE 9</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">5</div>
+                <div class="set-result">255 <span class="unit">lbs</span> × 3 reps · RPE 9 · Rest 180s</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 0 4px 4px">
+            <span class="section-label">set format: weight × reps · RPE · Rest</span>
+          </div>
+
+          <!-- Exercise 3: Overhead Press -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number">3</div>
+              <div class="exercise-info">
+                <div class="exercise-name">Overhead Press</div>
+                <div class="exercise-equipment">Barbell</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge target">1</div>
+                <div class="set-result">95 <span class="unit">lbs</span> × 8 reps</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">2</div>
+                <div class="set-result">115 <span class="unit">lbs</span> × 6 reps</div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">3</div>
+                <div class="set-result">135 <span class="unit">lbs</span> × 5 reps · RPE 8</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exercise 4: Superset — Triceps -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number">4</div>
+              <div class="exercise-info">
+                <span class="superset-badge">Superset</span>
+                <div class="exercise-name">Triceps</div>
+                <div class="superset-names">Tricep Pushdown + Overhead Extension</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge target">1</div>
+                <div>
+                  <div class="set-exercise-label">Tricep Pushdown</div>
+                  <div class="set-result">60 <span class="unit">lbs</span> × 12 reps</div>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">1</div>
+                <div>
+                  <div class="set-exercise-label">Overhead Extension</div>
+                  <div class="set-result">50 <span class="unit">lbs</span> × 12 reps</div>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">2</div>
+                <div>
+                  <div class="set-exercise-label">Tricep Pushdown</div>
+                  <div class="set-result">60 <span class="unit">lbs</span> × 12 reps</div>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">2</div>
+                <div>
+                  <div class="set-exercise-label">Overhead Extension</div>
+                  <div class="set-result">50 <span class="unit">lbs</span> × 12 reps</div>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">3</div>
+                <div>
+                  <div class="set-exercise-label">Tricep Pushdown</div>
+                  <div class="set-result">60 <span class="unit">lbs</span> × 10 reps</div>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">3</div>
+                <div>
+                  <div class="set-exercise-label">Overhead Extension</div>
+                  <div class="set-result">50 <span class="unit">lbs</span> × 10 reps</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 0 4px 4px">
+            <span class="section-label">superset: interleaved sets with exercise labels</span>
+          </div>
+
+          <!-- Exercise 5: Lateral Raise with special attributes -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number">5</div>
+              <div class="exercise-info">
+                <div class="exercise-name">Lateral Raise</div>
+                <div class="exercise-equipment">Dumbbell</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge target">1</div>
+                <div class="set-result">25 <span class="unit">lbs</span> × 15 reps · Tempo 3-0-1-0 <span class="set-badge-inline set-badge-perside">/side</span></div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">2</div>
+                <div class="set-result">25 <span class="unit">lbs</span> × 12 reps · Tempo 3-0-1-0 <span class="set-badge-inline set-badge-perside">/side</span></div>
+              </div>
+              <div class="set-row">
+                <div class="set-badge target">3</div>
+                <div class="set-result">30 <span class="unit">lbs</span> × 10 reps <span class="set-badge-inline set-badge-drop">Drop</span> <span class="set-badge-inline set-badge-perside">/side</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 0 4px 4px">
+            <span class="section-label">set badges: Drop, /side, Tempo</span>
+          </div>
+
+          <!-- ── Cooldown Section ── -->
+          <div class="workout-section-header">
+            <div class="workout-section-line" style="background:var(--cooldown);"></div>
+            <div class="workout-section-text" style="color:var(--cooldown);">Cool Down</div>
+            <div class="workout-section-line" style="background:var(--cooldown);"></div>
+          </div>
+
+          <!-- Exercise 6: Stretching -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <div class="exercise-number cooldown">6</div>
+              <div class="exercise-info">
+                <div class="exercise-name">Upper Body Stretch</div>
+                <div class="exercise-notes">Hold each stretch for 30 seconds</div>
+              </div>
+            </div>
+            <div class="sets-container">
+              <div class="set-row">
+                <div class="set-badge cooldown">1</div>
+                <div class="set-result">120s</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 0 4px 4px">
+            <span class="section-label">cooldown section (blue accent)</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ── Start Workout Footer (pinned) ── -->
+      <div class="start-footer">
+        <button class="btn-start">Start Workout</button>
+      </div>
+      <div style="padding:0 var(--spacingLG) 4px">
+        <span class="section-label">start-workout-button (always visible, pinned to bottom)</span>
+      </div>
+
+      <!-- ── Tab Bar ── -->
+      <div class="tab-bar">
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M4 11.4L12 4l8 7.4"/><path d="M6 10v9a1 1 0 001 1h10a1 1 0 001-1v-9"/></svg>
+          <span>LiftMark</span>
+        </div>
+        <div class="tab-item active">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 8h8l4 4v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><path d="M12 8v4h4"/></svg>
+          <span>Plans</span>
+        </div>
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="10" width="3" height="4" rx="0.5"/><rect x="5" y="7" width="3" height="10" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="7" width="3" height="10" rx="1"/><rect x="20" y="10" width="3" height="4" rx="0.5"/></svg>
+          <span>Workouts</span>
+        </div>
+        <div class="tab-item">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          <span>Settings</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+  }
+
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>

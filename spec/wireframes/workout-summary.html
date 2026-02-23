@@ -334,6 +334,22 @@
     font-size: 12px; color: var(--textSecondary);
   }
 
+  /* Nav bar */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacingSM) var(--spacingLG);
+  }
+  .nav-bar-title {
+    font-size: 17px; font-weight: 600;
+  }
+  .btn-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; background: none; border: none;
+    color: var(--blue); cursor: pointer;
+  }
+
   /* Done button */
   .btn-done {
     width: 100%;
@@ -397,6 +413,23 @@
   <div class="device">
     <div class="device-notch"></div>
     <div class="screen screen-pad-bottom">
+
+      <!-- ── Nav Bar with Share ── -->
+      <div class="anno" style="display:contents">
+        <div class="nav-bar">
+          <div class="nav-bar-title">Summary</div>
+          <button class="btn-icon" title="Share">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </button>
+        </div>
+        <div style="position:relative; padding: 0 var(--spacingLG);">
+          <span class="anno-label" style="top:-2px; right:16px;">share-session-button</span>
+        </div>
+      </div>
 
       <div class="summary-content">
 

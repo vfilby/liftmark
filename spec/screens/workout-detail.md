@@ -7,6 +7,7 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 `/workout/[id]` — Dynamic route. Accessed by tapping a plan card from Home or Workouts screens.
 
 ## Layout
+- **Header**: Native stack header with plan name as title, share button (share icon) in headerRight
 - **Body**: WorkoutDetailView component (ScrollView) containing:
   1. **Header card**: Plan name, favorite button, description, tags, meta stats (exercises count, total sets, units), Reprocess button
   2. **Exercises section**: Grouped by sections (warmup/cooldown/default) with exercise cards showing set details
@@ -20,18 +21,16 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 |---------|--------|------|
 | Loading state | `workout-detail-loading` | View |
 | Detail view container | `workout-detail-view` | ScrollView |
+| Share button (header) | `share-plan-button` | TouchableOpacity |
 | Favorite button | `favorite-button-detail` | TouchableOpacity |
 | Start Workout button | `start-workout-button` | TouchableOpacity |
 | Exercise card (single) | `exercise-{exercise.id}` | View |
 | Superset card | `superset-{globalIndex}` | View |
 | Set row | `set-{set.id}` | View |
-
-## Data Dependencies
-- **workoutPlanStore**: `selectedPlan`, `loadPlan`, `reprocessPlan`, `isLoading`, `error`, `clearError`
-- **sessionStore**: `startWorkout`, `checkForActiveSession`
-- **repository**: `toggleFavoritePlan`
+| YouTube link | `youtube-link-{exerciseName}` | Link |
 
 ## User Interactions
+- **Tap share button (header)** → exports plan's original markdown (`sourceMarkdown`) as `.md` file via `exportPlanAsMarkdown` → share sheet
 - **Tap favorite heart** → toggles favorite, reloads plan
 - **Tap "Start Workout"** → checks for active session → starts workout → navigates to `/workout/active`
   - If active session exists: alert with "Resume Workout" option
@@ -43,13 +42,10 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 - `/workout/active` — after starting workout or resuming existing
 - Back (via router.back()) — on error
 
-## State
-- `isStarting` — disables Start button during workout creation
-- `isReprocessing` — disables Reprocess button during re-parse
-
 ## Error/Empty States
 - **Plan not loaded**: LoadingView
 - **Load error**: Alert with error message, navigates back on dismiss
+- **Export failure**: Alert if `sourceMarkdown` is not available (e.g., plan was not imported from markdown)
 
 ## WorkoutDetailView Component Details
 
