@@ -44,15 +44,15 @@ spec/
                             targets, entitlements, capabilities, App Store
                             deployment, and build settings. Any iOS implementation
                             MUST follow this spec to be deployable.
-  integration.md         -- CRITICAL: How layers connect end-to-end. Persistence
-                            lifecycle, data flow through stores, navigation wiring,
-                            import/export pipeline. Components alone are not
-                            sufficient — they must be connected as described here.
   screens/               -- Per-screen specs (layout, elements, interactions).
   flows/                 -- Per-flow specs (user journeys, step-by-step).
-  services/              -- Per-service specs (APIs, behavior, dependencies).
-  data/                  -- Data portability contracts (DB schema, JSON exchange,
-                            migration strategy).
+  services/              -- Per-service specs (AI generation, backup, CloudKit sync,
+                            exercise history, export, file import, HealthKit,
+                            Live Activities, LMWF parser, logger, plate calculator,
+                            secure storage, workout highlights, workout history).
+                            Note: Audio service is explicitly out of scope.
+  data/                  -- Data portability contracts (import/export schema,
+                            common exercises list).
 ```
 
 ## How Implementations Should Use This Spec
