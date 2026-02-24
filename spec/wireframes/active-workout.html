@@ -388,6 +388,31 @@
     font-size: 15px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
   }
 
+  /* ── Superset card ── */
+  .superset-header {
+    display: flex; align-items: flex-start; gap: var(--spacingSM);
+    padding: var(--spacingMD) var(--spacingLG);
+  }
+  .superset-icon {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    background: #9b59b6;
+  }
+  .superset-badge {
+    font-size: 10px; font-weight: 700; color: #fff;
+    background: #9b59b6; padding: 2px 6px; border-radius: 99px;
+    display: inline-block; margin-bottom: 2px;
+  }
+  .superset-title { font-size: 17px; font-weight: 600; }
+  .superset-subtitle { font-size: 13px; color: var(--grey1); margin-top: 2px; }
+  .superset-exercise-label {
+    font-size: 11px; font-weight: 600; color: var(--grey1);
+    margin-bottom: 2px;
+  }
+  .set-values-group { display: flex; flex-direction: column; flex: 1; }
+  .superset-collapsed-summary { font-size: 13px; color: var(--grey1); margin-left: auto; white-space: nowrap; }
+
   /* ── Annotations ── */
   .anno { position: relative; }
   .anno-label {
@@ -1102,6 +1127,184 @@
                 <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
               </div>
             </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  7. SUPERSET CARD — INTERLEAVED SETS                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Superset Card</div>
+  <div class="example-desc">Superset exercises are grouped into a single combined card. Sets are interleaved round-robin across children, with exercise name labels identifying each set.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left"><button class="btn-text">&#9646;&#9646; Pause</button></div>
+        <div class="header-center">Push Day A</div>
+        <div class="header-right"><button class="btn-finish">+ Finish</button></div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-section">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 35%"></div>
+        </div>
+        <div class="progress-label">5 / 14 sets completed</div>
+      </div>
+
+      <div class="exercise-list">
+
+        <!-- Completed exercise above superset -->
+        <div>
+          <span class="section-label">Completed exercise before superset</span>
+          <div class="card">
+            <div class="card-header" style="cursor:pointer">
+              <div class="badge badge-green">1</div>
+              <div class="card-title">Bench Press</div>
+              <span class="card-summary">3/3 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Superset card: active/expanded ── -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Superset — single combined card, interleaved sets</span>
+          <div class="card">
+            <!-- Superset header -->
+            <div class="superset-header">
+              <div class="superset-icon">&#x21C4;</div>
+              <div>
+                <div class="superset-badge">SUPERSET</div>
+                <div class="superset-title">Superset: Triceps</div>
+                <div class="superset-subtitle">2. Tricep Pushdown + 3. Overhead Tricep Extension</div>
+              </div>
+            </div>
+
+            <div class="set-list">
+              <!-- Round 1: Tricep Pushdown (completed) -->
+              <div class="set-row set-completed">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="set-values-group">
+                  <span class="superset-exercise-label">Tricep Pushdown</span>
+                  <span class="set-values">60 <span class="unit">lbs</span> &times; 15</span>
+                </div>
+              </div>
+
+              <!-- Round 1: Overhead Extension (completed) -->
+              <div class="set-row set-completed">
+                <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="set-values-group">
+                  <span class="superset-exercise-label">Overhead Tricep Extension</span>
+                  <span class="set-values">50 <span class="unit">lbs</span> &times; 15</span>
+                </div>
+              </div>
+              <span class="anno-inline">Round 1 complete: A set 1, B set 1</span>
+
+              <div class="rest-placeholder">Rest 30s</div>
+
+              <!-- Round 2: Tricep Pushdown (current) -->
+              <div class="set-current">
+                <div style="margin-bottom: 4px;">
+                  <span class="superset-exercise-label">Tricep Pushdown</span>
+                </div>
+                <div class="set-current-top">
+                  <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="input-group">
+                    <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                    <input class="input-field" value="60" readonly>
+                  </div>
+                  <span class="input-x">&times;</span>
+                  <div class="input-group">
+                    <span class="input-label">Reps</span>
+                    <input class="input-field" value="15" readonly>
+                  </div>
+                  <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+                </div>
+                <button class="btn-complete"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg> Complete Set</button>
+              </div>
+              <span class="anno-inline">Round 2: A set 2 is current</span>
+
+              <!-- Round 2: Overhead Extension (pending) -->
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <div class="set-values-group">
+                  <span class="superset-exercise-label">Overhead Tricep Extension</span>
+                  <span class="set-values">50 <span class="unit">lbs</span> &times; 12</span>
+                </div>
+              </div>
+
+              <div class="rest-placeholder">Rest 30s</div>
+
+              <!-- Round 3: Tricep Pushdown (pending) -->
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <div class="set-values-group">
+                  <span class="superset-exercise-label">Tricep Pushdown</span>
+                  <span class="set-values">60 <span class="unit">lbs</span> &times; 12</span>
+                </div>
+              </div>
+
+              <!-- Round 3: Overhead Extension (pending) -->
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <div class="set-values-group">
+                  <span class="superset-exercise-label">Overhead Tricep Extension</span>
+                  <span class="set-values">50 <span class="unit">lbs</span> &times; 10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">superset-card-{parentId} &middot; single card, interleaved round-robin</span>
+          </div>
+        </div>
+
+        <!-- ── Superset card: collapsed ── -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Superset — collapsed state</span>
+          <div class="card">
+            <div class="superset-header" style="cursor:pointer; padding-bottom: var(--spacingMD);">
+              <div class="superset-icon">&#x21C4;</div>
+              <div style="flex:1">
+                <div class="superset-badge">SUPERSET</div>
+                <div class="superset-title">Superset: Arms</div>
+                <div class="superset-subtitle">4. Bicep Curl + 5. Hammer Curl</div>
+              </div>
+              <span class="superset-collapsed-summary">6/6 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">Completed superset — collapsed, purple icon always, tap to expand</span>
+          </div>
+        </div>
+
+        <!-- Regular exercise after superset -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Regular exercise after superset — numbered #6 (superset children were #4, #5)</span>
+          <div class="card" style="opacity: 0.6;">
+            <div class="card-header" style="cursor:pointer">
+              <div class="badge badge-grey">6</div>
+              <div class="card-title" style="color: var(--grey1);">Lateral Raises</div>
+              <span class="card-summary">0/3 sets</span>
+              <span class="chevron">&#x203A;</span>
+            </div>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">Superset parent skipped in numbering — children counted as #4 &amp; #5</span>
           </div>
         </div>
 

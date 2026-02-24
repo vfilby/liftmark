@@ -13,8 +13,12 @@ enum YAMLValue {
     case null
 
     var stringValue: String? {
-        if case .string(let s) = self { return s }
-        return nil
+        switch self {
+        case .string(let s): return s
+        case .int(let i): return String(i)
+        case .bool(let b): return b ? "true" : "false"
+        default: return nil
+        }
     }
 
     var intValue: Int? {

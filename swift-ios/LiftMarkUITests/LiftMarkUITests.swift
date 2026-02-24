@@ -25,6 +25,16 @@ final class LiftMarkUITests: XCTestCase {
         let fixturesPath = (projectRoot as NSString).appendingPathComponent("e2e-spec/fixtures")
 
         runner = TestSpecRunner(app: app, scenariosPath: scenariosPath, fixturesPath: fixturesPath)
+
+        // Map tab identifiers to their tab bar labels for SwiftUI tab lookup.
+        // SwiftUI's .accessibilityIdentifier on tab content only works for
+        // the active tab; inactive tabs must be found by their label text.
+        runner.adapter.tabIdToLabel = [
+            "tab-home": "LiftMark",
+            "tab-workouts": "Plans",
+            "tab-history": "Workouts",
+            "tab-settings": "Settings"
+        ]
     }
 
     // MARK: - Scenario Tests
@@ -76,4 +86,13 @@ final class LiftMarkUITests: XCTestCase {
     func testDetailSettings() throws {
         runner.runScenario(named: "detail-settings")
     }
+
+    func testUxImprovements() throws {
+        runner.runScenario(named: "ux-improvements")
+    }
+
+    func testDatabaseBackup() throws {
+        runner.runScenario(named: "database-backup")
+    }
+
 }

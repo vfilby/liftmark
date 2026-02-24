@@ -22,12 +22,10 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 |---------|--------|------|
 | Screen container | `history-detail-screen` | View |
 | Detail view container | `history-detail-view` | ScrollView |
-
-## Data Dependencies
-- **sessionRepository**: `getWorkoutSessionById()`, `deleteSession()`
-- **workoutExportService**: `exportSingleSessionAsJson()`
-- **exerciseHistoryRepository**: `getExerciseHistory()`, `getExerciseSessionHistory()`, `getExerciseProgressMetrics()`
-- **expo-sharing**: `shareAsync()`
+| Trend toggle | `trend-toggle-{exerciseName}` | Button |
+| Exercise card | `exercise-card-{exerciseName}` | View |
+| Delete button | `delete-session-button` | Button |
+| Share button | `share-session-button` | Button |
 
 ## User Interactions
 - **Tap share button (header)** → exports single session as JSON → share sheet
@@ -38,19 +36,10 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 ## Navigation
 - Back — via stack navigation
 
-## State
-- `session` — loaded WorkoutSession object
-- `isLoading` — initial load state
-- `expandedExercises` — Set of exercise names with expanded charts
-- `historyData` — Map of exercise name to history data points (lazy loaded)
-- `loadingHistory` — Set of exercise names currently loading
-- `selectedMetrics` — Map of exercise name to selected chart metric
-- `bottomSheetExercise` — exercise name for bottom sheet (null = hidden)
-
 ## Error/Empty States
 - **Loading**: "Loading workout..." text
 - **Not found**: "Workout not found" error text
-- **No history for exercise**: "No History" disabled trend header
+- **No history for exercise**: "No History" disabled trend header (greyed out, no chevron)
 - **Export failure**: Alert with error message
 - **Delete failure**: Alert with error message
 
@@ -67,15 +56,43 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 
 ### Exercise Cards
 - Numbered exercises with name + optional equipment type
-- Supersets: group name + individual exercise names, interleaved sets
-- Each set: numbered badge (green check for completed, yellow dash for skipped) + weight x reps or "Skipped"
-- Trend header: "Show trends" / "No History" / "Loading..."
-- Expanded chart: ExerciseHistoryChart with metric selector
-- "Details" button opens bottom sheet
+- Supersets: purple SUPERSET capsule badge + group name + individual exercise names, interleaved sets
+- Each set: status badge (green ✓ for completed, yellow − for skipped) + weight x reps or "Skipped"
+
+### Exercise Trend (inline, per exercise)
+
+Each exercise card includes a collapsible trend section at the bottom:
+
+#### Collapsed State (default)
+- Tappable row with chart icon + "Show trends" label + trend direction arrow (↗ ↘ →) + chevron
+- Trend direction computed from comparing recent 3 sessions vs older 3 sessions (>2% change = trending)
+- Trend arrow color: green (↗ improving), red (↘ declining), grey (→ stable)
+
+#### Expanded State
+- **ExerciseHistoryChartView** — a line chart (Swift Charts) showing historical performance:
+  - **Metric picker** (segmented control): toggles between available metrics based on exercise type:
+    - Weighted exercises: Max Weight (default) | Volume | Reps
+    - Bodyweight exercises: Reps (default) | Volume
+    - Timed exercises: Time (default)
+  - **Line chart** (200pt height): LineMark + PointMark + AreaMark (gradient fill), catmull-rom interpolation, X-axis = dates, Y-axis = metric value (auto-scale, excludes zero)
+  - **Stats row** (shown when ≥2 data points): Current | Best | Change (% from first to latest, colored green/red)
+- **"Details" button** below chart → opens ExerciseHistoryBottomSheet for full session-by-session breakdown
+
+#### No History State
+- "No History" label, disabled/greyed styling, no chevron, not tappable
+
+### Data Source
+- `ExerciseHistoryRepository.getHistory(forExercise:)` returns `[ExerciseHistoryPoint]` with:
+  - `date`, `workoutName`, `maxWeight`, `avgReps`, `totalVolume`, `setsCount`, `avgTime`, `maxTime`, `unit`
+- One data point per completed session containing that exercise
+- Ordered by date descending
 
 ## ExerciseHistoryBottomSheet
-- Full-screen bottom sheet overlay with backdrop
-- Header: exercise name + close button
-- Summary stats card: Sessions | Max Weight | Avg Reps | Total Volume
-- Session history list (FlatList): date, workout name, volume, per-set breakdown with target/actual values
-- Loading/empty states
+- Full-screen bottom sheet (NavigationStack) with exercise name as title + "Done" button
+- **Summary stats card**: Sessions | Max Weight | Avg Reps | Total Volume (4-column grid)
+- **ExerciseHistoryChartView**: Same chart component as inline, but in the sheet context
+- **Session list**: Each row shows:
+  - Workout name + formatted date
+  - Stats: max weight (with unit), set count, volume
+  - Icon labels (scalemass, number, chart.bar)
+- Loading/empty states ("No history for this exercise" with chart icon)

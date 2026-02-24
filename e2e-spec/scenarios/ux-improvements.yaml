@@ -1,0 +1,501 @@
+name: "UX Improvements"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  # Wait for app to load
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  # Import the weighted test workout
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "ux-test-workout.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  - action: waitForText
+    text: "UX Test Workout"
+    timeout: 10000
+  # Also import the timed workout
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "ux-timed-workout.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  - action: waitForText
+    text: "UX Timed Test"
+    timeout: 10000
+
+tests:
+  # ── Req 2: Start Workout button always visible ──
+  - name: "start workout button visible on detail screen"
+    steps:
+      - action: tapText
+        text: "UX Test Workout"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: expect
+        target: "start-workout-button"
+        assertion: "toBeVisible"
+
+  # ── Req 5: YouTube link on workout detail screen ──
+  - name: "youtube link exists on workout detail screen"
+    steps:
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      # The fixture workout has "Bench Press" — check for its YouTube link
+      - action: waitFor
+        target: "youtube-link-Bench Press"
+        timeout: 5000
+      - action: expect
+        target: "youtube-link-Bench Press"
+        assertion: "toBeVisible"
+
+  # ── Req 5: YouTube link on active workout screen ──
+  - name: "youtube link exists on active workout screen"
+    steps:
+      - action: tap
+        target: "start-workout-button"
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      # The active exercise card should have a YouTube link
+      - action: waitFor
+        target: "youtube-link-Bench Press"
+        timeout: 5000
+      - action: expect
+        target: "youtube-link-Bench Press"
+        assertion: "toBeVisible"
+      # Clean up — finish/discard the workout
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard Workout?"
+            timeout: 3000
+          - action: tapText
+            text: "Discard"
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish Anyway"
+                timeout: 3000
+              - action: tapText
+                text: "Finish Anyway"
+            catch: []
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "workout-summary-done-button"
+            timeout: 3000
+          - action: tap
+            target: "workout-summary-done-button"
+        catch: []
+
+  # ── Req 6: Edit exercise sheet has form and markdown tabs ──
+  - name: "edit exercise sheet shows form and markdown tabs"
+    steps:
+      # Navigate to home, start the weighted workout
+      - action: tap
+        target: "tab-home"
+      - action: waitForText
+        text: "UX Test Workout"
+        timeout: 5000
+      - action: tapText
+        text: "UX Test Workout"
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: tap
+        target: "start-workout-button"
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "active-workout-screen"
+            timeout: 10000
+        catch:
+          - action: tapText
+            text: "Replace"
+          - action: waitFor
+            target: "active-workout-screen"
+            timeout: 10000
+      # Tap the edit (pencil) button on the first exercise card
+      - action: waitFor
+        target: "exercise-card-0"
+        timeout: 5000
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 3000
+      # Tap the pencil icon to open edit sheet
+      - action: tap
+        target: "edit-exercise-button-0"
+      # The edit exercise sheet should appear with the mode picker
+      - action: waitFor
+        target: "edit-exercise-mode-picker"
+        timeout: 5000
+      # Form tab should be visible by default
+      - action: waitFor
+        target: "edit-exercise-form"
+        timeout: 3000
+      # Exercise name field should show "Bench Press"
+      - action: waitFor
+        target: "edit-exercise-name"
+        timeout: 3000
+      # Add Set button should exist
+      - action: waitFor
+        target: "edit-exercise-add-set"
+        timeout: 3000
+      # Switch to Markdown tab
+      - action: tapText
+        text: "Markdown"
+      # Markdown editor should appear
+      - action: waitFor
+        target: "edit-exercise-markdown-view"
+        timeout: 5000
+      # Switch back to Form
+      - action: tapText
+        text: "Form"
+      - action: waitFor
+        target: "edit-exercise-form"
+        timeout: 3000
+      # Cancel to close
+      - action: tap
+        target: "edit-exercise-cancel"
+      # Back on active workout
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 5000
+      # Clean up — finish/discard the workout
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard Workout?"
+            timeout: 3000
+          - action: tapText
+            text: "Discard"
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish Anyway"
+                timeout: 3000
+              - action: tapText
+                text: "Finish Anyway"
+            catch: []
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "workout-summary-done-button"
+            timeout: 3000
+          - action: tap
+            target: "workout-summary-done-button"
+        catch: []
+
+  # ── Req 4: Correct units — weighted exercise shows Weight label ──
+  - name: "weighted exercise shows weight label in active workout"
+    steps:
+      # Start the weighted workout
+      - action: tap
+        target: "start-workout-button"
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      # Weighted exercise should show "Weight" label
+      - action: waitForText
+        text: "Weight"
+        timeout: 5000
+      # And "Reps" label
+      - action: waitForText
+        text: "Reps"
+        timeout: 5000
+      # Finish this workout to clean up
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard Workout?"
+            timeout: 3000
+          - action: tapText
+            text: "Discard"
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish Anyway"
+                timeout: 3000
+              - action: tapText
+                text: "Finish Anyway"
+            catch: []
+      # Dismiss summary if we got one
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "workout-summary-done-button"
+            timeout: 3000
+          - action: tap
+            target: "workout-summary-done-button"
+        catch: []
+
+  # ── Req 4: Correct units — timed exercise shows Time label, not Weight ──
+  - name: "timed exercise shows time label not weight"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: waitForText
+        text: "UX Timed Test"
+        timeout: 5000
+      - action: tapText
+        text: "UX Timed Test"
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: tap
+        target: "start-workout-button"
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      # Plank is timed — should show "Time" label
+      - action: waitForText
+        text: "Time"
+        timeout: 5000
+      # Exercise timer start button should appear for timed sets
+      - action: waitFor
+        target: "exercise-timer-start-button"
+        timeout: 5000
+      # Timed sets should NOT show the checkmark complete button (Issue 1)
+      - action: expect
+        target: "set-complete-button"
+        assertion: "notToExist"
+      # Skip button should still be visible for timed sets
+      - action: expect
+        target: "set-skip-button"
+        assertion: "toExist"
+
+  # ── Req 3: Timer start button shows, Done appears after starting ──
+  - name: "exercise timer done button appears after starting timer"
+    steps:
+      # Timer start button should be visible from previous test
+      - action: tap
+        target: "exercise-timer-start-button"
+      # After starting, Done button should appear (elapsed > 0)
+      - action: waitFor
+        target: "exercise-timer-done-button"
+        timeout: 5000
+
+  # ── Req 3: Completing via timer Done logs elapsed time ──
+  - name: "completing timed set via done button logs and resets timer"
+    steps:
+      # Wait a moment so elapsed > 0
+      - action: delay
+        ms: 2000
+      # Tap Done to complete the set
+      - action: tap
+        target: "exercise-timer-done-button"
+      # After completion, the timer should reset — a new start button
+      # appears for the next timed set (Plank set 2)
+      - action: waitFor
+        target: "exercise-timer-start-button"
+        timeout: 5000
+      # The completed set should show actual time
+      # Progress should advance
+      - action: waitForText
+        text: "1 / 4"
+        timeout: 5000
+
+  # ── Req 4: Completing timed sets advances to next timed exercise ──
+  - name: "completing timed sets advances to next exercise"
+    steps:
+      # Complete remaining Plank set via timer to advance to Wall Sit
+      - action: tap
+        target: "exercise-timer-start-button"
+      - action: delay
+        ms: 1000
+      - action: waitFor
+        target: "exercise-timer-done-button"
+        timeout: 3000
+      - action: tap
+        target: "exercise-timer-done-button"
+      # Now Wall Sit should be the active exercise (also timed)
+      - action: waitForText
+        text: "Wall Sit"
+        timeout: 5000
+      # Wall Sit timer should also show "Time" label
+      - action: waitForText
+        text: "Time"
+        timeout: 5000
+      # Finish this timed workout to clean up
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Discard Workout?"
+            timeout: 3000
+          - action: tapText
+            text: "Discard"
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Finish Anyway"
+                timeout: 3000
+              - action: tapText
+                text: "Finish Anyway"
+            catch: []
+      # Dismiss summary if shown
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "workout-summary-done-button"
+            timeout: 3000
+          - action: tap
+            target: "workout-summary-done-button"
+        catch: []
+
+  # ── Req 1: Skip-heavy discard dialog ──
+  - name: "skip heavy workout shows discard dialog"
+    steps:
+      # Navigate to home, start a fresh weighted workout
+      - action: tap
+        target: "tab-home"
+      - action: waitForText
+        text: "UX Test Workout"
+        timeout: 5000
+      - action: tapText
+        text: "UX Test Workout"
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: tap
+        target: "start-workout-button"
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "active-workout-screen"
+            timeout: 10000
+        catch:
+          - action: tapText
+            text: "Replace"
+          - action: waitFor
+            target: "active-workout-screen"
+            timeout: 10000
+      # Without completing any sets, tap Finish
+      # 0 of 4 completed → >50% skipped → should trigger discard dialog
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: waitForText
+        text: "Discard Workout?"
+        timeout: 5000
+      # Verify all three options exist
+      - action: waitForText
+        text: "Log Anyway"
+        timeout: 3000
+      - action: waitForText
+        text: "Discard"
+        timeout: 3000
+      - action: waitForText
+        text: "Cancel"
+        timeout: 3000
+
+  # ── Req 1 continued: Discard navigates back (not to summary) ──
+  - name: "discard navigates back not to summary"
+    steps:
+      - action: tapText
+        text: "Discard"
+      # Should be back at workout detail — start button visible, NOT summary
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 10000
+
+  # ── Superset grouping on workout detail screen ──
+  - name: "superset exercises grouped in single card on detail"
+    steps:
+      # Go to home and import the superset workout
+      - action: tap
+        target: "tab-home"
+      - action: delay
+        ms: 500
+      - action: waitFor
+        target: "button-import-workout"
+        timeout: 5000
+      - action: tap
+        target: "button-import-workout"
+      - action: waitFor
+        target: "input-markdown"
+        timeout: 10000
+      - action: replaceText
+        target: "input-markdown"
+        fixture: "arms-superset.md"
+      - action: tap
+        target: "button-import"
+      - action: waitForText
+        text: "OK"
+        timeout: 10000
+      - action: tapText
+        text: "OK"
+      # Navigate to the superset workout detail
+      - action: waitForText
+        text: "Arms Superset"
+        timeout: 10000
+      - action: tapText
+        text: "Arms Superset"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      # Bench Press should appear as a regular exercise
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      # Both superset children should be visible in a grouped card
+      - action: waitForText
+        text: "Tricep Pushdown"
+        timeout: 5000
+      - action: waitForText
+        text: "Overhead Tricep Extension"
+        timeout: 5000
+      # The superset badge should be visible
+      - action: waitForText
+        text: "SUPERSET"
+        timeout: 5000

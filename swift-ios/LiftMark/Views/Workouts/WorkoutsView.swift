@@ -23,178 +23,28 @@ struct WorkoutsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search bar
-            TextField("Search plans...", text: $searchText)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal)
-                .padding(.vertical, LiftMarkTheme.spacingSM)
-                .accessibilityIdentifier("search-input")
-
-            // Filter toggle
-            Button {
-                withAnimation { showFilters.toggle() }
-            } label: {
-                HStack {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                    Text("Filters")
-                        .font(.subheadline)
-                    if showFavoritesOnly || showEquipmentFilter {
-                        Text("Active")
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(LiftMarkTheme.primary.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                    Spacer()
-                    Image(systemName: showFilters ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                }
-                .foregroundStyle(LiftMarkTheme.label)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, LiftMarkTheme.spacingXS)
-            .accessibilityIdentifier("filter-toggle")
-
-            // Filter panel
+            searchBar
+            filterToggle
             if showFilters {
-                VStack(spacing: LiftMarkTheme.spacingSM) {
-                    Toggle(isOn: $showFavoritesOnly) {
-                        Label("Favorites Only", systemImage: "heart.fill")
-                            .font(.subheadline)
-                    }
-                    .accessibilityIdentifier("switch-filter-favorites")
-
-                    Toggle(isOn: $showEquipmentFilter) {
-                        Label("Filter by Equipment", systemImage: "dumbbell")
-                            .font(.subheadline)
-                    }
-                    .accessibilityIdentifier("switch-filter-equipment")
-                    .onChange(of: showEquipmentFilter) {
-                        if showEquipmentFilter, let defaultGym = gymStore.gyms.first(where: { $0.isDefault }) {
-                            selectedGymId = defaultGym.id
-                            equipmentStore.loadEquipment(forGym: defaultGym.id)
-                        }
-                    }
-
-                    if showEquipmentFilter {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: LiftMarkTheme.spacingSM) {
-                                ForEach(gymStore.gyms) { gym in
-                                    Button {
-                                        selectedGymId = gym.id
-                                        equipmentStore.loadEquipment(forGym: gym.id)
-                                    } label: {
-                                        Text(gym.name)
-                                            .font(.caption)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                            .background(selectedGymId == gym.id ? LiftMarkTheme.primary : LiftMarkTheme.secondaryBackground)
-                                            .foregroundStyle(selectedGymId == gym.id ? .white : LiftMarkTheme.label)
-                                            .clipShape(Capsule())
-                                    }
-                                    .accessibilityIdentifier("gym-option-\(gym.id)")
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.bottom, LiftMarkTheme.spacingSM)
+                filterPanel
             }
-
-            Divider()
-
-            // Plans list
-            if filteredPlans.isEmpty {
-                VStack(spacing: LiftMarkTheme.spacingMD) {
-                    Spacer()
-                    Image(systemName: "doc.on.clipboard")
-                        .font(.system(size: 48))
-                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                    Text("No Plans")
-                        .font(.headline)
-                    Text(emptyStateMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        .multilineTextAlignment(.center)
-
-                    if !showEquipmentFilter {
-                        Button("Import Plan") {
-                            showImport = true
-                        }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("button-import-empty")
-                    } else {
-                        NavigationLink(value: AppDestination.gymDetail(id: selectedGymId ?? "")) {
-                            Text("Set Up Equipment")
-                        }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("button-setup-equipment")
-                    }
-
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .accessibilityIdentifier("empty-state")
-            } else {
-                List {
-                    ForEach(Array(filteredPlans.enumerated()), id: \.element.id) { index, plan in
-                        NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: LiftMarkTheme.spacingXS) {
-                                        Text(plan.name)
-                                            .font(.headline)
-                                        if plan.isFavorite {
-                                            Image(systemName: "heart.fill")
-                                                .font(.caption)
-                                                .foregroundStyle(.pink)
-                                        }
-                                    }
-                                    HStack(spacing: LiftMarkTheme.spacingSM) {
-                                        Text("\(plan.exercises.count) exercises")
-                                            .font(.subheadline)
-                                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                                        if !plan.tags.isEmpty {
-                                            Text(plan.tags.prefix(2).joined(separator: ", "))
-                                                .font(.caption)
-                                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                                        }
-                                    }
-                                }
-                                Spacer()
-                            }
-                        }
-                        .accessibilityIdentifier("workout-card-\(plan.id)")
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                planStore.deletePlan(id: plan.id)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            .accessibilityIdentifier("delete-\(plan.id)")
-                        }
-                        .swipeActions(edge: .leading) {
-                            Button {
-                                planStore.toggleFavorite(id: plan.id)
-                            } label: {
-                                Label(
-                                    plan.isFavorite ? "Unfavorite" : "Favorite",
-                                    systemImage: plan.isFavorite ? "heart.slash" : "heart.fill"
-                                )
-                            }
-                            .tint(.pink)
-                            .accessibilityIdentifier("favorite-\(plan.id)")
-                        }
-                    }
-                }
-                .listStyle(.plain)
-                .accessibilityIdentifier("workout-list")
-            }
+            plansContent
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workouts-screen")
         .navigationTitle("Plans")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showImport = true
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "plus")
+                        Text("Import")
+                    }
+                }
+            }
+        }
         .sheet(isPresented: $showImport) {
             ImportView()
         }
@@ -210,15 +60,258 @@ struct WorkoutsView: View {
         }
     }
 
+    // MARK: - Search Bar
+
+    private var searchBar: some View {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .font(.system(size: 14))
+            TextField("Search plans...", text: $searchText)
+                .font(.body)
+        }
+        .padding(.horizontal, LiftMarkTheme.spacingMD)
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(LiftMarkTheme.tertiaryLabel.opacity(0.3), lineWidth: 1.5))
+        .padding(.horizontal)
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+        .accessibilityIdentifier("search-input")
+    }
+
+    // MARK: - Filter Toggle
+
+    private var filterToggle: some View {
+        Button {
+            withAnimation { showFilters.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .rotationEffect(.degrees(showFilters ? 90 : 0))
+                Text(showFilters ? "Hide Filters" : "Show Filters")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Spacer()
+            }
+            .foregroundStyle(LiftMarkTheme.primary)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, LiftMarkTheme.spacingXS)
+        .accessibilityIdentifier("filter-toggle")
+    }
+
+    // MARK: - Filter Panel
+
+    private var filterPanel: some View {
+        VStack(spacing: LiftMarkTheme.spacingMD) {
+            HStack {
+                Text("Favorites Only")
+                    .font(.body)
+                    .fontWeight(.medium)
+                Spacer()
+                Toggle("", isOn: $showFavoritesOnly)
+                    .labelsHidden()
+            }
+            .accessibilityIdentifier("switch-filter-favorites")
+
+            HStack {
+                Text("Filter by Equipment")
+                    .font(.body)
+                    .fontWeight(.medium)
+                Spacer()
+                Toggle("", isOn: $showEquipmentFilter)
+                    .labelsHidden()
+            }
+            .accessibilityIdentifier("switch-filter-equipment")
+            .onChange(of: showEquipmentFilter) {
+                if showEquipmentFilter, let defaultGym = gymStore.gyms.first(where: { $0.isDefault }) {
+                    selectedGymId = defaultGym.id
+                    equipmentStore.loadEquipment(forGym: defaultGym.id)
+                }
+            }
+
+            if showEquipmentFilter {
+                gymSelectionList
+            }
+        }
+        .padding(.horizontal, LiftMarkTheme.spacingLG)
+        .padding(.vertical, LiftMarkTheme.spacingMD)
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .padding(.horizontal)
+        .padding(.bottom, LiftMarkTheme.spacingSM)
+    }
+
+    private var gymSelectionList: some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+            Text("GYM")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .textCase(.uppercase)
+
+            ForEach(gymStore.gyms) { gym in
+                Button {
+                    selectedGymId = gym.id
+                    equipmentStore.loadEquipment(forGym: gym.id)
+                } label: {
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        ZStack {
+                            Circle()
+                                .stroke(selectedGymId == gym.id ? LiftMarkTheme.primary : LiftMarkTheme.tertiaryLabel, lineWidth: 2)
+                                .frame(width: 20, height: 20)
+                            if selectedGymId == gym.id {
+                                Circle()
+                                    .fill(LiftMarkTheme.primary)
+                                    .frame(width: 10, height: 10)
+                            }
+                        }
+                        Text(gym.name)
+                            .font(.body)
+                            .foregroundStyle(LiftMarkTheme.label)
+                    }
+                    .padding(.horizontal, LiftMarkTheme.spacingMD)
+                    .padding(.vertical, LiftMarkTheme.spacingSM)
+                    .background(selectedGymId == gym.id ? LiftMarkTheme.primary.opacity(0.1) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                }
+                .accessibilityIdentifier("gym-option-\(gym.id)")
+            }
+        }
+    }
+
+    // MARK: - Plans Content
+
+    @ViewBuilder
+    private var plansContent: some View {
+        if filteredPlans.isEmpty {
+            emptyStateView
+        } else {
+            plansList
+        }
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: LiftMarkTheme.spacingMD) {
+            Spacer()
+            Image(systemName: "square.grid.3x3")
+                .font(.system(size: 48))
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+            Text(emptyStateTitle)
+                .font(.title3)
+                .fontWeight(.semibold)
+            Text(emptyStateMessage)
+                .font(.body)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .multilineTextAlignment(.center)
+
+            if showEquipmentFilter {
+                NavigationLink(value: AppDestination.gymDetail(id: selectedGymId ?? "")) {
+                    Text("Set Up Equipment")
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("button-setup-equipment")
+            } else if planStore.plans.isEmpty {
+                Button("Import Plan") {
+                    showImport = true
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("button-import-empty")
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("empty-state")
+    }
+
+    private var plansList: some View {
+        List {
+            ForEach(Array(filteredPlans.enumerated()), id: \.element.id) { index, plan in
+                planRow(plan: plan, index: index)
+            }
+        }
+        .listStyle(.plain)
+        .accessibilityIdentifier("workout-list")
+    }
+
+    private func planRow(plan: WorkoutPlan, index: Int) -> some View {
+        NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
+            HStack(spacing: LiftMarkTheme.spacingMD) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(plan.name)
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+
+                    if !plan.tags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(plan.tags.prefix(3), id: \.self) { tag in
+                                Text(tag.lowercased())
+                                    .font(.caption2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(LiftMarkTheme.primary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(LiftMarkTheme.primary.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Button {
+                    planStore.toggleFavorite(id: plan.id)
+                } label: {
+                    Image(systemName: plan.isFavorite ? "heart.fill" : "heart")
+                        .font(.title3)
+                        .foregroundStyle(plan.isFavorite ? .yellow : LiftMarkTheme.tertiaryLabel)
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("favorite-\(plan.id)")
+            }
+        }
+        .accessibilityIdentifier("workout-card-\(plan.id)")
+        .listRowInsets(EdgeInsets(top: LiftMarkTheme.spacingSM, leading: LiftMarkTheme.spacingLG, bottom: LiftMarkTheme.spacingSM, trailing: LiftMarkTheme.spacingLG))
+        .overlay(
+            Color.clear
+                .accessibilityIdentifier("workout-card-index-\(index)")
+        )
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                planStore.deletePlan(id: plan.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .accessibilityIdentifier("delete-\(plan.id)")
+        }
+    }
+
+    private var emptyStateTitle: String {
+        if showEquipmentFilter {
+            return "No plans available"
+        } else if showFavoritesOnly {
+            return "No favorites"
+        } else if !searchText.isEmpty {
+            return "No plans found"
+        }
+        return "No plans yet"
+    }
+
     private var emptyStateMessage: String {
         if showEquipmentFilter {
-            return "No plans match your available equipment. Update your gym setup."
+            return "All plans require unavailable equipment. Update your gym setup."
         } else if showFavoritesOnly {
             return "No favorite plans yet. Swipe right on a plan to favorite it."
         } else if !searchText.isEmpty {
-            return "No plans match \"\(searchText)\"."
+            return "Try a different search term"
         }
-        return "Create a workout plan to get started."
+        return "Import your first workout plan to get started"
     }
 
     private func planMatchesEquipment(_ plan: WorkoutPlan) -> Bool {

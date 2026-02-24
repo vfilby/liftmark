@@ -44,6 +44,13 @@ targets:
         INFOPLIST_KEY_NSSupportsLiveActivities: true
         CODE_SIGN_ENTITLEMENTS: LiftMark/LiftMark.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: LiftMark/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - liftmark
+            CFBundleURLName: com.liftmark.app
     dependencies:
       - package: GRDB
     entitlements:

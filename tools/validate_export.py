@@ -5,6 +5,7 @@ Usage:
     python tools/validate_export.py <file.json>
     python tools/validate_export.py --single <file.json>
     python tools/validate_export.py --multi <file.json>
+    python tools/validate_export.py --unified <file.json>
 
 Exit codes:
     0 = valid
@@ -21,6 +22,7 @@ from jsonschema import Draft202012Validator
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "spec" / "data" / "schemas"
 SINGLE_SCHEMA_PATH = SCHEMA_DIR / "liftmark-export-single.schema.json"
 MULTI_SCHEMA_PATH = SCHEMA_DIR / "liftmark-export-multi.schema.json"
+UNIFIED_SCHEMA_PATH = SCHEMA_DIR / "liftmark-export-unified.schema.json"
 
 
 def load_schema(path: Path) -> dict:
@@ -29,10 +31,12 @@ def load_schema(path: Path) -> dict:
 
 
 def detect_format(data: dict) -> str:
-    """Detect whether data is single or multi export format.
+    """Detect whether data is single, multi, or unified export format.
 
-    Returns 'single', 'multi', or 'unknown'.
+    Returns 'single', 'multi', 'unified', or 'unknown'.
     """
+    if "formatVersion" in data:
+        return "unified"
     if "session" in data and "sessions" not in data:
         return "single"
     if "sessions" in data and "session" not in data:
@@ -62,6 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     format_group.add_argument(
         "--multi", action="store_true", help="Force multi-session schema"
     )
+    format_group.add_argument(
+        "--unified", action="store_true", help="Force unified export schema"
+    )
     args = parser.parse_args(argv)
 
     file_path = Path(args.file)
@@ -80,18 +87,26 @@ def main(argv: list[str] | None = None) -> int:
         fmt = "single"
     elif args.multi:
         fmt = "multi"
+    elif args.unified:
+        fmt = "unified"
     else:
         fmt = detect_format(data)
 
     if fmt == "unknown":
         print(
-            "Error: Cannot detect format. File must have 'session' (single) "
-            "or 'sessions' (multi) key. Use --single or --multi to force.",
+            "Error: Cannot detect format. File must have 'formatVersion' (unified), "
+            "'session' (single), or 'sessions' (multi) key. "
+            "Use --single, --multi, or --unified to force.",
             file=sys.stderr,
         )
         return 1
 
-    schema_path = SINGLE_SCHEMA_PATH if fmt == "single" else MULTI_SCHEMA_PATH
+    schema_paths = {
+        "single": SINGLE_SCHEMA_PATH,
+        "multi": MULTI_SCHEMA_PATH,
+        "unified": UNIFIED_SCHEMA_PATH,
+    }
+    schema_path = schema_paths[fmt]
     schema = load_schema(schema_path)
     errors = validate(data, schema)
 

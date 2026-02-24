@@ -1,0 +1,246 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2026-02-20T10:30:00Z",
+  "appVersion": "1.0.0",
+  "plans": [
+    {
+      "name": "Test Push Day",
+      "description": "A push-focused workout for testing import",
+      "tags": ["push", "chest", "strength"],
+      "defaultWeightUnit": "lbs",
+      "sourceMarkdown": "# Test Push Day\n@tags: push, chest, strength\n@units: lbs\n\n## Bench Press\n- 135 x 10\n- 185 x 8\n- 225 x 5\n\n## Overhead Press\n- 95 x 10\n- 115 x 8",
+      "isFavorite": true,
+      "exercises": [
+        {
+          "exerciseName": "Bench Press",
+          "orderIndex": 0,
+          "notes": "Focus on chest stretch at the bottom",
+          "equipmentType": "barbell",
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 135,
+              "targetWeightUnit": "lbs",
+              "targetReps": 10,
+              "restSeconds": 90,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            },
+            {
+              "orderIndex": 1,
+              "targetWeight": 185,
+              "targetWeightUnit": "lbs",
+              "targetReps": 8,
+              "targetRpe": 7,
+              "restSeconds": 120,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            },
+            {
+              "orderIndex": 2,
+              "targetWeight": 225,
+              "targetWeightUnit": "lbs",
+              "targetReps": 5,
+              "targetRpe": 8,
+              "restSeconds": 180,
+              "tempo": "3-0-1-0",
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            }
+          ]
+        },
+        {
+          "exerciseName": "Overhead Press",
+          "orderIndex": 1,
+          "equipmentType": "barbell",
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 95,
+              "targetWeightUnit": "lbs",
+              "targetReps": 10,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            },
+            {
+              "orderIndex": 1,
+              "targetWeight": 115,
+              "targetWeightUnit": "lbs",
+              "targetReps": 8,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Test Superset Workout",
+      "tags": ["arms"],
+      "defaultWeightUnit": "lbs",
+      "isFavorite": false,
+      "exercises": [
+        {
+          "exerciseName": "Superset: Arms",
+          "orderIndex": 0,
+          "groupType": "superset",
+          "sets": []
+        },
+        {
+          "exerciseName": "Bicep Curls",
+          "orderIndex": 1,
+          "equipmentType": "dumbbell",
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 25,
+              "targetWeightUnit": "lbs",
+              "targetReps": 12,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            }
+          ]
+        },
+        {
+          "exerciseName": "Tricep Pushdowns",
+          "orderIndex": 2,
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 50,
+              "targetWeightUnit": "lbs",
+              "targetReps": 12,
+              "isDropset": false,
+              "isPerSide": false,
+              "isAmrap": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "name": "Test Push Day",
+      "date": "2026-02-15",
+      "startTime": "2026-02-15T14:00:00Z",
+      "endTime": "2026-02-15T15:15:00Z",
+      "duration": 4500,
+      "notes": "Good session, hit all targets",
+      "status": "completed",
+      "exercises": [
+        {
+          "exerciseName": "Bench Press",
+          "orderIndex": 0,
+          "notes": "Felt strong today",
+          "equipmentType": "barbell",
+          "status": "completed",
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 135,
+              "targetWeightUnit": "lbs",
+              "targetReps": 10,
+              "restSeconds": 90,
+              "actualWeight": 135,
+              "actualWeightUnit": "lbs",
+              "actualReps": 10,
+              "actualRpe": 6,
+              "completedAt": "2026-02-15T14:05:00Z",
+              "status": "completed",
+              "isDropset": false,
+              "isPerSide": false
+            },
+            {
+              "orderIndex": 1,
+              "targetWeight": 185,
+              "targetWeightUnit": "lbs",
+              "targetReps": 8,
+              "targetRpe": 7,
+              "restSeconds": 120,
+              "actualWeight": 185,
+              "actualWeightUnit": "lbs",
+              "actualReps": 8,
+              "actualRpe": 7,
+              "completedAt": "2026-02-15T14:10:00Z",
+              "status": "completed",
+              "isDropset": false,
+              "isPerSide": false
+            },
+            {
+              "orderIndex": 2,
+              "targetWeight": 225,
+              "targetWeightUnit": "lbs",
+              "targetReps": 5,
+              "targetRpe": 8,
+              "restSeconds": 180,
+              "actualWeight": 225,
+              "actualWeightUnit": "lbs",
+              "actualReps": 5,
+              "actualRpe": 8,
+              "completedAt": "2026-02-15T14:18:00Z",
+              "status": "completed",
+              "tempo": "3-0-1-0",
+              "isDropset": false,
+              "isPerSide": false
+            }
+          ]
+        },
+        {
+          "exerciseName": "Overhead Press",
+          "orderIndex": 1,
+          "equipmentType": "barbell",
+          "status": "completed",
+          "sets": [
+            {
+              "orderIndex": 0,
+              "targetWeight": 95,
+              "targetWeightUnit": "lbs",
+              "targetReps": 10,
+              "actualWeight": 95,
+              "actualWeightUnit": "lbs",
+              "actualReps": 10,
+              "completedAt": "2026-02-15T14:30:00Z",
+              "status": "completed",
+              "isDropset": false,
+              "isPerSide": false
+            },
+            {
+              "orderIndex": 1,
+              "targetWeight": 115,
+              "targetWeightUnit": "lbs",
+              "targetReps": 8,
+              "actualWeight": 115,
+              "actualWeightUnit": "lbs",
+              "actualReps": 7,
+              "notes": "Missed last rep",
+              "completedAt": "2026-02-15T14:35:00Z",
+              "status": "completed",
+              "isDropset": false,
+              "isPerSide": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "gyms": [
+    {
+      "name": "Test Import Gym",
+      "isDefault": false
+    }
+  ],
+  "settings": {
+    "defaultWeightUnit": "lbs",
+    "enableWorkoutTimer": true,
+    "autoStartRestTimer": true,
+    "theme": "dark",
+    "keepScreenAwake": true
+  }
+}

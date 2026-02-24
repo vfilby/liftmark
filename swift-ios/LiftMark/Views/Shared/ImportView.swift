@@ -4,10 +4,15 @@ import UIKit
 #endif
 
 struct ImportView: View {
+    var initialContent: String = ""
+
     @State private var markdownText = ""
     @State private var parseResult: ParseResult?
     @State private var parseError: String?
     @State private var isGenerating = false
+    @State private var showImportSuccess = false
+    @State private var importedPlanName = ""
+    @State private var showDiscardConfirm = false
     @Environment(\.dismiss) private var dismiss
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(SettingsStore.self) private var settingsStore
@@ -29,6 +34,7 @@ struct ImportView: View {
                                 .font(.subheadline)
                         }
                         .buttonStyle(.bordered)
+                        .accessibilityIdentifier("button-paste")
 
                         Button {
                             copyPromptToClipboard()
@@ -76,8 +82,8 @@ struct ImportView: View {
                 // Markdown input
                 TextEditor(text: $markdownText)
                     .font(.system(.body, design: .monospaced))
-                    .accessibilityIdentifier("input-markdown")
                     .padding(LiftMarkTheme.spacingSM)
+                    .accessibilityIdentifier("input-markdown")
                     .overlay(
                         Group {
                             if markdownText.isEmpty {
@@ -150,7 +156,6 @@ struct ImportView: View {
                     }
                 }
             }
-            .accessibilityIdentifier("import-modal")
             .navigationTitle("Import Workout")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -158,7 +163,11 @@ struct ImportView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        dismiss()
+                        if markdownText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dismiss()
+                        } else {
+                            showDiscardConfirm = true
+                        }
                     }
                     .accessibilityIdentifier("button-cancel")
                 }
@@ -172,6 +181,27 @@ struct ImportView: View {
             }
             .onChange(of: markdownText) {
                 parseMarkdown()
+            }
+            .alert("Discard Changes?", isPresented: $showDiscardConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Discard", role: .destructive) {
+                    dismiss()
+                }
+            } message: {
+                Text("You have unsaved changes that will be lost.")
+            }
+            .alert("Workout Imported", isPresented: $showImportSuccess) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text("\(importedPlanName) has been imported successfully.")
+            }
+        }
+        .accessibilityIdentifier("import-modal")
+        .onAppear {
+            if !initialContent.isEmpty {
+                markdownText = initialContent
             }
         }
     }
@@ -263,7 +293,8 @@ struct ImportView: View {
         guard var plan = result.data else { return }
         plan.sourceMarkdown = markdownText
         planStore.createPlan(plan)
-        dismiss()
+        importedPlanName = plan.name
+        showImportSuccess = true
     }
 
     private func buildAIPrompt() -> String {

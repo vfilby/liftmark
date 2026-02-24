@@ -197,7 +197,7 @@ struct WorkoutHighlightsService {
 
     // MARK: - Helpers
 
-    private func getSessionMaxWeights(_ session: WorkoutSession) -> [String: (weight: Double, reps: Int, unit: String)] {
+    func getSessionMaxWeights(_ session: WorkoutSession) -> [String: (weight: Double, reps: Int, unit: String)] {
         var maxes: [String: (weight: Double, reps: Int, unit: String)] = [:]
 
         for exercise in session.exercises where !exercise.sets.isEmpty {
@@ -209,7 +209,7 @@ struct WorkoutHighlightsService {
         return maxes
     }
 
-    private func getExerciseMaxWeight(_ exercise: SessionExercise) -> (weight: Double, reps: Int, unit: String)? {
+    func getExerciseMaxWeight(_ exercise: SessionExercise) -> (weight: Double, reps: Int, unit: String)? {
         var maxWeight: Double = 0
         var maxSet: SessionSet?
 
@@ -224,7 +224,7 @@ struct WorkoutHighlightsService {
         return (maxWeight, maxSet.actualReps ?? 0, maxSet.actualWeightUnit?.rawValue ?? "lbs")
     }
 
-    private func calculateSessionVolume(_ session: WorkoutSession) -> Double {
+    func calculateSessionVolume(_ session: WorkoutSession) -> Double {
         var totalVolume: Double = 0
         for exercise in session.exercises {
             for set in exercise.sets {
@@ -238,7 +238,7 @@ struct WorkoutHighlightsService {
         return totalVolume
     }
 
-    private func findLastSessionWithExercise(
+    func findLastSessionWithExercise(
         _ sessions: [WorkoutSession],
         exerciseName: String,
         excludeSessionId: String
@@ -251,7 +251,7 @@ struct WorkoutHighlightsService {
 
     // MARK: - Highlight Creation
 
-    private func createPRHighlight(_ pr: ExercisePR) -> WorkoutHighlight {
+    func createPRHighlight(_ pr: ExercisePR) -> WorkoutHighlight {
         if let oldWeight = pr.oldWeight {
             return WorkoutHighlight(
                 type: .pr,
@@ -269,7 +269,7 @@ struct WorkoutHighlightsService {
         }
     }
 
-    private func createWeightIncreaseHighlight(_ increase: ExercisePR) -> WorkoutHighlight {
+    func createWeightIncreaseHighlight(_ increase: ExercisePR) -> WorkoutHighlight {
         WorkoutHighlight(
             type: .weightIncrease,
             emoji: "💪",
@@ -278,7 +278,7 @@ struct WorkoutHighlightsService {
         )
     }
 
-    private func createVolumeHighlight(_ comparison: VolumeComparison) -> WorkoutHighlight {
+    func createVolumeHighlight(_ comparison: VolumeComparison) -> WorkoutHighlight {
         WorkoutHighlight(
             type: .volumeIncrease,
             emoji: "📈",
@@ -287,7 +287,7 @@ struct WorkoutHighlightsService {
         )
     }
 
-    private func createStreakHighlight(_ streak: Int) -> WorkoutHighlight {
+    func createStreakHighlight(_ streak: Int) -> WorkoutHighlight {
         let weekCount = streak / 7
         let message: String
         if weekCount > 0 {

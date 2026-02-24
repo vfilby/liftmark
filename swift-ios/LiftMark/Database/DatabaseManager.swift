@@ -43,6 +43,39 @@ final class DatabaseManager {
         dbQueue = nil
     }
 
+    /// Reset all data for test isolation. Opens the database if needed,
+    /// truncates all tables, then closes and deletes the file.
+    func deleteDatabase() {
+        // Open the DB (creates it if needed) so we can truncate data.
+        // This handles the case where the connection doesn't exist yet.
+        if let dbQueue = try? database() {
+            try? dbQueue.write { db in
+                // Order matters: children first due to foreign keys
+                try db.execute(sql: "DELETE FROM sync_conflicts")
+                try db.execute(sql: "DELETE FROM sync_queue")
+                try db.execute(sql: "DELETE FROM sync_metadata")
+                try db.execute(sql: "DELETE FROM session_sets")
+                try db.execute(sql: "DELETE FROM session_exercises")
+                try db.execute(sql: "DELETE FROM workout_sessions")
+                try db.execute(sql: "DELETE FROM template_sets")
+                try db.execute(sql: "DELETE FROM template_exercises")
+                try db.execute(sql: "DELETE FROM workout_templates")
+                try db.execute(sql: "DELETE FROM gym_equipment")
+                try db.execute(sql: "DELETE FROM gyms")
+                try db.execute(sql: "DELETE FROM user_settings")
+            }
+        }
+
+        // Also close and delete the file for a complete reset
+        close()
+        let fileManager = FileManager.default
+        guard let documentsURL = try? fileManager.url(
+            for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false
+        ) else { return }
+        let sqliteDir = documentsURL.appendingPathComponent("SQLite").path
+        try? fileManager.removeItem(atPath: sqliteDir)
+    }
+
     // MARK: - Migrations
 
     private func runMigrations(_ dbQueue: DatabaseQueue) throws {
@@ -84,7 +117,8 @@ final class DatabaseManager {
                 default_weight_unit TEXT,
                 source_markdown TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                is_favorite INTEGER DEFAULT 0
             )
         """)
 
@@ -119,6 +153,9 @@ final class DatabaseManager {
                 rest_seconds INTEGER,
                 tempo TEXT,
                 is_dropset INTEGER DEFAULT 0,
+                is_per_side INTEGER DEFAULT 0,
+                is_amrap INTEGER DEFAULT 0,
+                notes TEXT,
                 FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
             )
         """)
@@ -132,6 +169,14 @@ final class DatabaseManager {
                 auto_start_rest_timer INTEGER DEFAULT 1,
                 theme TEXT DEFAULT 'auto',
                 notifications_enabled INTEGER DEFAULT 1,
+                custom_prompt_addition TEXT,
+                anthropic_api_key TEXT,
+                anthropic_api_key_status TEXT DEFAULT 'not_set',
+                healthkit_enabled INTEGER DEFAULT 0,
+                live_activities_enabled INTEGER DEFAULT 1,
+                keep_screen_awake INTEGER DEFAULT 1,
+                show_open_in_claude_button INTEGER DEFAULT 0,
+                home_tiles TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
@@ -156,7 +201,8 @@ final class DatabaseManager {
                 is_available INTEGER DEFAULT 1,
                 last_checked_at TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                gym_id TEXT
             )
         """)
 
@@ -218,6 +264,7 @@ final class DatabaseManager {
                 notes TEXT,
                 tempo TEXT,
                 is_dropset INTEGER DEFAULT 0,
+                is_per_side INTEGER DEFAULT 0,
                 FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE,
                 FOREIGN KEY (parent_set_id) REFERENCES session_sets(id) ON DELETE CASCADE
             )
@@ -265,44 +312,16 @@ final class DatabaseManager {
         // -- Indexes
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_workout ON template_exercises(workout_template_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_sets_exercise ON template_sets(template_exercise_id)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_session ON session_exercises(workout_session_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_name ON session_exercises(exercise_name)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_sets_exercise ON session_sets(session_exercise_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_sessions_status ON workout_sessions(status)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gyms_default ON gyms(is_default)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id)")
-
-        // -- ALTER TABLE additions (idempotent via try/catch)
-        let alterStatements = [
-            "ALTER TABLE user_settings ADD COLUMN custom_prompt_addition TEXT",
-            "ALTER TABLE template_sets ADD COLUMN is_per_side INTEGER DEFAULT 0",
-            "ALTER TABLE session_sets ADD COLUMN is_per_side INTEGER DEFAULT 0",
-            "ALTER TABLE user_settings ADD COLUMN healthkit_enabled INTEGER DEFAULT 0",
-            "ALTER TABLE user_settings ADD COLUMN live_activities_enabled INTEGER DEFAULT 1",
-            "ALTER TABLE user_settings ADD COLUMN keep_screen_awake INTEGER DEFAULT 1",
-            "ALTER TABLE user_settings ADD COLUMN anthropic_api_key TEXT",
-            "ALTER TABLE gym_equipment ADD COLUMN gym_id TEXT",
-            "ALTER TABLE user_settings ADD COLUMN anthropic_api_key_status TEXT DEFAULT 'not_set'",
-            "ALTER TABLE user_settings ADD COLUMN show_open_in_claude_button INTEGER DEFAULT 0",
-            "ALTER TABLE workout_templates ADD COLUMN is_favorite INTEGER DEFAULT 0",
-            "ALTER TABLE user_settings ADD COLUMN home_tiles TEXT",
-            "ALTER TABLE template_sets ADD COLUMN is_amrap INTEGER DEFAULT 0",
-            "ALTER TABLE template_sets ADD COLUMN notes TEXT",
-        ]
-
-        for sql in alterStatements {
-            do {
-                try db.execute(sql: sql)
-            } catch {
-                // Column already exists — ignore
-            }
-        }
-
-        // -- Additional indexes (post-ALTER)
-        try? db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
-        try? db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)")
 
         // -- Seed default gym
         let existingGym = try Row.fetchOne(db, sql: "SELECT id FROM gyms LIMIT 1")

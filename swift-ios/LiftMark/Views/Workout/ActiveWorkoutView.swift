@@ -11,10 +11,23 @@ struct ActiveWorkoutView: View {
     @State private var addExerciseMarkdown = ""
     @State private var activeRestTimer: RestTimerState?
     @State private var showFinishConfirm = false
-    @State private var showEditSet = false
-    @State private var editingSetInfo: (exerciseIndex: Int, setIndex: Int)?
+    @State private var navigateToSummary = false
+    @State private var showDiscardConfirm = false
+    @State private var expandedExercises: Set<String> = []
+    @State private var collapsedExercises: Set<String> = []
+    @State private var restTimerGeneration: Int = 0
+    @State private var lastInteractedExerciseId: String?
 
     private var session: WorkoutSession? { sessionStore.activeSession }
+
+    /// True when more than 50% of sets were skipped/not completed
+    private var isSkipHeavy: Bool {
+        guard totalSets > 0 else { return false }
+        let done = session?.exercises.reduce(0) { sum, ex in
+            sum + ex.sets.filter { $0.status == .completed }.count
+        } ?? 0
+        return done < totalSets / 2
+    }
 
     private var completedSets: Int {
         session?.exercises.reduce(0) { sum, ex in
@@ -32,6 +45,47 @@ struct ActiveWorkoutView: View {
     }
 
     var body: some View {
+        Group {
+            if navigateToSummary {
+                WorkoutSummaryView()
+            } else {
+                workoutContent
+            }
+        }
+        .alert("Finish Workout?", isPresented: $showFinishConfirm) {
+            Button("Cancel", role: .cancel) {}
+            let incomplete = totalSets - completedSets
+            Button(incomplete > 0 ? "Finish Anyway" : "Finish") {
+                endLiveActivity(message: "Workout Complete")
+                sessionStore.completeSession()
+                navigateToSummary = true
+            }
+        } message: {
+            let skipped = totalSets - completedSets
+            if skipped > 0 {
+                Text("You have \(skipped) incomplete sets. They will be marked as skipped.")
+            } else {
+                Text("Great job completing all your sets!")
+            }
+        }
+        .alert("Discard Workout?", isPresented: $showDiscardConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Log Anyway") {
+                endLiveActivity(message: "Workout Complete")
+                sessionStore.completeSession()
+                navigateToSummary = true
+            }
+            Button("Discard", role: .destructive) {
+                endLiveActivity(message: "Workout Discarded")
+                sessionStore.cancelSession()
+                dismiss()
+            }
+        } message: {
+            Text("You've skipped most of your sets. Do you want to discard this workout?")
+        }
+    }
+
+    private var workoutContent: some View {
         VStack(spacing: 0) {
             // Header
             HStack(spacing: LiftMarkTheme.spacingSM) {
@@ -63,7 +117,11 @@ struct ActiveWorkoutView: View {
                 .accessibilityIdentifier("active-workout-add-exercise-button")
 
                 Button {
-                    showFinishConfirm = true
+                    if isSkipHeavy {
+                        showDiscardConfirm = true
+                    } else {
+                        showFinishConfirm = true
+                    }
                 } label: {
                     Text("Finish")
                         .font(.subheadline.bold())
@@ -72,6 +130,7 @@ struct ActiveWorkoutView: View {
             }
             .padding()
             .background(LiftMarkTheme.background)
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("active-workout-header")
 
             // Progress bar
@@ -88,56 +147,104 @@ struct ActiveWorkoutView: View {
 
             Divider()
 
-            // Active rest timer
-            if let restState = activeRestTimer {
-                RestTimerView(totalSeconds: restState.seconds) {
-                    activeRestTimer = nil
-                }
-                .padding(.horizontal)
-                .padding(.vertical, LiftMarkTheme.spacingXS)
-            }
-
             // Workout content
-            ScrollView {
-                VStack(alignment: .leading, spacing: LiftMarkTheme.spacingMD) {
-                    if let exercises = session?.exercises {
-                        ForEach(Array(exercises.enumerated()), id: \.element.id) { exerciseIndex, exercise in
-                            ActiveExerciseCard(
-                                exercise: exercise,
-                                exerciseIndex: exerciseIndex,
-                                settings: settingsStore.settings,
-                                onCompleteSet: { setIndex in
-                                    completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
-                                },
-                                onSkipSet: { setIndex in
-                                    skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
-                                },
-                                onEditExercise: {
-                                    editingExercise = exercise
-                                    showEditExercise = true
-                                },
-                                onEditSet: { setIndex in
-                                    editingSetInfo = (exerciseIndex: exerciseIndex, setIndex: setIndex)
-                                    showEditSet = true
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: LiftMarkTheme.spacingMD) {
+                        if let exercises = session?.exercises {
+                            let displayItems = buildDisplayItems(from: exercises)
+                            ForEach(displayItems) { item in
+                                switch item {
+                                case .single(let exercise, let exerciseIndex, let displayNumber):
+                                    let collapsed = isExerciseCollapsed(exercise)
+                                    let isActiveExercise = exercise.sets.contains { $0.status == .pending }
+                                    ActiveExerciseCard(
+                                        exercise: exercise,
+                                        exerciseIndex: exerciseIndex,
+                                        displayNumber: displayNumber,
+                                        settings: settingsStore.settings,
+                                        isCollapsed: collapsed,
+                                        activeRestTimer: isActiveExercise ? activeRestTimer : nil,
+                                        onToggleCollapse: {
+                                            toggleCollapse(exerciseId: exercise.id, currentlyCollapsed: collapsed)
+                                        },
+                                        onCompleteSet: { setIndex, weight, reps, elapsedTime in
+                                            completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
+                                        },
+                                        onSkipSet: { setIndex in
+                                            skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                                        },
+                                        onEditExercise: {
+                                            editingExercise = exercise
+                                            showEditExercise = true
+                                        },
+                                        onSaveSet: { setIndex, weight, reps in
+                                            saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                        },
+                                        onDismissRest: {
+                                            activeRestTimer = nil
+                                        },
+                                        restTimerGeneration: restTimerGeneration
+                                    )
+                                    .id(exercise.id)
+
+                                case .superset(let parentExercise, let children):
+                                    let collapsed = isSupersetCollapsed(parentExercise, children: children)
+                                    let isActive = children.contains { $0.exercise.sets.contains { $0.status == .pending } }
+                                    SupersetCard(
+                                        parentExercise: parentExercise,
+                                        children: children,
+                                        settings: settingsStore.settings,
+                                        isCollapsed: collapsed,
+                                        activeRestTimer: isActive ? activeRestTimer : nil,
+                                        onToggleCollapse: {
+                                            toggleCollapse(exerciseId: parentExercise.id, currentlyCollapsed: collapsed)
+                                        },
+                                        onCompleteSet: { exerciseIndex, setIndex, weight, reps, elapsedTime in
+                                            completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
+                                        },
+                                        onSkipSet: { exerciseIndex, setIndex in
+                                            skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                                        },
+                                        onSaveSet: { exerciseIndex, setIndex, weight, reps in
+                                            saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                        },
+                                        onDismissRest: {
+                                            activeRestTimer = nil
+                                        },
+                                        restTimerGeneration: restTimerGeneration
+                                    )
+                                    .id(parentExercise.id)
                                 }
-                            )
+                            }
                         }
                     }
+                    .padding()
                 }
-                .padding()
+                .onChange(of: completedSets) { _, _ in
+                    scrollToNextPendingExercise(proxy: proxy)
+                }
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("active-workout-scroll")
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("active-workout-screen")
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .onAppear {
+            // If no active session (e.g., after data reset), dismiss back to home
+            if session == nil {
+                dismiss()
+                return
+            }
             if settingsStore.settings?.keepScreenAwake == true {
                 #if canImport(UIKit)
                 UIApplication.shared.isIdleTimerDisabled = true
                 #endif
             }
+            startLiveActivity()
         }
         .onDisappear {
             #if canImport(UIKit)
@@ -151,71 +258,47 @@ struct ActiveWorkoutView: View {
         }
         .sheet(isPresented: $showEditExercise) {
             if let exercise = editingExercise {
-                EditExerciseSheet(exercise: exercise, onSave: { name, notes, equipmentType in
-                    sessionStore.updateExercise(exerciseId: exercise.id, name: name, notes: notes, equipmentType: equipmentType)
-                    showEditExercise = false
-                })
-            }
-        }
-        .alert("Finish Workout?", isPresented: $showFinishConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Finish") {
-                sessionStore.completeSession()
-            }
-        } message: {
-            let skipped = totalSets - completedSets
-            if skipped > 0 {
-                Text("You have \(skipped) incomplete sets. They will be marked as skipped.")
-            } else {
-                Text("Great job completing all your sets!")
-            }
-        }
-        .sheet(isPresented: $showEditSet) {
-            if let info = editingSetInfo,
-               let session,
-               info.exerciseIndex < session.exercises.count,
-               info.setIndex < session.exercises[info.exerciseIndex].sets.count {
-                let set = session.exercises[info.exerciseIndex].sets[info.setIndex]
-                EditSetSheet(set: set) { weight, reps, status in
-                    if status == .completed {
-                        sessionStore.completeSet(
-                            setId: set.id,
-                            actualWeight: weight,
-                            actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
-                            actualReps: reps,
-                            actualTime: set.actualTime ?? set.targetTime,
-                            actualRpe: set.actualRpe ?? set.targetRpe
-                        )
-                    } else if status == .pending {
-                        // Reset to pending by updating targets
-                        sessionStore.updateSetTarget(
-                            setId: set.id,
-                            targetWeight: weight,
-                            targetReps: reps,
-                            targetTime: set.targetTime
-                        )
+                EditExerciseSheet(
+                    exercise: exercise,
+                    onSave: { name, notes, equipmentType, setChanges in
+                        sessionStore.updateExercise(exerciseId: exercise.id, name: name, notes: notes, equipmentType: equipmentType)
+                        for change in setChanges {
+                            switch change {
+                            case .update(let setId, let weight, let reps, let time):
+                                sessionStore.updateSetTarget(setId: setId, targetWeight: weight, targetReps: reps, targetTime: time)
+                            case .add(let weight, let unit, let reps, let time):
+                                sessionStore.addSetToExercise(exerciseId: exercise.id, targetWeight: weight, targetWeightUnit: unit, targetReps: reps, targetTime: time)
+                            case .delete(let setId):
+                                sessionStore.deleteSet(setId: setId)
+                            }
+                        }
+                        showEditExercise = false
                     }
-                    showEditSet = false
-                }
+                )
             }
         }
     }
 
     // MARK: - Actions
 
-    private func completeSet(exerciseIndex: Int, setIndex: Int) {
+    private func completeSet(exerciseIndex: Int, setIndex: Int, userWeight: Double? = nil, userReps: Int? = nil, elapsedTime: Int? = nil) {
         guard let session, exerciseIndex < session.exercises.count else { return }
         let exercise = session.exercises[exerciseIndex]
         guard setIndex < exercise.sets.count else { return }
         let set = exercise.sets[setIndex]
 
-        // Persist with actual values (use targets as defaults if user didn't edit)
+        lastInteractedExerciseId = exercise.id
+
+        // Dismiss any running rest timer before starting a new one
+        activeRestTimer = nil
+
+        // Persist with actual values — prefer user-edited, then existing actual, then target
         sessionStore.completeSet(
             setId: set.id,
-            actualWeight: set.actualWeight ?? set.targetWeight,
+            actualWeight: userWeight ?? set.actualWeight ?? set.targetWeight,
             actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
-            actualReps: set.actualReps ?? set.targetReps,
-            actualTime: set.actualTime ?? set.targetTime,
+            actualReps: userReps ?? set.actualReps ?? set.targetReps,
+            actualTime: elapsedTime ?? set.actualTime ?? set.targetTime,
             actualRpe: set.actualRpe ?? set.targetRpe
         )
 
@@ -223,6 +306,12 @@ struct ActiveWorkoutView: View {
         if let rest = set.restSeconds, rest > 0,
            settingsStore.settings?.autoStartRestTimer == true {
             activeRestTimer = RestTimerState(seconds: rest)
+            restTimerGeneration += 1
+            // Find the next exercise for the rest timer display
+            let nextExercise = session.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
+            updateLiveActivity(restTimer: (remainingSeconds: rest, nextExercise: nextExercise))
+        } else {
+            updateLiveActivity()
         }
     }
 
@@ -230,7 +319,151 @@ struct ActiveWorkoutView: View {
         guard let session, exerciseIndex < session.exercises.count else { return }
         let exercise = session.exercises[exerciseIndex]
         guard setIndex < exercise.sets.count else { return }
+
+        lastInteractedExerciseId = exercise.id
+
+        // Dismiss any running rest timer on skip
+        activeRestTimer = nil
+
         sessionStore.skipSet(setId: exercise.sets[setIndex].id)
+        updateLiveActivity()
+    }
+
+    private func saveEditedSet(exerciseIndex: Int, setIndex: Int, weight: Double?, reps: Int?) {
+        guard let session, exerciseIndex < session.exercises.count else { return }
+        let exercise = session.exercises[exerciseIndex]
+        guard setIndex < exercise.sets.count else { return }
+        let set = exercise.sets[setIndex]
+
+        sessionStore.completeSet(
+            setId: set.id,
+            actualWeight: weight,
+            actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
+            actualReps: reps,
+            actualTime: set.actualTime ?? set.targetTime,
+            actualRpe: set.actualRpe ?? set.targetRpe
+        )
+    }
+
+    // MARK: - Collapse Helpers
+
+    private func isExerciseCollapsed(_ exercise: SessionExercise) -> Bool {
+        // User manual overrides take priority
+        if expandedExercises.contains(exercise.id) { return false }
+        if collapsedExercises.contains(exercise.id) { return true }
+
+        let allDone = exercise.sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
+        if allDone { return true }
+
+        // Current exercise: expanded (first pending, or last-interacted if still has pending sets)
+        let isCurrentExercise: Bool = {
+            if let lastId = lastInteractedExerciseId, lastId == exercise.id {
+                return exercise.sets.contains { $0.status == .pending }
+            }
+            // First exercise with pending sets
+            guard let exercises = session?.exercises else { return false }
+            return exercises.first(where: { $0.sets.contains { $0.status == .pending } })?.id == exercise.id
+        }()
+
+        if isCurrentExercise { return false }
+
+        // Future exercises: collapsed
+        return true
+    }
+
+    private func scrollToNextPendingExercise(proxy: ScrollViewProxy) {
+        guard let exercises = session?.exercises else { return }
+
+        // Only auto-scroll when the last-interacted exercise is fully complete
+        if let lastId = lastInteractedExerciseId,
+           let lastExercise = exercises.first(where: { $0.id == lastId }) {
+            let allDone = lastExercise.sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
+            guard allDone else { return }
+        }
+
+        if let nextExercise = exercises.first(where: { ex in
+            ex.sets.contains { $0.status == .pending }
+        }) {
+            withAnimation {
+                proxy.scrollTo(nextExercise.id, anchor: .top)
+            }
+        }
+    }
+
+    private func toggleCollapse(exerciseId: String, currentlyCollapsed: Bool) {
+        if currentlyCollapsed {
+            expandedExercises.insert(exerciseId)
+            collapsedExercises.remove(exerciseId)
+        } else {
+            collapsedExercises.insert(exerciseId)
+            expandedExercises.remove(exerciseId)
+        }
+    }
+
+    private func isSupersetCollapsed(_ parent: SessionExercise, children: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)]) -> Bool {
+        // User manual overrides on the parent ID
+        if expandedExercises.contains(parent.id) { return false }
+        if collapsedExercises.contains(parent.id) { return true }
+
+        let allDone = children.allSatisfy { child in
+            child.exercise.sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
+        }
+        if allDone { return true }
+
+        // Current superset: expanded if any child is the current exercise
+        let isCurrentSuperset = children.contains { child in
+            if let lastId = lastInteractedExerciseId, lastId == child.exercise.id {
+                return child.exercise.sets.contains { $0.status == .pending }
+            }
+            return false
+        }
+        if isCurrentSuperset { return false }
+
+        // First pending superset
+        guard let exercises = session?.exercises else { return true }
+        let firstPendingId = exercises.first(where: { $0.sets.contains { $0.status == .pending } })?.id
+        if children.contains(where: { $0.exercise.id == firstPendingId }) { return false }
+
+        return true
+    }
+
+    private func buildDisplayItems(from exercises: [SessionExercise]) -> [ExerciseDisplayItem] {
+        var items: [ExerciseDisplayItem] = []
+        var processedIds = Set<String>()
+        var displayNumber = 1
+
+        for (index, exercise) in exercises.enumerated() {
+            if processedIds.contains(exercise.id) { continue }
+
+            // Check if this is a superset parent (groupType == .superset with no sets)
+            if exercise.groupType == .superset && exercise.sets.isEmpty {
+                // Gather children
+                var children: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)] = []
+                for (childIndex, child) in exercises.enumerated() {
+                    if child.parentExerciseId == exercise.id {
+                        children.append((exercise: child, exerciseIndex: childIndex, displayNumber: displayNumber))
+                        displayNumber += 1
+                        processedIds.insert(child.id)
+                    }
+                }
+                processedIds.insert(exercise.id)
+                if !children.isEmpty {
+                    items.append(.superset(parent: exercise, children: children))
+                }
+            } else if exercise.parentExerciseId != nil {
+                // Skip orphan children (already handled by superset parent)
+                continue
+            } else if exercise.groupType == .section && exercise.sets.isEmpty {
+                // Section headers — skip rendering them as cards
+                processedIds.insert(exercise.id)
+                continue
+            } else {
+                items.append(.single(exercise: exercise, exerciseIndex: index, displayNumber: displayNumber))
+                displayNumber += 1
+                processedIds.insert(exercise.id)
+            }
+        }
+        return items
     }
 
     private func addExerciseFromMarkdown(_ markdown: String) {
@@ -240,6 +473,47 @@ struct ActiveWorkoutView: View {
             (weight: set.targetWeight, unit: set.targetWeightUnit, reps: set.targetReps, time: set.targetTime)
         }
         sessionStore.addExercise(exerciseName: firstExercise.exerciseName, sets: sets)
+    }
+
+    // MARK: - Live Activity
+
+    private func updateLiveActivity(restTimer: (remainingSeconds: Int, nextExercise: SessionExercise?)? = nil) {
+        guard settingsStore.settings?.liveActivitiesEnabled == true,
+              LiveActivityService.shared.isAvailable(),
+              let session else { return }
+
+        let currentExercise = session.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
+        let currentSetIdx = currentExercise?.sets.firstIndex { $0.status == .pending } ?? 0
+
+        LiveActivityService.shared.updateWorkoutActivity(
+            session: session,
+            exercise: currentExercise,
+            setIndex: currentSetIdx,
+            progress: (completed: completedSets, total: totalSets),
+            restTimer: restTimer
+        )
+    }
+
+    private func startLiveActivity() {
+        guard settingsStore.settings?.liveActivitiesEnabled == true,
+              LiveActivityService.shared.isAvailable(),
+              let session else { return }
+
+        let currentExercise = session.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
+        let currentSetIdx = currentExercise?.sets.firstIndex { $0.status == .pending } ?? 0
+
+        LiveActivityService.shared.startWorkoutActivity(
+            session: session,
+            exercise: currentExercise,
+            setIndex: currentSetIdx,
+            progress: (completed: completedSets, total: totalSets)
+        )
+    }
+
+    private func endLiveActivity(message: String? = nil) {
+        guard settingsStore.settings?.liveActivitiesEnabled == true,
+              LiveActivityService.shared.isAvailable() else { return }
+        LiveActivityService.shared.endWorkoutActivity(message: message)
     }
 }
 
@@ -254,89 +528,152 @@ private struct RestTimerState {
 private struct ActiveExerciseCard: View {
     let exercise: SessionExercise
     let exerciseIndex: Int
+    let displayNumber: Int
     let settings: UserSettings?
-    let onCompleteSet: (Int) -> Void
+    let isCollapsed: Bool
+    let activeRestTimer: RestTimerState?
+    let onToggleCollapse: () -> Void
+    let onCompleteSet: (Int, Double?, Int?, Int?) -> Void
     let onSkipSet: (Int) -> Void
     let onEditExercise: () -> Void
-    let onEditSet: (Int) -> Void
+    let onSaveSet: (Int, Double?, Int?) -> Void
+    let onDismissRest: () -> Void
+    var restTimerGeneration: Int = 0
 
     private var currentSetIndex: Int? {
         exercise.sets.firstIndex { $0.status == .pending }
     }
 
+    private var completedSetCount: Int {
+        exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
+    }
+
+    /// Index of the last completed/skipped set (for placing rest timer after it)
+    private var lastCompletedSetIndex: Int? {
+        for i in stride(from: exercise.sets.count - 1, through: 0, by: -1) {
+            if exercise.sets[i].status == .completed || exercise.sets[i].status == .skipped {
+                return i
+            }
+        }
+        return nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-            // Exercise header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: LiftMarkTheme.spacingXS) {
-                        Text("\(exerciseIndex + 1)")
-                            .font(.caption.bold())
-                            .foregroundStyle(.white)
-                            .frame(width: 22, height: 22)
-                            .background(exerciseStatusColor)
-                            .clipShape(Circle())
+            // Exercise header — tappable to toggle collapse
+            Button {
+                onToggleCollapse()
+            } label: {
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    Text("\(displayNumber)")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .frame(width: 24, height: 24)
+                        .background(exerciseStatusColor)
+                        .clipShape(Circle())
 
-                        Text(exercise.exerciseName)
-                            .font(.headline)
-                    }
+                    Text(exercise.exerciseName)
+                        .font(.headline)
+                        .foregroundStyle(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
 
-                    if let equipment = exercise.equipmentType {
-                        Text(equipment)
+                    Spacer()
+
+                    if isCollapsed {
+                        Text("\(completedSetCount)/\(exercise.sets.count) sets")
                             .font(.caption)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    } else {
+                        // Edit button
+                        Button {
+                            onEditExercise()
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("edit-exercise-button-\(exerciseIndex)")
+
+                        // YouTube link
+                        if let url = youtubeSearchURL(for: exercise.exerciseName) {
+                            Link(destination: url) {
+                                Image(systemName: "play.rectangle")
+                                    .font(.caption)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
+                        }
                     }
                 }
+            }
+            .buttonStyle(.plain)
 
-                Spacer()
-
-                // Edit button
-                Button {
-                    onEditExercise()
-                } label: {
-                    Image(systemName: "pencil")
+            if !isCollapsed {
+                // Notes — indented to align with title
+                if let notes = exercise.notes, !notes.isEmpty {
+                    Text(notes)
                         .font(.caption)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .italic()
+                        .padding(.leading, 32) // badge width + spacing
                 }
-                .buttonStyle(.plain)
 
-                // YouTube link
-                if let url = youtubeSearchURL(for: exercise.exerciseName) {
-                    Link(destination: url) {
-                        Image(systemName: "play.rectangle")
-                            .font(.caption)
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                // Sets with inline rest placeholders and rest timer
+                ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { setIndex, set in
+                    SetRowView(
+                        set: set,
+                        setNumber: setIndex + 1,
+                        isCurrent: setIndex == currentSetIndex,
+                        equipmentType: exercise.equipmentType,
+                        onComplete: { weight, reps in
+                            onCompleteSet(setIndex, weight, reps, nil)
+                        },
+                        onSkip: { onSkipSet(setIndex) },
+                        onSave: { weight, reps in
+                            onSaveSet(setIndex, weight, reps)
+                        }
+                    )
+
+                    // Inline rest timer — placed after the last completed set
+                    if let lastIdx = lastCompletedSetIndex, setIndex == lastIdx,
+                       let restState = activeRestTimer {
+                        RestTimerView(totalSeconds: restState.seconds) {
+                            onDismissRest()
+                        }
+                        .id(restTimerGeneration)
+                    }
+
+                    // Rest placeholder between pending sets
+                    if set.status == .pending,
+                       let rest = set.restSeconds, rest > 0,
+                       setIndex < exercise.sets.count - 1,
+                       setIndex != currentSetIndex {
+                        HStack(spacing: LiftMarkTheme.spacingSM) {
+                            Rectangle()
+                                .fill(LiftMarkTheme.tertiaryLabel.opacity(0.3))
+                                .frame(height: 1)
+                            Text("Rest \(rest)s")
+                                .font(.caption2)
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                            Rectangle()
+                                .fill(LiftMarkTheme.tertiaryLabel.opacity(0.3))
+                                .frame(height: 1)
+                        }
+                        .padding(.vertical, 2)
                     }
                 }
-            }
 
-            // Notes
-            if let notes = exercise.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.caption)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    .italic()
-            }
-
-            // Sets
-            ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { setIndex, set in
-                SetRowView(
-                    set: set,
-                    setNumber: setIndex + 1,
-                    isCurrent: setIndex == currentSetIndex,
-                    equipmentType: exercise.equipmentType,
-                    onComplete: { onCompleteSet(setIndex) },
-                    onSkip: { onSkipSet(setIndex) },
-                    onEdit: { onEditSet(setIndex) }
-                )
-            }
-
-            // Timed exercise timer
-            if let currentIdx = currentSetIndex {
-                let currentSet = exercise.sets[currentIdx]
-                if let targetTime = currentSet.targetTime, targetTime > 0 {
-                    ExerciseTimerView(targetSeconds: targetTime) {
-                        onCompleteSet(currentIdx)
+                // Timed exercise timer — keyed by set ID so it resets between sets
+                if let currentIdx = currentSetIndex {
+                    let currentSet = exercise.sets[currentIdx]
+                    if let targetTime = currentSet.targetTime, targetTime > 0 {
+                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
+                            onCompleteSet(currentIdx, nil, nil, elapsedSeconds)
+                        }
+                        .id(currentSet.id)
                     }
                 }
             }
@@ -344,6 +681,9 @@ private struct ActiveExerciseCard: View {
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .opacity(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? 0.6 : 1.0)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("exercise-card-\(exerciseIndex)")
     }
 
     private var exerciseStatusColor: Color {
@@ -411,53 +751,82 @@ private struct AddExerciseSheet: View {
     }
 }
 
+// MARK: - Edit Exercise Set Change
+
+private enum EditExerciseSetChange {
+    case update(setId: String, weight: Double?, reps: Int?, time: Int?)
+    case add(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?)
+    case delete(setId: String)
+}
+
+// MARK: - Editable Set Row Model
+
+private struct EditableSetRow: Identifiable {
+    let id: String
+    let existingSetId: String?
+    var weightText: String
+    var repsText: String
+    var timeText: String
+    var weightUnit: WeightUnit?
+    var status: SetStatus
+
+    static func from(_ set: SessionSet) -> EditableSetRow {
+        EditableSetRow(
+            id: set.id,
+            existingSetId: set.id,
+            weightText: {
+                if let w = set.targetWeight {
+                    return w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
+                }
+                return ""
+            }(),
+            repsText: set.targetReps.map { "\($0)" } ?? "",
+            timeText: set.targetTime.map { "\($0)" } ?? "",
+            weightUnit: set.targetWeightUnit,
+            status: set.status
+        )
+    }
+}
+
 // MARK: - Edit Exercise Sheet
 
 private struct EditExerciseSheet: View {
     let exercise: SessionExercise
-    let onSave: (String, String?, String?) -> Void
+    let onSave: (String, String?, String?, [EditExerciseSetChange]) -> Void
     @State private var name: String
     @State private var equipmentType: String
     @State private var notes: String
+    @State private var editableSets: [EditableSetRow]
+    @State private var editMode: Int = 0
+    @State private var markdownText: String = ""
+    @State private var markdownError: String?
     @Environment(\.dismiss) private var dismiss
 
-    init(exercise: SessionExercise, onSave: @escaping (String, String?, String?) -> Void) {
+    init(exercise: SessionExercise, onSave: @escaping (String, String?, String?, [EditExerciseSetChange]) -> Void) {
         self.exercise = exercise
         self.onSave = onSave
         self._name = State(initialValue: exercise.exerciseName)
         self._equipmentType = State(initialValue: exercise.equipmentType ?? "")
         self._notes = State(initialValue: exercise.notes ?? "")
+        self._editableSets = State(initialValue: exercise.sets.map { EditableSetRow.from($0) })
+        self._markdownText = State(initialValue: Self.generateMarkdown(from: exercise))
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Exercise") {
-                    TextField("Name", text: $name)
-                    TextField("Equipment Type", text: $equipmentType)
+            VStack(spacing: 0) {
+                Picker("Mode", selection: $editMode) {
+                    Text("Form").tag(0)
+                    Text("Markdown").tag(1)
                 }
+                .pickerStyle(.segmented)
+                .padding()
+                .accessibilityIdentifier("edit-exercise-mode-picker")
 
-                Section("Notes") {
-                    TextEditor(text: $notes)
-                        .frame(minHeight: 60)
-                }
-
-                Section("Sets") {
-                    ForEach(exercise.sets) { set in
-                        HStack {
-                            Text("Set \(set.orderIndex + 1)")
-                            Spacer()
-                            if let w = set.targetWeight {
-                                Text("\(Int(w)) \(set.targetWeightUnit?.rawValue ?? "")")
-                            }
-                            if let r = set.targetReps {
-                                Text("x \(r)")
-                            }
-                            Text(set.status.rawValue)
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-                    }
+                if editMode == 0 {
+                    formView
+                } else {
+                    markdownView
                 }
             }
             .navigationTitle("Edit Exercise")
@@ -467,98 +836,453 @@ private struct EditExerciseSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityIdentifier("edit-exercise-cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        onSave(
-                            name,
-                            notes.isEmpty ? nil : notes,
-                            equipmentType.isEmpty ? nil : equipmentType
-                        )
-                        dismiss()
+                        saveExercise()
                     }
+                    .accessibilityIdentifier("edit-exercise-save")
+                }
+            }
+            .onChange(of: editMode) { _, newValue in
+                if newValue == 1 {
+                    markdownText = generateMarkdownFromForm()
+                    markdownError = nil
+                } else {
+                    parseMarkdownIntoForm()
                 }
             }
         }
     }
-}
 
-// MARK: - Edit Set Sheet
-
-private struct EditSetSheet: View {
-    let set: SessionSet
-    let onSave: (Double?, Int?, SetStatus) -> Void
-    @State private var weightText: String
-    @State private var repsText: String
-    @Environment(\.dismiss) private var dismiss
-
-    init(set: SessionSet, onSave: @escaping (Double?, Int?, SetStatus) -> Void) {
-        self.set = set
-        self.onSave = onSave
-        self._weightText = State(initialValue: {
-            if let w = set.actualWeight ?? set.targetWeight {
-                return w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
+    private var formView: some View {
+        Form {
+            Section("Exercise") {
+                TextField("Name", text: $name)
+                    .accessibilityIdentifier("edit-exercise-name")
+                TextField("Equipment", text: $equipmentType)
+                    .accessibilityIdentifier("edit-exercise-equipment")
             }
-            return ""
-        }())
-        self._repsText = State(initialValue: {
-            if let r = set.actualReps ?? set.targetReps {
-                return "\(r)"
-            }
-            return ""
-        }())
-    }
 
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Set Values") {
-                    HStack {
-                        Text("Weight")
-                        Spacer()
-                        TextField("--", text: $weightText)
+            Section("Notes") {
+                TextEditor(text: $notes)
+                    .frame(minHeight: 60)
+                    .accessibilityIdentifier("edit-exercise-notes")
+            }
+
+            Section {
+                ForEach(Array(editableSets.enumerated()), id: \.element.id) { index, setRow in
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        Text("Set \(index + 1)")
+                            .font(.subheadline)
+                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                            .frame(width: 45, alignment: .leading)
+
+                        TextField("Wt", text: $editableSets[index].weightText)
                             #if os(iOS)
                             .keyboardType(.decimalPad)
                             #endif
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
-                        Text(set.actualWeightUnit?.rawValue ?? set.targetWeightUnit?.rawValue ?? "lbs")
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 65)
+                            .accessibilityIdentifier("edit-set-weight-\(index)")
+
+                        Text("x")
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    }
-                    HStack {
-                        Text("Reps")
-                        Spacer()
-                        TextField("--", text: $repsText)
+
+                        TextField("Reps", text: $editableSets[index].repsText)
                             #if os(iOS)
                             .keyboardType(.numberPad)
                             #endif
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 50)
+                            .accessibilityIdentifier("edit-set-reps-\(index)")
+
+                        if !setRow.timeText.isEmpty {
+                            TextField("Time", text: $editableSets[index].timeText)
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 50)
+                                .accessibilityIdentifier("edit-set-time-\(index)")
+                            Text("s")
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        }
+
+                        Spacer()
+
+                        if setRow.status != .pending {
+                            Text(setRow.status.rawValue)
+                                .font(.caption2)
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        }
                     }
                 }
+                .onDelete(perform: deleteSets)
+                .onMove(perform: moveSets)
 
-                Section("Status") {
-                    Text(set.status.rawValue.capitalized)
-                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                Button {
+                    addSet()
+                } label: {
+                    Label("Add Set", systemImage: "plus.circle")
+                }
+                .accessibilityIdentifier("edit-exercise-add-set")
+            } header: {
+                Text("Sets")
+            }
+        }
+        .accessibilityIdentifier("edit-exercise-form")
+    }
+
+    private var markdownView: some View {
+        VStack(spacing: LiftMarkTheme.spacingSM) {
+            if let error = markdownError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.destructive)
+                    .padding(.horizontal)
+            }
+
+            TextEditor(text: $markdownText)
+                .font(.system(.body, design: .monospaced))
+                .padding(.horizontal)
+                .accessibilityIdentifier("edit-exercise-markdown")
+
+            Text("LMWF format: ## Name [equipment]\n> notes\n- weight x reps")
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                .padding(.horizontal)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityIdentifier("edit-exercise-markdown-view")
+    }
+
+    private func addSet() {
+        let lastSet = editableSets.last
+        let newSet = EditableSetRow(
+            id: UUID().uuidString,
+            existingSetId: nil,
+            weightText: lastSet?.weightText ?? "",
+            repsText: lastSet?.repsText ?? "",
+            timeText: lastSet?.timeText ?? "",
+            weightUnit: lastSet?.weightUnit,
+            status: .pending
+        )
+        editableSets.append(newSet)
+    }
+
+    private func deleteSets(at offsets: IndexSet) {
+        editableSets.remove(atOffsets: offsets)
+    }
+
+    private func moveSets(from source: IndexSet, to destination: Int) {
+        editableSets.move(fromOffsets: source, toOffset: destination)
+    }
+
+    private func saveExercise() {
+        if editMode == 1 {
+            parseMarkdownIntoForm()
+            if markdownError != nil { return }
+        }
+
+        var changes: [EditExerciseSetChange] = []
+        let originalSetIds = Set(exercise.sets.map { $0.id })
+        let currentSetIds = Set(editableSets.compactMap { $0.existingSetId })
+
+        for originalId in originalSetIds where !currentSetIds.contains(originalId) {
+            changes.append(.delete(setId: originalId))
+        }
+
+        for setRow in editableSets {
+            let weight = Double(setRow.weightText)
+            let reps = Int(setRow.repsText)
+            let time = Int(setRow.timeText)
+
+            if let existingId = setRow.existingSetId {
+                changes.append(.update(setId: existingId, weight: weight, reps: reps, time: time))
+            } else {
+                changes.append(.add(weight: weight, unit: setRow.weightUnit, reps: reps, time: time))
+            }
+        }
+
+        onSave(
+            name,
+            notes.isEmpty ? nil : notes,
+            equipmentType.isEmpty ? nil : equipmentType,
+            changes
+        )
+        dismiss()
+    }
+
+    private func generateMarkdownFromForm() -> String {
+        var lines: [String] = []
+        lines.append("## \(name)")
+        if !equipmentType.isEmpty {
+            lines.append("@type: \(equipmentType)")
+        }
+        if !notes.isEmpty {
+            lines.append(notes)
+        }
+        for setRow in editableSets {
+            lines.append("- \(formatSetLine(setRow))")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func formatSetLine(_ setRow: EditableSetRow) -> String {
+        var parts: [String] = []
+        if !setRow.weightText.isEmpty {
+            parts.append(setRow.weightText)
+            if let unit = setRow.weightUnit {
+                parts.append(unit.rawValue)
+            }
+        }
+        if !setRow.repsText.isEmpty {
+            parts.append("x \(setRow.repsText)")
+        }
+        if !setRow.timeText.isEmpty {
+            parts.append("\(setRow.timeText)s")
+        }
+        return parts.isEmpty ? "x 1" : parts.joined(separator: " ")
+    }
+
+    private static func generateMarkdown(from exercise: SessionExercise) -> String {
+        var lines: [String] = []
+        lines.append("## \(exercise.exerciseName)")
+        if let equip = exercise.equipmentType, !equip.isEmpty {
+            lines.append("@type: \(equip)")
+        }
+        if let notes = exercise.notes, !notes.isEmpty {
+            lines.append(notes)
+        }
+        for set in exercise.sets {
+            var parts: [String] = []
+            if let w = set.targetWeight {
+                let wStr = w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
+                parts.append(wStr)
+                if let unit = set.targetWeightUnit {
+                    parts.append(unit.rawValue)
                 }
             }
-            .navigationTitle("Edit Set")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+            if let r = set.targetReps {
+                parts.append("x \(r)")
+            }
+            if let t = set.targetTime {
+                parts.append("\(t)s")
+            }
+            lines.append("- \(parts.joined(separator: " "))")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func parseMarkdownIntoForm() {
+        let wrappedMarkdown = "# Workout\n\(markdownText)"
+        let result = MarkdownParser.parseWorkout(wrappedMarkdown)
+        guard let plan = result.data, let parsedExercise = plan.exercises.first else {
+            markdownError = result.errors.first ?? "Failed to parse markdown"
+            return
+        }
+        markdownError = nil
+        name = parsedExercise.exerciseName
+        equipmentType = parsedExercise.equipmentType ?? ""
+        notes = parsedExercise.notes ?? ""
+
+        var newSets: [EditableSetRow] = []
+        for (i, parsedSet) in parsedExercise.sets.enumerated() {
+            let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
+            let existingStatus: SetStatus = i < exercise.sets.count ? exercise.sets[i].status : .pending
+            newSets.append(EditableSetRow(
+                id: existingId ?? UUID().uuidString,
+                existingSetId: existingId,
+                weightText: parsedSet.targetWeight.map {
+                    $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
+                } ?? "",
+                repsText: parsedSet.targetReps.map { "\($0)" } ?? "",
+                timeText: parsedSet.targetTime.map { "\($0)" } ?? "",
+                weightUnit: parsedSet.targetWeightUnit,
+                status: existingStatus
+            ))
+        }
+        editableSets = newSets
+    }
+}
+
+// MARK: - Exercise Display Item
+
+private enum ExerciseDisplayItem: Identifiable {
+    case single(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)
+    case superset(parent: SessionExercise, children: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)])
+
+    var id: String {
+        switch self {
+        case .single(let exercise, _, _): return exercise.id
+        case .superset(let parent, _): return parent.id
+        }
+    }
+}
+
+// MARK: - Superset Card
+
+private struct SupersetCard: View {
+    let parentExercise: SessionExercise
+    let children: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)]
+    let settings: UserSettings?
+    let isCollapsed: Bool
+    let activeRestTimer: RestTimerState?
+    let onToggleCollapse: () -> Void
+    let onCompleteSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
+    let onSkipSet: (Int, Int) -> Void  // exerciseIndex, setIndex
+    let onSaveSet: (Int, Int, Double?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps
+    let onDismissRest: () -> Void
+    var restTimerGeneration: Int = 0
+
+    private var allSetsCompleted: Bool {
+        children.allSatisfy { child in
+            child.exercise.sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
+        }
+    }
+
+    private var completedSetCount: Int {
+        children.reduce(0) { sum, child in
+            sum + child.exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
+        }
+    }
+
+    private var totalSetCount: Int {
+        children.reduce(0) { $0 + $1.exercise.sets.count }
+    }
+
+    /// Build interleaved sets: round-robin across children
+    private var interleavedSets: [(exercise: SessionExercise, exerciseIndex: Int, set: SessionSet, setIndex: Int)] {
+        let maxSets = children.map { $0.exercise.sets.count }.max() ?? 0
+        var result: [(exercise: SessionExercise, exerciseIndex: Int, set: SessionSet, setIndex: Int)] = []
+        for round in 0..<maxSets {
+            for child in children {
+                if round < child.exercise.sets.count {
+                    result.append((
+                        exercise: child.exercise,
+                        exerciseIndex: child.exerciseIndex,
+                        set: child.exercise.sets[round],
+                        setIndex: round
+                    ))
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let weight = Double(weightText)
-                        let reps = Int(repsText)
-                        onSave(weight, reps, set.status)
-                        dismiss()
+            }
+        }
+        return result
+    }
+
+    /// The last completed/skipped set across all children
+    private var lastCompletedSetId: String? {
+        let allSets = interleavedSets
+        for item in allSets.reversed() {
+            if item.set.status == .completed || item.set.status == .skipped {
+                return item.set.id
+            }
+        }
+        return nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            // Superset header
+            Button {
+                onToggleCollapse()
+            } label: {
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    // Purple superset icon
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .frame(width: 24, height: 24)
+                        .background(Color.purple)
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: LiftMarkTheme.spacingXS) {
+                            Text("SUPERSET")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.purple)
+                                .clipShape(Capsule())
+                            Text(supersetTitle)
+                                .font(.headline)
+                                .foregroundStyle(allSetsCompleted ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
+                        }
+                        Text(children.map { "\($0.displayNumber). \($0.exercise.exerciseName)" }.joined(separator: " + "))
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    }
+
+                    Spacer()
+
+                    if isCollapsed {
+                        Text("\(completedSetCount)/\(totalSetCount) sets")
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            if !isCollapsed {
+                // Interleaved sets
+                let interleaved = interleavedSets
+                let firstPendingSetId = interleaved.first(where: { $0.set.status == .pending })?.set.id
+                ForEach(Array(interleaved.enumerated()), id: \.element.set.id) { idx, item in
+                    let isCurrent = item.set.id == firstPendingSetId
+
+                    // Exercise name label for each set
+                    Text(item.exercise.exerciseName)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .padding(.leading, 32)
+
+                    SetRowView(
+                        set: item.set,
+                        setNumber: item.setIndex + 1,
+                        isCurrent: isCurrent,
+                        equipmentType: item.exercise.equipmentType,
+                        onComplete: { weight, reps in
+                            onCompleteSet(item.exerciseIndex, item.setIndex, weight, reps, nil)
+                        },
+                        onSkip: { onSkipSet(item.exerciseIndex, item.setIndex) },
+                        onSave: { weight, reps in
+                            onSaveSet(item.exerciseIndex, item.setIndex, weight, reps)
+                        }
+                    )
+
+                    // Rest timer after last completed set
+                    if let lastId = lastCompletedSetId, item.set.id == lastId,
+                       let restState = activeRestTimer {
+                        RestTimerView(totalSeconds: restState.seconds) {
+                            onDismissRest()
+                        }
+                        .id(restTimerGeneration)
                     }
                 }
             }
         }
+        .padding()
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .opacity(allSetsCompleted ? 0.6 : 1.0)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("superset-card-\(parentExercise.exerciseName)")
+    }
+
+    private var supersetTitle: String {
+        let name = parentExercise.exerciseName
+        if name.lowercased().hasPrefix("superset") {
+            return name
+        }
+        return "Superset"
     }
 }
+

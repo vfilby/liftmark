@@ -33,11 +33,16 @@ final class SessionStore {
         guard let session = activeSession else { return }
         do {
             try repository.complete(session.id)
-            activeSession = nil
-            loadSessions()
+            // Reload completed sessions so WorkoutSummaryView can access via sessions.last.
+            // Keep activeSession non-nil to avoid disrupting navigation to the summary screen.
+            sessions = try repository.getCompleted()
         } catch {
             print("Failed to complete session: \(error)")
         }
+    }
+
+    func clearActiveSession() {
+        activeSession = nil
     }
 
     func cancelSession() {
@@ -110,6 +115,34 @@ final class SessionStore {
             reloadActiveSession()
         } catch {
             print("Failed to add exercise: \(error)")
+        }
+    }
+
+    func addSetToExercise(exerciseId: String, targetWeight: Double?, targetWeightUnit: WeightUnit?, targetReps: Int?, targetTime: Int?) {
+        guard let session = activeSession,
+              let exercise = session.exercises.first(where: { $0.id == exerciseId }) else { return }
+        do {
+            let orderIndex = exercise.sets.count
+            try repository.insertSessionSet(
+                exerciseId: exerciseId,
+                orderIndex: orderIndex,
+                targetWeight: targetWeight,
+                targetWeightUnit: targetWeightUnit,
+                targetReps: targetReps,
+                targetTime: targetTime
+            )
+            reloadActiveSession()
+        } catch {
+            print("Failed to add set: \(error)")
+        }
+    }
+
+    func deleteSet(setId: String) {
+        do {
+            try repository.deleteSessionSet(setId)
+            reloadActiveSession()
+        } catch {
+            print("Failed to delete set: \(error)")
         }
     }
 

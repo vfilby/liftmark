@@ -24,10 +24,6 @@ N/A — This is a reusable component (`ExercisePickerModal`), not a route. Used 
 | Free-text entry | `exercise-picker-free-entry` | TouchableOpacity |
 | Exercise option | `exercise-option-{exerciseName}` | TouchableOpacity |
 
-## Data Dependencies
-- **exerciseHistoryRepository**: `getAllExercisesWithHistory()` — loads user's exercise history names
-- **COMMON_EXERCISES**: Static list of 18 common exercises (Squat, Deadlift, Bench Press, etc.)
-
 ## User Interactions
 - **Tap backdrop** → calls `onCancel`
 - **Tap Cancel** → calls `onCancel`
@@ -40,10 +36,6 @@ N/A — This is a reusable component (`ExercisePickerModal`), not a route. Used 
 - `visible` — controls modal visibility
 - `onSelect(exerciseName: string)` — callback when exercise is chosen
 - `onCancel()` — callback when modal is dismissed
-
-## State
-- `search` — current search input text (reset on open)
-- `userExercises` — exercise names from user's workout history (loaded on open)
 
 ## Computed Values
 - `getFilteredExercises()` — merges user exercises with common exercises (deduped), filtered by search term. User exercises appear first, then common exercises not in user history.

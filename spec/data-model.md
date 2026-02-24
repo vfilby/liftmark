@@ -1,24 +1,24 @@
 # LiftMark Data Model
 
-> Canonical reference for all domain entities, their fields, types, constraints, defaults, relationships, and business rules.
+> Canonical reference for all domain entities, their fields, constraints, defaults, relationships, and business rules.
 >
-> Source of truth: `src/types/workout.ts`
+> This data model defines the shared contract between app versions and platform implementations. Any implementation must represent these entities with these fields to ensure data portability and interoperability.
 
 ---
 
-## Enums & Literal Types
+## Enums
 
 | Name | Values | Usage |
 |------|--------|-------|
-| `WeightUnit` | `'lbs' \| 'kg'` | Weight measurement throughout the app |
-| `SetStatus` | `'pending' \| 'completed' \| 'skipped' \| 'failed'` | SessionSet lifecycle |
-| `ExerciseStatus` | `'pending' \| 'in_progress' \| 'completed' \| 'skipped'` | SessionExercise lifecycle |
-| `SessionStatus` | `'in_progress' \| 'completed' \| 'canceled'` | WorkoutSession lifecycle |
-| `GroupType` | `'superset' \| 'section'` | Exercise grouping. `'superset'` = performed together; `'section'` = organizational heading |
-| `Theme` | `'light' \| 'dark' \| 'auto'` | UI theme preference |
-| `ApiKeyStatus` | `'verified' \| 'invalid' \| 'not_set'` | Anthropic API key verification state |
-| `ChartMetricType` | `'maxWeight' \| 'totalVolume' \| 'reps' \| 'time'` | Exercise history chart metric selector |
-| `Trend` | `'improving' \| 'stable' \| 'declining'` | Exercise progress direction (based on last 5 sessions, >5% threshold) |
+| WeightUnit | `lbs`, `kg` | Weight measurement throughout the app |
+| SetStatus | `pending`, `completed`, `skipped`, `failed` | SessionSet lifecycle |
+| ExerciseStatus | `pending`, `in_progress`, `completed`, `skipped` | SessionExercise lifecycle |
+| SessionStatus | `in_progress`, `completed`, `canceled` | WorkoutSession lifecycle |
+| GroupType | `superset`, `section` | Exercise grouping. `superset` = performed together; `section` = organizational heading |
+| Theme | `light`, `dark`, `auto` | UI theme preference |
+| ApiKeyStatus | `verified`, `invalid`, `not_set` | Anthropic API key verification state |
+| ChartMetricType | `maxWeight`, `totalVolume`, `reps`, `time` | Exercise history chart metric selector |
+| Trend | `improving`, `stable`, `declining` | Exercise progress direction (based on last 5 sessions, >5% threshold) |
 
 ---
 
@@ -30,18 +30,16 @@ A reusable workout template that defines exercises and target sets. Created from
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key, generated via `expo-crypto` |
-| `name` | `string` | Yes | — | From `# Heading` in LMWF |
-| `description` | `string` | No | `undefined` | Freeform notes from markdown |
-| `tags` | `string[]` | Yes | `[]` | From `@tags:` directive; stored as JSON string in DB |
-| `defaultWeightUnit` | `'lbs' \| 'kg'` | No | `undefined` | From `@units:` directive |
-| `sourceMarkdown` | `string` | No | `undefined` | Original LMWF text for reprocessing |
-| `createdAt` | `string` | Yes | — | ISO 8601 datetime |
-| `updatedAt` | `string` | Yes | — | ISO 8601 datetime |
-| `isFavorite` | `boolean` | No | `false` | Pinned to favorites list |
-| `exercises` | `PlannedExercise[]` | Yes | `[]` | Ordered list of exercises |
-
-**DB table**: `workout_templates`
+| id | string | Yes | UUID | Primary key |
+| name | string | Yes | — | From `# Heading` in LMWF |
+| description | string | No | — | Freeform notes from markdown |
+| tags | string[] | Yes | [] | From `@tags:` directive |
+| defaultWeightUnit | WeightUnit | No | — | From `@units:` directive |
+| sourceMarkdown | string | No | — | Original LMWF text for reprocessing |
+| createdAt | datetime | Yes | — | ISO 8601 |
+| updatedAt | datetime | Yes | — | ISO 8601 |
+| isFavorite | boolean | No | false | Pinned to favorites list |
+| exercises | PlannedExercise[] | Yes | [] | Ordered list of exercises |
 
 ---
 
@@ -51,22 +49,20 @@ An exercise within a WorkoutPlan, defining what to perform and in what order.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `workoutPlanId` | `string` | Yes | — | FK → `workout_templates.id` (CASCADE delete) |
-| `exerciseName` | `string` | Yes | — | Freeform exercise name |
-| `orderIndex` | `number` | Yes | — | 0-based position in workout |
-| `notes` | `string` | No | `undefined` | Freeform notes from markdown |
-| `equipmentType` | `string` | No | `undefined` | Freeform equipment (e.g., "barbell", "kettlebell") |
-| `groupType` | `'superset' \| 'section'` | No | `undefined` | Grouping semantics |
-| `groupName` | `string` | No | `undefined` | E.g., "Superset: Arms" or "Warmup" |
-| `parentExerciseId` | `string` | No | `undefined` | FK → `template_exercises.id` (CASCADE); links child to superset/section parent |
-| `sets` | `PlannedSet[]` | Yes | `[]` | Ordered list of target sets |
-
-**DB table**: `template_exercises`
+| id | string | Yes | UUID | Primary key |
+| workoutPlanId | string | Yes | — | FK to WorkoutPlan (cascade delete) |
+| exerciseName | string | Yes | — | Freeform exercise name |
+| orderIndex | number | Yes | — | 0-based position in workout |
+| notes | string | No | — | Freeform notes from markdown |
+| equipmentType | string | No | — | Freeform equipment (e.g., "barbell", "kettlebell") |
+| groupType | GroupType | No | — | Grouping semantics |
+| groupName | string | No | — | E.g., "Superset: Arms" or "Warmup" |
+| parentExerciseId | string | No | — | FK to PlannedExercise (cascade); links child to superset/section parent |
+| sets | PlannedSet[] | Yes | [] | Ordered list of target sets |
 
 **Business rules**:
-- Superset parent exercises (`groupType = 'superset'`) have no sets of their own; their children hold the sets.
-- Section parents (`groupType = 'section'`) are organizational headers only.
+- Superset parent exercises (`groupType = superset`) have no sets of their own; their children hold the sets.
+- Section parents (`groupType = section`) are organizational headers only.
 - `orderIndex` determines display and execution order.
 
 ---
@@ -77,27 +73,25 @@ A single target set within a PlannedExercise.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `plannedExerciseId` | `string` | Yes | — | FK → `template_exercises.id` (CASCADE) |
-| `orderIndex` | `number` | Yes | — | 0-based position within exercise |
-| `targetWeight` | `number` | No | `undefined` | `undefined` or `0` = bodyweight |
-| `targetWeightUnit` | `'lbs' \| 'kg'` | No | `undefined` | Only set when `targetWeight` is specified |
-| `targetReps` | `number` | No | `undefined` | Rep count target |
-| `targetTime` | `number` | No | `undefined` | Seconds, for time-based exercises |
-| `targetRpe` | `number` | No | `undefined` | Rate of Perceived Exertion, 1-10 |
-| `restSeconds` | `number` | No | `undefined` | Rest period after this set |
-| `tempo` | `string` | No | `undefined` | Tempo notation, e.g., "3-0-1-0" |
-| `isDropset` | `boolean` | No | `false` | Drop set indicator |
-| `isPerSide` | `boolean` | No | `false` | Per-side indicator for unilateral exercises |
-| `isAmrap` | `boolean` | No | `false` | As Many Reps As Possible indicator |
-| `notes` | `string` | No | `undefined` | Additional notes from set line (e.g., "forward", "each side") |
-
-**DB table**: `template_sets`
+| id | string | Yes | UUID | Primary key |
+| plannedExerciseId | string | Yes | — | FK to PlannedExercise (cascade) |
+| orderIndex | number | Yes | — | 0-based position within exercise |
+| targetWeight | number | No | — | Absent or 0 = bodyweight |
+| targetWeightUnit | WeightUnit | No | — | Only set when targetWeight is specified |
+| targetReps | number | No | — | Rep count target |
+| targetTime | number | No | — | Seconds, for time-based exercises |
+| targetRpe | number | No | — | Rate of Perceived Exertion, 1-10 |
+| restSeconds | number | No | — | Rest period after this set |
+| tempo | string | No | — | Tempo notation, e.g., "3-0-1-0" |
+| isDropset | boolean | No | false | Drop set indicator |
+| isPerSide | boolean | No | false | Per-side indicator for unilateral exercises |
+| isAmrap | boolean | No | false | As Many Reps As Possible indicator |
+| notes | string | No | — | Additional notes from set line |
 
 **Business rules**:
-- A set is either rep-based (`targetReps`) or time-based (`targetTime`), not both.
-- `isAmrap` overrides `targetReps` — the rep count becomes a minimum/suggestion.
-- `isDropset` indicates this set is part of a drop-set sequence with decreasing weight.
+- A set is either rep-based (targetReps) or time-based (targetTime), not both.
+- isAmrap overrides targetReps — the rep count becomes a minimum/suggestion.
+- isDropset indicates this set is part of a drop-set sequence with decreasing weight.
 
 ---
 
@@ -107,23 +101,21 @@ An actual workout instance being performed or already completed. Created from a 
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `workoutPlanId` | `string` | No | `undefined` | FK → `workout_templates.id` (SET NULL on delete); null if custom/imported |
-| `name` | `string` | Yes | — | Copied from plan name at session creation |
-| `date` | `string` | Yes | — | ISO date (YYYY-MM-DD) |
-| `startTime` | `string` | No | `undefined` | ISO 8601 datetime |
-| `endTime` | `string` | No | `undefined` | ISO 8601 datetime, set on completion |
-| `duration` | `number` | No | `undefined` | Seconds, calculated on completion |
-| `notes` | `string` | No | `undefined` | User notes |
-| `exercises` | `SessionExercise[]` | Yes | `[]` | Ordered list of exercises |
-| `status` | `'in_progress' \| 'completed' \| 'canceled'` | Yes | `'in_progress'` | Session lifecycle state |
-
-**DB table**: `workout_sessions`
+| id | string | Yes | UUID | Primary key |
+| workoutPlanId | string | No | — | FK to WorkoutPlan (set null on delete); null if custom/imported |
+| name | string | Yes | — | Copied from plan name at session creation |
+| date | date | Yes | — | ISO date (YYYY-MM-DD) |
+| startTime | datetime | No | — | ISO 8601 |
+| endTime | datetime | No | — | ISO 8601, set on completion |
+| duration | number | No | — | Seconds, calculated on completion |
+| notes | string | No | — | User notes |
+| exercises | SessionExercise[] | Yes | [] | Ordered list of exercises |
+| status | SessionStatus | Yes | in_progress | Session lifecycle state |
 
 **Business rules**:
-- Only one session can have `status = 'in_progress'` at a time (enforced by application logic, not DB constraint).
+- Only one session can have `status = in_progress` at a time.
 - `duration` is computed as `endTime - startTime` in seconds on completion.
-- Deleting a plan sets `workoutPlanId` to NULL (preserves session history).
+- Deleting a plan sets workoutPlanId to null (preserves session history).
 
 ---
 
@@ -133,22 +125,20 @@ An exercise within an active or completed workout session.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `workoutSessionId` | `string` | Yes | — | FK → `workout_sessions.id` (CASCADE) |
-| `exerciseName` | `string` | Yes | — | Copied from plan or user-entered |
-| `orderIndex` | `number` | Yes | — | 0-based position |
-| `notes` | `string` | No | `undefined` | |
-| `equipmentType` | `string` | No | `undefined` | |
-| `groupType` | `'superset' \| 'section'` | No | `undefined` | |
-| `groupName` | `string` | No | `undefined` | |
-| `parentExerciseId` | `string` | No | `undefined` | FK → `session_exercises.id` (CASCADE) |
-| `sets` | `SessionSet[]` | Yes | `[]` | Ordered list of sets |
-| `status` | `'pending' \| 'in_progress' \| 'completed' \| 'skipped'` | Yes | `'pending'` | |
-
-**DB table**: `session_exercises`
+| id | string | Yes | UUID | Primary key |
+| workoutSessionId | string | Yes | — | FK to WorkoutSession (cascade) |
+| exerciseName | string | Yes | — | Copied from plan or user-entered |
+| orderIndex | number | Yes | — | 0-based position |
+| notes | string | No | — | |
+| equipmentType | string | No | — | |
+| groupType | GroupType | No | — | |
+| groupName | string | No | — | |
+| parentExerciseId | string | No | — | FK to SessionExercise (cascade) |
+| sets | SessionSet[] | Yes | [] | Ordered list of sets |
+| status | ExerciseStatus | Yes | pending | |
 
 **Business rules**:
-- Exercise status auto-completes when all its sets are `'completed'` or `'skipped'`.
+- Exercise status auto-completes when all its sets are completed or skipped.
 - "Trackable" exercises are those with `sets.length > 0` (excludes superset parent headers).
 
 ---
@@ -159,70 +149,66 @@ A single set within a session exercise, tracking both target and actual performa
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `sessionExerciseId` | `string` | Yes | — | FK → `session_exercises.id` (CASCADE) |
-| `orderIndex` | `number` | Yes | — | 0-based position |
-| `parentSetId` | `string` | No | `undefined` | FK → `session_sets.id` (CASCADE); links drop-set children |
-| `dropSequence` | `number` | No | `undefined` | 0 = main set, 1 = first drop, 2 = second drop, etc. |
+| id | string | Yes | UUID | Primary key |
+| sessionExerciseId | string | Yes | — | FK to SessionExercise (cascade) |
+| orderIndex | number | Yes | — | 0-based position |
+| parentSetId | string | No | — | FK to SessionSet (cascade); links drop-set children |
+| dropSequence | number | No | — | 0 = main set, 1 = first drop, 2 = second drop, etc. |
 | **Target values** | | | | *Copied from PlannedSet at session creation* |
-| `targetWeight` | `number` | No | `undefined` | |
-| `targetWeightUnit` | `'lbs' \| 'kg'` | No | `undefined` | |
-| `targetReps` | `number` | No | `undefined` | |
-| `targetTime` | `number` | No | `undefined` | Seconds |
-| `targetRpe` | `number` | No | `undefined` | |
-| `restSeconds` | `number` | No | `undefined` | |
+| targetWeight | number | No | — | |
+| targetWeightUnit | WeightUnit | No | — | |
+| targetReps | number | No | — | |
+| targetTime | number | No | — | Seconds |
+| targetRpe | number | No | — | |
+| restSeconds | number | No | — | |
 | **Actual values** | | | | *Entered by user during workout* |
-| `actualWeight` | `number` | No | `undefined` | |
-| `actualWeightUnit` | `'lbs' \| 'kg'` | No | `undefined` | |
-| `actualReps` | `number` | No | `undefined` | |
-| `actualTime` | `number` | No | `undefined` | Seconds |
-| `actualRpe` | `number` | No | `undefined` | |
+| actualWeight | number | No | — | |
+| actualWeightUnit | WeightUnit | No | — | |
+| actualReps | number | No | — | |
+| actualTime | number | No | — | Seconds |
+| actualRpe | number | No | — | |
 | **Metadata** | | | | |
-| `completedAt` | `string` | No | `undefined` | ISO 8601 datetime |
-| `status` | `'pending' \| 'completed' \| 'skipped' \| 'failed'` | Yes | `'pending'` | |
-| `notes` | `string` | No | `undefined` | |
-| `tempo` | `string` | No | `undefined` | |
-| `isDropset` | `boolean` | No | `false` | |
-| `isPerSide` | `boolean` | No | `false` | |
-
-**DB table**: `session_sets`
+| completedAt | datetime | No | — | ISO 8601 |
+| status | SetStatus | Yes | pending | |
+| notes | string | No | — | |
+| tempo | string | No | — | |
+| isDropset | boolean | No | false | |
+| isPerSide | boolean | No | false | |
 
 **Business rules**:
-- On completion, if no `actualWeight`/`actualReps` are provided, values are copied from targets.
-- Drop sets link via `parentSetId` + `dropSequence` for ordering.
+- On completion, if no actualWeight/actualReps are provided, values are copied from targets.
+- Drop sets link via parentSetId + dropSequence for ordering.
 - Completing a set automatically advances the session to the next pending set.
 
 ---
 
 ### UserSettings
 
-Singleton row for user preferences.
+Singleton record for user preferences.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `defaultWeightUnit` | `'lbs' \| 'kg'` | Yes | `'lbs'` | |
-| `enableWorkoutTimer` | `boolean` | Yes | `true` | |
-| `autoStartRestTimer` | `boolean` | Yes | `true` | |
-| `theme` | `'light' \| 'dark' \| 'auto'` | Yes | `'auto'` | |
-| `notificationsEnabled` | `boolean` | Yes | `true` | |
-| `customPromptAddition` | `string` | No | `undefined` | Appended to AI workout generation prompts |
-| `anthropicApiKey` | `string` | No | `undefined` | Stored in secure storage (Keychain), NOT in DB |
-| `anthropicApiKeyStatus` | `'verified' \| 'invalid' \| 'not_set'` | No | `'not_set'` | Status stored in DB |
-| `healthKitEnabled` | `boolean` | Yes | `false` | Sync to Apple Health |
-| `liveActivitiesEnabled` | `boolean` | Yes | `true` | Show on lock screen |
-| `keepScreenAwake` | `boolean` | Yes | `true` | During active workouts |
-| `showOpenInClaudeButton` | `boolean` | Yes | `false` | Always show "Open in Claude" button |
-| `homeTiles` | `string[]` | No | `['Squat', 'Deadlift', 'Bench Press', 'Overhead Press']` | Custom home screen max lift tiles; stored as JSON |
-| `createdAt` | `string` | Yes | — | ISO 8601 |
-| `updatedAt` | `string` | Yes | — | ISO 8601 |
-
-**DB table**: `user_settings`
+| id | string | Yes | UUID | Primary key |
+| defaultWeightUnit | WeightUnit | Yes | lbs | |
+| enableWorkoutTimer | boolean | Yes | true | |
+| autoStartRestTimer | boolean | Yes | true | |
+| theme | Theme | Yes | auto | |
+| notificationsEnabled | boolean | Yes | true | |
+| customPromptAddition | string | No | — | Appended to AI workout generation prompts |
+| anthropicApiKey | string | No | — | Stored in platform secure storage (e.g., Keychain), NOT in database |
+| anthropicApiKeyStatus | ApiKeyStatus | No | not_set | Status stored in database |
+| healthKitEnabled | boolean | Yes | false | Sync to Apple Health |
+| liveActivitiesEnabled | boolean | Yes | true | Show on lock screen |
+| keepScreenAwake | boolean | Yes | true | During active workouts |
+| showOpenInClaudeButton | boolean | Yes | false | Always show "Open in Claude" button |
+| homeTiles | string[] | No | [Squat, Deadlift, Bench Press, Overhead Press] | Custom home screen max lift tiles |
+| createdAt | datetime | Yes | — | ISO 8601 |
+| updatedAt | datetime | Yes | — | ISO 8601 |
 
 **Business rules**:
-- Exactly one row exists; initialized on first migration.
-- `anthropicApiKey` is verified via API call before storing; status reflects last verification result.
-- The actual API key is stored in iOS Keychain via `secureStorage`, not in SQLite.
+- Exactly one record exists; initialized on first launch.
+- anthropicApiKey is verified via API call before storing; status reflects last verification result.
+- The actual API key must be stored in platform-native secure storage, not in the main database.
 
 ---
 
@@ -232,18 +218,16 @@ A gym location for organizing equipment availability.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `name` | `string` | Yes | — | e.g., "Home Gym", "LA Fitness" |
-| `isDefault` | `boolean` | Yes | `false` | Only one gym should be default at a time |
-| `createdAt` | `string` | Yes | — | ISO 8601 |
-| `updatedAt` | `string` | Yes | — | ISO 8601 |
-
-**DB table**: `gyms`
+| id | string | Yes | UUID | Primary key |
+| name | string | Yes | — | e.g., "Home Gym", "LA Fitness" |
+| isDefault | boolean | Yes | false | Only one gym should be default at a time |
+| createdAt | datetime | Yes | — | ISO 8601 |
+| updatedAt | datetime | Yes | — | ISO 8601 |
 
 **Business rules**:
-- A default gym ("My Gym") is created during initial migration.
+- A default gym ("My Gym") is created on first launch.
 - Cannot delete the last gym.
-- Setting a new default unsets all other gyms' `isDefault` first.
+- Setting a new default unsets all other gyms' isDefault first.
 
 ---
 
@@ -253,37 +237,35 @@ Equipment availability at a specific gym.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
-| `id` | `string` | Yes | UUID | Primary key |
-| `gymId` | `string` | Yes | — | FK → `gyms.id` (application-level cascade on delete) |
-| `name` | `string` | Yes | — | Equipment name; UNIQUE constraint in DB |
-| `isAvailable` | `boolean` | Yes | `true` | Whether currently available |
-| `lastCheckedAt` | `string` | No | `undefined` | ISO 8601, updated when toggling availability |
-| `createdAt` | `string` | Yes | — | ISO 8601 |
-| `updatedAt` | `string` | Yes | — | ISO 8601 |
-
-**DB table**: `gym_equipment`
+| id | string | Yes | UUID | Primary key |
+| gymId | string | Yes | — | FK to Gym (cascade on delete) |
+| name | string | Yes | — | Equipment name; must be unique within a gym |
+| isAvailable | boolean | Yes | true | Whether currently available |
+| lastCheckedAt | datetime | No | — | Updated when toggling availability |
+| createdAt | datetime | Yes | — | ISO 8601 |
+| updatedAt | datetime | Yes | — | ISO 8601 |
 
 **Business rules**:
-- `name` has a UNIQUE constraint in the database.
-- Equipment deleted when its gym is deleted (application-level cascade).
-- Preset equipment categories available for quick-add: Free Weights, Benches & Racks, Machines, Cardio, Other.
+- Equipment name must be unique within a gym.
+- Equipment is deleted when its gym is deleted.
+- Preset equipment categories available for quick-add (see below).
 
 ---
 
-### Exercise (Catalog — Type Only)
+### Exercise (Catalog — Not Persisted)
 
-A catalog entry for exercise suggestions and history aggregation. Defined as a TypeScript interface but **not currently persisted to a dedicated table** — exercise names are stored inline on PlannedExercise/SessionExercise.
+A catalog entry for exercise suggestions and history aggregation. Not currently persisted to a dedicated table — exercise names are stored inline on PlannedExercise/SessionExercise.
 
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
-| `id` | `string` | Yes | UUID |
-| `name` | `string` | Yes | — |
-| `category` | `string` | No | `undefined` |
-| `muscleGroups` | `string[]` | No | `undefined` |
-| `equipmentType` | `string` | No | `undefined` |
-| `description` | `string` | No | `undefined` |
-| `isCustom` | `boolean` | Yes | — |
-| `createdAt` | `string` | Yes | — |
+| id | string | Yes | UUID |
+| name | string | Yes | — |
+| category | string | No | — |
+| muscleGroups | string[] | No | — |
+| equipmentType | string | No | — |
+| description | string | No | — |
+| isCustom | boolean | Yes | — |
+| createdAt | datetime | Yes | — |
 
 ---
 
@@ -292,35 +274,23 @@ A catalog entry for exercise suggestions and history aggregation. Defined as a T
 ```
 WorkoutPlan 1──* PlannedExercise 1──* PlannedSet
      │
-     │ (FK, SET NULL on delete)
+     │ (FK, set null on delete)
      ▼
 WorkoutSession 1──* SessionExercise 1──* SessionSet
                                               │
                                               │ (self-ref for drop sets)
                                               ▼
-                                         SessionSet (parent_set_id)
+                                         SessionSet (parentSetId)
 
 Gym 1──* GymEquipment
 
-PlannedExercise ──> PlannedExercise (parent_exercise_id, self-ref for supersets/sections)
-SessionExercise ──> SessionExercise (parent_exercise_id, self-ref for supersets/sections)
+PlannedExercise ──> PlannedExercise (parentExerciseId, self-ref for supersets/sections)
+SessionExercise ──> SessionExercise (parentExerciseId, self-ref for supersets/sections)
 ```
 
 ---
 
-## Sync Infrastructure (Tables Exist, Functionality Removed)
-
-Three sync-related tables were created in migration V1 but their hook implementations are currently empty stubs:
-
-- **`sync_metadata`**: Device sync state tracking (device_id, last_sync_date, server_change_token)
-- **`sync_queue`**: Pending sync operations (entity_type, entity_id, operation, payload, attempts)
-- **`sync_conflicts`**: Conflict resolution records (local_data, remote_data, resolution)
-
----
-
-## Preset Equipment Constants
-
-Defined in `src/types/workout.ts` as `PRESET_EQUIPMENT`:
+## Preset Equipment
 
 | Category | Items |
 |----------|-------|
@@ -329,20 +299,3 @@ Defined in `src/types/workout.ts` as `PRESET_EQUIPMENT`:
 | **Machines** | Cable Machine, Lat Pulldown, Leg Press, Leg Curl, Leg Extension, Chest Press Machine, Shoulder Press Machine, Row Machine |
 | **Cardio** | Treadmill, Stationary Bike, Rowing Machine, Elliptical, Stair Climber |
 | **Other** | Pull-up Bar, Dip Station, Resistance Bands, TRX/Suspension Trainer, Medicine Ball, Battle Ropes, Foam Roller |
-
----
-
-## Legacy Aliases (Deprecated)
-
-The codebase is transitioning from "Template" naming to "Plan" naming:
-
-| Deprecated | Current |
-|------------|---------|
-| `WorkoutTemplate` | `WorkoutPlan` |
-| `TemplateExercise` | `PlannedExercise` |
-| `TemplateSet` | `PlannedSet` |
-| `useWorkoutStore` | `useWorkoutPlanStore` |
-| `getAllWorkoutTemplates` | `getAllWorkoutPlans` |
-| `createSessionFromTemplate` | `createSessionFromPlan` |
-
-DB table names (`workout_templates`, `template_exercises`, `template_sets`) remain unchanged.

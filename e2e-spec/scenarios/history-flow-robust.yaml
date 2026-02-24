@@ -58,7 +58,15 @@ setupOnce:
         timeout: 3000
       - action: tapText
         text: "Finish Anyway"
-    catch: []
+    catch:
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Log Anyway"
+            timeout: 3000
+          - action: tapText
+            text: "Log Anyway"
+        catch: []
   - action: waitFor
     target: "workout-summary-done-button"
     timeout: 10000

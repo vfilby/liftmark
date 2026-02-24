@@ -671,10 +671,11 @@
               </div>
             </div>
             <!-- Trend toggle: has data, collapsed -->
-            <div class="trend-header" onclick="this.closest('.exercise-card').querySelector('.chart-area')?.classList.toggle('hidden')">
+            <div class="trend-header">
               <div class="trend-header-left">
                 <svg class="trend-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
                 <span class="trend-header-text">Show trends</span>
+                <span style="color:var(--green); font-weight:600;">↗</span>
               </div>
               <span class="trend-chevron">▾</span>
             </div>
@@ -707,6 +708,7 @@
               <div class="trend-header-left">
                 <svg class="trend-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
                 <span class="trend-header-text">Show trends</span>
+                <span style="color:var(--textSecondary); font-weight:600;">→</span>
               </div>
               <span class="trend-chevron">▾</span>
             </div>
@@ -788,6 +790,7 @@
               <div class="trend-header-left">
                 <svg class="trend-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
                 <span class="trend-header-text">Show trends</span>
+                <span style="color:var(--red); font-weight:600;">↘</span>
               </div>
               <span class="trend-chevron">▾</span>
             </div>
@@ -795,7 +798,7 @@
 
         </div>
         <div style="padding:0 0 0 4px">
-          <span class="section-label">exercise cards with trend toggles</span>
+          <span class="section-label">exercise cards — each with trend toggle showing ↗ (improving) / → (stable) / ↘ (declining)</span>
         </div>
 
         <!-- ── Notes ── -->
@@ -844,7 +847,7 @@
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <div class="example">
   <div class="example-title">Trend Expanded</div>
-  <div class="example-desc">Exercise with the trend chart expanded, showing metric toggles (Max Weight / Volume), a line chart with dual Y-axis legend, stats row, and Details button.</div>
+  <div class="example-desc">Exercise with the inline ExerciseHistoryChartView expanded, showing metric segmented picker, single-metric line chart (LineMark + PointMark + AreaMark gradient), stats row (Current / Best / Change), and Details button opening the bottom sheet.</div>
   <div class="device">
     <div class="device-notch"></div>
     <div class="screen screen-pad-bottom">
@@ -899,71 +902,54 @@
             </div>
           </div>
 
-          <!-- Trend toggle: expanded -->
+          <!-- Trend toggle: expanded state -->
           <div class="trend-header">
             <div class="trend-header-left">
               <svg class="trend-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
-              <span class="trend-header-text">Show trends</span>
+              <span class="trend-header-text">Hide trends</span>
+              <span style="color:var(--green); font-weight:600;">↗</span>
             </div>
             <span class="trend-chevron">▴</span>
           </div>
           <div style="padding:0 0 0 4px">
-            <span class="section-label">trend toggle (expanded)</span>
+            <span class="section-label">trend-toggle-{exerciseName} — "Hide trends" when expanded, trend arrow ↗/→/↘</span>
           </div>
 
-          <!-- ── Expanded Chart Area ── -->
+          <!-- ── Expanded Chart Area: ExerciseHistoryChartView ── -->
           <div class="chart-area">
             <div class="chart-card">
-              <!-- Title + metric label -->
-              <div style="margin-bottom:8px;">
-                <div style="font-size:18px; font-weight:600;">Barbell Bench Press</div>
-                <div style="font-size:12px; color:var(--textSecondary); margin-top:4px;">Max Weight (<span class="unit">lbs</span>)</div>
-              </div>
-
-              <!-- Metric toggles -->
+              <!-- Metric segmented picker -->
               <div class="metric-toggles">
                 <div class="metric-btn active">Max Weight</div>
                 <div class="metric-btn">Volume</div>
+                <div class="metric-btn">Reps</div>
               </div>
               <div style="padding:0 0 4px 4px">
-                <span class="section-label">metric selector (maxWeight / totalVolume)</span>
+                <span class="section-label">segmented picker: weighted = Max Weight | Volume | Reps</span>
               </div>
 
-              <!-- Legend -->
-              <div class="chart-legend">
-                <div class="legend-item">
-                  <div class="legend-dot" style="background:var(--chartLine);"></div>
-                  <span>Weight (<span class="unit">lbs</span>)</span>
-                </div>
-                <div class="legend-item">
-                  <div class="legend-dot" style="background:var(--chartLineSecondary);"></div>
-                  <span>Reps</span>
-                </div>
-              </div>
-
-              <!-- Chart (stylized placeholder) -->
+              <!-- Chart (LineMark + PointMark + AreaMark gradient) -->
               <div class="chart-placeholder">
                 <svg viewBox="0 0 300 120" width="100%" height="120" preserveAspectRatio="none" style="position:absolute; left:0; top:0;">
-                  <!-- Primary line (weight) -->
+                  <!-- Area fill (gradient) -->
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--chartLine)" stop-opacity="0.2"/>
+                      <stop offset="100%" stop-color="var(--chartLine)" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <polygon points="30,100 80,85 130,70 180,55 230,40 280,30 280,120 30,120"
+                    fill="url(#areaGrad)"/>
+                  <!-- Line (catmull-rom approximated) -->
                   <polyline points="30,100 80,85 130,70 180,55 230,40 280,30"
                     fill="none" stroke="var(--chartLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                  <!-- Secondary line (reps) -->
-                  <polyline points="30,40 80,45 130,50 180,55 230,60 280,70"
-                    fill="none" stroke="var(--chartLineSecondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6,4"/>
-                  <!-- Data points - primary -->
+                  <!-- Data points (PointMark) -->
                   <circle cx="30"  cy="100" r="5" fill="var(--chartLine)"/>
                   <circle cx="80"  cy="85"  r="5" fill="var(--chartLine)"/>
                   <circle cx="130" cy="70"  r="5" fill="var(--chartLine)"/>
                   <circle cx="180" cy="55"  r="5" fill="var(--chartLine)"/>
                   <circle cx="230" cy="40"  r="5" fill="var(--chartLine)"/>
                   <circle cx="280" cy="30"  r="5" fill="var(--chartLine)"/>
-                  <!-- Data points - secondary -->
-                  <circle cx="30"  cy="40"  r="4" fill="var(--chartLineSecondary)"/>
-                  <circle cx="80"  cy="45"  r="4" fill="var(--chartLineSecondary)"/>
-                  <circle cx="130" cy="50"  r="4" fill="var(--chartLineSecondary)"/>
-                  <circle cx="180" cy="55"  r="4" fill="var(--chartLineSecondary)"/>
-                  <circle cx="230" cy="60"  r="4" fill="var(--chartLineSecondary)"/>
-                  <circle cx="280" cy="70"  r="4" fill="var(--chartLineSecondary)"/>
                   <!-- X-axis labels -->
                   <text x="30"  y="118" text-anchor="middle" font-size="10" fill="var(--textSecondary)">01/11</text>
                   <text x="80"  y="118" text-anchor="middle" font-size="10" fill="var(--textSecondary)">01/18</text>
@@ -974,37 +960,36 @@
                 </svg>
               </div>
               <div style="padding:4px 0 0 4px">
-                <span class="section-label">ExerciseHistoryChart (dual Y-axis)</span>
+                <span class="section-label">ExerciseHistoryChartView — single metric, LineMark + PointMark + AreaMark gradient</span>
               </div>
 
-              <!-- Stats row -->
+              <!-- Stats row (shown when ≥2 data points) -->
               <div class="chart-stats">
                 <div class="chart-stat-box">
                   <div class="chart-stat-label">Current</div>
-                  <div class="chart-stat-value">255.0</div>
+                  <div class="chart-stat-value">255</div>
                 </div>
                 <div class="chart-stat-box">
                   <div class="chart-stat-label">Best</div>
-                  <div class="chart-stat-value">255.0</div>
+                  <div class="chart-stat-value">255</div>
                 </div>
                 <div class="chart-stat-box">
                   <div class="chart-stat-label">Change</div>
-                  <div class="chart-stat-value">+6.3%</div>
-                  <div class="chart-stat-change positive">↑</div>
+                  <div class="chart-stat-value" style="color:var(--green);">+6%</div>
                 </div>
               </div>
               <div style="padding:4px 0 0 4px">
-                <span class="section-label">stats: current / best / change</span>
+                <span class="section-label">stats row: current / best / change % (green if positive, red if negative)</span>
               </div>
             </div>
 
-            <!-- Details button -->
+            <!-- Details button — opens ExerciseHistoryBottomSheet -->
             <button class="btn-details">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
               Details
             </button>
             <div style="padding:4px 0 0 4px">
-              <span class="section-label">opens ExerciseHistoryBottomSheet</span>
+              <span class="section-label">opens ExerciseHistoryBottomSheet (summary stats + chart + session list)</span>
             </div>
           </div>
         </div>
@@ -1036,6 +1021,7 @@
             <div class="trend-header-left">
               <svg class="trend-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
               <span class="trend-header-text">Show trends</span>
+              <span style="color:var(--textSecondary); font-weight:600;">→</span>
             </div>
             <span class="trend-chevron">▾</span>
           </div>

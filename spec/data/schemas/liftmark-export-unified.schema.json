@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liftmark.app/schemas/liftmark-export-unified.schema.json",
+  "title": "LiftMark Unified Export",
+  "description": "Unified export format containing plans, sessions, gyms, and settings for backup/transfer.",
+  "type": "object",
+  "required": ["formatVersion", "exportedAt", "appVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "formatVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version for forward compatibility"
+    },
+    "exportedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of export"
+    },
+    "appVersion": {
+      "type": "string",
+      "description": "App version that produced this export"
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/plan"
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/session"
+      }
+    },
+    "gyms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gym"
+      }
+    },
+    "settings": {
+      "$ref": "#/$defs/settings"
+    }
+  },
+  "$defs": {
+    "plan": {
+      "type": "object",
+      "required": ["name", "exercises"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Workout plan name"
+        },
+        "description": {
+          "type": ["string", "null"]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "defaultWeightUnit": {
+          "type": ["string", "null"],
+          "enum": ["lbs", "kg", null]
+        },
+        "sourceMarkdown": {
+          "type": ["string", "null"],
+          "description": "Original LMWF markdown source"
+        },
+        "isFavorite": {
+          "type": "boolean"
+        },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plannedExercise"
+          }
+        }
+      }
+    },
+    "plannedExercise": {
+      "type": "object",
+      "required": ["exerciseName", "orderIndex", "sets"],
+      "additionalProperties": false,
+      "properties": {
+        "exerciseName": {
+          "type": "string"
+        },
+        "orderIndex": {
+          "type": "number",
+          "minimum": 0
+        },
+        "notes": {
+          "type": ["string", "null"]
+        },
+        "equipmentType": {
+          "type": ["string", "null"]
+        },
+        "groupType": {
+          "type": ["string", "null"],
+          "enum": ["superset", "section", null]
+        },
+        "groupName": {
+          "type": ["string", "null"]
+        },
+        "sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plannedSet"
+          }
+        }
+      }
+    },
+    "plannedSet": {
+      "type": "object",
+      "required": ["orderIndex"],
+      "additionalProperties": false,
+      "properties": {
+        "orderIndex": {
+          "type": "number",
+          "minimum": 0
+        },
+        "targetWeight": {
+          "type": ["number", "null"]
+        },
+        "targetWeightUnit": {
+          "type": ["string", "null"],
+          "enum": ["lbs", "kg", null]
+        },
+        "targetReps": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "targetTime": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Seconds"
+        },
+        "targetRpe": {
+          "type": ["number", "null"],
+          "minimum": 1,
+          "maximum": 10
+        },
+        "restSeconds": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "tempo": {
+          "type": ["string", "null"]
+        },
+        "isDropset": {
+          "type": "boolean"
+        },
+        "isPerSide": {
+          "type": "boolean"
+        },
+        "isAmrap": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["name", "date", "status", "exercises"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Workout name"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO date (YYYY-MM-DD)"
+        },
+        "startTime": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO 8601 datetime"
+        },
+        "endTime": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO 8601 datetime"
+        },
+        "duration": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Duration in seconds"
+        },
+        "notes": {
+          "type": ["string", "null"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Session status (typically 'completed' for exports)"
+        },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sessionExercise"
+          }
+        }
+      }
+    },
+    "sessionExercise": {
+      "type": "object",
+      "required": ["exerciseName", "orderIndex", "status", "sets"],
+      "additionalProperties": false,
+      "properties": {
+        "exerciseName": {
+          "type": "string"
+        },
+        "orderIndex": {
+          "type": "number",
+          "minimum": 0
+        },
+        "notes": {
+          "type": ["string", "null"]
+        },
+        "equipmentType": {
+          "type": ["string", "null"]
+        },
+        "groupType": {
+          "type": ["string", "null"],
+          "enum": ["superset", "section", null]
+        },
+        "groupName": {
+          "type": ["string", "null"]
+        },
+        "status": {
+          "type": "string"
+        },
+        "sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sessionSet"
+          }
+        }
+      }
+    },
+    "sessionSet": {
+      "type": "object",
+      "required": ["orderIndex", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "orderIndex": {
+          "type": "number",
+          "minimum": 0
+        },
+        "targetWeight": {
+          "type": ["number", "null"]
+        },
+        "targetWeightUnit": {
+          "type": ["string", "null"],
+          "enum": ["lbs", "kg", null]
+        },
+        "targetReps": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "targetTime": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Seconds"
+        },
+        "targetRpe": {
+          "type": ["number", "null"],
+          "minimum": 1,
+          "maximum": 10
+        },
+        "restSeconds": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "actualWeight": {
+          "type": ["number", "null"]
+        },
+        "actualWeightUnit": {
+          "type": ["string", "null"],
+          "enum": ["lbs", "kg", null]
+        },
+        "actualReps": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "actualTime": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Seconds"
+        },
+        "actualRpe": {
+          "type": ["number", "null"],
+          "minimum": 1,
+          "maximum": 10
+        },
+        "completedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string"
+        },
+        "notes": {
+          "type": ["string", "null"]
+        },
+        "tempo": {
+          "type": ["string", "null"]
+        },
+        "isDropset": {
+          "type": ["boolean", "null"]
+        },
+        "isPerSide": {
+          "type": ["boolean", "null"]
+        }
+      }
+    },
+    "gym": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "isDefault": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultWeightUnit": {
+          "type": ["string", "null"],
+          "enum": ["lbs", "kg", null]
+        },
+        "enableWorkoutTimer": {
+          "type": "boolean"
+        },
+        "autoStartRestTimer": {
+          "type": "boolean"
+        },
+        "theme": {
+          "type": ["string", "null"]
+        },
+        "keepScreenAwake": {
+          "type": "boolean"
+        },
+        "customPromptAddition": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

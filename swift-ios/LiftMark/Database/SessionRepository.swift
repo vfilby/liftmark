@@ -66,7 +66,7 @@ struct SessionRepository {
             status: .inProgress
         )
 
-        try dbQueue.write { db in
+        return try dbQueue.write { db in
             let sessionRow = WorkoutSessionRow(
                 id: session.id,
                 workoutTemplateId: plan.id,
@@ -80,8 +80,16 @@ struct SessionRepository {
             )
             try sessionRow.insert(db)
 
+            // Map plan exercise IDs to session exercise IDs for parentExerciseId
+            var planToSessionIdMap: [String: String] = [:]
             for exercise in plan.exercises {
                 let sessionExerciseId = IDGenerator.generate()
+                planToSessionIdMap[exercise.id] = sessionExerciseId
+            }
+
+            for exercise in plan.exercises {
+                let sessionExerciseId = planToSessionIdMap[exercise.id]!
+                let mappedParentId = exercise.parentExerciseId.flatMap { planToSessionIdMap[$0] }
                 let exerciseRow = SessionExerciseRow(
                     id: sessionExerciseId,
                     workoutSessionId: session.id,
@@ -91,7 +99,7 @@ struct SessionRepository {
                     equipmentType: exercise.equipmentType,
                     groupType: exercise.groupType?.rawValue,
                     groupName: exercise.groupName,
-                    parentExerciseId: nil,
+                    parentExerciseId: mappedParentId,
                     status: ExerciseStatus.pending.rawValue
                 )
                 try exerciseRow.insert(db)
@@ -124,9 +132,10 @@ struct SessionRepository {
                     try setRow.insert(db)
                 }
             }
-        }
 
-        return session
+            // Re-assemble the full session with exercises and sets from DB
+            return try assembleSession(from: sessionRow, in: db)
+        }
     }
 
     func complete(_ sessionId: String) throws {

@@ -3,6 +3,7 @@ import SwiftUI
 struct WorkoutSummaryView: View {
     @Environment(SessionStore.self) private var sessionStore
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(\.dismiss) private var dismiss
 
     /// The most recently completed session (last in sessions list)
@@ -61,155 +62,211 @@ struct WorkoutSummaryView: View {
         computeHighlights()
     }
 
+    @State private var showShareSheet = false
+    @State private var exportFileURL: URL?
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: LiftMarkTheme.spacingLG) {
-                // Success Header
-                VStack(spacing: LiftMarkTheme.spacingSM) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(LiftMarkTheme.success)
-
-                    Text("Workout Complete!")
-                        .font(.title.bold())
-
-                    if let name = session?.name {
-                        Text(name)
-                            .font(.subheadline)
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    }
-                }
-                .padding(.top, LiftMarkTheme.spacingLG)
-                .accessibilityIdentifier("workout-summary-success-header")
-
-                // Highlights
-                Group {
-                    if !highlights.isEmpty {
-                        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                            Text("Highlights")
-                                .font(.headline)
-
-                            ForEach(highlights) { highlight in
-                                HStack(spacing: LiftMarkTheme.spacingSM) {
-                                    Text(highlight.emoji)
-                                        .font(.title2)
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(highlight.title)
-                                            .font(.subheadline.bold())
-                                        Text(highlight.message)
-                                            .font(.caption)
-                                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                                    }
-
-                                    Spacer()
-                                }
-                                .padding(.vertical, LiftMarkTheme.spacingXS)
-                            }
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: LiftMarkTheme.spacingLG) {
+                    // Success Header
+                    VStack(spacing: LiftMarkTheme.spacingSM) {
+                        // Green circle with white checkmark
+                        ZStack {
+                            Circle()
+                                .fill(LiftMarkTheme.success)
+                                .frame(width: 70, height: 70)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundStyle(.white)
                         }
-                        .padding()
-                        .background(LiftMarkTheme.secondaryBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                    } else {
-                        VStack(spacing: LiftMarkTheme.spacingSM) {
-                            Text("Highlights")
-                                .font(.headline)
-                            Text("Complete more workouts to see highlights and personal records.")
+
+                        Text("Workout Complete!")
+                            .font(.system(size: 26, weight: .bold))
+
+                        if let name = session?.name {
+                            Text(name)
                                 .font(.subheadline)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding()
-                        .background(LiftMarkTheme.secondaryBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                    }
-                }
-                .accessibilityIdentifier("workout-summary-highlights")
-
-                // Stats Grid
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LiftMarkTheme.spacingMD) {
-                    StatCard(title: "Duration", value: durationText, icon: "clock")
-                    StatCard(title: "Sets", value: "\(completedSets)", icon: "repeat")
-                    StatCard(title: "Reps", value: "\(totalReps)", icon: "number")
-                    StatCard(title: "Volume", value: formatVolume(totalVolume), icon: "scalemass")
-                }
-                .accessibilityIdentifier("workout-summary-stats")
-
-                // Completion Card
-                VStack(spacing: LiftMarkTheme.spacingSM) {
-                    Text("Completion")
-                        .font(.headline)
-
-                    HStack(spacing: LiftMarkTheme.spacingMD) {
-                        VStack {
-                            Text("\(completedSets)")
-                                .font(.title2.bold())
-                                .foregroundStyle(LiftMarkTheme.success)
-                            Text("Completed")
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-                        VStack {
-                            Text("\(skippedSets)")
-                                .font(.title2.bold())
-                                .foregroundStyle(skippedSets > 0 ? LiftMarkTheme.warning : LiftMarkTheme.tertiaryLabel)
-                            Text("Skipped")
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-                        VStack {
-                            Text("\(Int(completionRate * 100))%")
-                                .font(.title2.bold())
-                                .foregroundStyle(completionRate >= 0.8 ? LiftMarkTheme.success : LiftMarkTheme.warning)
-                            Text("Rate")
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
                         }
                     }
+                    .padding(.top, LiftMarkTheme.spacingLG)
+                    .accessibilityIdentifier("workout-summary-success-header")
 
-                    ProgressView(value: completionRate)
-                        .tint(completionRate >= 0.8 ? LiftMarkTheme.success : LiftMarkTheme.warning)
+                    // Highlights
+                    Group {
+                        if !highlights.isEmpty {
+                            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+                                Text("Highlights")
+                                    .font(.headline)
+
+                                ForEach(highlights) { highlight in
+                                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                                        Text(highlight.emoji)
+                                            .font(.title2)
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(highlight.title)
+                                                .font(.subheadline.bold())
+                                            Text(highlight.message)
+                                                .font(.caption)
+                                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                        }
+
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, LiftMarkTheme.spacingXS)
+                                }
+                            }
+                            .padding()
+                            .background(LiftMarkTheme.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                        } else {
+                            VStack(spacing: LiftMarkTheme.spacingSM) {
+                                Text("Highlights")
+                                    .font(.headline)
+                                Text("Complete more workouts to see highlights and personal records.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding()
+                            .background(LiftMarkTheme.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                        }
+                    }
+                    .accessibilityIdentifier("workout-summary-highlights")
+
+                    // Stats Grid
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LiftMarkTheme.spacingMD) {
+                        StatCard(title: "Duration", value: durationText, icon: "clock")
+                        StatCard(title: "Sets", value: "\(completedSets)", icon: "repeat")
+                        StatCard(title: "Reps", value: "\(totalReps)", icon: "number")
+                        StatCard(title: "Volume", value: formatVolume(totalVolume), icon: "scalemass")
+                    }
+                    .accessibilityIdentifier("workout-summary-stats")
+
+                    // Completion Card
+                    VStack(spacing: LiftMarkTheme.spacingSM) {
+                        Text("Completion")
+                            .font(.headline)
+
+                        HStack(spacing: LiftMarkTheme.spacingMD) {
+                            VStack(spacing: 2) {
+                                Text("\(completedSets)")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundStyle(LiftMarkTheme.success)
+                                Text("Completed")
+                                    .font(.caption)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            VStack(spacing: 2) {
+                                Text("\(skippedSets)")
+                                    .font(.system(size: 24, weight: .bold))
+                                Text("Skipped")
+                                    .font(.caption)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            VStack(spacing: 2) {
+                                Text("\(Int(completionRate * 100))%")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundStyle(LiftMarkTheme.primary)
+                                Text("Rate")
+                                    .font(.caption)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+
+                        // Progress bar with orange fill
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(LiftMarkTheme.tertiaryLabel.opacity(0.3))
+                                    .frame(height: 8)
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(.orange)
+                                    .frame(width: geometry.size.width * completionRate, height: 8)
+                            }
+                        }
+                        .frame(height: 8)
+                    }
+                    .padding()
+                    .background(LiftMarkTheme.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                    .accessibilityIdentifier("workout-summary-completion")
+
+                    // Exercise Summary
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Exercises")
+                            .font(.title3.bold())
+                            .padding(.bottom, LiftMarkTheme.spacingSM)
+
+                        if let exercises = session?.exercises {
+                            ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                                ExerciseSummaryRow(exercise: exercise, number: index + 1)
+
+                                if index < exercises.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("workout-summary-exercises")
                 }
                 .padding()
-                .background(LiftMarkTheme.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                .accessibilityIdentifier("workout-summary-completion")
-
-                // Exercise Summary
-                VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                    Text("Exercises")
-                        .font(.headline)
-
-                    if let exercises = session?.exercises {
-                        ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                            ExerciseSummaryRow(exercise: exercise, number: index + 1)
-                        }
-                    }
-                }
-                .accessibilityIdentifier("workout-summary-exercises")
-
-                // Done Button
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(LiftMarkTheme.primary)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                }
-                .accessibilityIdentifier("workout-summary-done-button")
             }
-            .padding()
+            .accessibilityIdentifier("workout-summary-scroll")
+
+            Divider()
+
+            // Done Button — pinned to bottom outside ScrollView
+            Button {
+                sessionStore.clearActiveSession()
+                dismiss()
+                navCoordinator.popToRoot()
+            } label: {
+                Text("Done")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(LiftMarkTheme.primary)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workout-summary-done-button")
+            .padding(.horizontal)
+            .padding(.vertical, LiftMarkTheme.spacingSM)
+            .background(LiftMarkTheme.background)
         }
-        .accessibilityIdentifier("workout-summary-scroll")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workout-summary-screen")
+        .navigationTitle("Summary")
         #if os(iOS)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    exportSession()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .accessibilityIdentifier("share-session-button")
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let url = exportFileURL {
+                ShareSheet(items: [url])
+            }
+        }
     }
 
     // MARK: - Highlights Computation
@@ -262,6 +319,18 @@ struct WorkoutSummaryView: View {
         }
 
         return result
+    }
+
+    private func exportSession() {
+        guard let session else { return }
+        let exportService = WorkoutExportService()
+        do {
+            let url = try exportService.exportSingleSessionAsJson(session)
+            exportFileURL = url
+            showShareSheet = true
+        } catch {
+            print("Failed to export session: \(error)")
+        }
     }
 
     private func formatWeight(_ w: Double) -> String {
@@ -318,12 +387,12 @@ private struct ExerciseSummaryRow: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(spacing: LiftMarkTheme.spacingMD) {
             Text("\(number)")
                 .font(.caption.bold())
                 .foregroundStyle(.white)
-                .frame(width: 22, height: 22)
-                .background(exercise.status == .completed ? LiftMarkTheme.success : LiftMarkTheme.warning)
+                .frame(width: 28, height: 28)
+                .background(Color.gray)
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {

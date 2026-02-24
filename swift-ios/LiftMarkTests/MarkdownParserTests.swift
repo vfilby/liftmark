@@ -1081,4 +1081,66 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertTrue(result.success)
         XCTAssertEqual(result.data?.exercises[0].exerciseName, "Barbell Back Squat (Low Bar)")
     }
+
+    // MARK: - Unit Lookahead (Issue 5: "Steady" bug)
+
+    func testTrailingTextStartingWithSIsNotCapturedAsSeconds() {
+        let markdown = """
+        # Workout
+        ## Rowing
+        - 30 x 25 Steady pace
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetWeight, 30)
+        XCTAssertEqual(set?.targetReps, 25)
+        XCTAssertNil(set?.targetTime, "Should not interpret 'S' from 'Steady' as seconds")
+        XCTAssertEqual(set?.notes, "Steady pace")
+    }
+
+    func testExplicitSecondsUnitStillWorks() {
+        let markdown = """
+        # Workout
+        ## Plank
+        - 30 x 25s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetWeight, 30)
+        XCTAssertEqual(set?.targetTime, 25)
+        XCTAssertNil(set?.targetReps, "25s should be time, not reps")
+    }
+
+    func testSecondsUnitFollowedBySpace() {
+        let markdown = """
+        # Workout
+        ## Plank
+        - 30 x 25 s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetWeight, 30)
+        XCTAssertEqual(set?.targetTime, 25)
+    }
+
+    func testSingleNumberWithTrailingTextNotSeconds() {
+        let markdown = """
+        # Workout
+        ## Exercise
+        - 25 Slow and controlled
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetReps, 25)
+        XCTAssertNil(set?.targetTime, "Should not interpret 'S' from 'Slow' as seconds")
+        XCTAssertEqual(set?.notes, "Slow and controlled")
+    }
 }

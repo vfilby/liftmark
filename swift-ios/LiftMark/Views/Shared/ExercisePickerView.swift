@@ -6,15 +6,21 @@ struct ExercisePickerView: View {
     let onSelect: (String) -> Void
 
     private let commonExercises = [
-        "Bench Press", "Squat", "Deadlift", "Overhead Press",
-        "Barbell Row", "Pull-Up", "Lat Pulldown", "Dumbbell Curl",
-        "Tricep Extension", "Leg Press", "Leg Curl", "Leg Extension",
-        "Cable Fly", "Face Pull", "Lateral Raise"
+        "Squat", "Deadlift", "Bench Press", "Overhead Press",
+        "Barbell Row", "Pull-Up", "Dip", "Leg Press",
+        "Romanian Deadlift", "Front Squat", "Incline Bench Press",
+        "Lat Pulldown", "Cable Row", "Leg Curl", "Leg Extension",
+        "Lateral Raise", "Bicep Curl", "Tricep Pushdown"
     ]
 
     private var filteredExercises: [String] {
         if searchText.isEmpty { return commonExercises }
         return commonExercises.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private var hasExactMatch: Bool {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return filteredExercises.contains { $0.caseInsensitiveCompare(trimmed) == .orderedSame }
     }
 
     var body: some View {
@@ -43,12 +49,12 @@ struct ExercisePickerView: View {
 
             // List
             List {
-                if !searchText.isEmpty {
+                if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !hasExactMatch {
                     Button {
-                        onSelect(searchText)
+                        onSelect(searchText.trimmingCharacters(in: .whitespacesAndNewlines))
                         dismiss()
                     } label: {
-                        Label("Use \"\(searchText)\"", systemImage: "plus.circle")
+                        Label("Add \"\(searchText.trimmingCharacters(in: .whitespacesAndNewlines))\"", systemImage: "plus.circle")
                     }
                     .accessibilityIdentifier("exercise-picker-free-entry")
                 }
@@ -63,6 +69,7 @@ struct ExercisePickerView: View {
             }
             .listStyle(.plain)
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("exercise-picker-modal")
     }
 }

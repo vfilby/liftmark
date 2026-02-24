@@ -48,17 +48,6 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 | Button options section | `button-options-section` | View |
 | Debug logs nav | `debug-logs-button` | TouchableOpacity |
 
-## Data Dependencies
-- **settingsStore**: `settings`, `loadSettings`, `updateSettings`
-- **gymStore**: `gyms`, `defaultGym`, `loadGyms`, `addGym`, `setDefaultGym`
-- **workoutPlanStore**: `loadPlans`
-- **equipmentStore**: `loadEquipment`
-- **healthKitService**: `isHealthKitAvailable()`, `requestHealthKitAuthorization()`
-- **liveActivityService**: `isLiveActivityAvailable()`
-- **databaseBackupService**: `exportDatabase()`, `importDatabase()`, `validateDatabaseFile()`
-- **expo-sharing**: `shareAsync()`
-- **expo-document-picker**: `getDocumentAsync()`
-
 ## User Interactions
 - **Tap theme segment** → updates theme to light/dark/auto and applies immediately (see Theme Application below)
 - **Tap Workout Settings** → navigates to `/settings/workout`
@@ -72,8 +61,8 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 - **Enter API key + Save** → validates `sk-ant-` prefix, saves securely
 - **Remove API key** → confirmation alert → removes key
 - **Tap Open in Claude** → opens `https://console.anthropic.com`
-- **Export Database** → exports + share sheet
-- **Import Database** → document picker → validation → confirmation alert → imports + reloads all stores
+- **Export Database** → see Database Export Behavior below
+- **Import Database** → see Database Import Behavior below
 - **Tap Debug Logs** → navigates to `/settings/debug-logs`
 
 ### Theme Application
@@ -133,17 +122,64 @@ The Live Activities toggle must check OS-level permission before allowing the us
 | Live Activities status label | `live-activities-status-label` | Text | Shows permission status or instructions |
 | Open App Settings link | `live-activities-open-settings` | Button | Opens iOS Settings for this app (visible only when disabled at OS level) |
 
+### Database Export Behavior
+
+Tapping "Export Database" creates a timestamped copy of the database and presents the iOS share sheet so the user can save, AirDrop, or share the file.
+
+**Flow:**
+1. User taps "Export Database" button (`export-database-button`)
+2. App calls `DatabaseBackupService.exportDatabase()` to create a timestamped `.db` file in the caches directory
+3. On success: presents a share sheet (`UIActivityViewController`) with the exported file URL
+4. On failure: shows an alert with the error message
+
+**UI elements:**
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Export button | `export-database-button` | Button | Triggers database export |
+
+**Error states:**
+- Database file not found → alert: "Database file not found. Please restart the app."
+- File copy failure → alert with error description
+
+### Database Import Behavior
+
+Tapping "Import Workouts" opens a file picker for `.db` files. After selection, the app validates the file, asks for confirmation, then replaces the database.
+
+**Flow:**
+1. User taps "Import Workouts" button (`import-workouts-button`)
+2. System file picker opens, filtered to `.db`/`.sqlite`/`.database` files
+3. User selects a file
+4. App validates the file via `DatabaseBackupService.validateDatabaseFile(at:)`:
+   - Checks SQLite magic header
+   - Checks minimum file size (1024 bytes)
+   - Verifies required tables exist
+5. If invalid → alert: "The selected file is not a valid LiftMark database."
+6. If valid → confirmation alert: "Replace all data? This will replace all your workout data with the imported database. This cannot be undone."
+7. User confirms → app calls `DatabaseBackupService.importDatabase(from:)`:
+   - Creates safety backup of current database
+   - Closes database connection
+   - Replaces database file
+   - Reopens database connection
+   - On failure: restores from safety backup
+8. On success → alert: "Import successful! Your data has been replaced."
+9. On failure → alert with error message; original data is restored
+
+**UI elements:**
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Import button | `import-workouts-button` | Button | Opens file picker for import |
+
+**Error states:**
+- Invalid file format → alert: "The selected file is not a valid LiftMark database."
+- Import failure → alert with error description; data restored from backup
+
 ## Navigation
 - `/settings/workout` — workout settings
 - `/settings/sync` — iCloud sync
 - `/settings/debug-logs` — debug logs
 - `/gym/{id}` — gym detail
-
-## State
-- `promptText` — local state for custom prompt editing
-- `apiKey` — local state for API key input
-- `showApiKey` — toggle API key visibility
-- `isExporting` / `isImporting` — loading states for backup operations
 
 ## Error/Empty States
 - **Settings not loaded**: LoadingView with "Loading settings..."
@@ -171,9 +207,6 @@ Configure weight units, rest timer behavior, and screen preferences.
 | Workout timer switch | `switch-workout-timer` | Switch |
 | Auto-start rest timer switch | `switch-auto-start-rest` | Switch |
 | Keep screen awake switch | `switch-keep-screen-awake` | Switch |
-
-### Data Dependencies
-- **settingsStore**: `settings`, `loadSettings`, `updateSettings`
 
 ---
 
@@ -223,10 +256,6 @@ The screen MUST display meaningful content — it must never appear as an empty 
 | Check status button | `sync-check-status` | Button | Refresh iCloud status |
 | Info text | `sync-info-text` | Text | Explanatory description |
 
-### Data Dependencies
-- **cloudKitService** (dynamically imported): `getAccountStatus()`, `initialize()`
-- **settingsStore**: for sync enable/disable preference
-
 ### Behavior
 - On screen appear: automatically calls `getAccountStatus()` and displays result
 - **Check Status** button: re-fetches status (useful after user signs into iCloud in system Settings)
@@ -254,7 +283,3 @@ View, filter, and export application logs for troubleshooting production issues.
 | Logs list | `debug-logs-list` | ScrollView |
 | Empty state | `debug-logs-empty` | Text |
 
-### Data Dependencies
-- **logger**: `getLogs()`, `getLogStats()`, `exportLogs()`, `clearLogs()`, `getDeviceInformation()`
-- **navigationLogger**: `exportHistory()`, `clearHistory()`
-- **@react-native-clipboard/clipboard**: `setString()`

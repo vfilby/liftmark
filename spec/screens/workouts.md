@@ -32,13 +32,6 @@ Browse, search, filter, and manage all imported workout plans. Supports tablet s
 | Import button (empty) | `button-import-empty` | TouchableOpacity |
 | Setup equipment button | `button-setup-equipment` | TouchableOpacity |
 
-## Data Dependencies
-- **workoutPlanStore**: `plans`, `loadPlans`, `removePlan`, `searchPlans`, `selectedPlan`, `loadPlan`, `reprocessPlan`, `error`, `clearError`
-- **equipmentStore**: `equipment`, `loadEquipment`, `getAvailableEquipmentNames`
-- **gymStore**: `defaultGym`, `loadGyms`, `gyms`
-- **sessionStore**: `startWorkout`, `checkForActiveSession`
-- **repository**: `toggleFavoritePlan`
-
 ## User Interactions
 - **Type in search** → filters plans by query
 - **Toggle "Show Filters"** → expands/collapses filter card
@@ -60,14 +53,39 @@ Browse, search, filter, and manage all imported workout plans. Supports tablet s
 - `/workout/active` — after starting workout
 - `/gym/{defaultGym.id}` — equipment setup button
 
-## State
-- `searchQuery` — current search text
-- `filterByEquipment` — equipment filter toggle
-- `showFavoritesOnly` — favorites filter toggle
-- `selectedWorkoutId` — selected plan for tablet split view
-- `showFilters` — filter panel expanded/collapsed
-- `selectedGymId` — which gym's equipment to filter by
-- `isStarting` / `isReprocessing` — loading states for actions
+## Workout Detail View
+
+Displayed when a plan card is tapped (phone: push navigation, tablet: right pane of split view).
+
+### Layout
+- **Header card**: Plan name, favorite toggle, description, tags
+- **Stats grid**: Exercise count, set count, weight units
+- **Reprocess button**: Shown if plan has `sourceMarkdown`
+- **Exercise list**: Cards for each exercise or superset group
+
+### Exercise Display Rules
+
+Exercises are grouped by section (`groupType == .section`), then within each section:
+
+- **Regular exercises**: Rendered as individual cards with numbered index, exercise name, equipment, notes, and set list
+- **Superset groups**: A superset parent (`groupType == .superset`, empty sets) and its children (`parentExerciseId` pointing to parent) are rendered as a **single combined card**:
+  - Card header shows a "SUPERSET" badge and the parent exercise name (e.g., "Superset: Triceps")
+  - Sets are displayed **interleaved round-robin** across children: child A set 1, child B set 1, child A set 2, child B set 2, etc. Each set row is prefixed with the exercise name to identify which exercise it belongs to.
+  - The superset parent exercise is NOT rendered as a separate standalone card
+  - Children of a superset are NOT rendered as separate standalone cards
+- **Exercise numbering**: Superset parents are excluded from the numbered index. Only exercises with sets (regular exercises and superset children) receive a number.
+
+### UI Elements (Detail)
+
+| Element | testID | Type |
+|---------|--------|------|
+| Detail scroll view | `workout-detail-view` | ScrollView |
+| Favorite button | `favorite-button-detail` | Button |
+| Start workout button | `start-workout-button` | Button |
+| Share button | `share-plan-button` | ToolbarItem |
+| Exercise card | `exercise-{exercise.id}` | View |
+| Superset card | `superset-card-{parent.id}` | View |
+| Set row | `set-{set.id}` | View |
 
 ## Error/Empty States
 - **No plans**: "No plans yet" + "Import your first workout plan to get started" + Import Plan button

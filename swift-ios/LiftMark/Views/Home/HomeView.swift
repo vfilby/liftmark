@@ -13,14 +13,6 @@ struct HomeView: View {
         settingsStore.settings?.homeTiles ?? ["Squat", "Deadlift", "Bench Press", "Overhead Press"]
     }
 
-    private var createPlanPlacement: ToolbarItemPlacement {
-        #if os(iOS)
-        .bottomBar
-        #else
-        .automatic
-        #endif
-    }
-
     var body: some View {
         ScrollView {
             VStack(spacing: LiftMarkTheme.spacingMD) {
@@ -29,9 +21,9 @@ struct HomeView: View {
                     NavigationLink(value: AppDestination.activeWorkout) {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Resume Workout")
+                                Text("Resume \(activeSession.name)")
                                     .font(.headline)
-                                Text(activeSession.name)
+                                Text(setProgressText(for: activeSession))
                                     .font(.subheadline)
                                     .opacity(0.9)
                             }
@@ -63,6 +55,7 @@ struct HomeView: View {
                                     showExercisePicker = true
                                 }
                             )
+                            .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("max-lift-tile-\(index)")
                         }
                     }
@@ -78,12 +71,12 @@ struct HomeView: View {
                             Image(systemName: "dumbbell")
                                 .font(.largeTitle)
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                            Text("No workout plans yet")
+                            Text("No plans yet")
+                                .font(.headline)
+                                .foregroundStyle(LiftMarkTheme.label)
+                            Text("Import your first workout plan to get started")
                                 .font(.subheadline)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                            Text("Create a plan to get started!")
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(LiftMarkTheme.spacingLG)
@@ -98,21 +91,26 @@ struct HomeView: View {
                     }
                 }
                 .accessibilityIdentifier("recent-plans")
-            }
-            .padding()
-        }
-        .accessibilityIdentifier("home-screen")
-        .navigationTitle("LiftMark")
-        .toolbar {
-            ToolbarItem(placement: createPlanPlacement) {
+
+                // Create Plan Button (inside ScrollView, above tab bar)
                 Button {
                     showImport = true
                 } label: {
                     Label("Create Plan", systemImage: "plus")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(LiftMarkTheme.primary)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
                 }
                 .accessibilityIdentifier("button-import-workout")
             }
+            .padding()
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-screen")
+        .navigationTitle("LiftMark")
         .sheet(isPresented: $showImport) {
             ImportView()
         }
@@ -145,17 +143,26 @@ struct HomeView: View {
     }
 
     private func findMaxWeight(for exerciseName: String) -> Double? {
-        // Search completed sessions for max weight on this exercise
+        // Search all completed sessions for global max weight on this exercise
+        var globalMax: Double?
         for session in sessionStore.sessions {
             for exercise in session.exercises where exercise.exerciseName.lowercased() == exerciseName.lowercased() {
                 let maxW = exercise.sets
                     .filter { $0.status == .completed }
                     .compactMap { $0.actualWeight }
                     .max()
-                if let maxW { return maxW }
+                if let maxW {
+                    globalMax = max(globalMax ?? 0, maxW)
+                }
             }
         }
-        return nil
+        return globalMax
+    }
+
+    private func setProgressText(for session: WorkoutSession) -> String {
+        let totalSets = session.exercises.flatMap { $0.sets }.count
+        let completedSets = session.exercises.flatMap { $0.sets }.filter { $0.status == .completed }.count
+        return "\(completedSets)/\(totalSets) sets completed"
     }
 }
 
@@ -175,21 +182,24 @@ private struct MaxLiftTile: View {
                 .lineLimit(1)
 
             if let weight = maxWeight {
-                Text(formatWeight(weight))
-                    .font(.title2.bold())
-                Text(unit.rawValue)
-                    .font(.caption2)
-                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(formatWeight(weight))
+                        .font(.title2.bold())
+                    Text(unit.rawValue)
+                        .font(.caption2)
+                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                }
             } else {
-                Text("--")
+                Text("\u{2014}")
                     .font(.title2.bold())
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                Text("No data")
+                Text("No data yet")
                     .font(.caption2)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 80)
+        .padding(LiftMarkTheme.spacingLG)
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         .onLongPressGesture(minimumDuration: 0.4) {

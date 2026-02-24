@@ -70,3 +70,4 @@ PHASE_*.md
 
 # Gas Town (added by gt)
 .logs/
+tools/__pycache__/

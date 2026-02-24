@@ -49,12 +49,24 @@ struct HistoryDetailView: View {
                         // Stats card
                         statsCard(session)
 
+                        // Exercises heading
+                        Text("Exercises")
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+
+                        // Exercises
+                        ForEach(Array(session.exercises.enumerated()), id: \.element.id) { index, exercise in
+                            exerciseCard(exercise, number: index + 1)
+                        }
+
                         // Notes
                         if let notes = session.notes, !notes.isEmpty {
                             VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
                                 Text("Notes")
-                                    .font(.subheadline)
+                                    .font(.callout)
                                     .fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
                                 Text(notes)
                                     .font(.body)
                                     .foregroundStyle(.secondary)
@@ -65,24 +77,21 @@ struct HistoryDetailView: View {
                             .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
                         }
 
-                        // Exercises
-                        ForEach(session.exercises) { exercise in
-                            exerciseCard(exercise)
-                        }
-
                         // Delete button
                         Button(role: .destructive) {
                             showDeleteConfirmation = true
                         } label: {
-                            HStack {
-                                Image(systemName: "trash")
-                                Text("Delete Workout")
-                            }
-                            .frame(maxWidth: .infinity)
+                            Text("Delete Workout")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, LiftMarkTheme.spacingMD)
+                                .background(LiftMarkTheme.destructive)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.red)
-                        .padding(.top, LiftMarkTheme.spacingMD)
+                        .buttonStyle(.plain)
+                        .padding(.top, LiftMarkTheme.spacingLG)
                         .accessibilityIdentifier("delete-session-button")
                     }
                     .padding()
@@ -101,7 +110,7 @@ struct HistoryDetailView: View {
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
-                .accessibilityIdentifier("history-detail-share")
+                .accessibilityIdentifier("share-session-button")
             }
         }
         .alert("Delete Workout", isPresented: $showDeleteConfirmation) {
@@ -133,25 +142,38 @@ struct HistoryDetailView: View {
 
     @ViewBuilder
     private func statsCard(_ session: WorkoutSession) -> some View {
-        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-            // Date & time
-            HStack {
-                if let startTime = session.startTime,
-                   let date = ISO8601DateFormatter().date(from: startTime) {
-                    let formatter = DateFormatter()
-                    let _ = formatter.dateStyle = .long
-                    let _ = formatter.timeStyle = .short
-                    Text(formatter.string(from: date))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text(session.date)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+        // Header card
+        VStack(alignment: .leading, spacing: 4) {
+            // Full date
+            if let startTime = session.startTime,
+               let date = ISO8601DateFormatter().date(from: startTime) {
+                let dateFormatter: DateFormatter = {
+                    let f = DateFormatter()
+                    f.dateFormat = "EEEE, MMMM d, yyyy"
+                    return f
+                }()
+                let timeFormatter: DateFormatter = {
+                    let f = DateFormatter()
+                    f.timeStyle = .short
+                    return f
+                }()
+                Text(dateFormatter.string(from: date))
+                    .font(.body)
+                    .fontWeight(.semibold)
+                HStack(spacing: 8) {
+                    Text(timeFormatter.string(from: date))
+                    if let duration = session.duration {
+                        Text("·")
+                        let minutes = duration / 60
+                        Text(minutes < 60 ? "\(minutes) min" : "\(minutes / 60)h \(minutes % 60)m")
+                    }
                 }
-
-                Spacer()
-
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            } else {
+                Text(session.date)
+                    .font(.body)
+                    .fontWeight(.semibold)
                 if let duration = session.duration {
                     let minutes = duration / 60
                     Text(minutes < 60 ? "\(minutes) min" : "\(minutes / 60)h \(minutes % 60)m")
@@ -159,77 +181,74 @@ struct HistoryDetailView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-
-            Divider()
-
-            // Stats row
-            HStack(spacing: LiftMarkTheme.spacingMD) {
-                VStack {
-                    Text("\(completedSetsCount)")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text("Sets")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack {
-                    Text("\(totalReps)")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text("Reps")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack {
-                    Text(formatVolume(totalVolume))
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text("Volume")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
         }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+
+        // Stats grid
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            statCell(value: "\(completedSetsCount)", label: "Sets")
+            statCell(value: "\(totalReps)", label: "Reps")
+            statCell(value: totalVolume > 0 ? formatVolume(totalVolume) : "\u{2013}", label: "Volume")
+        }
+        .accessibilityIdentifier("session-stats-card")
+    }
+
+    @ViewBuilder
+    private func statCell(value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(LiftMarkTheme.primary)
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+        }
+        .frame(maxWidth: .infinity)
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-        .accessibilityIdentifier("session-stats-card")
     }
 
     // MARK: - Exercise Card
 
     @ViewBuilder
-    private func exerciseCard(_ exercise: SessionExercise) -> some View {
+    private func exerciseCard(_ exercise: SessionExercise, number: Int) -> some View {
         VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-            HStack {
-                Text(exercise.exerciseName)
-                    .font(.headline)
+            HStack(alignment: .top, spacing: LiftMarkTheme.spacingMD) {
+                // Numbered blue badge
+                Text("\(number)")
+                    .font(.callout)
+                    .fontWeight(.bold)
+                    .foregroundStyle(LiftMarkTheme.primary)
 
-                if let groupType = exercise.groupType {
-                    Text(groupType == .superset ? "Superset" : "Section")
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(LiftMarkTheme.primary.opacity(0.1))
-                        .clipShape(Capsule())
+                VStack(alignment: .leading, spacing: 2) {
+                    if let groupType = exercise.groupType, groupType == .superset {
+                        Text("SUPERSET")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.purple)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.purple.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+
+                    Text(exercise.exerciseName)
+                        .font(.callout)
+                        .fontWeight(.semibold)
+
+                    if let equipment = exercise.equipmentType {
+                        Text(equipment)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()
-
-                Button {
-                    selectedExerciseName = exercise.exerciseName
-                    showExerciseHistory = true
-                } label: {
-                    Text("Details")
-                        .font(.caption)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("exercise-details-\(exercise.exerciseName)")
             }
 
             // Sets
@@ -245,8 +264,11 @@ struct HistoryDetailView: View {
                     .padding(.top, LiftMarkTheme.spacingXS)
             }
 
-            // Inline trend
-            ExerciseTrendView(exerciseName: exercise.exerciseName)
+            // Inline trend with chart
+            ExerciseTrendView(exerciseName: exercise.exerciseName, onShowDetails: {
+                selectedExerciseName = exercise.exerciseName
+                showExerciseHistory = true
+            })
         }
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
@@ -258,56 +280,55 @@ struct HistoryDetailView: View {
 
     @ViewBuilder
     private func setRow(_ set: SessionSet, index: Int) -> some View {
-        HStack {
-            // Set number badge
-            Text("\(index)")
-                .font(.caption2)
-                .fontWeight(.bold)
-                .frame(width: 22, height: 22)
-                .background(statusColor(set.status).opacity(0.2))
-                .foregroundStyle(statusColor(set.status))
-                .clipShape(Circle())
+        HStack(spacing: LiftMarkTheme.spacingMD) {
+            // Status badge (✓ for completed, − for skipped)
+            Group {
+                switch set.status {
+                case .completed:
+                    Text("✓")
+                case .skipped:
+                    Text("−")
+                case .failed:
+                    Text("✗")
+                case .pending:
+                    Text("○")
+                }
+            }
+            .font(.caption)
+            .fontWeight(.bold)
+            .frame(width: 28, height: 28)
+            .background(statusColor(set.status).opacity(0.12))
+            .foregroundStyle(statusColor(set.status))
+            .clipShape(Circle())
 
-            // Weight & reps
-            if let weight = set.actualWeight ?? set.targetWeight,
-               let unit = set.actualWeightUnit ?? set.targetWeightUnit {
-                Text("\(Int(weight)) \(unit.rawValue)")
+            // Weight & reps or "Skipped"
+            if set.status == .skipped {
+                Text("Skipped")
                     .font(.subheadline)
-            }
-            if let reps = set.actualReps ?? set.targetReps {
-                Text("x \(reps)")
-                    .font(.subheadline)
-            }
-            if let time = set.actualTime ?? set.targetTime {
-                Text("\(time)s")
-                    .font(.subheadline)
-            }
-
-            if let rpe = set.actualRpe ?? set.targetRpe {
-                Text("RPE \(rpe)")
-                    .font(.caption)
                     .foregroundStyle(.secondary)
+                    .italic()
+            } else {
+                HStack(spacing: 4) {
+                    if let weight = set.actualWeight ?? set.targetWeight,
+                       let unit = set.actualWeightUnit ?? set.targetWeightUnit {
+                        Text("\(Int(weight)) \(unit.rawValue)")
+                            .font(.subheadline)
+                    }
+                    if let reps = set.actualReps ?? set.targetReps {
+                        Text("× \(reps) reps")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let time = set.actualTime ?? set.targetTime {
+                        Text("\(time)s")
+                            .font(.subheadline)
+                    }
+                }
             }
 
             Spacer()
-
-            // Status indicator
-            switch set.status {
-            case .completed:
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(LiftMarkTheme.success)
-            case .skipped:
-                Image(systemName: "forward.fill")
-                    .foregroundStyle(.secondary)
-            case .failed:
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(LiftMarkTheme.destructive)
-            case .pending:
-                Image(systemName: "circle")
-                    .foregroundStyle(.secondary)
-            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     // MARK: - Helpers

@@ -95,7 +95,18 @@ enum MarkdownParser {
         let section = parseWorkoutSection(context, headerLine: workoutHeaderLine)
 
         // Parse exercises
-        let exercises = parseExercises(context, workoutPlanId: workoutId)
+        var exercises = parseExercises(context, workoutPlanId: workoutId)
+
+        // Apply default weight unit to sets that have a weight but no explicit unit
+        if let defaultUnit = section.defaultWeightUnit {
+            for i in exercises.indices {
+                for j in exercises[i].sets.indices {
+                    if exercises[i].sets[j].targetWeight != nil && exercises[i].sets[j].targetWeightUnit == nil {
+                        exercises[i].sets[j].targetWeightUnit = defaultUnit
+                    }
+                }
+            }
+        }
 
         if exercises.isEmpty {
             context.errors.append(ParseError(
@@ -698,13 +709,13 @@ enum MarkdownParser {
         }
 
         // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
-        let pattern1 = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?\s*(.*)$"#, options: .caseInsensitive)
+        let pattern1 = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
 
         // Pattern 2: bodyweight x reps/time (e.g., "x 10", "bw x 12")
-        let pattern2 = try! NSRegularExpression(pattern: #"^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?\s*(.*)$"#, options: .caseInsensitive)
+        let pattern2 = try! NSRegularExpression(pattern: #"^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
 
         // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
-        let pattern3 = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?\s*(.*)$"#, options: .caseInsensitive)
+        let pattern3 = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
 
         let range = NSRange(original.startIndex..., in: original)
 

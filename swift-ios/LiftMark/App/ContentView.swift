@@ -1,11 +1,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Binding var pendingImportContent: String?
+    @Environment(SettingsStore.self) private var settingsStore
+    @State private var showPendingImport = false
+    @State private var navCoordinator = NavigationCoordinator()
+
+    private var colorScheme: ColorScheme? {
+        switch settingsStore.settings?.theme ?? .auto {
+        case .light: return .light
+        case .dark: return .dark
+        case .auto: return nil
+        }
+    }
+
     var body: some View {
         TabView {
-            NavigationStack {
+            NavigationStack(path: $navCoordinator.homeNavPath) {
                 HomeView()
             }
+            .environment(navCoordinator)
             .tabItem {
                 Label("LiftMark", systemImage: "house")
             }
@@ -36,5 +50,17 @@ struct ContentView: View {
             .accessibilityIdentifier("tab-settings")
         }
         .tint(LiftMarkTheme.tabIconSelected)
+        .preferredColorScheme(colorScheme)
+        .sheet(isPresented: $showPendingImport) {
+            ImportView(initialContent: pendingImportContent ?? "")
+                .onDisappear {
+                    pendingImportContent = nil
+                }
+        }
+        .onChange(of: pendingImportContent) {
+            if pendingImportContent != nil {
+                showPendingImport = true
+            }
+        }
     }
 }

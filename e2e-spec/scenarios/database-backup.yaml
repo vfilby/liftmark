@@ -1,0 +1,48 @@
+name: "Database Backup"
+
+tests:
+  - name: "data management buttons are visible in settings"
+    tags: ["settings", "backup"]
+    steps:
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      # Scroll down to Data Management section
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
+        amount: 500
+      - action: delay
+        ms: 500
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
+        amount: 500
+      - action: delay
+        ms: 500
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
+        amount: 500
+      - action: delay
+        ms: 500
+      # Verify both buttons exist
+      - action: expect
+        target: "export-data-button"
+        assertion: "toExist"
+      - action: expect
+        target: "import-data-button"
+        assertion: "toExist"

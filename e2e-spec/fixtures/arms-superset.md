@@ -2,8 +2,13 @@
 @tags: arms
 @units: lbs
 
-## Barbell Curl
-- 65 x 10
+## Bench Press
+- 135 x 5
 
-## Tricep Pushdown
+## Superset: Triceps
+
+### Tricep Pushdown
 - 50 x 12
+
+### Overhead Tricep Extension
+- 40 x 12

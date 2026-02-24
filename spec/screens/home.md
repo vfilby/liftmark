@@ -33,12 +33,6 @@ The "Create Plan" button MUST be placed **inside the ScrollView** as the last co
 | Create Plan button | `button-import-workout` | TouchableOpacity |
 | Exercise picker modal | (from ExercisePickerModal) | Modal |
 
-## Data Dependencies
-- **workoutPlanStore**: `plans`, `loadPlans`
-- **sessionStore**: `activeSession`, `resumeSession`, `getProgress`
-- **settingsStore**: `settings` (reads `homeTiles`), `updateSettings`
-- **sessionRepository**: `getExerciseBestWeights()` for max lift tile data
-
 ## User Interactions
 - **Tap resume banner** → navigates to `/workout/active`
 - **Tap plan card** → navigates to `/workout/{plan.id}`
@@ -50,12 +44,6 @@ The "Create Plan" button MUST be placed **inside the ScrollView** as the last co
 - `/workout/active` — via resume banner
 - `/workout/{id}` — via plan card tap
 - `/modal/import` — via Create Plan button
-
-## State
-- `hasActiveSession` — controls resume banner visibility
-- `bestWeights` — Map of exercise name to best weight/reps/unit, populates tile values
-- `editingTileIndex` — which tile is being customized (null = picker hidden)
-- `homeTiles` — array of 4 exercise names from settings (default: Squat, Deadlift, Bench Press, Overhead Press)
 
 ## Error/Empty States
 - **No plans**: Shows empty state view with "No plans yet" / "Import your first workout plan to get started"

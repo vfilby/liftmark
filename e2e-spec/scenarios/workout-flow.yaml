@@ -93,7 +93,7 @@ tests:
       - action: tap
         target: "active-workout-finish-button"
 
-      # Handle "Finish Anyway" dialog if present
+      # Handle finish dialogs — may be "Finish Anyway", "Log Anyway" (discard dialog), or "Finish"
       - action: tryCatch
         try:
           - action: waitForText
@@ -102,15 +102,22 @@ tests:
           - action: tapText
             text: "Finish Anyway"
         catch:
-          # If no dialog, tap "Finish" in the confirmation alert
           - action: tryCatch
             try:
               - action: waitForText
-                text: "Finish"
+                text: "Log Anyway"
                 timeout: 3000
               - action: tapText
-                text: "Finish"
-            catch: []
+                text: "Log Anyway"
+            catch:
+              - action: tryCatch
+                try:
+                  - action: waitForText
+                    text: "Finish"
+                    timeout: 3000
+                  - action: tapText
+                    text: "Finish"
+                catch: []
 
       # Wait for summary and dismiss
       - action: waitFor

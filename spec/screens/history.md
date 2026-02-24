@@ -22,11 +22,6 @@ Display a chronological list of completed workout sessions with stats. Supports 
 | Session card | `history-session-card` | TouchableOpacity |
 | Empty state | `history-empty-state` | View |
 
-## Data Dependencies
-- **sessionRepository**: `getCompletedSessions()`, `getWorkoutSessionById()`
-- **workoutExportService**: `exportSessionsAsJson()`
-- **expo-sharing**: `shareAsync()`
-
 ## User Interactions
 - **Tap session card** → phone: navigates to `/history/{session.id}`; tablet: selects in split view
 - **Pull to refresh** → reloads completed sessions
@@ -35,13 +30,6 @@ Display a chronological list of completed workout sessions with stats. Supports 
 
 ## Navigation
 - `/history/{id}` — phone session card tap
-
-## State
-- `sessions` — array of completed WorkoutSession objects
-- `isLoading` — initial load indicator
-- `isRefreshing` — pull-to-refresh indicator
-- `isExporting` — export in progress (shows ActivityIndicator in header)
-- `selectedSessionId` / `selectedSession` — tablet split view selection
 
 ## Error/Empty States
 - **Loading**: LoadingView with "Loading history..." message

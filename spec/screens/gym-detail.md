@@ -33,11 +33,6 @@ Manage a single gym's details: edit name, set as default, manage equipment (togg
 | Preset item | `preset-{item}` | TouchableOpacity |
 | Save presets button | `save-presets-button` | TouchableOpacity |
 
-## Data Dependencies
-- **equipmentStore**: `equipment`, `loadEquipment()`, `addEquipment()`, `addMultipleEquipment()`, `updateEquipmentAvailability()`, `removeEquipment()`, `hasEquipment()`, `error`, `clearError()`
-- **gymStore**: `gyms`, `updateGym()`, `setDefaultGym()`, `removeGym()`, `error`, `clearError()`
-- **PRESET_EQUIPMENT**: Static preset equipment organized by category (freeWeights, benchesAndRacks, machines, cardio, other)
-
 ## User Interactions
 - **Tap pencil icon** on gym name → enters name editing mode with TextInput
 - **Tap checkmark** (editing) → saves new gym name
@@ -54,13 +49,6 @@ Manage a single gym's details: edit name, set as default, manage equipment (togg
 
 ## Navigation
 - Back → Settings screen (via stack navigation)
-
-## State
-- `gymName` — local state for gym name editing
-- `isEditingName` — whether name editing mode is active
-- `newEquipmentName` — local state for custom equipment input
-- `showPresetModal` — whether preset selection modal is visible
-- `selectedPresets` — Set of selected preset equipment names
 
 ## Error/Empty States
 - **Gym not found**: "Gym not found" text

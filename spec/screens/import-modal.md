@@ -26,17 +26,6 @@ Modal for importing workouts via LiftMark Workout Format (LMWF) markdown. Suppor
 | Open in Claude button | `button-open-claude` | TouchableOpacity |
 | Markdown input | `input-markdown` | TextInput |
 
-## Data Dependencies
-- **workoutPlanStore**: `savePlan()`
-- **settingsStore**: `settings` (reads `anthropicApiKey`, `customPromptAddition`, `showOpenInClaudeButton`)
-- **gymStore**: `defaultGym`, `loadGyms()`
-- **equipmentStore**: `equipment`, `loadEquipment()`, `getAvailableEquipmentNames()`
-- **MarkdownParser**: `parseWorkout()`
-- **anthropicService**: `generateWorkout()`
-- **workoutHistoryService**: `generateWorkoutHistoryContext()`
-- **@react-native-clipboard/clipboard**: `setString()`
-- **expo-linking**: `canOpenURL()`, `openURL()`
-
 ## User Interactions
 - **Tap Cancel** → if markdown has content: confirmation alert ("Discard Changes") → navigates back; if empty: navigates back directly
 - **Tap Import** → parses markdown via LMWF parser → if warnings: alert with Continue/Cancel → saves plan → success alert → navigates back
@@ -48,13 +37,6 @@ Modal for importing workouts via LiftMark Workout Format (LMWF) markdown. Suppor
 
 ## Navigation
 - Back (via Cancel or after successful import) → previous screen
-
-## State
-- `markdown` — current markdown text input value
-- `isParsing` — loading state during import/parse
-- `isGenerating` — loading state during AI generation
-- `isPromptExpanded` — whether AI prompt section is expanded
-- `workoutHistory` — recent workout history context string (loaded on mount)
 
 ## Computed Values
 - `promptText` — memoized combination of base LMWF prompt + available equipment from default gym + workout history context + custom prompt addition from settings

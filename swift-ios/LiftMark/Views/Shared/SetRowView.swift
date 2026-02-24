@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// Custom alignment to vertically center the indicator and skip button on the text fields.
+extension VerticalAlignment {
+    private enum TextFieldCenter: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[VerticalAlignment.center]
+        }
+    }
+    static let textFieldCenter = VerticalAlignment(TextFieldCenter.self)
+}
+
 /// Individual set row in the active workout view.
 /// Handles display for pending, current, completed, and skipped states.
 struct SetRowView: View {
@@ -7,23 +17,24 @@ struct SetRowView: View {
     let setNumber: Int
     let isCurrent: Bool
     let equipmentType: String?
-    let onComplete: () -> Void
+    let onComplete: (Double?, Int?) -> Void
     let onSkip: () -> Void
-    let onEdit: () -> Void
+    let onSave: (Double?, Int?) -> Void
 
     @State private var weightText: String = ""
     @State private var repsText: String = ""
     @State private var isEditing = false
 
     var body: some View {
-        HStack(spacing: LiftMarkTheme.spacingSM) {
-            // Set number indicator
-            setIndicator
-
+        Group {
             if isCurrent {
                 currentSetContent
             } else {
-                completedOrPendingContent
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    // Set number indicator
+                    setIndicator
+                    completedOrPendingContent
+                }
             }
         }
         .padding(.vertical, LiftMarkTheme.spacingXS)
@@ -49,16 +60,20 @@ struct SetRowView: View {
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(LiftMarkTheme.success)
+                    .font(.title3)
             case .skipped:
                 Image(systemName: "minus.circle.fill")
                     .foregroundStyle(LiftMarkTheme.warning)
+                    .font(.title3)
             case .failed:
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(LiftMarkTheme.destructive)
+                    .font(.title3)
             case .pending:
                 if isCurrent {
                     Image(systemName: "arrow.right.circle.fill")
                         .foregroundStyle(LiftMarkTheme.primary)
+                        .font(.title3)
                 } else {
                     Text("\(setNumber)")
                         .font(.caption.bold())
@@ -73,70 +88,108 @@ struct SetRowView: View {
 
     @ViewBuilder
     private var currentSetContent: some View {
-        HStack(spacing: LiftMarkTheme.spacingSM) {
-            // Weight input
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Weight")
-                    .font(.caption2)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                TextField("--", text: $weightText)
-                    #if os(iOS)
-                    .keyboardType(.decimalPad)
-                    #endif
-                    .font(.body.monospacedDigit())
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-            }
+        VStack(spacing: LiftMarkTheme.spacingSM) {
+            // Top row: indicator + inputs + skip
+            HStack(alignment: .textFieldCenter, spacing: LiftMarkTheme.spacingSM) {
+                setIndicator
+                    .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
 
-            // Reps input
-            if set.targetTime == nil {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Reps")
-                        .font(.caption2)
+                // Weight input — only for weighted exercises (not bodyweight/timed)
+                if set.targetWeight != nil {
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("Weight\(weightUnitLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        TextField("--", text: $weightText)
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                            .font(.title3.monospacedDigit())
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 90)
+                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                    }
+
+                    Text("×")
+                        .font(.callout)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    TextField("--", text: $repsText)
-                        #if os(iOS)
-                        .keyboardType(.numberPad)
-                        #endif
-                        .font(.body.monospacedDigit())
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 60)
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                 }
+
+                // Time display — for timed exercises
+                if let targetTime = set.targetTime, set.targetWeight == nil {
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("Time")
+                            .font(.caption2)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        Text(formatTime(targetTime))
+                            .font(.title3.monospacedDigit())
+                            .frame(width: 70, alignment: .center)
+                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                    }
+                }
+
+                // Reps input — only for non-timed exercises
+                if set.targetTime == nil {
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("Reps")
+                            .font(.caption2)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        TextField("--", text: $repsText)
+                            #if os(iOS)
+                            .keyboardType(.numberPad)
+                            #endif
+                            .font(.title3.monospacedDigit())
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 70)
+                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                    }
+                }
+
+                Spacer()
+
+                // Skip button
+                Button {
+                    onSkip()
+                } label: {
+                    Image(systemName: "forward.fill")
+                        .font(.body)
+                        .foregroundStyle(LiftMarkTheme.warning)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("set-skip-button")
+                .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
             }
 
-            // Target hint
-            if let target = targetHint {
+            // Middle row: target hint — only when values differ from target
+            if let target = targetHint, valuesChangedFromTarget {
                 Text(target)
                     .font(.caption)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
             }
 
-            Spacer()
-
-            // Modifiers
-            modifierBadges
-
-            // Actions
-            Button {
-                onComplete()
-            } label: {
-                Image(systemName: "checkmark")
-                    .font(.body.bold())
+            // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
+            if set.targetTime == nil {
+                Button {
+                    onComplete(Double(weightText), Int(repsText))
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark")
+                            .font(.body.bold())
+                        Text("Complete Set")
+                            .font(.subheadline.bold())
+                    }
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(maxWidth: .infinity, minHeight: 44)
                     .background(LiftMarkTheme.success)
-                    .clipShape(Circle())
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("set-complete-button")
             }
-            .buttonStyle(.plain)
-
-            Button {
-                onSkip()
-            } label: {
-                Image(systemName: "forward.fill")
-                    .font(.caption)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-            }
-            .buttonStyle(.plain)
         }
     }
 
@@ -144,52 +197,157 @@ struct SetRowView: View {
 
     @ViewBuilder
     private var completedOrPendingContent: some View {
-        Button {
-            onEdit()
-        } label: {
-            HStack(spacing: LiftMarkTheme.spacingSM) {
-                if set.status == .completed {
-                    if let w = set.actualWeight, let u = set.actualWeightUnit {
-                        Text("\(formatWeight(w)) \(u.rawValue)")
-                            .font(.subheadline.monospacedDigit())
+        if isEditing && (set.status == .completed || set.status == .skipped) {
+            // Inline edit form
+            inlineEditContent
+        } else {
+            Button {
+                if set.status == .completed || set.status == .skipped {
+                    isEditing.toggle()
+                    // Initialize edit fields with current values
+                    if let w = set.actualWeight ?? set.targetWeight {
+                        weightText = formatWeight(w)
                     }
-                    if let r = set.actualReps {
-                        Text("x \(r)")
-                            .font(.subheadline.monospacedDigit())
-                    }
-                    if let t = set.actualTime {
-                        Text(formatTime(t))
-                            .font(.subheadline.monospacedDigit())
-                    }
-                } else if set.status == .skipped {
-                    Text("Skipped")
-                        .font(.subheadline)
-                        .foregroundStyle(LiftMarkTheme.warning)
-                } else {
-                    // Pending - show targets
-                    if let w = set.targetWeight, let u = set.targetWeightUnit {
-                        Text("\(formatWeight(w)) \(u.rawValue)")
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                    }
-                    if let r = set.targetReps {
-                        Text("x \(r)")
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                    }
-                    if let t = set.targetTime {
-                        Text(formatTime(t))
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    if let r = set.actualReps ?? set.targetReps {
+                        repsText = "\(r)"
                     }
                 }
+            } label: {
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    if set.status == .completed {
+                        if let w = set.actualWeight, let u = set.actualWeightUnit {
+                            Text("\(formatWeight(w)) \(u.rawValue)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.success)
+                        }
+                        if let r = set.actualReps {
+                            Text("× \(r)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.success)
+                        }
+                        if let t = set.actualTime {
+                            Text(formatTime(t))
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.success)
+                        }
+                    } else if set.status == .skipped {
+                        // Show target values + "— Skipped"
+                        if let w = set.targetWeight, let u = set.targetWeightUnit {
+                            Text("\(formatWeight(w)) \(u.rawValue)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.warning)
+                        }
+                        if let r = set.targetReps {
+                            Text("× \(r)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.warning)
+                        }
+                        Text("— Skipped")
+                            .font(.subheadline)
+                            .foregroundStyle(LiftMarkTheme.warning)
+                    } else {
+                        // Pending - show targets
+                        if let w = set.targetWeight, let u = set.targetWeightUnit {
+                            Text("\(formatWeight(w)) \(u.rawValue)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                        }
+                        if let r = set.targetReps {
+                            Text("× \(r)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                        }
+                        if let t = set.targetTime {
+                            Text(formatTime(t))
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                        }
+                    }
 
-                Spacer()
+                    Spacer()
 
-                modifierBadges
+                    modifierBadges
+                }
             }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+    }
+
+    // MARK: - Inline Edit (completed/skipped sets)
+
+    @ViewBuilder
+    private var inlineEditContent: some View {
+        HStack(alignment: .textFieldCenter, spacing: LiftMarkTheme.spacingSM) {
+            if set.actualWeight != nil || set.targetWeight != nil {
+                VStack(alignment: .center, spacing: 2) {
+                    Text("Weight\(weightUnitLabel)")
+                        .font(.caption2)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    TextField("--", text: $weightText)
+                        #if os(iOS)
+                        .keyboardType(.decimalPad)
+                        #endif
+                        .font(.body.monospacedDigit())
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                }
+
+                Text("×")
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+            }
+
+            VStack(alignment: .center, spacing: 2) {
+                Text("Reps")
+                    .font(.caption2)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                TextField("--", text: $repsText)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                    .font(.body.monospacedDigit())
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 60)
+                    .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+            }
+
+            Spacer()
+
+            // Update button
+            Button {
+                onSave(Double(weightText), Int(repsText))
+                isEditing = false
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.body.bold())
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(LiftMarkTheme.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+            }
+            .buttonStyle(.plain)
+            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+
+            // Cancel button
+            Button {
+                isEditing = false
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
+                            .stroke(LiftMarkTheme.tertiaryLabel, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+        }
     }
 
     // MARK: - Modifier Badges
@@ -200,28 +358,56 @@ struct SetRowView: View {
             if set.isDropset {
                 Text("Drop")
                     .font(.caption2)
-                    .padding(.horizontal, 4)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(LiftMarkTheme.destructive)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 1)
-                    .background(LiftMarkTheme.destructive.opacity(0.15))
-                    .clipShape(Capsule())
+                    .background(LiftMarkTheme.destructive.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             if set.isPerSide {
                 Text("/side")
                     .font(.caption2)
-                    .padding(.horizontal, 4)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(LiftMarkTheme.primary)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 1)
-                    .background(LiftMarkTheme.primary.opacity(0.15))
-                    .clipShape(Capsule())
+                    .background(LiftMarkTheme.primary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
         }
     }
 
     // MARK: - Helpers
 
+    private var weightUnitLabel: String {
+        if let unit = set.targetWeightUnit ?? set.actualWeightUnit {
+            return " (\(unit.rawValue))"
+        }
+        return ""
+    }
+
+    private var valuesChangedFromTarget: Bool {
+        if let tw = set.targetWeight {
+            if Double(weightText) != tw { return true }
+        }
+        if let tr = set.targetReps {
+            if Int(repsText) != tr { return true }
+        }
+        return false
+    }
+
     private var targetHint: String? {
-        guard let w = set.targetWeight, let r = set.targetReps else { return nil }
-        let unit = set.targetWeightUnit?.rawValue ?? ""
-        return "Target: \(formatWeight(w)) \(unit) x \(r)"
+        var parts: [String] = []
+        if let w = set.targetWeight {
+            let unit = set.targetWeightUnit?.rawValue ?? ""
+            parts.append("\(formatWeight(w)) \(unit)")
+        }
+        if let r = set.targetReps {
+            parts.append("× \(r)")
+        }
+        guard !parts.isEmpty else { return nil }
+        return "Target: \(parts.joined(separator: " "))"
     }
 
     private func formatWeight(_ w: Double) -> String {

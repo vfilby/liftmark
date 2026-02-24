@@ -44,7 +44,8 @@ enum DatabaseBackupService {
 
         let timestamp = ISO8601DateFormatter().string(from: Date())
             .replacingOccurrences(of: ":", with: "-")
-            .replacingOccurrences(of: ".", with: "-")
+            .replacingOccurrences(of: "T", with: "_")
+            .replacingOccurrences(of: "Z", with: "")
         let exportFileName = "liftmark_backup_\(timestamp).db"
 
         let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
@@ -127,9 +128,6 @@ enum DatabaseBackupService {
         do {
             // Close current database connection
             DatabaseManager.shared.close()
-
-            // Short delay to allow pending operations to complete
-            Thread.sleep(forTimeInterval: 0.5)
 
             // Delete current database
             if fileManager.fileExists(atPath: dbPath.path) {

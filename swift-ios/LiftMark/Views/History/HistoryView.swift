@@ -21,78 +21,35 @@ struct HistoryView: View {
         }
     }
 
-    /// Group sessions by relative date label (Today, Yesterday, This Week, etc.)
-    private var groupedSessions: [(key: String, sessions: [WorkoutSession])] {
-        let calendar = Calendar.current
-        let now = Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-
-        var groups: [String: [WorkoutSession]] = [:]
-        var order: [String] = []
-
-        for session in filteredSessions {
-            guard let sessionDate = dateFormatter.date(from: String(session.date.prefix(10))) else {
-                let key = "Other"
-                if groups[key] == nil { order.append(key) }
-                groups[key, default: []].append(session)
-                continue
-            }
-
-            let key: String
-            if calendar.isDateInToday(sessionDate) {
-                key = "Today"
-            } else if calendar.isDateInYesterday(sessionDate) {
-                key = "Yesterday"
-            } else if calendar.isDate(sessionDate, equalTo: now, toGranularity: .weekOfYear) {
-                key = "This Week"
-            } else if calendar.isDate(sessionDate, equalTo: now, toGranularity: .month) {
-                key = "This Month"
-            } else {
-                let monthFormatter = DateFormatter()
-                monthFormatter.dateFormat = "MMMM yyyy"
-                key = monthFormatter.string(from: sessionDate)
-            }
-
-            if groups[key] == nil { order.append(key) }
-            groups[key, default: []].append(session)
-        }
-
-        return order.compactMap { key in
-            guard let sessions = groups[key] else { return nil }
-            return (key: key, sessions: sessions)
-        }
-    }
-
     var body: some View {
         Group {
             if completedSessions.isEmpty {
-                VStack(spacing: LiftMarkTheme.spacingMD) {
+                VStack(spacing: LiftMarkTheme.spacingSM) {
                     Spacer()
-                    Image(systemName: "dumbbell")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
+                    Image(systemName: "clock")
+                        .font(.system(size: 48))
+                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                     Text("No Workouts Yet")
-                        .font(.headline)
-                    Text("Complete a workout to see your history.")
-                        .foregroundStyle(.secondary)
+                        .font(.title3.weight(.semibold))
+                    Text("Complete a workout to see it here")
+                        .font(.subheadline)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("history-empty-state")
             } else {
                 List {
-                    ForEach(groupedSessions, id: \.key) { group in
-                        Section(group.key) {
-                            ForEach(group.sessions) { session in
-                                NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
-                                    SessionCardView(session: session)
-                                }
-                                .accessibilityIdentifier("history-session-card")
-                            }
-                            .onDelete { offsets in
-                                deleteSessionsInGroup(group.sessions, at: offsets)
-                            }
+                    ForEach(filteredSessions) { session in
+                        NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
+                            SessionCardView(session: session)
+                        }
+                        .accessibilityIdentifier("history-session-card")
+                    }
+                    .onDelete { offsets in
+                        let sessionsToDelete = offsets.map { filteredSessions[$0] }
+                        for session in sessionsToDelete {
+                            sessionStore.deleteSession(id: session.id)
                         }
                     }
                 }
@@ -150,13 +107,6 @@ struct HistoryView: View {
         }
     }
 
-    private func deleteSessionsInGroup(_ sessions: [WorkoutSession], at offsets: IndexSet) {
-        for index in offsets {
-            let session = sessions[index]
-            sessionStore.deleteSession(id: session.id)
-        }
-    }
-
     private func exportAllSessions() {
         let exportService = WorkoutExportService()
         do {
@@ -202,13 +152,20 @@ private struct SessionCardView: View {
         }
 
         let calendar = Calendar.current
+        let now = Date()
         if calendar.isDateInToday(date) {
             return "Today"
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
+        } else if let daysAgo = calendar.dateComponents([.day], from: date, to: now).day,
+                  daysAgo < 7 {
+            // Show weekday name for dates within the past week
+            let weekdayFormatter = DateFormatter()
+            weekdayFormatter.dateFormat = "EEEE"
+            return weekdayFormatter.string(from: date)
         } else {
             let displayFormatter = DateFormatter()
-            displayFormatter.dateStyle = .medium
+            displayFormatter.dateFormat = "MMM d"
             return displayFormatter.string(from: date)
         }
     }
@@ -233,41 +190,54 @@ private struct SessionCardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-            Text(session.name)
-                .font(.headline)
-
-            HStack(spacing: LiftMarkTheme.spacingSM) {
+        VStack(alignment: .leading, spacing: 2) {
+            // Row 1: Name (left) + relative date (right)
+            HStack(alignment: .firstTextBaseline) {
+                Text(session.name)
+                    .font(.headline)
+                Spacer()
                 Text(formattedDate)
+                    .font(.subheadline)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+            }
+
+            // Row 2: Start time · duration
+            HStack(spacing: 0) {
                 if let time = startTimeFormatted {
-                    Text("at \(time)")
+                    Text(time)
+                    if durationFormatted != nil {
+                        Text(" \u{00B7} ")
+                    }
                 }
                 if let duration = durationFormatted {
-                    Text("·")
                     Text(duration)
                 }
             }
             .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(LiftMarkTheme.secondaryLabel)
 
-            HStack(spacing: LiftMarkTheme.spacingMD) {
-                Label("\(completedSetsCount)/\(totalSetsCount) sets", systemImage: "checkmark.circle")
-                Label("\(exerciseCount) exercises", systemImage: "figure.strengthtraining.traditional")
+            // Row 3: sets · exercises · volume
+            HStack(spacing: 0) {
+                Text("\(completedSetsCount) sets")
+                Text(" \u{00B7} ")
+                Text("\(exerciseCount) exercises")
                 if totalVolume > 0 {
-                    Label(formatVolume(totalVolume), systemImage: "scalemass")
+                    Text(" \u{00B7} ")
+                    Text(formatVolume(totalVolume))
                 }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.subheadline)
+            .foregroundStyle(LiftMarkTheme.secondaryLabel)
         }
         .padding(.vertical, LiftMarkTheme.spacingXS)
     }
 
     private func formatVolume(_ volume: Double) -> String {
-        if volume >= 1000 {
-            return String(format: "%.1fk", volume / 1000)
-        }
-        return "\(Int(volume))"
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        let formatted = formatter.string(from: NSNumber(value: volume)) ?? "\(Int(volume))"
+        return "\(formatted) lbs"
     }
 }
 
