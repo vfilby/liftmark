@@ -80,8 +80,14 @@ jobs:
             -f pkcs12 \
             -k "$KEYCHAIN_PATH"
 
+          # Allow codesign to access the keychain without prompting
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
           # Set keychain search list
           security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          # Verify certificate was imported
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       # --- Install provisioning profile ---
       - name: Install provisioning profile
@@ -91,9 +97,16 @@ jobs:
           PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
           echo -n "$PROVISIONING_PROFILE" | base64 --decode -o "$PROFILE_PATH"
 
-          # Install to provisioning profiles directory
+          # Extract UUID from provisioning profile and install with correct filename
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Profile UUID: $PROFILE_UUID"
+
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+
+          # Extract and display profile name for verification
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Profile Name: $PROFILE_NAME"
 
       # --- Build archive ---
       - name: Build archive
@@ -106,9 +119,11 @@ jobs:
             -archivePath $ARCHIVE_PATH \
             -destination 'generic/platform=iOS' \
             -skipPackagePluginValidation \
+            -allowProvisioningUpdates \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="LiftMark Native App Store"
 
       # --- Export IPA ---
       - name: Export IPA
