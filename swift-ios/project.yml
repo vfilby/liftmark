@@ -31,6 +31,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.eff3.liftmark.native-ios
         INFOPLIST_GENERATION_MODE: GeneratedFile
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: "LiftMark Native App Store"
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: true
