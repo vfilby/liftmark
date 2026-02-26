@@ -117,25 +117,35 @@ jobs:
             -skipPackagePluginValidation \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
 
+      # --- Setup API key (needed for export and upload) ---
+      - name: Setup App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
       # --- Export IPA ---
       - name: Export IPA
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           xcodebuild -exportArchive \
             -archivePath $ARCHIVE_PATH \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $EXPORT_PATH
+            -exportPath $EXPORT_PATH \
+            -authenticationKeyPath ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
       # --- Upload to TestFlight ---
       - name: Upload to TestFlight
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: |
-          # Write API key to file
-          mkdir -p ~/.private_keys
-          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
-
           xcrun altool --upload-app \
             --type ios \
             --file "$EXPORT_PATH/LiftMark.ipa" \
