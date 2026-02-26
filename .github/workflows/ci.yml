@@ -15,6 +15,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-ios
     permissions:
       contents: read
       pull-requests: write
@@ -29,6 +32,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: react-ios/package-lock.json
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -45,7 +49,7 @@ jobs:
       - name: Generate coverage summary
         if: github.event_name == 'pull_request'
         run: |
-          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           npx jest --coverage --coverageReporters=text-summary | tail -n +6 | head -n -2 >> $GITHUB_STEP_SUMMARY
 
@@ -54,12 +58,12 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          lcov-file: ./coverage/lcov.info
+          lcov-file: react-ios/coverage/lcov.info
           delete-old-comments: true
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
         with:
-          files: ./coverage/lcov.info
+          files: react-ios/coverage/lcov.info
           fail_ci_if_error: false
