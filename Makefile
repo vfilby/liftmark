@@ -1,6 +1,6 @@
 # LiftMark Multi-Platform Build
 
-.PHONY: help react-install react-test react-ios react-server swift-build swift-test test-all test-react-e2e test-swift-e2e tools-test tools-validate tools-generate
+.PHONY: help react-install react-test react-ios react-server swift-build swift-test swift-test-unit swift-test-ui swift-generate swift-release-alpha test-all test-react-e2e test-swift-e2e tools-test tools-validate tools-generate
 
 help:
 	@echo "LiftMark Multi-Platform Build"
@@ -13,7 +13,11 @@ help:
 	@echo ""
 	@echo "Swift (swift-ios/):"
 	@echo "  make swift-build      - Build Swift app"
-	@echo "  make swift-test       - Run Swift tests"
+	@echo "  make swift-test       - Run all Swift tests"
+	@echo "  make swift-test-unit  - Run Swift unit tests only"
+	@echo "  make swift-test-ui    - Run Swift UI tests only"
+	@echo "  make swift-generate   - Regenerate Xcode project"
+	@echo "  make swift-release-alpha - Trigger TestFlight build"
 	@echo ""
 	@echo "Cross-platform:"
 	@echo "  make test-all         - Run all test suites"
@@ -42,6 +46,18 @@ swift-build:
 
 swift-test:
 	cd swift-ios && make test
+
+swift-test-unit:
+	cd swift-ios && make test-unit
+
+swift-test-ui:
+	cd swift-ios && make test-ui
+
+swift-generate:
+	cd swift-ios && make generate
+
+swift-release-alpha:
+	cd swift-ios && make release-alpha
 
 test-all: react-test swift-test
 

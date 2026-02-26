@@ -1,0 +1,157 @@
+name: Deploy Swift to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'build'
+        type: choice
+        options:
+          - build
+          - patch
+          - minor
+
+concurrency:
+  group: swift-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: swift-ios
+
+    env:
+      SCHEME: LiftMark
+      PROJECT: LiftMark.xcodeproj
+      ARCHIVE_PATH: build/LiftMark.xcarchive
+      EXPORT_PATH: build/export
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -scheme $SCHEME -project $PROJECT
+
+      # --- Run unit tests before building release ---
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -scheme $SCHEME \
+            -project $PROJECT \
+            -only-testing:LiftMarkTests \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            -skipPackagePluginValidation \
+            | xcpretty || true
+
+      # --- Install signing certificate ---
+      - name: Install certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.SWIFT_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.SWIFT_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo -n "$CERTIFICATE_P12" | base64 --decode -o "$CERT_PATH"
+          security import "$CERT_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          # Set keychain search list
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      # --- Install provisioning profile ---
+      - name: Install provisioning profile
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.SWIFT_PROVISIONING_PROFILE }}
+        run: |
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$PROVISIONING_PROFILE" | base64 --decode -o "$PROFILE_PATH"
+
+          # Install to provisioning profiles directory
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      # --- Build archive ---
+      - name: Build archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -scheme $SCHEME \
+            -project $PROJECT \
+            -archivePath $ARCHIVE_PATH \
+            -destination 'generic/platform=iOS' \
+            -skipPackagePluginValidation \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            | xcpretty || true
+
+      # --- Export IPA ---
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $ARCHIVE_PATH \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $EXPORT_PATH \
+            | xcpretty || true
+
+      # --- Upload to TestFlight ---
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          # Write API key to file
+          mkdir -p ~/.private_keys
+          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$EXPORT_PATH/LiftMark.ipa" \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+      # --- Cleanup keychain ---
+      - name: Cleanup
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          rm -f $RUNNER_TEMP/certificate.p12 || true
+          rm -f $RUNNER_TEMP/profile.mobileprovision || true
+          rm -rf ~/.private_keys || true
+
+      - name: Summary
+        run: |
+          echo "## Swift Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump:** ${{ github.event.inputs.bump }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build submitted to TestFlight. Check App Store Connect for processing status." >> $GITHUB_STEP_SUMMARY

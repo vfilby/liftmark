@@ -68,6 +68,11 @@ push-day-corrected.md
 .mcp.json
 PHASE_*.md
 
+# Xcode
+xcuserdata/
+*.xcuserstate
+swift-ios/build/
+
 # Gas Town (added by gt)
 .logs/
 tools/__pycache__/

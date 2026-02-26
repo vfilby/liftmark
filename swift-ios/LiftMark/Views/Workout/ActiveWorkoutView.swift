@@ -57,8 +57,10 @@ struct ActiveWorkoutView: View {
             let incomplete = totalSets - completedSets
             Button(incomplete > 0 ? "Finish Anyway" : "Finish") {
                 endLiveActivity(message: "Workout Complete")
+                let completedSession = sessionStore.activeSession
                 sessionStore.completeSession()
                 navigateToSummary = true
+                saveToHealthKitIfEnabled(completedSession)
             }
         } message: {
             let skipped = totalSets - completedSets
@@ -72,8 +74,10 @@ struct ActiveWorkoutView: View {
             Button("Cancel", role: .cancel) {}
             Button("Log Anyway") {
                 endLiveActivity(message: "Workout Complete")
+                let completedSession = sessionStore.activeSession
                 sessionStore.completeSession()
                 navigateToSummary = true
+                saveToHealthKitIfEnabled(completedSession)
             }
             Button("Discard", role: .destructive) {
                 endLiveActivity(message: "Workout Discarded")
@@ -514,6 +518,17 @@ struct ActiveWorkoutView: View {
         guard settingsStore.settings?.liveActivitiesEnabled == true,
               LiveActivityService.shared.isAvailable() else { return }
         LiveActivityService.shared.endWorkoutActivity(message: message)
+    }
+
+    private func saveToHealthKitIfEnabled(_ session: WorkoutSession?) {
+        guard let session,
+              settingsStore.settings?.healthKitEnabled == true else { return }
+        Task {
+            let result = await HealthKitService.saveWorkout(session)
+            if !result.success, let error = result.error {
+                Logger.shared.error(.app, "Failed to save workout to HealthKit: \(error)")
+            }
+        }
     }
 }
 

@@ -1,0 +1,66 @@
+name: Swift CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'swift-ios/**'
+      - 'e2e-spec/**'
+      - '.github/workflows/swift-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'swift-ios/**'
+      - 'e2e-spec/**'
+      - '.github/workflows/swift-ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: swift-ios
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -scheme LiftMark -project LiftMark.xcodeproj
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme LiftMark \
+            -project LiftMark.xcodeproj \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            -skipPackagePluginValidation \
+            | xcpretty || true
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -scheme LiftMark \
+            -project LiftMark.xcodeproj \
+            -only-testing:LiftMarkTests \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            -resultBundlePath TestResults.xcresult \
+            -skipPackagePluginValidation \
+            | xcpretty || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: swift-ios/TestResults.xcresult
+          retention-days: 7

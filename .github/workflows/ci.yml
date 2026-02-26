@@ -1,10 +1,16 @@
-name: CI
+name: React CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'react-ios/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'react-ios/**'
+      - '.github/workflows/ci.yml'
 
 jobs:
   ci:

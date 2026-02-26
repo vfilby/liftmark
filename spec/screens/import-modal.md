@@ -1,10 +1,31 @@
 # Import Workout Modal
 
 ## Purpose
-Modal for importing workouts via LiftMark Workout Format (LMWF) markdown. Supports manual paste, AI-generated prompts (copy to clipboard or generate directly via Anthropic API), and file pre-fill from external imports.
+Modal for importing workouts via LiftMark Workout Format (LMWF) markdown. Supports manual paste, AI-generated prompts (copy to clipboard or generate directly via Anthropic API), and file pre-fill from external imports (share sheet, "Open In", or `liftmark://` deep links).
 
 ## Route
 `/modal/import` — Presented as a modal. Accepts optional `prefilledMarkdown` and `fileName` search params.
+
+## External File Import (Share Target)
+
+LiftMark registers as a handler for markdown (`.md`) and plain-text files. Users can share or "Open In" a `.md` file from Files, Safari, email, or any app that supports the iOS share sheet.
+
+### Declared Document Types
+- **UTTypes**: `net.daringfireball.markdown`, `public.plain-text`
+- **Role**: Viewer
+- **Handler Rank**: Alternate (does not claim ownership of `.md` files system-wide)
+- **Open In Place**: `false` — the app reads a copy; the original file is not modified
+
+### Flow
+1. User taps "Share" or "Open In" on a `.md` file in another app
+2. iOS presents LiftMark in the share sheet / "Open In" picker
+3. LiftMark launches (or foregrounds) and receives a `file://` URL via `onOpenURL`
+4. The app reads the file content using security-scoped resource access
+5. The content is set as `pendingImportContent`, which triggers the Import Modal with the markdown pre-filled
+6. User reviews, edits if needed, and taps Import
+
+### Deep Links
+- `liftmark:///path/to/file.md` — reads local file at the given path and pre-fills the import modal
 
 ## Layout
 - **Header**: Cancel button (left), "Import Workout" title (center), Import button (right)

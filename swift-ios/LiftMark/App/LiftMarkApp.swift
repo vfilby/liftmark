@@ -55,20 +55,30 @@ struct LiftMarkApp: App {
     }
 
     private func handleIncomingURL(_ url: URL) {
-        // Handle liftmark:// deep links
-        // URL format: liftmark:///path/to/file or liftmark://path/to/file
-        guard url.scheme == "liftmark" else { return }
+        if url.scheme == "liftmark" {
+            // Handle liftmark:// deep links
+            // URL format: liftmark:///path/to/file or liftmark://path/to/file
+            var filePath: String
+            if let host = url.host, !host.isEmpty {
+                filePath = "/" + host + url.path
+            } else {
+                filePath = url.path
+            }
 
-        var filePath: String
-        if let host = url.host, !host.isEmpty {
-            filePath = "/" + host + url.path
-        } else {
-            filePath = url.path
-        }
+            if FileManager.default.fileExists(atPath: filePath),
+               let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                pendingImportContent = content
+            }
+        } else if url.isFileURL {
+            // Handle file:// URLs from share sheet / "Open In" / document types
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessing { url.stopAccessingSecurityScopedResource() }
+            }
 
-        if FileManager.default.fileExists(atPath: filePath),
-           let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
-            pendingImportContent = content
+            if let content = try? String(contentsOf: url, encoding: .utf8) {
+                pendingImportContent = content
+            }
         }
     }
 }
