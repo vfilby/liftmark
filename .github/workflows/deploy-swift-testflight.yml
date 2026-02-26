@@ -46,15 +46,8 @@ jobs:
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -scheme $SCHEME -project $PROJECT
 
-      # --- Run unit tests before building release ---
-      - name: Run unit tests
-        run: |
-          xcodebuild test \
-            -scheme $SCHEME \
-            -project $PROJECT \
-            -only-testing:LiftMarkTests \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
-            -skipPackagePluginValidation
+      # Unit tests run in the Swift CI workflow on PRs.
+      # Skipping here to avoid simulator availability issues on deploy runners.
 
       # --- Install signing certificate ---
       - name: Install certificate
