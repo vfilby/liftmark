@@ -53,9 +53,8 @@ jobs:
             -scheme $SCHEME \
             -project $PROJECT \
             -only-testing:LiftMarkTests \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
-            -skipPackagePluginValidation \
-            | xcpretty || true
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -skipPackagePluginValidation
 
       # --- Install signing certificate ---
       - name: Install certificate
@@ -109,8 +108,7 @@ jobs:
             -skipPackagePluginValidation \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            | xcpretty || true
+            CODE_SIGN_IDENTITY="Apple Distribution"
 
       # --- Export IPA ---
       - name: Export IPA
@@ -118,8 +116,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $ARCHIVE_PATH \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $EXPORT_PATH \
-            | xcpretty || true
+            -exportPath $EXPORT_PATH
 
       # --- Upload to TestFlight ---
       - name: Upload to TestFlight
