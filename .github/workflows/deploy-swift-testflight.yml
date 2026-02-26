@@ -126,8 +126,9 @@ jobs:
           mkdir -p ~/.private_keys
           echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
 
-      # --- Export IPA ---
-      - name: Export IPA
+      # --- Export and upload to TestFlight ---
+      # exportArchive with app-store-connect method validates and uploads in one step
+      - name: Export and upload to TestFlight
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -139,18 +140,6 @@ jobs:
             -authenticationKeyPath ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8 \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-
-      # --- Upload to TestFlight ---
-      - name: Upload to TestFlight
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-        run: |
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$EXPORT_PATH/LiftMark.ipa" \
-            --apiKey "$ASC_KEY_ID" \
-            --apiIssuer "$ASC_ISSUER_ID"
 
       # --- Cleanup keychain ---
       - name: Cleanup
