@@ -458,9 +458,15 @@ struct ActiveWorkoutView: View {
                 // Skip orphan children (already handled by superset parent)
                 continue
             } else if exercise.groupType == .section && exercise.sets.isEmpty {
-                // Section headers — skip rendering them as cards
+                // Section header — gather children as individual exercises
                 processedIds.insert(exercise.id)
-                continue
+                for (childIndex, child) in exercises.enumerated() {
+                    if child.parentExerciseId == exercise.id {
+                        items.append(.single(exercise: child, exerciseIndex: childIndex, displayNumber: displayNumber))
+                        displayNumber += 1
+                        processedIds.insert(child.id)
+                    }
+                }
             } else {
                 items.append(.single(exercise: exercise, exerciseIndex: index, displayNumber: displayNumber))
                 displayNumber += 1

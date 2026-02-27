@@ -110,6 +110,13 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap "+" in header** → opens AddExerciseModal with markdown template
 - Enter exercise markdown → **Save** → parses and adds exercise to session
 
+### Section Display
+- Workouts may contain organizational sections (e.g., Warmup, Main Workout, Cool Down) defined by section headers in the LMWF format.
+- Section headers (`groupType == .section`, empty sets) are **not** rendered as exercise cards — they are purely organizational.
+- Exercises within a section (`parentExerciseId` pointing to the section header) are rendered as **individual standalone exercise cards**, identical to top-level exercises.
+- Section children must not be skipped or treated as orphans — they are the primary content of the workout.
+- A workout can freely mix sections, supersets within sections, and top-level exercises.
+
 ### Superset Display
 - Superset exercises are grouped into a **single combined card** showing all children together
 - The superset parent (`groupType == .superset`, empty sets) provides the card header with a purple circular icon (arrow.triangle.2.circlepath), a solid purple "SUPERSET" capsule tag, and the superset title

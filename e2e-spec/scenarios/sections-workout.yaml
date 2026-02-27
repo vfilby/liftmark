@@ -1,0 +1,130 @@
+name: "Sections Workout - Active Workout Display"
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  # Import the sections workout plan
+  - action: waitFor
+    target: "button-import-workout"
+    timeout: 5000
+  - action: tap
+    target: "button-import-workout"
+  - action: waitFor
+    target: "input-markdown"
+    timeout: 10000
+  - action: replaceText
+    target: "input-markdown"
+    fixture: "sections-workout-test.md"
+  - action: tap
+    target: "button-import"
+  - action: waitForText
+    text: "OK"
+    timeout: 10000
+  - action: tapText
+    text: "OK"
+  - action: waitForText
+    text: "Sections Workout Test"
+    timeout: 10000
+
+tests:
+  # Verify exercises within sections display on detail screen
+  - name: "workout detail shows exercises within sections"
+    steps:
+      - action: tapText
+        text: "Sections Workout Test"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      # Exercises from Warmup section must be visible
+      - action: waitForText
+        text: "Arm Circles"
+        timeout: 5000
+      - action: waitForText
+        text: "Band Pull-Aparts"
+        timeout: 5000
+      # Exercises from Main Workout section
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      - action: waitForText
+        text: "Dumbbell Row"
+        timeout: 5000
+      # Exercise from Cool Down section
+      - action: scroll
+        target: "workout-detail-view"
+        direction: "down"
+        amount: 300
+      - action: waitForText
+        text: "Chest Stretch"
+        timeout: 5000
+
+  # Verify exercises within sections display on active workout screen
+  - name: "active workout shows exercises within sections"
+    steps:
+      - action: waitFor
+        target: "start-workout-button"
+        timeout: 5000
+      - action: tap
+        target: "start-workout-button"
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      # Warmup exercises must appear
+      - action: waitForText
+        text: "Arm Circles"
+        timeout: 5000
+      - action: waitForText
+        text: "Band Pull-Aparts"
+        timeout: 5000
+      # Main Workout exercises must appear
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
+      # Weight from Bench Press must be visible
+      - action: waitForText
+        text: "135"
+        timeout: 5000
+
+  # Clean up: finish the workout
+  - name: "finish sections workout"
+    steps:
+      - action: tap
+        target: "active-workout-finish-button"
+      - action: tryCatch
+        try:
+          - action: waitForText
+            text: "Finish Anyway"
+            timeout: 3000
+          - action: tapText
+            text: "Finish Anyway"
+        catch:
+          - action: tryCatch
+            try:
+              - action: waitForText
+                text: "Log Anyway"
+                timeout: 3000
+              - action: tapText
+                text: "Log Anyway"
+            catch:
+              - action: tryCatch
+                try:
+                  - action: waitForText
+                    text: "Finish"
+                    timeout: 3000
+                  - action: tapText
+                    text: "Finish"
+                catch: []
+      - action: waitFor
+        target: "workout-summary-done-button"
+        timeout: 10000
+      - action: tap
+        target: "workout-summary-done-button"
