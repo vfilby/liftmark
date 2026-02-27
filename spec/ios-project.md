@@ -35,6 +35,7 @@ The iOS app MUST be a proper Xcode project (`.xcodeproj`), NOT a Swift Package M
 | `CFBundleURLTypes` | `liftmark://` scheme | Deep link / share target import |
 | `NSSupportsLiveActivities` | `YES` | Live Activities support |
 | `UIBackgroundModes` | `processing` | Background task for sync |
+| `ITSAppUsesNonExemptEncryption` | `NO` | App only uses standard HTTPS (exempt); avoids export compliance prompt on each App Store submission |
 
 ### Entitlements
 
@@ -96,11 +97,18 @@ The widget extension must:
 
 ### Asset Requirements
 
-| Asset | Specification |
-|-------|--------------|
-| App Icon | 1024x1024 single-size icon (Xcode 15+ auto-generates all sizes) |
-| Launch Screen | SwiftUI launch screen or LaunchScreen.storyboard |
-| Screenshots | Required for App Store listing (6.7", 6.5", 5.5" iPhones; 12.9" iPad) |
+| Asset | Specification | Source |
+|-------|--------------|--------|
+| App Icon | 1024x1024 single-size icon (Xcode 15+ auto-generates all sizes) | `assets/icon.png` |
+| Launch Screen | SwiftUI launch screen or LaunchScreen.storyboard | — |
+| Screenshots | Required for App Store listing (6.7", 6.5", 5.5" iPhones; 12.9" iPad) | — |
+
+**Durable asset sources**: The `assets/` directory at the repo root contains the canonical image and sound assets. When regenerating the iOS project, these must be copied into `Assets.xcassets` and `Resources/` respectively:
+
+| Source | Destination | Notes |
+|--------|-------------|-------|
+| `assets/icon.png` | `Assets.xcassets/AppIcon.appiconset/` | 1024x1024, no alpha channel |
+| `assets/sounds/` | `Resources/Sounds/` | Timer audio files |
 
 ### Build Settings
 
