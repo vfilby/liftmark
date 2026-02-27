@@ -21,7 +21,15 @@ struct WorkoutDetailView: View {
         var currentExercises: [PlannedExercise] = []
 
         for exercise in plan.exercises {
-            let sectionName = exercise.groupType == .section ? exercise.groupName : nil
+            let sectionName: String?
+            if exercise.groupType == .section {
+                sectionName = exercise.groupName
+            } else if exercise.parentExerciseId != nil {
+                // Children of sections/supersets stay in the current section
+                sectionName = currentSectionName
+            } else {
+                sectionName = nil
+            }
 
             if sectionName != currentSectionName {
                 if !currentExercises.isEmpty {
@@ -69,9 +77,14 @@ struct WorkoutDetailView: View {
                 // Skip orphan children already handled
                 continue
             } else if exercise.groupType == .section && exercise.sets.isEmpty {
-                // Section header — skip
+                // Section header — gather children as individual exercises
                 processedIds.insert(exercise.id)
-                continue
+                for child in exercises {
+                    if child.parentExerciseId == exercise.id {
+                        items.append(.single(exercise: child))
+                        processedIds.insert(child.id)
+                    }
+                }
             } else {
                 items.append(.single(exercise: exercise))
                 processedIds.insert(exercise.id)

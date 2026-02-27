@@ -37,7 +37,35 @@ Parse markdown text into a workout plan. Returns a result object containing the 
 
 ### Sections
 
-- Nested headers that do not contain the "superset" keyword are treated as organizational sections.
+- Nested headers that do not contain the "superset" keyword are treated as organizational sections (e.g., Warmup, Main Workout, Cool Down).
+- A section header is a header at exercise level that has child headers containing sets, but does not contain the word "superset".
+- Exercises within a section are child headers one level below the section header.
+- Section exercises are parsed as individual exercises belonging to that section — they are not grouped like superset exercises.
+- Sections are purely organizational; they do not affect how exercises or sets are parsed.
+- A workout can mix sections, supersets within sections, and top-level exercises freely.
+
+**Example:**
+
+```markdown
+# Lower Body Workout
+@units: lbs
+
+## Warmup              ← Section header (organizational)
+### Arm Circles        ← Exercise within section
+- 30s
+### Band Pull-Aparts   ← Exercise within section
+- x 15
+
+## Main Workout        ← Section header
+### Deadlift           ← Exercise within section
+- 135 x 5
+- 225 x 3
+
+## Bench Press         ← Top-level exercise (no section)
+- 185 x 5
+```
+
+See `test-fixtures/sections-with-exercises.md` and `test-fixtures/sections-supersets-test.md` for comprehensive test cases.
 
 ### Set Formats
 
