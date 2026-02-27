@@ -67,6 +67,7 @@ targets:
               - net.daringfireball.markdown
               - public.plain-text
         LSSupportsOpeningDocumentsInPlace: false
+        ITSAppUsesNonExemptEncryption: false
     dependencies:
       - package: GRDB
     entitlements:
