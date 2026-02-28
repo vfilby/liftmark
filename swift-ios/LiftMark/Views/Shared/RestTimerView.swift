@@ -64,6 +64,12 @@ struct RestTimerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
+                // Restart tick timer if still running (may have been invalidated in background)
+                if isRunning && displayRemaining > 0 && timer == nil {
+                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                        recalculate()
+                    }
+                }
             }
         }
     }
@@ -203,6 +209,12 @@ struct ExerciseTimerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
+                // Restart tick timer if still running (may have been invalidated in background)
+                if isRunning && timer == nil {
+                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                        recalculate()
+                    }
+                }
             }
         }
     }

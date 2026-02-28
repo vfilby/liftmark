@@ -5,8 +5,9 @@ struct HistoryDetailView: View {
     @Environment(SessionStore.self) private var sessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
-    @State private var showShareSheet = false
-    @State private var exportFileURL: URL?
+    @State private var exportFileItem: ShareableURL?
+    @State private var showExportError = false
+    @State private var exportErrorMessage = ""
     @State private var showExerciseHistory = false
     @State private var selectedExerciseName: String?
 
@@ -55,9 +56,15 @@ struct HistoryDetailView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
 
-                        // Exercises
-                        ForEach(Array(session.exercises.enumerated()), id: \.element.id) { index, exercise in
-                            exerciseCard(exercise, number: index + 1)
+                        // Exercises grouped by section
+                        let sections = exerciseSections(from: session.exercises)
+                        ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                            if let sectionName = section.name {
+                                sectionHeader(name: sectionName)
+                            }
+                            ForEach(section.exercises, id: \.exercise.id) { item in
+                                exerciseCard(item.exercise, number: item.displayNumber)
+                            }
                         }
 
                         // Notes
@@ -123,18 +130,109 @@ struct HistoryDetailView: View {
             Text("Are you sure you want to delete this workout? This cannot be undone.")
         }
         #if os(iOS)
-        .sheet(isPresented: $showShareSheet) {
-            if let url = exportFileURL {
-                ShareSheet(items: [url])
-            }
+        .sheet(item: $exportFileItem) { item in
+            ShareSheet(items: [item.url])
         }
         #endif
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage)
+        }
         .sheet(isPresented: $showExerciseHistory) {
             if let name = selectedExerciseName {
                 NavigationStack {
                     ExerciseHistorySheetView(exerciseName: name)
                 }
             }
+        }
+    }
+
+    // MARK: - Section Grouping
+
+    private struct ExerciseSection {
+        let name: String?
+        let exercises: [(exercise: SessionExercise, displayNumber: Int)]
+    }
+
+    private func exerciseSections(from exercises: [SessionExercise]) -> [ExerciseSection] {
+        var sections: [ExerciseSection] = []
+        var currentSectionName: String?
+        var currentExercises: [(exercise: SessionExercise, displayNumber: Int)] = []
+        var displayNumber = 1
+        var processedIds = Set<String>()
+
+        for exercise in exercises {
+            if processedIds.contains(exercise.id) { continue }
+
+            if exercise.groupType == .section && exercise.sets.isEmpty {
+                // Flush current section
+                if !currentExercises.isEmpty {
+                    sections.append(ExerciseSection(name: currentSectionName, exercises: currentExercises))
+                    currentExercises = []
+                }
+                currentSectionName = exercise.groupName ?? exercise.exerciseName
+                processedIds.insert(exercise.id)
+                // Gather children
+                for child in exercises {
+                    if child.parentExerciseId == exercise.id {
+                        currentExercises.append((exercise: child, displayNumber: displayNumber))
+                        displayNumber += 1
+                        processedIds.insert(child.id)
+                    }
+                }
+            } else if exercise.parentExerciseId != nil {
+                // Skip orphan children already handled
+                continue
+            } else if exercise.groupType == .superset && exercise.sets.isEmpty {
+                // Superset parent — skip but include children
+                processedIds.insert(exercise.id)
+                for child in exercises {
+                    if child.parentExerciseId == exercise.id {
+                        currentExercises.append((exercise: child, displayNumber: displayNumber))
+                        displayNumber += 1
+                        processedIds.insert(child.id)
+                    }
+                }
+            } else {
+                currentExercises.append((exercise: exercise, displayNumber: displayNumber))
+                displayNumber += 1
+                processedIds.insert(exercise.id)
+            }
+        }
+
+        if !currentExercises.isEmpty {
+            sections.append(ExerciseSection(name: currentSectionName, exercises: currentExercises))
+        }
+
+        return sections
+    }
+
+    // MARK: - Section Header
+
+    @ViewBuilder
+    private func sectionHeader(name: String) -> some View {
+        HStack(spacing: LiftMarkTheme.spacingMD) {
+            Rectangle()
+                .fill(sectionColor(for: name))
+                .frame(height: 1)
+            Text(name.uppercased())
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(sectionColor(for: name))
+                .tracking(1)
+            Rectangle()
+                .fill(sectionColor(for: name))
+                .frame(height: 1)
+        }
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+    }
+
+    private func sectionColor(for name: String) -> Color {
+        switch name.lowercased() {
+        case "warmup", "warm-up", "warm up": return .orange
+        case "cooldown", "cool-down", "cool down": return Color(red: 0.35, green: 0.78, blue: 0.98)
+        default: return LiftMarkTheme.primary
         }
     }
 
@@ -354,10 +452,10 @@ struct HistoryDetailView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSingleSessionAsJson(session)
-            exportFileURL = url
-            showShareSheet = true
+            exportFileItem = ShareableURL(url: url)
         } catch {
-            print("Failed to export session: \(error)")
+            exportErrorMessage = "Could not export workout: \(error.localizedDescription)"
+            showExportError = true
         }
     }
 }

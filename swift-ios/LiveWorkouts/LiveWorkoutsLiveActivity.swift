@@ -1,80 +1,100 @@
-//
-//  LiveWorkoutsLiveActivity.swift
-//  LiveWorkouts
-//
-//  Created by Vincent Filby on 2/23/26.
-//
-
 import ActivityKit
 import WidgetKit
 import SwiftUI
 
-struct LiveWorkoutsAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
-
 struct LiveWorkoutsLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: LiveWorkoutsAttributes.self) { context in
-            // Lock screen/banner UI goes here
-            VStack {
-                Text("Hello \(context.state.emoji)")
+        ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
+            // Lock screen / banner UI
+            HStack(spacing: 12) {
+                // Exercise info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(context.state.title)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Text(context.state.subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Rest timer countdown or progress
+                if let timerEnd = context.state.timerEndDate {
+                    Text(timerEnd, style: .timer)
+                        .font(.title2.monospacedDigit().bold())
+                        .foregroundStyle(.orange)
+                } else {
+                    Text("\(Int(context.state.progress * 100))%")
+                        .font(.title2.bold())
+                        .foregroundStyle(.blue)
+                }
             }
-            .activityBackgroundTint(Color.cyan)
-            .activitySystemActionForegroundColor(Color.black)
+            .padding()
+            .activityBackgroundTint(.black.opacity(0.8))
+            .activitySystemActionForegroundColor(.white)
 
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI goes here.  Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(context.state.title)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Text(context.state.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    if let timerEnd = context.state.timerEndDate {
+                        Text(timerEnd, style: .timer)
+                            .font(.title3.monospacedDigit().bold())
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text("\(Int(context.state.progress * 100))%")
+                            .font(.title3.bold())
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                    ProgressView(value: context.state.progress)
+                        .tint(.blue)
                 }
             } compactLeading: {
-                Text("L")
+                Image(systemName: "dumbbell.fill")
+                    .foregroundStyle(.blue)
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                if let timerEnd = context.state.timerEndDate {
+                    Text(timerEnd, style: .timer)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.orange)
+                } else {
+                    Text("\(Int(context.state.progress * 100))%")
+                        .font(.caption.monospacedDigit())
+                }
             } minimal: {
-                Text(context.state.emoji)
+                Image(systemName: "dumbbell.fill")
+                    .foregroundStyle(.blue)
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
-            .keylineTint(Color.red)
+            .widgetURL(URL(string: "liftmark://workout"))
         }
     }
 }
 
-extension LiveWorkoutsAttributes {
-    fileprivate static var preview: LiveWorkoutsAttributes {
-        LiveWorkoutsAttributes(name: "World")
-    }
-}
-
-extension LiveWorkoutsAttributes.ContentState {
-    fileprivate static var smiley: LiveWorkoutsAttributes.ContentState {
-        LiveWorkoutsAttributes.ContentState(emoji: "😀")
-     }
-     
-     fileprivate static var starEyes: LiveWorkoutsAttributes.ContentState {
-         LiveWorkoutsAttributes.ContentState(emoji: "🤩")
-     }
-}
-
-#Preview("Notification", as: .content, using: LiveWorkoutsAttributes.preview) {
-   LiveWorkoutsLiveActivity()
+#Preview("Notification", as: .content, using: WorkoutActivityAttributes(workoutName: "Push Day")) {
+    LiveWorkoutsLiveActivity()
 } contentStates: {
-    LiveWorkoutsAttributes.ContentState.smiley
-    LiveWorkoutsAttributes.ContentState.starEyes
+    WorkoutActivityAttributes.ContentState(
+        title: "Bench Press",
+        subtitle: "Set 2/4 · 185 lbs × 5",
+        progress: 0.35
+    )
+    WorkoutActivityAttributes.ContentState(
+        title: "Rest",
+        subtitle: "Next: Overhead Press",
+        progress: 0.35,
+        timerEndDate: Date().addingTimeInterval(90)
+    )
 }

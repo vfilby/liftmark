@@ -62,8 +62,9 @@ struct WorkoutSummaryView: View {
         computeHighlights()
     }
 
-    @State private var showShareSheet = false
-    @State private var exportFileURL: URL?
+    @State private var exportFileItem: ShareableURL?
+    @State private var showExportError = false
+    @State private var exportErrorMessage = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -207,10 +208,15 @@ struct WorkoutSummaryView: View {
                             .padding(.bottom, LiftMarkTheme.spacingSM)
 
                         if let exercises = session?.exercises {
-                            ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                                ExerciseSummaryRow(exercise: exercise, number: index + 1)
+                            let displayExercises = exercises.enumerated().filter { _, exercise in
+                                // Exclude section headers and superset parents (they have no sets)
+                                !((exercise.groupType == .section || exercise.groupType == .superset) && exercise.sets.isEmpty)
+                            }
+                            ForEach(Array(displayExercises.enumerated()), id: \.element.1.id) { outerIndex, pair in
+                                let (_, exercise) = pair
+                                ExerciseSummaryRow(exercise: exercise, number: outerIndex + 1)
 
-                                if index < exercises.count - 1 {
+                                if outerIndex < displayExercises.count - 1 {
                                     Divider()
                                 }
                             }
@@ -262,10 +268,13 @@ struct WorkoutSummaryView: View {
                 .accessibilityIdentifier("share-session-button")
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let url = exportFileURL {
-                ShareSheet(items: [url])
-            }
+        .sheet(item: $exportFileItem) { item in
+            ShareSheet(items: [item.url])
+        }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage)
         }
     }
 
@@ -326,10 +335,10 @@ struct WorkoutSummaryView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSingleSessionAsJson(session)
-            exportFileURL = url
-            showShareSheet = true
+            exportFileItem = ShareableURL(url: url)
         } catch {
-            print("Failed to export session: \(error)")
+            exportErrorMessage = "Could not export workout: \(error.localizedDescription)"
+            showExportError = true
         }
     }
 

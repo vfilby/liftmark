@@ -192,6 +192,9 @@ struct ActiveWorkoutView: View {
                                     )
                                     .id(exercise.id)
 
+                                case .section(let name):
+                                    sectionHeader(name: name)
+
                                 case .superset(let parentExercise, let children):
                                     let collapsed = isSupersetCollapsed(parentExercise, children: children)
                                     let isActive = children.contains { $0.exercise.sets.contains { $0.status == .pending } }
@@ -458,8 +461,12 @@ struct ActiveWorkoutView: View {
                 // Skip orphan children (already handled by superset parent)
                 continue
             } else if exercise.groupType == .section && exercise.sets.isEmpty {
-                // Section header — gather children as individual exercises
+                // Section header — emit section divider then gather children as individual exercises
                 processedIds.insert(exercise.id)
+                let sectionName = exercise.groupName ?? exercise.exerciseName
+                if !sectionName.isEmpty {
+                    items.append(.section(name: sectionName))
+                }
                 for (childIndex, child) in exercises.enumerated() {
                     if child.parentExerciseId == exercise.id {
                         items.append(.single(exercise: child, exerciseIndex: childIndex, displayNumber: displayNumber))
@@ -474,6 +481,34 @@ struct ActiveWorkoutView: View {
             }
         }
         return items
+    }
+
+    // MARK: - Section Header
+
+    @ViewBuilder
+    private func sectionHeader(name: String) -> some View {
+        HStack(spacing: LiftMarkTheme.spacingMD) {
+            Rectangle()
+                .fill(sectionColor(for: name))
+                .frame(height: 1)
+            Text(name.uppercased())
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(sectionColor(for: name))
+                .tracking(1)
+            Rectangle()
+                .fill(sectionColor(for: name))
+                .frame(height: 1)
+        }
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+    }
+
+    private func sectionColor(for name: String) -> Color {
+        switch name.lowercased() {
+        case "warmup", "warm-up", "warm up": return .orange
+        case "cooldown", "cool-down", "cool down": return Color(red: 0.35, green: 0.78, blue: 0.98)
+        default: return LiftMarkTheme.primary
+        }
     }
 
     private func addExerciseFromMarkdown(_ markdown: String) {
@@ -1135,11 +1170,13 @@ private struct EditExerciseSheet: View {
 private enum ExerciseDisplayItem: Identifiable {
     case single(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)
     case superset(parent: SessionExercise, children: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)])
+    case section(name: String)
 
     var id: String {
         switch self {
         case .single(let exercise, _, _): return exercise.id
         case .superset(let parent, _): return parent.id
+        case .section(let name): return "section-\(name)"
         }
     }
 }

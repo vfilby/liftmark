@@ -241,6 +241,13 @@ private struct SessionCardView: View {
     }
 }
 
+// MARK: - Identifiable URL for sheet(item:)
+
+struct ShareableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
 // MARK: - Share Sheet
 
 #if os(iOS)

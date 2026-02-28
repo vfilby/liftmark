@@ -48,7 +48,11 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 - **No active session**: LoadingView, then redirects to home via `router.replace('/(tabs)')`
 - **No highlights**: Highlights section hidden (not rendered)
 - **Highlight calculation error**: Silently falls back to empty highlights array
-- **Export failure**: Alert with error message
+- **Export failure**: Alert titled "Export Failed" with error description. Export failures must show a user-visible alert, not fail silently.
+
+## Section Handling
+- Section header exercises (`groupType == .section`, empty sets) and superset parent exercises (`groupType == .superset`, empty sets) are excluded from the exercise summary list.
+- Section children (exercises with `parentExerciseId` pointing to a section header) are shown as regular exercises with sequential numbering.
 
 ## WorkoutHighlights Component
 Renders when highlights array is non-empty:

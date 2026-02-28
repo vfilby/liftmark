@@ -27,8 +27,8 @@ End the running Live Activity. An optional completion message is displayed brief
 ### Availability
 
 - Only available on iOS 16.2 and later.
-- Requires a dev build (not compatible with Expo Go).
-- The `expo-live-activity` module is loaded lazily to avoid crashes when not available.
+- Requires the `LiveWorkouts` widget extension to be compiled and embedded in the app.
+- Availability is checked via `ActivityAuthorizationInfo().areActivitiesEnabled`.
 
 ### OS-Level Permission
 
@@ -76,13 +76,16 @@ The service is called from the session store during these actions:
 ## Platform Requirements
 
 - iOS 16.2 or later.
-- `expo-live-activity` native module.
-- Dev build required (not compatible with Expo Go).
+- ActivityKit framework (main app).
+- WidgetKit framework (widget extension).
+- The `LiveWorkouts` widget extension must be configured in `project.yml` and embedded in the main app.
+- The widget extension must use the same `WorkoutActivityAttributes` type as the main app (shared source file included in both targets).
 
 ## Dependencies
 
-- `expo-live-activity` native module.
+- ActivityKit / WidgetKit (system frameworks).
 - Session store for workout state.
+- Shared `WorkoutActivityAttributes` type (in `Shared/WorkoutActivityAttributes.swift`).
 
 ## Error Handling
 

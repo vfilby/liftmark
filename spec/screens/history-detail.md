@@ -40,7 +40,7 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 - **Loading**: "Loading workout..." text
 - **Not found**: "Workout not found" error text
 - **No history for exercise**: "No History" disabled trend header (greyed out, no chevron)
-- **Export failure**: Alert with error message
+- **Export failure**: Alert titled "Export Failed" with error description. Export failures must show a user-visible alert, not fail silently.
 - **Delete failure**: Alert with error message
 
 ## HistoryDetailView Component
@@ -53,6 +53,13 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 - Sets (completed count)
 - Reps (total)
 - Volume (total weight x reps, or "-" if 0)
+
+### Section Display
+- Workouts may contain organizational sections (e.g., Warmup, Main Workout, Cool Down).
+- Section headers (`groupType == .section`, empty sets) are **not** rendered as exercise cards — they are displayed as styled dividers with the section name (matching WorkoutDetailView's style: colored horizontal lines with uppercase section name).
+- Section color: orange for warmup variants, light blue for cooldown variants, primary for others.
+- Exercises within sections are rendered as individual numbered exercise cards.
+- Section headers and superset parents are excluded from exercise numbering.
 
 ### Exercise Cards
 - Numbered exercises with name + optional equipment type

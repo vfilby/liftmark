@@ -49,6 +49,20 @@
                ReferencedContainer = "container:LiftMark.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "53E0790CA861717F717694E6"
+               BuildableName = "LiveWorkouts.appex"
+               BlueprintName = "LiveWorkouts"
+               ReferencedContainer = "container:LiftMark.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

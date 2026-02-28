@@ -2,19 +2,8 @@ import Foundation
 
 #if os(iOS)
 import ActivityKit
-
-// MARK: - Workout Activity Attributes
-
-struct WorkoutActivityAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var title: String
-        var subtitle: String
-        var progress: Double // 0.0 to 1.0
-        var timerEndDate: Date?
-    }
-
-    var workoutName: String
-}
+// WorkoutActivityAttributes is defined in Shared/WorkoutActivityAttributes.swift
+// and included in both the main app and LiveWorkouts widget extension targets.
 #endif
 
 // MARK: - LiveActivityService

@@ -94,6 +94,17 @@ tests:
         text: "135"
         timeout: 5000
 
+  # Verify section headers are rendered in active workout
+  - name: "active workout shows section headers"
+    steps:
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 5000
+      # Section name should appear as a divider
+      - action: waitForText
+        text: "WARMUP"
+        timeout: 5000
+
   # Clean up: finish the workout
   - name: "finish sections workout"
     steps:
@@ -128,3 +139,30 @@ tests:
         timeout: 10000
       - action: tap
         target: "workout-summary-done-button"
+
+  # Verify history detail shows exercises within sections
+  - name: "history detail shows exercises from sections workout"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      - action: waitForText
+        text: "Sections Workout Test"
+        timeout: 5000
+      - action: tapText
+        text: "Sections Workout Test"
+      - action: waitFor
+        target: "history-detail-view"
+        timeout: 5000
+      # Exercises from sections must be visible
+      - action: waitForText
+        text: "Arm Circles"
+        timeout: 5000
+      - action: waitForText
+        text: "Band Pull-Aparts"
+        timeout: 5000
+      - action: waitForText
+        text: "Bench Press"
+        timeout: 5000
