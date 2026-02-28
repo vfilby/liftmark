@@ -110,7 +110,7 @@ targets:
         Release:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: "Apple Distribution"
-          PROVISIONING_PROFILE_SPECIFIER: ""
+          PROVISIONING_PROFILE_SPECIFIER: "LiftMark LiveWorkouts App Store"
 
   LiftMarkTests:
     type: bundle.unit-test

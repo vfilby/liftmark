@@ -82,8 +82,8 @@ jobs:
           # Verify certificate was imported
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
-      # --- Install provisioning profile ---
-      - name: Install provisioning profile
+      # --- Install provisioning profiles ---
+      - name: Install provisioning profile (main app)
         env:
           PROVISIONING_PROFILE: ${{ secrets.SWIFT_PROVISIONING_PROFILE }}
         run: |
@@ -98,6 +98,22 @@ jobs:
           cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
 
           # Extract and display profile name for verification
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Profile Name: $PROFILE_NAME"
+
+      - name: Install provisioning profile (LiveWorkouts extension)
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.SWIFT_LIVEWORKOUTS_PROVISIONING_PROFILE }}
+        run: |
+          PROFILE_PATH=$RUNNER_TEMP/liveworkouts_profile.mobileprovision
+          echo -n "$PROVISIONING_PROFILE" | base64 --decode -o "$PROFILE_PATH"
+
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Profile UUID: $PROFILE_UUID"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
           echo "Profile Name: $PROFILE_NAME"
 
