@@ -84,7 +84,7 @@ targets:
         com.apple.developer.icloud-container-identifiers:
           - iCloud.com.eff3.liftmark
         com.apple.developer.icloud-services:
-          - CloudDocuments
+          - CloudKit
         com.apple.developer.ubiquity-container-identifiers:
           - iCloud.com.eff3.liftmark
         com.apple.developer.ubiquity-kvstore-identifier: "$(TeamIdentifierPrefix)com.eff3.liftmark"
