@@ -109,9 +109,15 @@ struct RestTimerView: View {
 
 /// Large exercise timer for timed exercises (e.g., planks).
 /// Uses wall-clock Date() timestamps so the timer survives app backgrounding.
+/// When `isPerSide` is true, shows two sequential timers (left then right).
 struct ExerciseTimerView: View {
     let targetSeconds: Int?
+    let isPerSide: Bool
     let onComplete: (Int) -> Void
+
+    enum TimerSide {
+        case left, right
+    }
 
     /// The Date when the timer was last started/resumed. nil when paused or stopped.
     @State private var startDate: Date?
@@ -122,6 +128,16 @@ struct ExerciseTimerView: View {
     /// Display value updated by the 1-second timer tick.
     @State private var displayElapsed: Int = 0
     @Environment(\.scenePhase) private var scenePhase
+
+    // Per-side state
+    @State private var currentSide: TimerSide = .left
+    @State private var leftElapsed: Int = 0
+
+    init(targetSeconds: Int?, isPerSide: Bool = false, onComplete: @escaping (Int) -> Void) {
+        self.targetSeconds = targetSeconds
+        self.isPerSide = isPerSide
+        self.onComplete = onComplete
+    }
 
     /// Total elapsed seconds (running + paused accumulated).
     private var currentElapsed: Int {
@@ -136,8 +152,30 @@ struct ExerciseTimerView: View {
         return displayElapsed >= target
     }
 
+    private var sideLabel: String {
+        switch currentSide {
+        case .left: return "Left Side"
+        case .right: return "Right Side"
+        }
+    }
+
     var body: some View {
         VStack(spacing: LiftMarkTheme.spacingSM) {
+            // Side label for per-side exercises
+            if isPerSide {
+                Text(sideLabel)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(LiftMarkTheme.primary)
+            }
+
+            // Left side result while timing right side
+            if isPerSide && currentSide == .right {
+                Text("Left: \(formatTime(leftElapsed))")
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.success)
+            }
+
             // Timer display
             Text(formatTime(displayElapsed))
                 .font(.system(size: 40, weight: .light, design: .monospaced))
@@ -147,7 +185,7 @@ struct ExerciseTimerView: View {
             // Target label
             if let target = targetSeconds {
                 HStack(spacing: 4) {
-                    Text("Target: \(formatTime(target))")
+                    Text("Target: \(formatTime(target))\(isPerSide ? "/side" : "")")
                         .font(.caption)
                         .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.secondaryLabel)
                     if isComplete {
@@ -182,8 +220,17 @@ struct ExerciseTimerView: View {
                 if isRunning || displayElapsed > 0 {
                     Button {
                         let elapsed = currentElapsed
-                        stopTimer()
-                        onComplete(elapsed)
+                        if isPerSide && currentSide == .left {
+                            // Capture left side, reset timer, switch to right side
+                            leftElapsed = elapsed
+                            stopTimer()
+                            currentSide = .right
+                        } else {
+                            // Single-side or right side done — complete the set
+                            let totalElapsed = isPerSide ? leftElapsed + elapsed : elapsed
+                            stopTimer()
+                            onComplete(totalElapsed)
+                        }
                     } label: {
                         Text("Done")
                             .font(.body)

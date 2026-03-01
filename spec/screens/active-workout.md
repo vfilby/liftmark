@@ -66,6 +66,14 @@ Primary workout execution screen. Displays all exercises and sets for the active
   - If the exercise timer was NOT started (completed via the set checkmark without starting the timer): log `actualTime` as the `targetTime` value from the plan.
   - **After logging**: the timer is dismissed and reset to 0. If there is a next timed set, a fresh timer appears ready for the next set.
 
+### Per-Side Timed Sets
+- When a timed set has `isPerSide == true`, ExerciseTimerView shows two sequential timers.
+- First timer labeled "Left Side" — user taps Start, then Done.
+- Timer resets, second timer labeled "Right Side" — user taps Start, then Done.
+- Set marked complete after both sides finish; `actualTime` = left + right elapsed.
+- Left side result shown while timing right side (e.g., "Left: 1:02").
+- Target label shows "/side" suffix to clarify the target is per-side (e.g., "Target: 1:00/side").
+
 ### Plate Calculator
 - For barbell exercises: shows plate breakdown in blue info box above inputs
 

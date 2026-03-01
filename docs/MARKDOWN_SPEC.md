@@ -295,6 +295,7 @@ Modifiers provide functional metadata that affects how the app behaves. They use
 |----------|--------|-------------|---------|
 | `@rest` | Number + `s`/`m` | Rest timer after set (triggers countdown in app) | `@rest: 180s` or `@rest: 3m` |
 | `@dropset` | flag | Drop set indicator (changes UI tracking) | `@dropset` |
+| `@perside` | flag | Per-side indicator (shows dual sequential timers for timed sets) | `@perside` |
 
 ### Examples
 
@@ -307,6 +308,16 @@ Modifiers provide functional metadata that affects how the app behaves. They use
 - 100 lbs x 12 reps
 - 70 lbs x 10 reps @dropset
 - 50 lbs x 8 reps @dropset
+
+# Per-side (explicit modifier)
+- 30s @perside
+- 45s @perside
+
+# Per-side (auto-detected from exercise notes)
+## Side Plank
+per side
+- 60s
+- 45s
 
 # Multiple modifiers
 - 225 lbs x 5 reps @rest: 180s
@@ -956,7 +967,7 @@ Format requirements:
 - Exercise notes are freeform text after exercise header
 - Sets format: - [weight] [unit] x [reps] or - [weight] [unit] for [time]
 - If @units is set, weight units can be omitted: - [weight] x [reps]
-- Functional modifiers: @rest (triggers timer), @dropset (UI behavior)
+- Functional modifiers: @rest (triggers timer), @dropset (UI behavior), @perside (per-side timer)
 - Descriptive data (tempo, RPE, etc.) goes in freeform notes
 - For supersets, use nested headers with "superset" in the name
   - Header containing "superset" (case-insensitive) becomes the superset parent
@@ -992,7 +1003,7 @@ Last set felt like an 8/10 effort.
 
 ### Version 1.1 (2026-01-16)
 - **Simplified to one workout per file** - removed multi-workout support for cleaner mental model
-- **Simplified modifiers** to only functional ones: `@rest`, `@dropset`
+- **Simplified modifiers** to only functional ones: `@rest`, `@dropset`, `@perside`
 - Deprecated `@rpe` and `@tempo` — still parsed for compatibility, but freeform notes are preferred
 - Clarified time units in set format components
 - Updated examples to use freeform notes for descriptive data
@@ -1025,9 +1036,9 @@ Based on user feedback, the following design decisions were implemented:
 6. ✅ **Name = Header**: Header text is the name, no prefix needed
 7. ✅ **Superset Support**: Uses nested headers (e.g., `## Superset: Arms` with `### Exercise` children)
 8. ✅ **Simplified Modifiers**:
-   - Only functional modifiers: `@rest` (triggers timer), `@dropset` (changes UI)
+   - Only functional modifiers: `@rest` (triggers timer), `@dropset` (changes UI), `@perside` (per-side timer)
    - Deprecated `@rpe` and `@tempo` — still parsed for compatibility, but freeform notes are preferred
-   - `@dropset` is a flag, not `@dropset: true`
+   - `@dropset` and `@perside` are flags, not `@dropset: true`
    - AMRAP implies failure, no separate flag needed
 
 ---

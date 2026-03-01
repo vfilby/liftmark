@@ -726,7 +726,7 @@ private struct ActiveExerciseCard: View {
                 if let currentIdx = currentSetIndex {
                     let currentSet = exercise.sets[currentIdx]
                     if let targetTime = currentSet.targetTime, targetTime > 0 {
-                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
+                        ExerciseTimerView(targetSeconds: targetTime, isPerSide: currentSet.isPerSide) { elapsedSeconds in
                             onCompleteSet(currentIdx, nil, nil, elapsedSeconds)
                         }
                         .id(currentSet.id)

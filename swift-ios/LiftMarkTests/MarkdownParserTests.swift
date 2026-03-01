@@ -1129,6 +1129,76 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertEqual(set?.targetTime, 25)
     }
 
+    // MARK: - Per-Side Auto-Detection from Exercise Notes
+
+    func testPerSideNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Side Plank
+        per side
+        - 60s
+        - 45s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertEqual(sets?.count, 2)
+        XCTAssertTrue(sets?[0].isPerSide ?? false)
+        XCTAssertTrue(sets?[1].isPerSide ?? false)
+    }
+
+    func testPerSideNotesDoesNotFlagRepBasedSets() {
+        let markdown = """
+        # Workout
+        ## Single Leg RDL
+        per side
+        - 50 lbs x 10
+        - 60 lbs x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertEqual(sets?.count, 2)
+        XCTAssertFalse(sets?[0].isPerSide ?? true)
+        XCTAssertFalse(sets?[1].isPerSide ?? true)
+    }
+
+    func testPerSideNotesCaseInsensitive() {
+        let markdown = """
+        # Workout
+        ## Side Plank
+        Per Side
+        - 60s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+
+        let markdown2 = """
+        # Workout
+        ## Side Plank
+        PER SIDE
+        - 60s
+        """
+        let result2 = MarkdownParser.parseWorkout(markdown2)
+        XCTAssertTrue(result2.data?.exercises[0].sets[0].isPerSide ?? false)
+    }
+
+    func testExplicitPerSideModifierStillWorks() {
+        let markdown = """
+        # Workout
+        ## Stretches
+        - 30s @perside
+        - 45s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+        XCTAssertFalse(result.data?.exercises[0].sets[1].isPerSide ?? true)
+    }
+
     func testSingleNumberWithTrailingTextNotSeconds() {
         let markdown = """
         # Workout

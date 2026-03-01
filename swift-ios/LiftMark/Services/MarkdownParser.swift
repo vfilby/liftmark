@@ -441,7 +441,17 @@ enum MarkdownParser {
         let (equipmentType, notes) = parseExerciseMetadata(context, exerciseHeaderLevel: headerLevel)
 
         // Parse sets
-        let sets = parseSets(context, exerciseHeaderLevel: headerLevel, exerciseId: exerciseId)
+        var sets = parseSets(context, exerciseHeaderLevel: headerLevel, exerciseId: exerciseId)
+
+        // Auto-detect "per side" in exercise notes → flag timed sets as isPerSide
+        if let notes = notes, notes.range(of: "per side", options: .caseInsensitive) != nil {
+            sets = sets.map { set in
+                guard set.targetTime != nil, !set.isPerSide else { return set }
+                var modified = set
+                modified.isPerSide = true
+                return modified
+            }
+        }
 
         if sets.isEmpty {
             context.errors.append(ParseError(

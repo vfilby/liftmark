@@ -93,6 +93,8 @@ Modifiers use the `@` prefix and appear after set content on the same line.
 | `@dropset` | Flag | Marks set as a drop set |
 | `@perside` | Flag | Marks set as per-side (unilateral) |
 
+**Auto-detection**: If an exercise's notes contain "per side" (case-insensitive), all timed sets (`targetTime != nil`) in that exercise are automatically flagged with `isPerSide = true`. Rep-based sets are not affected. This allows writing `per side` once in the exercise notes rather than `@perside` on every set line.
+
 Trailing text after all modifiers on a set line is captured as set notes.
 
 ### Line Preprocessing
