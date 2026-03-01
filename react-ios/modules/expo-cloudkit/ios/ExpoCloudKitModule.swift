@@ -15,42 +15,22 @@ public class ExpoCloudKitModule: Module {
     Events("onCloudKitAccountChange")
 
     AsyncFunction("initialize") { (promise: Promise) in
-      let container = CKContainer(identifier: "iCloud.com.eff3.liftmark")
-      container.accountStatus { status, error in
-        if let error = error {
-          promise.reject("CLOUDKIT_INIT_ERROR", "Failed to check account: \(error.localizedDescription)")
-          return
-        }
-        switch status {
-        case .available:
-          promise.resolve(true)
-        default:
-          promise.reject("CLOUDKIT_NO_ACCOUNT", "No iCloud account available (status: \(status.rawValue))")
-        }
+      // Use FileManager check - safe and synchronous, no CKContainer crash risk
+      if FileManager.default.ubiquityIdentityToken != nil {
+        promise.resolve(true)
+      } else {
+        promise.reject("CLOUDKIT_NO_ACCOUNT", "No iCloud account available")
       }
     }
 
     AsyncFunction("getAccountStatus") { (promise: Promise) in
-      let container = CKContainer(identifier: "iCloud.com.eff3.liftmark")
-      container.accountStatus { status, error in
-        if let error = error {
-          promise.resolve("error")
-          return
-        }
-        switch status {
-        case .available:
-          promise.resolve("available")
-        case .noAccount:
-          promise.resolve("noAccount")
-        case .restricted:
-          promise.resolve("restricted")
-        case .couldNotDetermine:
-          promise.resolve("couldNotDetermine")
-        case .temporarilyUnavailable:
-          promise.resolve("temporarilyUnavailable")
-        @unknown default:
-          promise.resolve("unknown")
-        }
+      // Use FileManager.ubiquityIdentityToken instead of CKContainer.accountStatus
+      // CKContainer(identifier: "iCloud.com.eff3.liftmark").accountStatus can trigger native crashes on device
+      // that Swift do/catch cannot intercept (ObjC-level exceptions)
+      if FileManager.default.ubiquityIdentityToken != nil {
+        promise.resolve("available")
+      } else {
+        promise.resolve("noAccount")
       }
     }
 
