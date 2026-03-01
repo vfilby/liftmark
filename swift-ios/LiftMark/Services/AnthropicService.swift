@@ -22,7 +22,7 @@ struct AnthropicModel {
 
 // MARK: - AnthropicService
 
-final class AnthropicService {
+final class AnthropicService: @unchecked Sendable {
     static let shared = AnthropicService()
 
     private static let apiURL = "https://api.anthropic.com/v1/messages"

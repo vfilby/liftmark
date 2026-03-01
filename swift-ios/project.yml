@@ -2,16 +2,16 @@ name: LiftMark
 options:
   bundleIdPrefix: com.eff3.liftmark.native-ios
   deploymentTarget:
-    iOS: "18.0"
-  xcodeVersion: "16.0"
+    iOS: "26.0"
+  xcodeVersion: "26.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
 settings:
   base:
-    SWIFT_VERSION: "5.9"
+    SWIFT_VERSION: "6.0"
     ENABLE_BITCODE: false
-    SWIFT_STRICT_CONCURRENCY: targeted
+    SWIFT_STRICT_CONCURRENCY: complete
 
 packages:
   GRDB:
@@ -22,7 +22,7 @@ targets:
   LiftMark:
     type: application
     platform: iOS
-    deploymentTarget: "18.0"
+    deploymentTarget: "26.0"
     sources:
       - path: LiftMark
         excludes:
@@ -81,11 +81,18 @@ targets:
         com.apple.developer.healthkit.access:
           - health-records
         com.apple.developer.healthkit.background-delivery: true
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.eff3.liftmark
+        com.apple.developer.icloud-services:
+          - CloudDocuments
+        com.apple.developer.ubiquity-container-identifiers:
+          - iCloud.com.eff3.liftmark
+        com.apple.developer.ubiquity-kvstore-identifier: "$(TeamIdentifierPrefix)com.eff3.liftmark"
 
   LiveWorkouts:
     type: app-extension
     platform: iOS
-    deploymentTarget: "18.0"
+    deploymentTarget: "26.0"
     sources:
       - path: LiveWorkouts
         excludes:
@@ -115,7 +122,7 @@ targets:
   LiftMarkTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "18.0"
+    deploymentTarget: "26.0"
     sources:
       - path: LiftMarkTests
         excludes:
@@ -132,7 +139,7 @@ targets:
   LiftMarkUITests:
     type: bundle.ui-testing
     platform: iOS
-    deploymentTarget: "18.0"
+    deploymentTarget: "26.0"
     sources:
       - path: LiftMarkUITests
         excludes:

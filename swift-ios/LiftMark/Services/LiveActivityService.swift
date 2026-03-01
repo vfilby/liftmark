@@ -8,7 +8,7 @@ import ActivityKit
 
 // MARK: - LiveActivityService
 
-final class LiveActivityService {
+final class LiveActivityService: @unchecked Sendable {
     static let shared = LiveActivityService()
 
     #if os(iOS)

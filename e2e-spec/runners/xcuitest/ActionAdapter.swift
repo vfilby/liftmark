@@ -1,6 +1,6 @@
-import XCTest
+@preconcurrency import XCTest
 import UIKit
-import Foundation
+@preconcurrency import Foundation
 
 /// Maps YAML E2E actions to XCUITest API calls.
 ///

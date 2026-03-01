@@ -21,10 +21,10 @@ The iOS app MUST be a proper Xcode project (`.xcodeproj`), NOT a Swift Package M
 ### Bundle Configuration
 
 - **Bundle Identifier**: `com.liftmark.app` (or team-specific equivalent)
-- **Minimum Deployment Target**: iOS 18.0
+- **Minimum Deployment Target**: iOS 26.0
 - **Device Family**: iPhone (primary), iPad (supported)
 - **Supported Orientations**: Portrait (iPhone), All (iPad)
-- **Swift Language Version**: 5.9+
+- **Swift Language Version**: 6.0+
 
 ### Info.plist Required Keys
 
@@ -85,7 +85,7 @@ The widget extension must:
 - Define `ActivityAttributes` matching the `LiveActivityService` data model
 - Provide lock screen and Dynamic Island UI
 - Share data with main app via App Group container
-- Minimum deployment: iOS 18.0
+- Minimum deployment: iOS 26.0
 
 ## App Store Deployment
 
@@ -114,8 +114,8 @@ The widget extension must:
 
 | Setting | Value |
 |---------|-------|
-| `SWIFT_VERSION` | 5.9 |
-| `IPHONEOS_DEPLOYMENT_TARGET` | 18.0 |
+| `SWIFT_VERSION` | 6.0 |
+| `IPHONEOS_DEPLOYMENT_TARGET` | 26.0 |
 | `ENABLE_BITCODE` | NO (deprecated) |
 | `SWIFT_STRICT_CONCURRENCY` | Complete (recommended) |
 

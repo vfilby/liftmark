@@ -42,7 +42,7 @@ struct DeviceInfo: Codable {
 
 // MARK: - Logger
 
-final class Logger {
+final class Logger: @unchecked Sendable {
     static let shared = Logger()
 
     private var isInitialized = false

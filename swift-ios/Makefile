@@ -2,7 +2,7 @@
 
 SCHEME = LiftMark
 PROJECT = LiftMark.xcodeproj
-DESTINATION = 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2'
+DESTINATION = 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0'
 
 resolve:
 	swift package resolve

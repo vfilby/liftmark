@@ -33,7 +33,7 @@ struct SyncResult {
 
 // MARK: - CloudKitService
 
-final class CloudKitService {
+final class CloudKitService: @unchecked Sendable {
     static let shared = CloudKitService()
 
     private let container: CKContainer?

@@ -3,7 +3,7 @@ import GRDB
 
 /// Manages the SQLite database using GRDB, including migrations.
 /// Schema matches the React Native app exactly (see spec/data/database-schema.md).
-final class DatabaseManager {
+final class DatabaseManager: @unchecked Sendable {
     static let shared = DatabaseManager()
 
     private var dbQueue: DatabaseQueue?

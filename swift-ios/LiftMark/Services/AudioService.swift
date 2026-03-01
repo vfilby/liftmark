@@ -3,7 +3,7 @@ import AVFoundation
 
 // MARK: - AudioService
 
-final class AudioService {
+final class AudioService: @unchecked Sendable {
     static let shared = AudioService()
 
     private var tickPlayer: AVAudioPlayer?
