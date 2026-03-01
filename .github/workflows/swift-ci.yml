@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-15
+    runs-on: macos-26
     defaults:
       run:
         working-directory: swift-ios
@@ -25,8 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -42,7 +42,7 @@ jobs:
           xcodebuild build \
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
             -skipPackagePluginValidation \
             | xcpretty
 
@@ -52,7 +52,7 @@ jobs:
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
             -only-testing:LiftMarkTests \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
             -resultBundlePath TestResults.xcresult \
             -skipPackagePluginValidation \
             | xcpretty
