@@ -4,6 +4,7 @@ struct HomeView: View {
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(SessionStore.self) private var sessionStore
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var showImport = false
     @State private var showExercisePicker = false
@@ -11,6 +12,18 @@ struct HomeView: View {
 
     private var homeTiles: [String] {
         settingsStore.settings?.homeTiles ?? ["Squat", "Deadlift", "Bench Press", "Overhead Press"]
+    }
+
+    private var isRegularWidth: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    private var maxLiftColumns: [GridItem] {
+        if isRegularWidth {
+            return Array(repeating: GridItem(.flexible()), count: 4)
+        } else {
+            return [GridItem(.flexible()), GridItem(.flexible())]
+        }
     }
 
     var body: some View {
@@ -30,11 +43,14 @@ struct HomeView: View {
                             Spacer()
                             Image(systemName: "chevron.right")
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: isRegularWidth ? nil : .infinity, alignment: .leading)
                         .padding()
                         .background(LiftMarkTheme.primary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                        .if(isRegularWidth) { view in
+                            view.fixedSize(horizontal: true, vertical: false)
+                        }
                     }
                     .accessibilityIdentifier("resume-workout-banner")
                 }
@@ -44,12 +60,14 @@ struct HomeView: View {
                     Text("Max Lifts")
                         .font(.headline)
 
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LiftMarkTheme.spacingSM) {
+                    LazyVGrid(columns: maxLiftColumns, spacing: LiftMarkTheme.spacingSM) {
                         ForEach(Array(homeTiles.enumerated()), id: \.offset) { index, exerciseName in
                             MaxLiftTile(
                                 exerciseName: exerciseName,
                                 maxWeight: findMaxWeight(for: exerciseName),
                                 unit: settingsStore.settings?.defaultWeightUnit ?? .lbs,
+                                isRegularWidth: isRegularWidth,
+                                sparklineData: isRegularWidth ? findMaxWeightsPerSession(for: exerciseName) : [],
                                 onLongPress: {
                                     editingTileIndex = index
                                     showExercisePicker = true
@@ -81,6 +99,15 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity)
                         .padding(LiftMarkTheme.spacingLG)
                         .accessibilityIdentifier("empty-state")
+                    } else if isRegularWidth {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 280))], spacing: LiftMarkTheme.spacingSM) {
+                            ForEach(planStore.plans.prefix(3)) { plan in
+                                NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
+                                    WorkoutPlanCard(plan: plan)
+                                }
+                                .accessibilityIdentifier("workout-card-\(plan.id)")
+                            }
+                        }
                     } else {
                         ForEach(planStore.plans.prefix(3)) { plan in
                             NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
@@ -107,6 +134,8 @@ struct HomeView: View {
                 .accessibilityIdentifier("button-import-workout")
             }
             .padding()
+            .frame(maxWidth: isRegularWidth ? 800 : .infinity)
+            .frame(maxWidth: .infinity)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-screen")
@@ -159,10 +188,126 @@ struct HomeView: View {
         return globalMax
     }
 
+    private func findMaxWeightsPerSession(for exerciseName: String) -> [Double] {
+        // Get completed sessions sorted by date, find max weight per session for this exercise
+        let completedSessions = sessionStore.sessions
+            .filter { $0.status == .completed }
+            .sorted { $0.date < $1.date }
+
+        var weights: [Double] = []
+        for session in completedSessions {
+            for exercise in session.exercises where exercise.exerciseName.lowercased() == exerciseName.lowercased() {
+                if let maxW = exercise.sets
+                    .filter({ $0.status == .completed })
+                    .compactMap({ $0.actualWeight })
+                    .max() {
+                    weights.append(maxW)
+                }
+            }
+        }
+        return Array(weights.suffix(6))
+    }
+
     private func setProgressText(for session: WorkoutSession) -> String {
         let totalSets = session.exercises.flatMap { $0.sets }.count
         let completedSets = session.exercises.flatMap { $0.sets }.filter { $0.status == .completed }.count
         return "\(completedSets)/\(totalSets) sets completed"
+    }
+}
+
+// MARK: - Conditional View Modifier
+
+private extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
+// MARK: - Sparkline View
+
+private struct SparklineView: View {
+    let values: [Double]
+
+    private var trend: String {
+        guard values.count >= 2 else { return "\u{2192}" }
+        let last = values[values.count - 1]
+        let previous = values[values.count - 2]
+        let change = last - previous
+        let threshold = previous * 0.02 // 2% threshold for flat
+        if change > threshold {
+            return "\u{2197}" // ↗
+        } else if change < -threshold {
+            return "\u{2198}" // ↘
+        } else {
+            return "\u{2192}" // →
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            GeometryReader { geo in
+                let width = geo.size.width
+                let height: CGFloat = 32
+                let minVal = values.min() ?? 0
+                let maxVal = values.max() ?? 1
+                let range = maxVal - minVal
+                let safeRange = range == 0 ? 1.0 : range
+
+                let points: [CGPoint] = values.enumerated().map { index, value in
+                    let x = values.count > 1
+                        ? width * CGFloat(index) / CGFloat(values.count - 1)
+                        : width / 2
+                    let y = height - (height * CGFloat(value - minVal) / CGFloat(safeRange))
+                    return CGPoint(x: x, y: y)
+                }
+
+                ZStack {
+                    // Filled area under the line
+                    Path { path in
+                        guard let first = points.first else { return }
+                        path.move(to: CGPoint(x: first.x, y: height))
+                        path.addLine(to: first)
+                        for point in points.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                        if let last = points.last {
+                            path.addLine(to: CGPoint(x: last.x, y: height))
+                        }
+                        path.closeSubpath()
+                    }
+                    .fill(LiftMarkTheme.primary.opacity(0.08))
+
+                    // Line
+                    Path { path in
+                        guard let first = points.first else { return }
+                        path.move(to: first)
+                        for point in points.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                    }
+                    .stroke(LiftMarkTheme.primary, lineWidth: 1.5)
+
+                    // Rightmost dot
+                    if let last = points.last {
+                        Circle()
+                            .fill(LiftMarkTheme.primary)
+                            .frame(width: 5, height: 5)
+                            .position(last)
+                    }
+                }
+            }
+            .frame(height: 32)
+
+            // Label
+            Text("\(values.count) sessions \(trend)")
+                .font(.caption2)
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+        }
     }
 }
 
@@ -172,6 +317,8 @@ private struct MaxLiftTile: View {
     let exerciseName: String
     let maxWeight: Double?
     let unit: WeightUnit
+    let isRegularWidth: Bool
+    let sparklineData: [Double]
     let onLongPress: () -> Void
 
     var body: some View {
@@ -196,6 +343,11 @@ private struct MaxLiftTile: View {
                 Text("No data yet")
                     .font(.caption2)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+            }
+
+            if isRegularWidth && sparklineData.count >= 2 {
+                SparklineView(values: sparklineData)
+                    .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 80)

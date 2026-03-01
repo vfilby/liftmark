@@ -4,6 +4,7 @@ struct ActiveWorkoutView: View {
     @Environment(SessionStore.self) private var sessionStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var showAddExercise = false
     @State private var showEditExercise = false
@@ -42,6 +43,17 @@ struct ActiveWorkoutView: View {
     private var progress: Double {
         guard totalSets > 0 else { return 0 }
         return Double(completedSets) / Double(totalSets)
+    }
+
+    private var isRegularWidth: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    /// The name of the first exercise with a pending set, used for the iPad landscape history panel.
+    private var activeExerciseName: String? {
+        session?.exercises.first(where: { ex in
+            ex.sets.contains { $0.status == .pending }
+        })?.exerciseName
     }
 
     var body: some View {
@@ -151,85 +163,27 @@ struct ActiveWorkoutView: View {
 
             Divider()
 
-            // Workout content
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: LiftMarkTheme.spacingMD) {
-                        if let exercises = session?.exercises {
-                            let displayItems = buildDisplayItems(from: exercises)
-                            ForEach(displayItems) { item in
-                                switch item {
-                                case .single(let exercise, let exerciseIndex, let displayNumber):
-                                    let collapsed = isExerciseCollapsed(exercise)
-                                    let isActiveExercise = exercise.sets.contains { $0.status == .pending }
-                                    ActiveExerciseCard(
-                                        exercise: exercise,
-                                        exerciseIndex: exerciseIndex,
-                                        displayNumber: displayNumber,
-                                        settings: settingsStore.settings,
-                                        isCollapsed: collapsed,
-                                        activeRestTimer: isActiveExercise ? activeRestTimer : nil,
-                                        onToggleCollapse: {
-                                            toggleCollapse(exerciseId: exercise.id, currentlyCollapsed: collapsed)
-                                        },
-                                        onCompleteSet: { setIndex, weight, reps, elapsedTime in
-                                            completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
-                                        },
-                                        onSkipSet: { setIndex in
-                                            skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
-                                        },
-                                        onEditExercise: {
-                                            editingExercise = exercise
-                                            showEditExercise = true
-                                        },
-                                        onSaveSet: { setIndex, weight, reps in
-                                            saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
-                                        },
-                                        onDismissRest: {
-                                            activeRestTimer = nil
-                                        },
-                                        restTimerGeneration: restTimerGeneration
-                                    )
-                                    .id(exercise.id)
+            // Workout content — adaptive layout for iPad
+            GeometryReader { geometry in
+                let isLandscape = geometry.size.width > geometry.size.height
+                let showSidebar = isRegularWidth && isLandscape
 
-                                case .section(let name):
-                                    sectionHeader(name: name)
+                if showSidebar {
+                    // iPad landscape: two-column layout
+                    HStack(spacing: 0) {
+                        exerciseListView
+                            .frame(width: geometry.size.width * 0.6)
 
-                                case .superset(let parentExercise, let children):
-                                    let collapsed = isSupersetCollapsed(parentExercise, children: children)
-                                    let isActive = children.contains { $0.exercise.sets.contains { $0.status == .pending } }
-                                    SupersetCard(
-                                        parentExercise: parentExercise,
-                                        children: children,
-                                        settings: settingsStore.settings,
-                                        isCollapsed: collapsed,
-                                        activeRestTimer: isActive ? activeRestTimer : nil,
-                                        onToggleCollapse: {
-                                            toggleCollapse(exerciseId: parentExercise.id, currentlyCollapsed: collapsed)
-                                        },
-                                        onCompleteSet: { exerciseIndex, setIndex, weight, reps, elapsedTime in
-                                            completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
-                                        },
-                                        onSkipSet: { exerciseIndex, setIndex in
-                                            skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
-                                        },
-                                        onSaveSet: { exerciseIndex, setIndex, weight, reps in
-                                            saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
-                                        },
-                                        onDismissRest: {
-                                            activeRestTimer = nil
-                                        },
-                                        restTimerGeneration: restTimerGeneration
-                                    )
-                                    .id(parentExercise.id)
-                                }
-                            }
-                        }
+                        Divider()
+
+                        exerciseHistoryPanel
+                            .frame(width: geometry.size.width * 0.4)
                     }
-                    .padding()
-                }
-                .onChange(of: completedSets) { _, _ in
-                    scrollToNextPendingExercise(proxy: proxy)
+                } else {
+                    // iPhone or iPad portrait: single column, constrained width on iPad
+                    exerciseListView
+                        .frame(maxWidth: isRegularWidth ? 800 : .infinity)
+                        .frame(maxWidth: .infinity)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -284,6 +238,133 @@ struct ActiveWorkoutView: View {
                 )
             }
         }
+    }
+
+    // MARK: - Exercise List
+
+    private var exerciseListView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: LiftMarkTheme.spacingMD) {
+                    if let exercises = session?.exercises {
+                        let displayItems = buildDisplayItems(from: exercises)
+                        ForEach(displayItems) { item in
+                            switch item {
+                            case .single(let exercise, let exerciseIndex, let displayNumber):
+                                let collapsed = isExerciseCollapsed(exercise)
+                                let isActiveExercise = exercise.sets.contains { $0.status == .pending }
+                                ActiveExerciseCard(
+                                    exercise: exercise,
+                                    exerciseIndex: exerciseIndex,
+                                    displayNumber: displayNumber,
+                                    settings: settingsStore.settings,
+                                    isCollapsed: collapsed,
+                                    activeRestTimer: isActiveExercise ? activeRestTimer : nil,
+                                    onToggleCollapse: {
+                                        toggleCollapse(exerciseId: exercise.id, currentlyCollapsed: collapsed)
+                                    },
+                                    onCompleteSet: { setIndex, weight, reps, elapsedTime in
+                                        completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
+                                    },
+                                    onSkipSet: { setIndex in
+                                        skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                                    },
+                                    onEditExercise: {
+                                        editingExercise = exercise
+                                        showEditExercise = true
+                                    },
+                                    onSaveSet: { setIndex, weight, reps in
+                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                    },
+                                    onDismissRest: {
+                                        activeRestTimer = nil
+                                    },
+                                    restTimerGeneration: restTimerGeneration
+                                )
+                                .id(exercise.id)
+
+                            case .section(let name):
+                                sectionHeader(name: name)
+
+                            case .superset(let parentExercise, let children):
+                                let collapsed = isSupersetCollapsed(parentExercise, children: children)
+                                let isActive = children.contains { $0.exercise.sets.contains { $0.status == .pending } }
+                                SupersetCard(
+                                    parentExercise: parentExercise,
+                                    children: children,
+                                    settings: settingsStore.settings,
+                                    isCollapsed: collapsed,
+                                    activeRestTimer: isActive ? activeRestTimer : nil,
+                                    onToggleCollapse: {
+                                        toggleCollapse(exerciseId: parentExercise.id, currentlyCollapsed: collapsed)
+                                    },
+                                    onCompleteSet: { exerciseIndex, setIndex, weight, reps, elapsedTime in
+                                        completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
+                                    },
+                                    onSkipSet: { exerciseIndex, setIndex in
+                                        skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                                    },
+                                    onSaveSet: { exerciseIndex, setIndex, weight, reps in
+                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                    },
+                                    onDismissRest: {
+                                        activeRestTimer = nil
+                                    },
+                                    restTimerGeneration: restTimerGeneration
+                                )
+                                .id(parentExercise.id)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .onChange(of: completedSets) { _, _ in
+                scrollToNextPendingExercise(proxy: proxy)
+            }
+        }
+    }
+
+    // MARK: - Exercise History Panel (iPad Landscape)
+
+    private var exerciseHistoryPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Exercise History")
+                .font(.headline)
+                .padding()
+
+            Divider()
+
+            if let exerciseName = activeExerciseName {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: LiftMarkTheme.spacingMD) {
+                        Text(exerciseName)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+
+                        ExerciseHistoryChartView(exerciseName: exerciseName)
+                            .padding()
+                            .background(LiftMarkTheme.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+
+                        ExerciseHistoryLastSessionView(exerciseName: exerciseName)
+                    }
+                    .padding()
+                }
+                .id(exerciseName) // Reset scroll when exercise changes
+            } else {
+                VStack(spacing: LiftMarkTheme.spacingMD) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.largeTitle)
+                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    Text("Complete sets to see exercise history")
+                        .font(.subheadline)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .background(LiftMarkTheme.secondaryBackground.opacity(0.5))
     }
 
     // MARK: - Actions
@@ -1341,6 +1422,135 @@ private struct SupersetCard: View {
             return name
         }
         return "Superset"
+    }
+}
+
+// MARK: - Exercise History Last Session (iPad Sidebar)
+
+private struct ExerciseHistoryLastSessionView: View {
+    let exerciseName: String
+    @State private var historyPoints: [ExerciseHistoryPoint] = []
+    @State private var isLoading = true
+
+    private var lastSession: ExerciseHistoryPoint? {
+        historyPoints.sorted { $0.date > $1.date }.first
+    }
+
+    var body: some View {
+        Group {
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 60)
+            } else if let session = lastSession {
+                VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+                    Text("Last Session")
+                        .font(.headline)
+
+                    VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+                        HStack {
+                            Text("Date")
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Spacer()
+                            Text(formatDate(session.date))
+                        }
+                        .font(.subheadline)
+
+                        HStack {
+                            Text("Workout")
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Spacer()
+                            Text(session.workoutName)
+                        }
+                        .font(.subheadline)
+
+                        if session.maxWeight > 0 {
+                            HStack {
+                                Text("Max Weight")
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                Spacer()
+                                Text("\(Int(session.maxWeight)) \(session.unit.rawValue)")
+                            }
+                            .font(.subheadline)
+                        }
+
+                        HStack {
+                            Text("Sets")
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Spacer()
+                            Text("\(session.setsCount)")
+                        }
+                        .font(.subheadline)
+
+                        if session.avgReps > 0 {
+                            HStack {
+                                Text("Avg Reps")
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                Spacer()
+                                Text(String(format: "%.1f", session.avgReps))
+                            }
+                            .font(.subheadline)
+                        }
+
+                        if session.maxTime > 0 {
+                            HStack {
+                                Text("Max Time")
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                Spacer()
+                                Text("\(Int(session.maxTime))s")
+                            }
+                            .font(.subheadline)
+                        }
+
+                        if session.totalVolume > 0 {
+                            HStack {
+                                Text("Volume")
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                Spacer()
+                                Text(formatVolume(session.totalVolume))
+                            }
+                            .font(.subheadline)
+                        }
+                    }
+                    .padding()
+                    .background(LiftMarkTheme.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                }
+            } else {
+                Text("No previous sessions")
+                    .font(.subheadline)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+        .onAppear { loadHistory() }
+    }
+
+    private func loadHistory() {
+        let repo = ExerciseHistoryRepository()
+        do {
+            historyPoints = try repo.getHistory(forExercise: exerciseName)
+        } catch {
+            print("Failed to load exercise history: \(error)")
+        }
+        isLoading = false
+    }
+
+    private func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: String(dateString.prefix(10))) else {
+            return dateString
+        }
+        let display = DateFormatter()
+        display.dateStyle = .medium
+        return display.string(from: date)
+    }
+
+    private func formatVolume(_ volume: Double) -> String {
+        if volume >= 1000 {
+            return String(format: "%.1fk", volume / 1000)
+        }
+        return "\(Int(volume))"
     }
 }
 

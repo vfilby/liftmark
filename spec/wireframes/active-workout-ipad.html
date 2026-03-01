@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Workout — iPad</title>
+<style>
+  /* ── Reset & Page ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--pageBg);
+    color: var(--textPrimary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Page layout ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px; color: var(--textSecondary);
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pageBg);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grey5);
+  }
+  .toolbar label {
+    font-size: 13px; font-weight: 500; color: var(--textSecondary);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+  .toolbar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .toolbar-divider { width: 1px; height: 20px; background: var(--grey4); }
+  .btn-toolbar {
+    font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--grey4); background: var(--cardBg); color: var(--textPrimary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn-toolbar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Example gallery ── */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .example {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .example-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px; text-align: center;
+  }
+  .example-desc {
+    font-size: 13px; color: var(--textSecondary); margin-bottom: 16px;
+    text-align: center; max-width: 820px;
+  }
+
+  /* ── Light theme (default) ── */
+  :root {
+    --spacingXS: 4px;
+    --spacingSM: 8px;
+    --spacingMD: 12px;
+    --spacingLG: 16px;
+    --spacingXL: 20px;
+    --radiusSM: 8px;
+    --radiusMD: 12px;
+    --blue: #007aff;
+    --green: #34c759;
+    --yellow: #ff9f0a;
+    --red: #ff3b30;
+    --grey1: #8e8e93;
+    --grey2: #aeaeb2;
+    --grey3: #c7c7cc;
+    --grey4: #d1d1d6;
+    --grey5: #e5e5ea;
+    --grey6: #f2f2f7;
+    --cardBg: #fff;
+    --pageBg: #e8e8ed;
+    --screenBg: #f2f2f7;
+    --textPrimary: #1c1c1e;
+    --textSecondary: #8e8e93;
+    --deviceBorder: #bbb;
+    --notchBg: #1c1c1e;
+    --inputBg: #fff;
+    --inputText: #1c1c1e;
+    --annoColor: #9b59b6;
+    --annoBg: rgba(155,89,182,.08);
+    --annoBorder: rgba(155,89,182,.2);
+    --setCurrentBg: rgba(0,122,255,.06);
+    --setCurrentBorder: rgba(0,122,255,.2);
+    --setCompletedBg: rgba(52,199,89,.08);
+    --setSkippedBg: rgba(255,159,10,.08);
+    --restBg: rgba(0,122,255,.06);
+    --restBorder: rgba(0,122,255,.2);
+    --timerBg: rgba(0,122,255,.04);
+    --timerBorder: rgba(0,122,255,.12);
+  }
+
+  /* ── Dark theme ── */
+  :root.dark {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --yellow: #ffd60a;
+    --red: #ff453a;
+    --grey1: #98989d;
+    --grey2: #636366;
+    --grey3: #48484a;
+    --grey4: #3a3a3c;
+    --grey5: #2c2c2e;
+    --grey6: #1c1c1e;
+    --cardBg: #2c2c2e;
+    --pageBg: #000;
+    --screenBg: #000;
+    --textPrimary: #f5f5f7;
+    --textSecondary: #98989d;
+    --deviceBorder: #48484a;
+    --notchBg: #000;
+    --inputBg: #3a3a3c;
+    --inputText: #f5f5f7;
+    --annoColor: #bb86fc;
+    --annoBg: rgba(187,134,252,.12);
+    --annoBorder: rgba(187,134,252,.25);
+    --setCurrentBg: rgba(10,132,255,.15);
+    --setCurrentBorder: rgba(10,132,255,.3);
+    --setCompletedBg: rgba(48,209,88,.12);
+    --setSkippedBg: rgba(255,214,10,.1);
+    --restBg: rgba(10,132,255,.1);
+    --restBorder: rgba(10,132,255,.25);
+    --timerBg: rgba(10,132,255,.08);
+    --timerBorder: rgba(10,132,255,.18);
+  }
+
+  /* ── Hints hidden ── */
+  :root.hide-hints .anno-label,
+  :root.hide-hints .anno-inline,
+  :root.hide-hints .section-label,
+  :root.hide-hints .section-divider,
+  :root.hide-hints .spacing-ref { display: none; }
+
+  /* ── iPhone Device Frame (not used, but kept for reference) ── */
+  .device {
+    width: 390px;
+    background: var(--screenBg);
+    border-radius: 44px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    position: relative;
+  }
+
+  /* ── iPad device frames ── */
+  .device-ipad {
+    width: 820px;
+    background: var(--screenBg);
+    border-radius: 24px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+  }
+  .device-ipad-landscape {
+    width: 1100px;
+    background: var(--screenBg);
+    border-radius: 24px;
+    border: 3px solid var(--deviceBorder);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+  }
+  .ipad-status-bar {
+    height: 24px;
+    background: var(--screenBg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--textPrimary);
+  }
+
+  /* ── Content width constraint ── */
+  .content-constrained {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Split layout for landscape ── */
+  .split-layout {
+    display: flex;
+    flex: 1;
+  }
+  .split-left {
+    flex: 0.6;
+    border-right: 1px solid var(--grey5);
+    overflow-y: auto;
+    padding: 0 24px;
+  }
+  .split-right {
+    flex: 0.4;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* ── History panel ── */
+  .history-panel-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--textPrimary);
+    margin-bottom: 4px;
+  }
+  .history-panel-exercise {
+    font-size: 16px;
+    color: var(--blue);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .history-chart-placeholder {
+    height: 160px;
+    background: var(--cardBg);
+    border-radius: var(--radiusMD);
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .chart-bar {
+    flex: 1;
+    background: var(--blue);
+    border-radius: 4px 4px 0 0;
+    opacity: 0.7;
+    min-height: 20px;
+  }
+  .chart-bar.active {
+    opacity: 1;
+    background: var(--green);
+  }
+  .history-section {
+    margin-bottom: 16px;
+  }
+  .history-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--textSecondary);
+    margin-bottom: 8px;
+  }
+  .history-set-row {
+    font-size: 15px;
+    color: var(--textPrimary);
+    padding: 4px 0;
+  }
+  .history-pr {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--yellow);
+  }
+
+  .screen { padding: 0; overflow-y: auto; }
+  .screen-pad-bottom { padding-bottom: 24px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--screenBg); border-bottom: 1px solid var(--grey5);
+    color: var(--textPrimary);
+  }
+  .header-left, .header-right { display: flex; align-items: center; gap: var(--spacingSM); }
+  .header-center {
+    font-size: 17px; font-weight: 600; flex: 1; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .btn-text {
+    font-size: 15px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+  }
+  .btn-finish {
+    font-size: 15px; font-weight: 500; color: var(--blue);
+    background: none; border: none; cursor: pointer; padding: 6px 0;
+  }
+
+  /* ── Progress bar ── */
+  .progress-section {
+    padding: var(--spacingSM) var(--spacingLG);
+    background: var(--screenBg); border-bottom: 1px solid var(--grey5);
+  }
+  .progress-bar-track { height: 6px; background: var(--grey5); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--blue); border-radius: 3px; }
+  .progress-label { font-size: 12px; color: var(--grey1); margin-top: 4px; text-align: center; }
+
+  /* ── Exercise cards ── */
+  .exercise-list {
+    padding: var(--spacingSM) var(--spacingLG) var(--spacingXL);
+    display: flex; flex-direction: column; gap: var(--spacingSM);
+  }
+  .card {
+    background: var(--cardBg); border-radius: var(--radiusMD); overflow: hidden;
+  }
+
+  /* Card header */
+  .card-header {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingMD) var(--spacingLG);
+  }
+  .badge {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+    background: var(--grey3);
+  }
+  .badge-green  { }
+  .badge-blue   { }
+  .badge-grey   { color: var(--grey1); }
+  .card-title { font-size: 17px; font-weight: 600; flex: 1; }
+  .card-icons { display: flex; gap: 6px; align-items: center; }
+  .card-icon {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    color: var(--grey2); font-size: 14px;
+  }
+  .chevron { color: var(--grey3); font-size: 16px; margin-left: auto; }
+  .card-summary { font-size: 13px; color: var(--grey1); margin-left: auto; white-space: nowrap; }
+
+  /* ── Set rows ── */
+  .set-list { padding: 0 var(--spacingSM) var(--spacingSM); }
+  .set-row {
+    display: flex; align-items: center; gap: var(--spacingSM);
+    padding: var(--spacingXS) var(--spacingSM);
+    border-radius: var(--radiusSM); font-size: 15px; min-height: 36px;
+  }
+  .set-number {
+    width: 22px; text-align: center; font-weight: 600; color: var(--grey1);
+    font-variant-numeric: tabular-nums; flex-shrink: 0;
+  }
+  .set-values { flex: 1; font-variant-numeric: tabular-nums; }
+
+  /* Status icons for completed/skipped sets */
+  .set-status-icon {
+    width: 22px; height: 22px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .set-status-icon svg { width: 22px; height: 22px; }
+
+  /* Current set indicator (blue arrow circle) */
+  .set-current-indicator {
+    width: 22px; height: 22px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .set-current-indicator svg { width: 22px; height: 22px; }
+
+  /* Current set (active) */
+  .set-current {
+    background: var(--setCurrentBg); border: 1.5px solid var(--setCurrentBorder);
+    border-radius: var(--radiusSM); padding: var(--spacingSM); margin: var(--spacingXS) 0;
+  }
+  .set-current-top { display: flex; align-items: center; gap: var(--spacingSM); margin-bottom: var(--spacingMD); }
+  .set-current-top .set-current-indicator,
+  .set-current-top .btn-skip,
+  .set-current-top .input-x { transform: translateY(7px); }
+  .input-field {
+    width: 72px; height: 40px; border: 1.5px solid var(--grey4); border-radius: var(--radiusSM);
+    text-align: center; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
+    font-family: inherit; background: var(--inputBg); color: var(--inputText);
+  }
+  .input-field-wide {
+    width: 100px; height: 44px; border: 1.5px solid var(--grey4); border-radius: var(--radiusSM);
+    text-align: center; font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums;
+    font-family: inherit; background: var(--inputBg); color: var(--inputText);
+  }
+  .input-label { font-size: 11px; color: var(--grey1); text-align: center; margin-bottom: 2px; }
+  .input-group { display: flex; flex-direction: column; align-items: center; }
+  .input-x { font-size: 16px; color: var(--grey2); font-weight: 500; padding: 0 2px; align-self: center; }
+  .btn-skip {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--yellow);
+    background: none; border: none;
+    width: 40px; height: 40px; cursor: pointer; margin-left: auto; flex-shrink: 0;
+  }
+  .btn-skip svg { width: 22px; height: 22px; }
+  .set-current-target {
+    font-size: 12px; color: var(--grey2); padding: 0 0 var(--spacingSM); margin-top: calc(-1 * var(--spacingXS)); text-align: center;
+  }
+  .btn-complete {
+    width: 100%; height: 44px; background: var(--green); color: #fff;
+    font-size: 17px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-complete svg { width: 20px; height: 20px; }
+
+  /* iPad active set buttons row */
+  .set-current-buttons {
+    display: flex; gap: var(--spacingSM); margin-top: var(--spacingSM);
+  }
+  .btn-skip-text {
+    flex: 0 0 auto; height: 44px; padding: 0 24px;
+    background: none; border: 1.5px solid var(--yellow); color: var(--yellow);
+    font-size: 15px; font-weight: 600; border-radius: var(--radiusSM); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-complete-flex {
+    flex: 1; height: 44px; background: var(--green); color: #fff;
+    font-size: 17px; font-weight: 600; border: none; border-radius: var(--radiusSM); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-complete-flex svg { width: 20px; height: 20px; }
+
+  /* Completed set */
+  .set-completed { border-radius: var(--radiusSM); }
+  .set-completed .set-values { color: var(--green); font-weight: 500; }
+
+  /* Pending set */
+  .set-pending .set-values { color: var(--grey1); }
+
+  /* ── Annotations ── */
+  .anno { position: relative; }
+  .anno-label {
+    position: absolute; font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid var(--annoBorder);
+  }
+  .anno-inline {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--annoBorder); display: inline-block; margin-top: 4px;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px; font-family: "SF Mono", "Menlo", monospace;
+    color: var(--annoColor); background: var(--annoBg); border: 1px solid var(--annoBorder);
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+  }
+  .section-divider {
+    border: none; border-top: 1px dashed var(--grey4);
+    margin: var(--spacingMD) 0 var(--spacingSM);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Active Workout — iPad</div>
+  <div class="page-subtitle">Wireframe reference — iPad portrait (centered) and landscape (split with history panel)</div>
+</div>
+
+<!-- ═══════════ TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <label><input type="checkbox" id="toggle-hints" checked> Hints</label>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-theme">Dark Mode</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn-toolbar" id="toggle-unit">Unit: lbs</button>
+</div>
+
+<div class="gallery">
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  1. iPad Portrait — Active Workout                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">iPad Portrait — Active Workout</div>
+  <div class="example-desc">Full-width header and progress bar. Exercise content centered at max-width 800px with wider input fields and full-text buttons.</div>
+  <div class="device-ipad">
+    <!-- Status bar (no notch on iPad) -->
+    <div class="ipad-status-bar">
+      <span>9:41</span>
+      <span style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px;">Wi-Fi</span>
+        <span style="font-size:11px;">100%</span>
+      </span>
+    </div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <button class="btn-text">&#9646;&#9646; Pause</button>
+        </div>
+        <div class="header-center">Push Day</div>
+        <div class="header-right">
+          <button class="btn-finish">+</button>
+          <button class="btn-finish">&#10003;</button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-section">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 28.6%"></div>
+        </div>
+        <div class="progress-label">4 / 14 sets completed</div>
+      </div>
+
+      <!-- Content constrained to 800px -->
+      <div class="content-constrained">
+        <div class="exercise-list">
+
+          <!-- Exercise 1: Bench Press (active, 2 completed + 1 active + 1 pending) -->
+          <div>
+            <span class="section-label">Active exercise with wider inputs</span>
+            <div class="card">
+              <div class="card-header">
+                <div class="badge badge-blue">1</div>
+                <div class="card-title">Bench Press</div>
+                <div class="card-icons">
+                  <span class="card-icon" title="Exercise history">&#128279;</span>
+                </div>
+              </div>
+
+              <div class="set-list">
+                <!-- Completed set 1 -->
+                <div class="set-row set-completed">
+                  <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span class="set-values">135 <span class="unit">lbs</span> &times; 5</span>
+                </div>
+
+                <!-- Completed set 2 -->
+                <div class="set-row set-completed">
+                  <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+                </div>
+
+                <!-- Active set (wider inputs for iPad) -->
+                <div class="set-current">
+                  <div class="set-current-top">
+                    <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div class="input-group">
+                      <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                      <input class="input-field-wide" value="225" readonly>
+                    </div>
+                    <span class="input-x">&times;</span>
+                    <div class="input-group">
+                      <span class="input-label">Reps</span>
+                      <input class="input-field-wide" value="5" readonly>
+                    </div>
+                  </div>
+                  <div class="set-current-target">Target: 225 <span class="unit">lbs</span> &times; 5</div>
+                  <!-- Full-text buttons on iPad -->
+                  <div class="set-current-buttons">
+                    <button class="btn-skip-text">Skip</button>
+                    <button class="btn-complete-flex">Complete <svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  </div>
+                </div>
+
+                <!-- Pending set -->
+                <div class="set-row set-pending">
+                  <span class="set-number">4</span>
+                  <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+                </div>
+              </div>
+            </div>
+            <span class="anno-inline">wider inputs, full-text buttons on iPad</span>
+          </div>
+
+          <!-- Exercise 2: Incline Dumbbell Press (all pending) -->
+          <div>
+            <hr class="section-divider">
+            <span class="section-label">Pending exercise — all sets waiting</span>
+            <div class="card">
+              <div class="card-header">
+                <div class="badge badge-grey">2</div>
+                <div class="card-title">Incline Dumbbell Press</div>
+                <div class="card-icons">
+                  <span class="card-icon" title="Exercise history">&#128279;</span>
+                </div>
+              </div>
+
+              <div class="set-list">
+                <div class="set-row set-pending">
+                  <span class="set-number">1</span>
+                  <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                </div>
+                <div class="set-row set-pending">
+                  <span class="set-number">2</span>
+                  <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                </div>
+                <div class="set-row set-pending">
+                  <span class="set-number">3</span>
+                  <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /exercise-list -->
+      </div><!-- /content-constrained -->
+
+      <div style="text-align:center; padding: 8px 0;">
+        <span class="anno-inline">max-width: 800px centered</span>
+      </div>
+
+    </div><!-- /screen -->
+  </div><!-- /device-ipad -->
+</div><!-- /example -->
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  2. iPad Landscape — Split Layout with History                 ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">iPad Landscape — Split Layout with History</div>
+  <div class="example-desc">Full-width header and progress bar. Below, a 60/40 split: left column for exercise cards, right column for inline exercise history panel.</div>
+  <div class="device-ipad-landscape">
+    <!-- Status bar (no notch on iPad) -->
+    <div class="ipad-status-bar">
+      <span>9:41</span>
+      <span style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px;">Wi-Fi</span>
+        <span style="font-size:11px;">100%</span>
+      </span>
+    </div>
+    <div class="screen">
+
+      <!-- Header (full width) -->
+      <div class="header">
+        <div class="header-left">
+          <button class="btn-text">&#9646;&#9646; Pause</button>
+        </div>
+        <div class="header-center">Push Day</div>
+        <div class="header-right">
+          <button class="btn-finish">+</button>
+          <button class="btn-finish">&#10003;</button>
+        </div>
+      </div>
+
+      <!-- Progress bar (full width) -->
+      <div class="progress-section">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 28.6%"></div>
+        </div>
+        <div class="progress-label">4 / 14 sets completed</div>
+      </div>
+
+      <!-- Split layout -->
+      <div class="split-layout">
+
+        <!-- LEFT COLUMN: Exercise list (~60%) -->
+        <div class="split-left">
+          <div class="exercise-list">
+
+            <!-- Exercise 1: Bench Press (active) -->
+            <div>
+              <div class="card">
+                <div class="card-header">
+                  <div class="badge badge-blue">1</div>
+                  <div class="card-title">Bench Press</div>
+                  <div class="card-icons">
+                    <span class="card-icon" title="Exercise history">&#128279;</span>
+                  </div>
+                </div>
+
+                <div class="set-list">
+                  <!-- Completed set 1 -->
+                  <div class="set-row set-completed">
+                    <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="set-values">135 <span class="unit">lbs</span> &times; 5</span>
+                  </div>
+
+                  <!-- Completed set 2 -->
+                  <div class="set-row set-completed">
+                    <span class="set-status-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--green)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="set-values">185 <span class="unit">lbs</span> &times; 5</span>
+                  </div>
+
+                  <!-- Active set -->
+                  <div class="set-current">
+                    <div class="set-current-top">
+                      <span class="set-current-indicator"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--blue)"/><path d="M9 12h7M13 8.5l3.5 3.5-3.5 3.5" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      <div class="input-group">
+                        <span class="input-label">Weight (<span class="unit">lbs</span>)</span>
+                        <input class="input-field-wide" value="225" readonly>
+                      </div>
+                      <span class="input-x">&times;</span>
+                      <div class="input-group">
+                        <span class="input-label">Reps</span>
+                        <input class="input-field-wide" value="5" readonly>
+                      </div>
+                    </div>
+                    <div class="set-current-target">Target: 225 <span class="unit">lbs</span> &times; 5</div>
+                    <div class="set-current-buttons">
+                      <button class="btn-skip-text">Skip</button>
+                      <button class="btn-complete-flex">Complete <svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    </div>
+                  </div>
+
+                  <!-- Pending set -->
+                  <div class="set-row set-pending">
+                    <span class="set-number">4</span>
+                    <span class="set-values">225 <span class="unit">lbs</span> &times; 5</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exercise 2: Incline Dumbbell Press (all pending) -->
+            <div>
+              <div class="card">
+                <div class="card-header">
+                  <div class="badge badge-grey">2</div>
+                  <div class="card-title">Incline Dumbbell Press</div>
+                  <div class="card-icons">
+                    <span class="card-icon" title="Exercise history">&#128279;</span>
+                  </div>
+                </div>
+
+                <div class="set-list">
+                  <div class="set-row set-pending">
+                    <span class="set-number">1</span>
+                    <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                  </div>
+                  <div class="set-row set-pending">
+                    <span class="set-number">2</span>
+                    <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                  </div>
+                  <div class="set-row set-pending">
+                    <span class="set-number">3</span>
+                    <span class="set-values">60 <span class="unit">lbs</span> &times; 8</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /exercise-list -->
+        </div><!-- /split-left -->
+
+        <!-- RIGHT COLUMN: Exercise History Panel (~40%) -->
+        <div class="split-right">
+          <div class="history-panel-title">Exercise History</div>
+          <div class="history-panel-exercise">Bench Press</div>
+
+          <!-- Chart placeholder with CSS-drawn bars -->
+          <div class="history-chart-placeholder">
+            <div class="chart-bar" style="height: 55%;"></div>
+            <div class="chart-bar" style="height: 70%;"></div>
+            <div class="chart-bar" style="height: 65%;"></div>
+            <div class="chart-bar" style="height: 80%;"></div>
+            <div class="chart-bar active" style="height: 90%;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--grey2); margin-top:-12px; margin-bottom:16px; padding: 0 4px;">
+            <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span>
+          </div>
+
+          <!-- Last Session -->
+          <div class="history-section">
+            <div class="history-section-title">Last Session</div>
+            <div class="history-set-row">225 <span class="unit">lbs</span> &times; 5</div>
+            <div class="history-set-row">225 <span class="unit">lbs</span> &times; 4</div>
+            <div class="history-set-row">225 <span class="unit">lbs</span> &times; 4</div>
+          </div>
+
+          <!-- PR -->
+          <div class="history-section">
+            <div class="history-section-title">Personal Record</div>
+            <div class="history-pr">245 <span class="unit">lbs</span> &times; 3 &mdash; Jan 15, 2026</div>
+          </div>
+
+          <span class="anno-inline">Shows same content as ExerciseHistoryBottomSheet but inline</span>
+        </div><!-- /split-right -->
+
+      </div><!-- /split-layout -->
+
+      <div style="text-align:center; padding: 8px 16px;">
+        <span class="anno-inline">60/40 split &mdash; left: exercises, right: history panel</span>
+      </div>
+
+    </div><!-- /screen -->
+  </div><!-- /device-ipad-landscape -->
+</div><!-- /example -->
+
+</div><!-- /gallery -->
+
+<script>
+  const root = document.documentElement;
+  const hintsToggle = document.getElementById('toggle-hints');
+  const themeBtn = document.getElementById('toggle-theme');
+  const unitBtn = document.getElementById('toggle-unit');
+
+  function setUnit(unit) {
+    document.querySelectorAll('.unit').forEach(el => { el.textContent = unit; });
+    unitBtn.textContent = 'Unit: ' + unit;
+    localStorage.setItem('wf-unit', unit);
+  }
+
+  // Restore saved state
+  if (localStorage.getItem('wf-dark') === '1') {
+    root.classList.add('dark');
+    themeBtn.textContent = 'Light Mode';
+  }
+  if (localStorage.getItem('wf-hints') === '0') {
+    root.classList.add('hide-hints');
+    hintsToggle.checked = false;
+  }
+  if (localStorage.getItem('wf-unit') === 'kg') {
+    setUnit('kg');
+  }
+
+  hintsToggle.addEventListener('change', () => {
+    root.classList.toggle('hide-hints', !hintsToggle.checked);
+    localStorage.setItem('wf-hints', hintsToggle.checked ? '1' : '0');
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.classList.toggle('dark');
+    themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('wf-dark', isDark ? '1' : '0');
+  });
+
+  unitBtn.addEventListener('click', () => {
+    const current = document.querySelector('.unit')?.textContent || 'lbs';
+    setUnit(current === 'lbs' ? 'kg' : 'lbs');
+  });
+</script>
+</body>
+</html>

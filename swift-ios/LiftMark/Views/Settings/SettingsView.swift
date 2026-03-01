@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(GymStore.self) private var gymStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showApiKey = false
     @State private var apiKeyText = ""
     @State private var showExportConfirmation = false
@@ -21,294 +22,15 @@ struct SettingsView: View {
     @State private var importResultMessage = ""
     @State private var showImportError = false
     @State private var importErrorMessage = ""
+    @State private var selectedSection: SettingsSection? = .appearance
 
     var body: some View {
         Group {
             if let settings = settingsStore.settings {
-                List {
-                    // Appearance
-                    Section("Appearance") {
-                        HStack {
-                            Text("Theme")
-                            Spacer()
-                            HStack(spacing: 0) {
-                                themeButton("Light", theme: .light, currentTheme: settings.theme)
-                                    .accessibilityIdentifier("button-theme-light")
-                                themeButton("Dark", theme: .dark, currentTheme: settings.theme)
-                                    .accessibilityIdentifier("button-theme-dark")
-                                themeButton("Auto", theme: .auto, currentTheme: settings.theme)
-                                    .accessibilityIdentifier("button-theme-auto")
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .frame(width: 200)
-                        }
-                    }
-
-                    // Workout
-                    Section("Workout") {
-                        NavigationLink(value: AppDestination.workoutSettings) {
-                            Text("Workout Settings")
-                        }
-                        .accessibilityIdentifier("workout-settings-button")
-                    }
-
-                    // Gym
-                    Section("Gym") {
-                        ForEach(gymStore.gyms) { gym in
-                            NavigationLink(value: AppDestination.gymDetail(id: gym.id)) {
-                                HStack {
-                                    Image(systemName: gym.isDefault ? "star.fill" : "star")
-                                        .foregroundStyle(gym.isDefault ? LiftMarkTheme.warning : LiftMarkTheme.secondaryLabel)
-                                    Text(gym.name)
-                                    Spacer()
-                                    if gym.isDefault {
-                                        Text("Default")
-                                            .font(.caption)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(LiftMarkTheme.warning)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 2)
-                                            .background(LiftMarkTheme.warning.opacity(0.12))
-                                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                                    }
-                                }
-                            }
-                            .accessibilityIdentifier("gym-item")
-                        }
-
-                        Button {
-                            gymStore.createGym(name: "New Gym")
-                        } label: {
-                            Label("Add Gym", systemImage: "plus")
-                        }
-                        .accessibilityIdentifier("add-gym-button")
-                    }
-
-                    // Integrations
-                    Section("Integrations") {
-                        NavigationLink(value: AppDestination.syncSettings) {
-                            Label("iCloud Sync", systemImage: "icloud")
-                        }
-                        .accessibilityIdentifier("sync-settings-button")
-
-                        // HealthKit
-                        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-                            Toggle(isOn: Binding(
-                                get: { settings.healthKitEnabled },
-                                set: { newValue in
-                                    if newValue {
-                                        Task {
-                                            let granted = await HealthKitService.requestAuthorization()
-                                            if granted {
-                                                var updated = settings
-                                                updated.healthKitEnabled = true
-                                                settingsStore.updateSettings(updated)
-                                                healthKitAuthStatus = .authorized
-                                            } else {
-                                                healthKitAuthStatus = .denied
-                                            }
-                                        }
-                                    } else {
-                                        var updated = settings
-                                        updated.healthKitEnabled = false
-                                        settingsStore.updateSettings(updated)
-                                    }
-                                }
-                            )) {
-                                Label("Apple Health", systemImage: "heart")
-                            }
-                            .disabled(healthKitAuthStatus == .denied)
-                            .accessibilityIdentifier("switch-healthkit")
-
-                            Text(healthKitStatusText)
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                                .accessibilityIdentifier("healthkit-status-label")
-
-                            if healthKitAuthStatus == .denied {
-                                Button {
-                                    openAppSettings()
-                                } label: {
-                                    Text("Open Health Settings")
-                                        .font(.caption)
-                                        .foregroundStyle(LiftMarkTheme.primary)
-                                }
-                                .accessibilityIdentifier("healthkit-open-settings")
-                            }
-                        }
-
-                        // Live Activities
-                        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-                            Toggle(isOn: Binding(
-                                get: { settings.liveActivitiesEnabled },
-                                set: { newValue in
-                                    var updated = settings
-                                    updated.liveActivitiesEnabled = newValue
-                                    settingsStore.updateSettings(updated)
-                                }
-                            )) {
-                                Label("Live Activities", systemImage: "rectangle.stack")
-                            }
-                            .disabled(!liveActivitiesEnabled)
-                            .accessibilityIdentifier("switch-live-activities")
-
-                            Text(liveActivitiesStatusText)
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                                .accessibilityIdentifier("live-activities-status-label")
-
-                            if !liveActivitiesEnabled {
-                                Button {
-                                    openAppSettings()
-                                } label: {
-                                    Text("Open Settings to enable Live Activities")
-                                        .font(.caption)
-                                        .foregroundStyle(LiftMarkTheme.primary)
-                                }
-                                .accessibilityIdentifier("live-activities-open-settings")
-                            }
-                        }
-                    }
-
-                    // AI Assistance
-                    Section("AI Assistance") {
-                        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                            Text("Custom Prompt")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            TextField("Additional instructions for AI...", text: Binding(
-                                get: { settings.customPromptAddition ?? "" },
-                                set: { newValue in
-                                    var updated = settings
-                                    updated.customPromptAddition = newValue.isEmpty ? nil : newValue
-                                    settingsStore.updateSettings(updated)
-                                }
-                            ), axis: .vertical)
-                            .lineLimit(2...4)
-                        }
-                        .accessibilityIdentifier("input-custom-prompt")
-
-                        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                            Text("API Key")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            HStack(spacing: LiftMarkTheme.spacingSM) {
-                                if showApiKey {
-                                    TextField("API Key", text: $apiKeyText)
-                                        .textContentType(.password)
-                                        .autocorrectionDisabled()
-                                } else {
-                                    SecureField("Anthropic API Key", text: $apiKeyText)
-                                }
-                                Button {
-                                    showApiKey.toggle()
-                                } label: {
-                                    Image(systemName: showApiKey ? "eye.slash" : "eye")
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("toggle-api-key-visibility")
-
-                                Button {
-                                    saveApiKey()
-                                } label: {
-                                    Text("Save")
-                                        .font(.subheadline.weight(.semibold))
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 6)
-                                        .background(LiftMarkTheme.primary)
-                                        .foregroundStyle(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("save-api-key-button")
-
-                                Button {
-                                    removeApiKey()
-                                } label: {
-                                    Text("Remove")
-                                        .font(.subheadline.weight(.semibold))
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 6)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
-                                        )
-                                        .foregroundStyle(LiftMarkTheme.destructive)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("remove-api-key-button")
-                            }
-                        }
-                        .accessibilityIdentifier("input-api-key")
-
-                        if let status = settings.anthropicApiKeyStatus {
-                            HStack {
-                                Circle()
-                                    .fill(apiKeyStatusColor(status))
-                                    .frame(width: 8, height: 8)
-                                Text(apiKeyStatusLabel(status))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
-                    // Data Management
-                    Section("Data Management") {
-                        Button {
-                            exportData()
-                        } label: {
-                            Label("Export Data", systemImage: "square.and.arrow.up")
-                        }
-                        .accessibilityIdentifier("export-data-button")
-
-                        Button {
-                            showImportSheet = true
-                        } label: {
-                            Label("Import Data", systemImage: "square.and.arrow.down")
-                        }
-                        .accessibilityIdentifier("import-data-button")
-                    }
-
-                    // Developer
-                    Section("Developer") {
-                        NavigationLink(value: AppDestination.debugLogs) {
-                            Label("Debug Logs", systemImage: "doc.text")
-                        }
-                        .accessibilityIdentifier("debug-logs-button")
-
-                        Button {
-                            exportDatabase()
-                        } label: {
-                            Label("Export Database", systemImage: "cylinder.split.1x2")
-                        }
-                        .accessibilityIdentifier("export-database-button")
-                    }
-
-                    // About
-                    Section("About") {
-                        HStack {
-                            Text("Version")
-                            Spacer()
-                            Text(appVersionString)
-                                .foregroundStyle(.secondary)
-                        }
-                        HStack {
-                            Text("Build")
-                            Spacer()
-                            Text(appBuildString)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    // Footer
-                    Section {
-                        Text("LiftMark")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .listRowBackground(Color.clear)
-                    }
+                if horizontalSizeClass == .regular {
+                    iPadLayout(settings: settings)
+                } else {
+                    iPhoneLayout(settings: settings)
                 }
             } else {
                 ProgressView()
@@ -350,6 +72,436 @@ struct SettingsView: View {
             showImportError: $showImportError,
             importErrorMessage: importErrorMessage
         ))
+    }
+
+    // MARK: - iPad Layout
+
+    @ViewBuilder
+    private func iPadLayout(settings: UserSettings) -> some View {
+        HStack(spacing: 0) {
+            // Left pane - navigation list
+            List {
+                ForEach(SettingsSection.allCases) { section in
+                    Button {
+                        selectedSection = section
+                    } label: {
+                        SettingsNavRow(section: section, isSelected: selectedSection == section)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
+                }
+            }
+            .listStyle(.plain)
+            .frame(width: 280)
+
+            Divider()
+
+            // Right pane - detail content
+            Group {
+                if let selectedSection {
+                    iPadDetailContent(for: selectedSection, settings: settings)
+                } else {
+                    ContentUnavailableView("Select a Category", systemImage: "gear", description: Text("Choose a settings category from the sidebar."))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private func iPadDetailContent(for section: SettingsSection, settings: UserSettings) -> some View {
+        switch section {
+        case .appearance:
+            List {
+                Section(section.rawValue) {
+                    appearanceContent(settings: settings)
+                }
+            }
+        case .workout:
+            WorkoutSettingsView()
+        case .gyms:
+            List {
+                Section(section.rawValue) {
+                    gymContent()
+                }
+            }
+        case .integrations:
+            List {
+                Section("iCloud Sync") {
+                    NavigationLink(value: AppDestination.syncSettings) {
+                        Label("iCloud Sync", systemImage: "icloud")
+                    }
+                    .accessibilityIdentifier("sync-settings-button")
+                }
+                Section("Health & Activities") {
+                    healthKitContent(settings: settings)
+                    liveActivitiesContent(settings: settings)
+                }
+            }
+        case .ai:
+            List {
+                Section(section.rawValue) {
+                    aiContent(settings: settings)
+                }
+            }
+        case .data:
+            List {
+                Section(section.rawValue) {
+                    dataContent()
+                }
+            }
+        case .developer:
+            List {
+                Section(section.rawValue) {
+                    developerContent()
+                }
+            }
+        case .about:
+            List {
+                Section(section.rawValue) {
+                    aboutContent()
+                }
+                Section {
+                    Text("LiftMark")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .listRowBackground(Color.clear)
+                }
+            }
+        }
+    }
+
+    // MARK: - iPhone Layout
+
+    @ViewBuilder
+    private func iPhoneLayout(settings: UserSettings) -> some View {
+        List {
+            // Appearance
+            Section("Appearance") {
+                appearanceContent(settings: settings)
+            }
+
+            // Workout
+            Section("Workout") {
+                NavigationLink(value: AppDestination.workoutSettings) {
+                    Text("Workout Settings")
+                }
+                .accessibilityIdentifier("workout-settings-button")
+            }
+
+            // Gym
+            Section("Gym") {
+                gymContent()
+            }
+
+            // Integrations
+            Section("Integrations") {
+                NavigationLink(value: AppDestination.syncSettings) {
+                    Label("iCloud Sync", systemImage: "icloud")
+                }
+                .accessibilityIdentifier("sync-settings-button")
+
+                healthKitContent(settings: settings)
+                liveActivitiesContent(settings: settings)
+            }
+
+            // AI Assistance
+            Section("AI Assistance") {
+                aiContent(settings: settings)
+            }
+
+            // Data Management
+            Section("Data Management") {
+                dataContent()
+            }
+
+            // Developer
+            Section("Developer") {
+                developerContent()
+            }
+
+            // About
+            Section("About") {
+                aboutContent()
+            }
+
+            // Footer
+            Section {
+                Text("LiftMark")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+        }
+    }
+
+    // MARK: - Shared Content Builders
+
+    @ViewBuilder
+    private func appearanceContent(settings: UserSettings) -> some View {
+        HStack {
+            Text("Theme")
+            Spacer()
+            HStack(spacing: 0) {
+                themeButton("Light", theme: .light, currentTheme: settings.theme)
+                    .accessibilityIdentifier("button-theme-light")
+                themeButton("Dark", theme: .dark, currentTheme: settings.theme)
+                    .accessibilityIdentifier("button-theme-dark")
+                themeButton("Auto", theme: .auto, currentTheme: settings.theme)
+                    .accessibilityIdentifier("button-theme-auto")
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(width: 200)
+        }
+    }
+
+    @ViewBuilder
+    private func gymContent() -> some View {
+        ForEach(gymStore.gyms) { gym in
+            NavigationLink(value: AppDestination.gymDetail(id: gym.id)) {
+                HStack {
+                    Image(systemName: gym.isDefault ? "star.fill" : "star")
+                        .foregroundStyle(gym.isDefault ? LiftMarkTheme.warning : LiftMarkTheme.secondaryLabel)
+                    Text(gym.name)
+                    Spacer()
+                    if gym.isDefault {
+                        Text("Default")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(LiftMarkTheme.warning)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(LiftMarkTheme.warning.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+            }
+            .accessibilityIdentifier("gym-item")
+        }
+
+        Button {
+            gymStore.createGym(name: "New Gym")
+        } label: {
+            Label("Add Gym", systemImage: "plus")
+        }
+        .accessibilityIdentifier("add-gym-button")
+    }
+
+    @ViewBuilder
+    private func healthKitContent(settings: UserSettings) -> some View {
+        // HealthKit
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+            Toggle(isOn: Binding(
+                get: { settings.healthKitEnabled },
+                set: { newValue in
+                    if newValue {
+                        Task {
+                            let granted = await HealthKitService.requestAuthorization()
+                            if granted {
+                                var updated = settings
+                                updated.healthKitEnabled = true
+                                settingsStore.updateSettings(updated)
+                                healthKitAuthStatus = .authorized
+                            } else {
+                                healthKitAuthStatus = .denied
+                            }
+                        }
+                    } else {
+                        var updated = settings
+                        updated.healthKitEnabled = false
+                        settingsStore.updateSettings(updated)
+                    }
+                }
+            )) {
+                Label("Apple Health", systemImage: "heart")
+            }
+            .disabled(healthKitAuthStatus == .denied)
+            .accessibilityIdentifier("switch-healthkit")
+
+            Text(healthKitStatusText)
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .accessibilityIdentifier("healthkit-status-label")
+
+            if healthKitAuthStatus == .denied {
+                Button {
+                    openUserSettings()
+                } label: {
+                    Text("Open Health Settings")
+                        .font(.caption)
+                        .foregroundStyle(LiftMarkTheme.primary)
+                }
+                .accessibilityIdentifier("healthkit-open-settings")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func liveActivitiesContent(settings: UserSettings) -> some View {
+        // Live Activities
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+            Toggle(isOn: Binding(
+                get: { settings.liveActivitiesEnabled },
+                set: { newValue in
+                    var updated = settings
+                    updated.liveActivitiesEnabled = newValue
+                    settingsStore.updateSettings(updated)
+                }
+            )) {
+                Label("Live Activities", systemImage: "rectangle.stack")
+            }
+            .disabled(!liveActivitiesEnabled)
+            .accessibilityIdentifier("switch-live-activities")
+
+            Text(liveActivitiesStatusText)
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .accessibilityIdentifier("live-activities-status-label")
+
+            if !liveActivitiesEnabled {
+                Button {
+                    openUserSettings()
+                } label: {
+                    Text("Open Settings to enable Live Activities")
+                        .font(.caption)
+                        .foregroundStyle(LiftMarkTheme.primary)
+                }
+                .accessibilityIdentifier("live-activities-open-settings")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func aiContent(settings: UserSettings) -> some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            Text("Custom Prompt")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField("Additional instructions for AI...", text: Binding(
+                get: { settings.customPromptAddition ?? "" },
+                set: { newValue in
+                    var updated = settings
+                    updated.customPromptAddition = newValue.isEmpty ? nil : newValue
+                    settingsStore.updateSettings(updated)
+                }
+            ), axis: .vertical)
+            .lineLimit(2...4)
+        }
+        .accessibilityIdentifier("input-custom-prompt")
+
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            Text("API Key")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: LiftMarkTheme.spacingSM) {
+                if showApiKey {
+                    TextField("API Key", text: $apiKeyText)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                } else {
+                    SecureField("Anthropic API Key", text: $apiKeyText)
+                }
+                Button {
+                    showApiKey.toggle()
+                } label: {
+                    Image(systemName: showApiKey ? "eye.slash" : "eye")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("toggle-api-key-visibility")
+
+                Button {
+                    saveApiKey()
+                } label: {
+                    Text("Save")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(LiftMarkTheme.primary)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("save-api-key-button")
+
+                Button {
+                    removeApiKey()
+                } label: {
+                    Text("Remove")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
+                        )
+                        .foregroundStyle(LiftMarkTheme.destructive)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("remove-api-key-button")
+            }
+        }
+        .accessibilityIdentifier("input-api-key")
+
+        if let status = settings.anthropicApiKeyStatus {
+            HStack {
+                Circle()
+                    .fill(apiKeyStatusColor(status))
+                    .frame(width: 8, height: 8)
+                Text(apiKeyStatusLabel(status))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dataContent() -> some View {
+        Button {
+            exportData()
+        } label: {
+            Label("Export Data", systemImage: "square.and.arrow.up")
+        }
+        .accessibilityIdentifier("export-data-button")
+
+        Button {
+            showImportSheet = true
+        } label: {
+            Label("Import Data", systemImage: "square.and.arrow.down")
+        }
+        .accessibilityIdentifier("import-data-button")
+    }
+
+    @ViewBuilder
+    private func developerContent() -> some View {
+        NavigationLink(value: AppDestination.debugLogs) {
+            Label("Debug Logs", systemImage: "doc.text")
+        }
+        .accessibilityIdentifier("debug-logs-button")
+
+        Button {
+            exportDatabase()
+        } label: {
+            Label("Export Database", systemImage: "cylinder.split.1x2")
+        }
+        .accessibilityIdentifier("export-database-button")
+    }
+
+    @ViewBuilder
+    private func aboutContent() -> some View {
+        HStack {
+            Text("Version")
+            Spacer()
+            Text(appVersionString)
+                .foregroundStyle(.secondary)
+        }
+        HStack {
+            Text("Build")
+            Spacer()
+            Text(appBuildString)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Helpers
@@ -465,7 +617,7 @@ struct SettingsView: View {
 
     // MARK: - Open Settings
 
-    private func openAppSettings() {
+    private func openUserSettings() {
         #if canImport(UIKit)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
@@ -588,6 +740,73 @@ struct SettingsView: View {
                 importErrorMessage = error.localizedDescription
                 showImportError = true
             }
+        }
+    }
+
+    // MARK: - Settings Section Enum
+
+    private enum SettingsSection: String, CaseIterable, Identifiable {
+        case appearance = "Appearance"
+        case workout = "Workout Settings"
+        case gyms = "Gyms"
+        case integrations = "Integrations"
+        case ai = "AI Assistance"
+        case data = "Data Management"
+        case developer = "Developer"
+        case about = "About"
+
+        var id: String { rawValue }
+
+        var icon: String {
+            switch self {
+            case .appearance: return "paintbrush"
+            case .workout: return "figure.strengthtraining.traditional"
+            case .gyms: return "building.2"
+            case .integrations: return "link"
+            case .ai: return "brain"
+            case .data: return "externaldrive"
+            case .developer: return "hammer"
+            case .about: return "info.circle"
+            }
+        }
+
+        var iconColor: Color {
+            switch self {
+            case .appearance: return .purple
+            case .workout: return .orange
+            case .gyms: return .blue
+            case .integrations: return .green
+            case .ai: return .pink
+            case .data: return .gray
+            case .developer: return .yellow
+            case .about: return .secondary
+            }
+        }
+    }
+
+    // MARK: - Settings Nav Row
+
+    private struct SettingsNavRow: View {
+        let section: SettingsSection
+        let isSelected: Bool
+
+        var body: some View {
+            HStack(spacing: 12) {
+                Image(systemName: section.icon)
+                    .font(.body)
+                    .foregroundStyle(section.iconColor)
+                    .frame(width: 28, height: 28)
+                    .background(section.iconColor.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                Text(section.rawValue)
+                    .font(.body)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(isSelected ? LiftMarkTheme.primary.opacity(0.12) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
         }
     }
 }
