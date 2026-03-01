@@ -1,7 +1,9 @@
 import { Paths, File } from 'expo-file-system';
 import Constants from 'expo-constants';
 import { getCompletedSessions } from '@/db/sessionRepository';
-import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
+import { getAllWorkoutPlans } from '@/db/repository';
+import { getDatabase } from '@/db/index';
+import type { WorkoutSession, WorkoutPlan, PlannedExercise, PlannedSet, SessionExercise, SessionSet, GymRow, UserSettingsRow } from '@/types';
 
 /**
  * Export completed workout sessions as a portable JSON file.
@@ -78,6 +80,111 @@ export class ExportError extends Error {
     super(message);
     this.name = 'ExportError';
   }
+}
+
+/**
+ * Export all app data as a unified JSON file for backup/transfer.
+ * Includes plans, sessions, gyms, and safe settings (no API keys).
+ * Returns the file URI for sharing.
+ */
+export async function exportUnifiedJson(): Promise<string> {
+  const plans = await getAllWorkoutPlans();
+  const sessions = await getCompletedSessions();
+  const db = await getDatabase();
+
+  // Read gyms
+  const gymRows = await db.getAllAsync<GymRow>('SELECT * FROM gyms');
+  const gyms = gymRows.map(row => {
+    const gym: Record<string, unknown> = {
+      name: row.name,
+      isDefault: row.is_default === 1,
+    };
+    if (row.created_at) gym.createdAt = row.created_at;
+    return gym;
+  });
+
+  // Read settings (exclude sensitive data like API keys)
+  const settingsRow = await db.getFirstAsync<UserSettingsRow>(
+    'SELECT * FROM user_settings LIMIT 1'
+  );
+  const settings: Record<string, unknown> = {};
+  if (settingsRow) {
+    settings.defaultWeightUnit = settingsRow.default_weight_unit;
+    settings.enableWorkoutTimer = settingsRow.enable_workout_timer === 1;
+    settings.autoStartRestTimer = settingsRow.auto_start_rest_timer === 1;
+    settings.theme = settingsRow.theme;
+    settings.keepScreenAwake = settingsRow.keep_screen_awake === 1;
+    if (settingsRow.custom_prompt_addition) {
+      settings.customPromptAddition = settingsRow.custom_prompt_addition;
+    }
+  }
+
+  const exportData = {
+    formatVersion: '1.0',
+    exportedAt: new Date().toISOString(),
+    appVersion: Constants.expoConfig?.version || '1.0.0',
+    plans: plans.map(stripPlan),
+    sessions: sessions.map(stripSession),
+    gyms,
+    settings,
+  };
+
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/:/g, '-')
+    .replace(/\.\d{3}Z$/, '')
+    .replace('T', '_');
+  const fileName = `liftmark_export_${timestamp}.json`;
+  const exportFile = new File(Paths.cache, fileName);
+
+  exportFile.write(JSON.stringify(exportData, null, 2));
+
+  return exportFile.uri;
+}
+
+function stripPlan(plan: WorkoutPlan) {
+  const result: Record<string, unknown> = {
+    name: plan.name,
+    exercises: plan.exercises
+      .filter(e => e.sets.length > 0 || e.groupType != null)
+      .map(stripPlannedExercise),
+  };
+  if (plan.description) result.description = plan.description;
+  if (plan.tags.length > 0) result.tags = plan.tags;
+  if (plan.defaultWeightUnit) result.defaultWeightUnit = plan.defaultWeightUnit;
+  if (plan.sourceMarkdown) result.sourceMarkdown = plan.sourceMarkdown;
+  result.isFavorite = plan.isFavorite ?? false;
+  return result;
+}
+
+function stripPlannedExercise(exercise: PlannedExercise) {
+  const result: Record<string, unknown> = {
+    exerciseName: exercise.exerciseName,
+    orderIndex: exercise.orderIndex,
+    sets: exercise.sets.map(stripPlannedSet),
+  };
+  if (exercise.notes) result.notes = exercise.notes;
+  if (exercise.equipmentType) result.equipmentType = exercise.equipmentType;
+  if (exercise.groupType) result.groupType = exercise.groupType;
+  if (exercise.groupName) result.groupName = exercise.groupName;
+  return result;
+}
+
+function stripPlannedSet(set: PlannedSet) {
+  const result: Record<string, unknown> = {
+    orderIndex: set.orderIndex,
+    isDropset: set.isDropset ?? false,
+    isPerSide: set.isPerSide ?? false,
+  };
+  if (set.targetWeight != null) result.targetWeight = set.targetWeight;
+  if (set.targetWeightUnit) result.targetWeightUnit = set.targetWeightUnit;
+  if (set.targetReps != null) result.targetReps = set.targetReps;
+  if (set.targetTime != null) result.targetTime = set.targetTime;
+  if (set.targetRpe != null) result.targetRpe = set.targetRpe;
+  if (set.restSeconds != null) result.restSeconds = set.restSeconds;
+  if (set.tempo) result.tempo = set.tempo;
+  if (set.notes) result.notes = set.notes;
+  return result;
 }
 
 function stripSession(session: WorkoutSession) {

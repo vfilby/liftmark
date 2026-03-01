@@ -25,10 +25,27 @@ jest.mock('@/db/sessionRepository', () => ({
   getCompletedSessions: jest.fn(),
 }));
 
-import { exportSessionsAsJson, exportSingleSessionAsJson, buildSessionFileName, ExportError } from '../services/workoutExportService';
+// Mock the plan repository
+jest.mock('@/db/repository', () => ({
+  getAllWorkoutPlans: jest.fn(),
+}));
+
+// Mock the database
+const mockGetAllAsync = jest.fn();
+const mockGetFirstAsync = jest.fn();
+jest.mock('@/db/index', () => ({
+  getDatabase: jest.fn().mockResolvedValue({
+    getAllAsync: mockGetAllAsync,
+    getFirstAsync: mockGetFirstAsync,
+  }),
+}));
+
+import { exportSessionsAsJson, exportSingleSessionAsJson, exportUnifiedJson, buildSessionFileName, ExportError } from '../services/workoutExportService';
 import { getCompletedSessions } from '@/db/sessionRepository';
+import { getAllWorkoutPlans } from '@/db/repository';
 
 const mockedGetCompletedSessions = getCompletedSessions as jest.MockedFunction<typeof getCompletedSessions>;
+const mockedGetAllWorkoutPlans = getAllWorkoutPlans as jest.MockedFunction<typeof getAllWorkoutPlans>;
 
 // ============================================================================
 // Helper Factories
@@ -297,5 +314,190 @@ describe('buildSessionFileName', () => {
   it('handles diacritics', () => {
     expect(buildSessionFileName('Séance Résistance', '2026-02-14'))
       .toBe('workout-seance-resistance-2026-02-14.json');
+  });
+});
+
+// ============================================================================
+// Unified Export Tests
+// ============================================================================
+
+describe('exportUnifiedJson', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetAllAsync.mockResolvedValue([]);
+    mockGetFirstAsync.mockResolvedValue(null);
+  });
+
+  it('writes a unified JSON file with all data sections', async () => {
+    mockedGetAllWorkoutPlans.mockResolvedValue([]);
+    mockedGetCompletedSessions.mockResolvedValue([]);
+
+    const uri = await exportUnifiedJson();
+
+    expect(uri).toMatch(/^\/mock\/cache\/liftmark_export_.+\.json$/);
+    expect(mockWrite).toHaveBeenCalledTimes(1);
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    expect(written.formatVersion).toBe('1.0');
+    expect(written).toHaveProperty('exportedAt');
+    expect(written.appVersion).toBe('1.2.3');
+    expect(written.plans).toEqual([]);
+    expect(written.sessions).toEqual([]);
+    expect(written.gyms).toEqual([]);
+    expect(written.settings).toEqual({});
+  });
+
+  it('exports plans with exercises and sets, stripping IDs', async () => {
+    mockedGetAllWorkoutPlans.mockResolvedValue([{
+      id: 'plan-1',
+      name: 'Push Day',
+      description: 'A push workout',
+      tags: ['push', 'chest'],
+      defaultWeightUnit: 'lbs',
+      sourceMarkdown: '# Push Day',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      isFavorite: true,
+      exercises: [{
+        id: 'ex-1',
+        workoutPlanId: 'plan-1',
+        exerciseName: 'Bench Press',
+        orderIndex: 0,
+        notes: 'Go heavy',
+        equipmentType: 'barbell',
+        sets: [{
+          id: 'set-1',
+          plannedExerciseId: 'ex-1',
+          orderIndex: 0,
+          targetWeight: 225,
+          targetWeightUnit: 'lbs',
+          targetReps: 5,
+          targetRpe: 8,
+          restSeconds: 180,
+          tempo: '3-0-1-0',
+          isDropset: false,
+          isPerSide: false,
+        }],
+      }],
+    }]);
+    mockedGetCompletedSessions.mockResolvedValue([]);
+
+    await exportUnifiedJson();
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    const plan = written.plans[0];
+
+    // IDs stripped
+    expect(plan).not.toHaveProperty('id');
+    expect(plan).not.toHaveProperty('createdAt');
+    expect(plan).not.toHaveProperty('updatedAt');
+
+    // Data preserved
+    expect(plan.name).toBe('Push Day');
+    expect(plan.description).toBe('A push workout');
+    expect(plan.tags).toEqual(['push', 'chest']);
+    expect(plan.defaultWeightUnit).toBe('lbs');
+    expect(plan.sourceMarkdown).toBe('# Push Day');
+    expect(plan.isFavorite).toBe(true);
+
+    // Exercise
+    const exercise = plan.exercises[0];
+    expect(exercise).not.toHaveProperty('id');
+    expect(exercise).not.toHaveProperty('workoutPlanId');
+    expect(exercise.exerciseName).toBe('Bench Press');
+    expect(exercise.notes).toBe('Go heavy');
+    expect(exercise.equipmentType).toBe('barbell');
+
+    // Set
+    const set = exercise.sets[0];
+    expect(set).not.toHaveProperty('id');
+    expect(set).not.toHaveProperty('plannedExerciseId');
+    expect(set.targetWeight).toBe(225);
+    expect(set.targetWeightUnit).toBe('lbs');
+    expect(set.targetReps).toBe(5);
+    expect(set.tempo).toBe('3-0-1-0');
+    expect(set.isDropset).toBe(false);
+    expect(set.isPerSide).toBe(false);
+  });
+
+  it('exports gyms from database', async () => {
+    mockedGetAllWorkoutPlans.mockResolvedValue([]);
+    mockedGetCompletedSessions.mockResolvedValue([]);
+    mockGetAllAsync.mockResolvedValue([
+      { id: 'gym-1', name: 'Home Gym', is_default: 1, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'gym-2', name: 'LA Fitness', is_default: 0, created_at: '2026-01-02', updated_at: '2026-01-02' },
+    ]);
+
+    await exportUnifiedJson();
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    expect(written.gyms).toHaveLength(2);
+    expect(written.gyms[0].name).toBe('Home Gym');
+    expect(written.gyms[0].isDefault).toBe(true);
+    expect(written.gyms[0]).not.toHaveProperty('id');
+    expect(written.gyms[1].name).toBe('LA Fitness');
+    expect(written.gyms[1].isDefault).toBe(false);
+  });
+
+  it('exports settings without API key', async () => {
+    mockedGetAllWorkoutPlans.mockResolvedValue([]);
+    mockedGetCompletedSessions.mockResolvedValue([]);
+    mockGetFirstAsync.mockResolvedValue({
+      default_weight_unit: 'kg',
+      enable_workout_timer: 1,
+      auto_start_rest_timer: 0,
+      theme: 'dark',
+      keep_screen_awake: 1,
+      custom_prompt_addition: 'Focus on compounds',
+      anthropic_api_key: 'sk-ant-secret-key',
+    });
+
+    await exportUnifiedJson();
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    expect(written.settings.defaultWeightUnit).toBe('kg');
+    expect(written.settings.enableWorkoutTimer).toBe(true);
+    expect(written.settings.autoStartRestTimer).toBe(false);
+    expect(written.settings.theme).toBe('dark');
+    expect(written.settings.keepScreenAwake).toBe(true);
+    expect(written.settings.customPromptAddition).toBe('Focus on compounds');
+    // API key must NOT be exported
+    expect(written.settings).not.toHaveProperty('anthropicApiKey');
+    expect(written.settings).not.toHaveProperty('anthropic_api_key');
+  });
+
+  it('filters out exercises with no sets and no group type', async () => {
+    mockedGetAllWorkoutPlans.mockResolvedValue([{
+      id: 'plan-1',
+      name: 'Test',
+      tags: [],
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      exercises: [
+        {
+          id: 'ex-1',
+          workoutPlanId: 'plan-1',
+          exerciseName: 'Empty Exercise',
+          orderIndex: 0,
+          sets: [],
+        },
+        {
+          id: 'ex-2',
+          workoutPlanId: 'plan-1',
+          exerciseName: 'Superset Header',
+          orderIndex: 1,
+          groupType: 'superset' as const,
+          sets: [],
+        },
+      ],
+    }]);
+    mockedGetCompletedSessions.mockResolvedValue([]);
+
+    await exportUnifiedJson();
+
+    const written = JSON.parse(mockWrite.mock.calls[0][0]);
+    // Empty exercise with no group type should be filtered out
+    expect(written.plans[0].exercises).toHaveLength(1);
+    expect(written.plans[0].exercises[0].exerciseName).toBe('Superset Header');
   });
 });

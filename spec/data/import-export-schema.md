@@ -164,6 +164,109 @@ The export format **strips all internal IDs** (no `id`, `workoutSessionId`, `ses
 
 ---
 
+## Unified Export Format
+
+> **Machine-readable schema**: [`schemas/liftmark-export-unified.schema.json`](schemas/liftmark-export-unified.schema.json) (JSON Schema draft 2020-12). Sample at [`../../test-fixtures/unified-export-sample.json`](../../test-fixtures/unified-export-sample.json).
+
+Exported by `exportUnifiedJson()` in both React Native and Swift apps. Contains all app data: plans, completed sessions, gyms, and settings (excluding API keys). Designed for cross-platform transfer between the React Native and Swift app versions.
+
+**File naming**: `liftmark_export_{YYYY-MM-DD_HH-MM-SS}.json`
+
+### Envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `formatVersion` | `string` | Schema version, currently `"1.0"` |
+| `exportedAt` | `string` | ISO 8601 timestamp of export |
+| `appVersion` | `string` | App version at export time |
+| `plans` | `Plan[]` | Workout plans with exercises and sets |
+| `sessions` | `Session[]` | Completed workout sessions |
+| `gyms` | `Gym[]` | Gym locations |
+| `settings` | `object` | User preferences (no sensitive data) |
+
+### Plan Object
+
+All internal IDs (`id`, `createdAt`, `updatedAt`) are stripped.
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No | Plan name |
+| `description` | `string` | Yes | |
+| `tags` | `string[]` | Yes | |
+| `defaultWeightUnit` | `string` | Yes | `"lbs"` or `"kg"` |
+| `sourceMarkdown` | `string` | Yes | Original LMWF markdown |
+| `isFavorite` | `boolean` | No | |
+| `exercises` | `PlannedExercise[]` | No | |
+
+### Planned Exercise Object
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `exerciseName` | `string` | No | |
+| `orderIndex` | `number` | No | |
+| `notes` | `string` | Yes | |
+| `equipmentType` | `string` | Yes | |
+| `groupType` | `string` | Yes | `"superset"` or `"section"` |
+| `groupName` | `string` | Yes | |
+| `sets` | `PlannedSet[]` | No | |
+
+### Planned Set Object
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `orderIndex` | `number` | No | |
+| `targetWeight` | `number` | Yes | |
+| `targetWeightUnit` | `string` | Yes | `"lbs"` or `"kg"` |
+| `targetReps` | `number` | Yes | |
+| `targetTime` | `number` | Yes | Seconds |
+| `targetRpe` | `number` | Yes | |
+| `restSeconds` | `number` | Yes | |
+| `tempo` | `string` | Yes | |
+| `notes` | `string` | Yes | |
+| `isDropset` | `boolean` | No | |
+| `isPerSide` | `boolean` | No | |
+
+### Gym Object
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No | |
+| `isDefault` | `boolean` | No | |
+| `createdAt` | `string` | Yes | ISO 8601 |
+
+### Settings Object
+
+Safe subset of user preferences. API keys and sensitive data are excluded.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `defaultWeightUnit` | `string` | `"lbs"` or `"kg"` |
+| `enableWorkoutTimer` | `boolean` | |
+| `autoStartRestTimer` | `boolean` | |
+| `theme` | `string` | `"light"`, `"dark"`, or `"auto"` |
+| `keepScreenAwake` | `boolean` | |
+| `customPromptAddition` | `string` | Optional |
+
+### Import Merge Semantics
+
+Both React Native and Swift apps use the same merge rules:
+
+- **Plans**: Deduplicated by `name`. If a plan with the same name exists, the import is skipped.
+- **Sessions**: Deduplicated by `name` + `date`. If a session with the same name and date exists, it is skipped.
+- **Gyms**: Deduplicated by `name`. Imported gyms are never set as default.
+- **Settings**: Not imported (only exported for reference/manual migration).
+
+Import is wrapped in a database transaction — if any insert fails, all changes are rolled back.
+
+### Cross-Platform Compatibility
+
+The unified format is designed for data transfer between the React Native and Swift app versions. Both platforms export and import the same schema. Note:
+
+- The React Native `template_sets` table lacks `is_amrap` and `notes` columns — these fields are exported by Swift but not inserted by the React Native importer.
+- Both platforms handle the `session` (single) and `sessions` (array) formats on import.
+
+---
+
 ## LMWF Markdown Import Format
 
 Imported via `fileImportService.ts`. Reads `.txt`, `.md`, or `.markdown` files and passes content to the LMWF parser (`MarkdownParser.ts`).

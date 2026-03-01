@@ -32,6 +32,12 @@ import {
   importDatabase,
   validateDatabaseFile,
 } from '@/services/databaseBackupService';
+import { exportUnifiedJson } from '@/services/workoutExportService';
+import {
+  importUnifiedJson,
+  previewUnifiedJson,
+  importResultSummary,
+} from '@/services/jsonImportService';
 import { LoadingView } from '@/components/LoadingView';
 
 export default function SettingsScreen() {
@@ -58,6 +64,8 @@ export default function SettingsScreen() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExportingJson, setIsExportingJson] = useState(false);
+  const [isImportingJson, setIsImportingJson] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -203,6 +211,88 @@ export default function SettingsScreen() {
 
   const handleSetDefaultGym = async (gymId: string) => {
     await setDefaultGym(gymId);
+  };
+
+  // Unified JSON export/import handlers
+  const handleExportJson = async () => {
+    setIsExportingJson(true);
+    try {
+      const fileUri = await exportUnifiedJson();
+      await shareAsync(fileUri);
+    } catch (error) {
+      Alert.alert(
+        'Export Failed',
+        error instanceof Error ? error.message : 'Failed to export data'
+      );
+    } finally {
+      setIsExportingJson(false);
+    }
+  };
+
+  const handleImportJson = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+
+      // Read and preview the file
+      const { File: FsFile } = await import('expo-file-system');
+      const file = new FsFile(asset.uri);
+      const jsonString = await file.text();
+
+      let preview;
+      try {
+        preview = previewUnifiedJson(jsonString);
+      } catch (error) {
+        Alert.alert(
+          'Invalid File',
+          error instanceof Error ? error.message : 'Selected file is not a valid LiftMark export'
+        );
+        return;
+      }
+
+      const previewLines: string[] = [];
+      if (preview.planCount > 0) previewLines.push(`${preview.planCount} plan(s)`);
+      if (preview.sessionCount > 0) previewLines.push(`${preview.sessionCount} session(s)`);
+      if (preview.gymCount > 0) previewLines.push(`${preview.gymCount} gym(s)`);
+      if (preview.hasSettings) previewLines.push('Settings');
+
+      Alert.alert(
+        'Import Data?',
+        `This file contains:\n${previewLines.join('\n')}\n\nDuplicates will be skipped. Continue?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Import',
+            onPress: async () => {
+              setIsImportingJson(true);
+              try {
+                const importResult = await importUnifiedJson(jsonString);
+                await reloadAllStores();
+                Alert.alert('Import Complete', importResultSummary(importResult));
+              } catch (error) {
+                Alert.alert(
+                  'Import Failed',
+                  error instanceof Error ? error.message : 'Failed to import data'
+                );
+              } finally {
+                setIsImportingJson(false);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'An error occurred'
+      );
+    }
   };
 
   // Database backup/restore handlers
@@ -1055,12 +1145,47 @@ export default function SettingsScreen() {
 
         <View style={[styles.section, styles.sectionFirst]}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="save-outline" size={20} color="#16A085" />
-            <Text style={styles.sectionTitle}>Backup & Restore</Text>
+            <Ionicons name="swap-horizontal-outline" size={20} color="#16A085" />
+            <Text style={styles.sectionTitle}>Export & Import</Text>
           </View>
 
           <Text style={styles.settingDescription}>
-            Export your workout data to backup or transfer to another device
+            Export or import plans, workout history, and settings as portable JSON
+          </Text>
+
+          <TouchableOpacity
+            style={styles.exportButton}
+            onPress={handleExportJson}
+            disabled={isExportingJson}
+            testID="export-data-button"
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color="#16A085" />
+            <Text style={styles.exportButtonText}>
+              {isExportingJson ? 'Exporting...' : 'Export Data'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.exportButton}
+            onPress={handleImportJson}
+            disabled={isImportingJson}
+            testID="import-data-button"
+          >
+            <Ionicons name="cloud-download-outline" size={20} color="#16A085" />
+            <Text style={styles.exportButtonText}>
+              {isImportingJson ? 'Importing...' : 'Import Data'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="save-outline" size={20} color="#95A5A6" />
+            <Text style={styles.sectionTitle}>Advanced</Text>
+          </View>
+
+          <Text style={styles.settingDescription}>
+            Export or import the raw database file
           </Text>
 
           <TouchableOpacity
@@ -1068,7 +1193,7 @@ export default function SettingsScreen() {
             onPress={handleExportDatabase}
             disabled={isExporting}
           >
-            <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+            <Ionicons name="cloud-upload-outline" size={20} color="#16A085" />
             <Text style={styles.exportButtonText}>
               {isExporting ? 'Exporting...' : 'Export Database'}
             </Text>
