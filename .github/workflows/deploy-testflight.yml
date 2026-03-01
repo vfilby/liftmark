@@ -15,6 +15,9 @@ on:
 jobs:
   build-and-submit:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-ios
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,12 +27,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: react-ios/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run tests
-        run: npm run ci
+        run: npm run test -- --ci
 
       - name: Setup EAS
         uses: expo/expo-github-action@v8
