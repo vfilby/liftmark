@@ -5,6 +5,9 @@ struct SyncSettingsView: View {
     @State private var accountStatus: CloudKitAccountStatus = .couldNotDetermine
     @State private var isCheckingStatus = false
     @State private var isSyncing = false
+    @State private var lastSyncDate: Date?
+    @State private var syncResultMessage: String?
+    @State private var syncErrorMessage: String?
 
     var body: some View {
         List {
@@ -67,16 +70,23 @@ struct SyncSettingsView: View {
                     HStack {
                         Text("Last Synced")
                         Spacer()
-                        Text("Never")
+                        Text(lastSyncLabel)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
                     }
                     .accessibilityIdentifier("sync-last-synced")
 
                     Button {
                         isSyncing = true
+                        syncResultMessage = nil
+                        syncErrorMessage = nil
                         Task {
-                            // Sync operation placeholder
-                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            let result = await CloudKitService.shared.syncAll()
+                            if result.success {
+                                lastSyncDate = result.timestamp
+                                syncResultMessage = "Synced: \(result.uploaded) up, \(result.downloaded) down, \(result.conflicts) conflicts"
+                            } else {
+                                syncErrorMessage = result.errors.joined(separator: "\n")
+                            }
                             isSyncing = false
                         }
                     } label: {
@@ -90,6 +100,18 @@ struct SyncSettingsView: View {
                     }
                     .disabled(isSyncing)
                     .accessibilityIdentifier("sync-now-button")
+
+                    if let syncResultMessage {
+                        Text(syncResultMessage)
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.success)
+                    }
+
+                    if let syncErrorMessage {
+                        Text(syncErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.destructive)
+                    }
                 }
             }
 
@@ -115,6 +137,7 @@ struct SyncSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .onAppear {
+            lastSyncDate = CloudKitService.shared.getLastSyncDate()
             Task {
                 isCheckingStatus = true
                 accountStatus = await CloudKitService.shared.getAccountStatus()
@@ -143,6 +166,13 @@ struct SyncSettingsView: View {
         case .couldNotDetermine: return "Unknown"
         case .error: return "Error"
         }
+    }
+
+    private var lastSyncLabel: String {
+        guard let lastSyncDate else { return "Never" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: lastSyncDate, relativeTo: Date())
     }
 
     private var statusDescription: String {
