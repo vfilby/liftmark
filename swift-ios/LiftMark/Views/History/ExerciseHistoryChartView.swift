@@ -135,7 +135,7 @@ struct ExerciseHistoryChartView: View {
     private func loadHistory() {
         let repo = ExerciseHistoryRepository()
         do {
-            historyPoints = try repo.getHistory(forExercise: exerciseName)
+            historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
             // Auto-select appropriate metric
             if isTimedExercise {
                 selectedMetric = .time

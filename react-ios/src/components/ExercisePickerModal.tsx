@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '@/theme';
-import { getAllExercisesWithHistory } from '@/db/exerciseHistoryRepository';
+import { getAllExercisesWithHistoryNormalized } from '@/db/exerciseHistoryRepository';
 
 const COMMON_EXERCISES = [
   'Squat',
@@ -52,7 +52,7 @@ export default function ExercisePickerModal({
   useEffect(() => {
     if (visible) {
       setSearch('');
-      getAllExercisesWithHistory().then(setUserExercises);
+      getAllExercisesWithHistoryNormalized().then(setUserExercises);
     }
   }, [visible]);
 

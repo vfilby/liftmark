@@ -35,7 +35,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         liveActivitiesEnabled: Bool = true,
         keepScreenAwake: Bool = true,
         showOpenInClaudeButton: Bool = false,
-        homeTiles: [String]? = ["Squat", "Deadlift", "Bench Press", "Overhead Press"],
+        homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
     ) {

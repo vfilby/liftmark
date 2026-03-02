@@ -71,7 +71,7 @@ final class WorkoutHighlightsServiceTests: XCTestCase {
         let result = service.getSessionMaxWeights(session)
         XCTAssertEqual(result.count, 2)
         XCTAssertEqual(result["Bench Press"]?.weight, 225)
-        XCTAssertEqual(result["Squat"]?.weight, 315)
+        XCTAssertEqual(result["Back Squat"]?.weight, 315)
     }
 
     func testGetSessionMaxWeightsExcludesExercisesWithNoSets() {

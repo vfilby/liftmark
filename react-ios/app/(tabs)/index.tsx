@@ -7,7 +7,8 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme';
 import { useResponsivePadding, useResponsiveFontSizes, useDeviceLayout } from '@/utils/responsive';
-import { getExerciseBestWeights } from '@/db/sessionRepository';
+import { getExerciseBestWeightsNormalized } from '@/db/sessionRepository';
+import { getCanonicalName } from '@/data/exerciseDictionary';
 import ExercisePickerModal from '@/components/ExercisePickerModal';
 
 const DEFAULT_TILES = ['Squat', 'Deadlift', 'Bench Press', 'Overhead Press'];
@@ -40,7 +41,7 @@ export default function HomeScreen() {
       };
       checkSession();
 
-      getExerciseBestWeights().then(setBestWeights);
+      getExerciseBestWeightsNormalized().then(setBestWeights);
     }, [])
   );
 
@@ -58,12 +59,10 @@ export default function HomeScreen() {
   };
 
   const formatTileWeight = (exerciseName: string) => {
-    // Case-insensitive exact match
-    const lower = exerciseName.toLowerCase();
-    for (const [name, data] of bestWeights) {
-      if (name.toLowerCase() === lower) {
-        return `${data.weight} ${data.unit}`;
-      }
+    const canonical = getCanonicalName(exerciseName);
+    const data = bestWeights.get(canonical);
+    if (data) {
+      return `${data.weight} ${data.unit}`;
     }
     return '\u2014';
   };

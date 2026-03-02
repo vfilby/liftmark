@@ -288,7 +288,7 @@ describe('formatExerciseCompact', () => {
           createSessionSet({ id: 'set-2', actualWeight: 25, actualReps: 8, status: 'completed' }),
         ],
       });
-      expect(formatExerciseCompact(exercise)).toBe('Pullups bwx10,25x8');
+      expect(formatExerciseCompact(exercise)).toBe('Pullups bwx10,25x8'); // "Pull-ups" → canonical "Pull-Up" → abbreviation "Pullups"
     });
 
     it('handles time-based and rep-based sets together', () => {
@@ -321,40 +321,50 @@ describe('formatExerciseCompact', () => {
 describe('abbreviateExerciseName', () => {
   describe('known abbreviations', () => {
     const knownAbbreviations: [string, string][] = [
+      // Canonical names
       ['bench press', 'Bench'],
-      ['barbell bench press', 'Bench'],
       ['incline bench press', 'Inc Bench'],
       ['incline dumbbell press', 'Inc DB'],
       ['dumbbell bench press', 'DB Bench'],
       ['overhead press', 'OHP'],
-      ['military press', 'OHP'],
-      ['barbell squat', 'Squat'],
-      ['back squat', 'Squat'],
+      ['squat', 'Squat'],
       ['front squat', 'Fr Squat'],
       ['deadlift', 'DL'],
       ['romanian deadlift', 'RDL'],
       ['barbell row', 'Row'],
-      ['bent over row', 'Row'],
       ['dumbbell row', 'DB Row'],
       ['lat pulldown', 'Pulldown'],
+      ['pull-up', 'Pullups'],
+      ['chin-up', 'Chinups'],
+      ['bicep curl', 'Curls'],
+      ['dumbbell curl', 'DB Curls'],
+      ['tricep pushdown', 'Pushdowns'],
+      ['tricep extension', 'Tri Ext'],
+      ['leg press', 'Leg Press'],
+      ['leg curl', 'Leg Curl'],
+      ['leg extension', 'Leg Ext'],
+      ['calf raise', 'Calves'],
+      ['lateral raise', 'Lat Raise'],
+      ['face pull', 'Face Pull'],
+      ['cable fly', 'Flyes'],
+      ['dumbbell fly', 'DB Flyes'],
+      ['push-up', 'Pushups'],
+      // Aliases resolve to canonical → same abbreviation
+      ['barbell bench press', 'Bench'],
+      ['military press', 'OHP'],
+      ['barbell squat', 'Squat'],
+      ['back squat', 'Squat'],
+      ['bent over row', 'Row'],
       ['pull-ups', 'Pullups'],
       ['pull ups', 'Pullups'],
       ['chin-ups', 'Chinups'],
       ['chin ups', 'Chinups'],
-      ['bicep curls', 'Curls'],
-      ['dumbbell bicep curls', 'DB Curls'],
-      ['tricep pushdowns', 'Pushdowns'],
-      ['tricep extensions', 'Tri Ext'],
-      ['leg press', 'Leg Press'],
-      ['leg curl', 'Leg Curl'],
-      ['leg extension', 'Leg Ext'],
-      ['calf raises', 'Calves'],
-      ['lateral raises', 'Lat Raise'],
-      ['face pulls', 'Face Pull'],
-      ['cable flyes', 'Flyes'],
-      ['dumbbell flyes', 'DB Flyes'],
       ['push-ups', 'Pushups'],
       ['push ups', 'Pushups'],
+      ['rdl', 'RDL'],
+      ['bicep curls', 'Curls'],
+      ['tricep pushdowns', 'Pushdowns'],
+      ['skull crushers', 'Tri Ext'],
     ];
 
     it.each(knownAbbreviations)('abbreviates "%s" to "%s"', (input, expected) => {
@@ -398,7 +408,8 @@ describe('abbreviateExerciseName', () => {
     });
 
     it('handles similar but not matching names', () => {
-      expect(abbreviateExerciseName('incline bench')).toBe('incline bench');
+      // "incline bench" is a known alias for "Incline Bench Press" → abbreviates to "Inc Bench"
+      expect(abbreviateExerciseName('incline bench')).toBe('Inc Bench');
     });
   });
 });

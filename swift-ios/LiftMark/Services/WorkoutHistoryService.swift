@@ -8,7 +8,7 @@ struct WorkoutHistoryService {
     /// Generate a compact formatted summary of recent workouts plus PRs.
     func generateWorkoutHistoryContext(recentCount: Int = 5) throws -> String {
         let recentSessions = try repository.getRecentSessions(recentCount)
-        let bestWeights = try repository.getExerciseBestWeights()
+        let bestWeights = try repository.getExerciseBestWeightsNormalized()
 
         var parts: [String] = []
 
@@ -23,7 +23,7 @@ struct WorkoutHistoryService {
         var recentExerciseNames = Set<String>()
         for session in recentSessions {
             for exercise in session.exercises where !exercise.sets.isEmpty {
-                recentExerciseNames.insert(exercise.exerciseName.lowercased())
+                recentExerciseNames.insert(ExerciseDictionary.getCanonicalName(exercise.exerciseName).lowercased())
             }
         }
 
@@ -87,45 +87,40 @@ struct WorkoutHistoryService {
     }
 
     /// Abbreviate common exercise names to save tokens.
+    /// Normalizes via canonical name first, then applies abbreviations.
     func abbreviateExerciseName(_ name: String) -> String {
+        let canonical = ExerciseDictionary.getCanonicalName(name)
         let abbreviations: [String: String] = [
-            "barbell bench press": "Bench",
-            "bench press": "Bench",
-            "incline bench press": "Inc Bench",
-            "incline dumbbell press": "Inc DB",
-            "dumbbell bench press": "DB Bench",
-            "overhead press": "OHP",
-            "military press": "OHP",
-            "barbell squat": "Squat",
-            "back squat": "Squat",
-            "front squat": "Fr Squat",
-            "deadlift": "DL",
-            "romanian deadlift": "RDL",
-            "barbell row": "Row",
-            "bent over row": "Row",
-            "dumbbell row": "DB Row",
-            "lat pulldown": "Pulldown",
-            "pull-ups": "Pullups",
-            "pull ups": "Pullups",
-            "chin-ups": "Chinups",
-            "chin ups": "Chinups",
-            "bicep curls": "Curls",
-            "dumbbell bicep curls": "DB Curls",
-            "tricep pushdowns": "Pushdowns",
-            "tricep extensions": "Tri Ext",
-            "leg press": "Leg Press",
-            "leg curl": "Leg Curl",
-            "leg extension": "Leg Ext",
-            "calf raises": "Calves",
-            "lateral raises": "Lat Raise",
-            "face pulls": "Face Pull",
-            "cable flyes": "Flyes",
-            "dumbbell flyes": "DB Flyes",
-            "push-ups": "Pushups",
-            "push ups": "Pushups",
+            "Bench Press": "Bench",
+            "Incline Bench Press": "Inc Bench",
+            "Incline Dumbbell Press": "Inc DB",
+            "Dumbbell Bench Press": "DB Bench",
+            "Overhead Press": "OHP",
+            "Back Squat": "Squat",
+            "Front Squat": "Fr Squat",
+            "Deadlift": "DL",
+            "Romanian Deadlift": "RDL",
+            "Barbell Row": "Row",
+            "Dumbbell Row": "DB Row",
+            "Lat Pulldown": "Pulldown",
+            "Pull-Up": "Pullups",
+            "Chin-Up": "Chinups",
+            "Bicep Curl": "Curls",
+            "Dumbbell Curl": "DB Curls",
+            "Tricep Pushdown": "Pushdowns",
+            "Tricep Extension": "Tri Ext",
+            "Leg Press": "Leg Press",
+            "Leg Curl": "Leg Curl",
+            "Leg Extension": "Leg Ext",
+            "Calf Raise": "Calves",
+            "Lateral Raise": "Lat Raise",
+            "Face Pull": "Face Pull",
+            "Cable Fly": "Flyes",
+            "Dumbbell Fly": "DB Flyes",
+            "Push-Up": "Pushups",
         ]
 
-        return abbreviations[name.lowercased()] ?? name
+        return abbreviations[canonical] ?? canonical
     }
 
     /// Check if there's any workout history available.

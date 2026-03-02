@@ -108,9 +108,12 @@ final class WorkoutHistoryServiceTests: XCTestCase {
         XCTAssertEqual(service.abbreviateExerciseName("Front Squat"), "Fr Squat")
     }
 
-    func testAbbreviateUnknownExerciseReturnsOriginal() {
-        XCTAssertEqual(service.abbreviateExerciseName("Bulgarian Split Squats"), "Bulgarian Split Squats")
-        XCTAssertEqual(service.abbreviateExerciseName("Hip Thrusts"), "Hip Thrusts")
+    func testAbbreviateUnknownExerciseReturnsCanonicalOrOriginal() {
+        // Known aliases get normalized to canonical name
+        XCTAssertEqual(service.abbreviateExerciseName("Bulgarian Split Squats"), "Bulgarian Split Squat")
+        XCTAssertEqual(service.abbreviateExerciseName("Hip Thrusts"), "Hip Thrust")
+        // Truly unknown exercises return original
+        XCTAssertEqual(service.abbreviateExerciseName("Zercher Squat"), "Zercher Squat")
     }
 
     func testAbbreviateCaseInsensitive() {

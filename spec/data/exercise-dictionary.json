@@ -1,0 +1,320 @@
+[
+  {
+    "canonical": "Back Squat",
+    "aliases": ["squat", "back squat", "barbell squat", "barbell back squat", "bb squat"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Front Squat",
+    "aliases": ["barbell front squat", "bb front squat"],
+    "muscleGroups": ["quadriceps", "glutes", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Deadlift",
+    "aliases": ["conventional deadlift", "barbell deadlift", "bb deadlift"],
+    "muscleGroups": ["hamstrings", "glutes", "back", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Romanian Deadlift",
+    "aliases": ["rdl", "barbell rdl", "barbell romanian deadlift", "bb rdl"],
+    "muscleGroups": ["hamstrings", "glutes", "back"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Sumo Deadlift",
+    "aliases": ["barbell sumo deadlift", "sumo dl"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings", "back"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Bench Press",
+    "aliases": ["barbell bench press", "flat bench press", "flat bench", "barbell bench", "bb bench press", "bb bench"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Incline Bench Press",
+    "aliases": ["incline barbell bench press", "incline barbell bench", "incline bench", "bb incline bench"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Close Grip Bench Press",
+    "aliases": ["close grip bench", "cgbp", "close-grip bench press", "close-grip bench"],
+    "muscleGroups": ["triceps", "chest", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Overhead Press",
+    "aliases": ["ohp", "military press", "standing overhead press", "barbell overhead press", "standing press", "shoulder press", "barbell shoulder press", "bb overhead press", "press"],
+    "muscleGroups": ["shoulders", "triceps", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Push Press",
+    "aliases": ["barbell push press"],
+    "muscleGroups": ["shoulders", "triceps", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Barbell Row",
+    "aliases": ["bent over row", "bent-over row", "barbell bent over row", "bb row", "bent over barbell row", "pendlay row"],
+    "muscleGroups": ["back", "biceps", "core"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Pull-Up",
+    "aliases": ["pull up", "pull ups", "pull-ups", "pullup", "pullups", "wide grip pull-up", "wide grip pull up"],
+    "muscleGroups": ["back", "biceps", "core"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Chin-Up",
+    "aliases": ["chin up", "chin ups", "chin-ups", "chinup", "chinups"],
+    "muscleGroups": ["back", "biceps"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Dip",
+    "aliases": ["dips", "parallel bar dip", "parallel bar dips", "chest dip", "chest dips", "tricep dip", "tricep dips"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Leg Press",
+    "aliases": ["machine leg press", "45 degree leg press", "45° leg press", "seated leg press"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Hack Squat",
+    "aliases": ["machine hack squat"],
+    "muscleGroups": ["quadriceps", "glutes"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Leg Curl",
+    "aliases": ["leg curls", "lying leg curl", "lying leg curls", "seated leg curl", "seated leg curls", "hamstring curl", "hamstring curls"],
+    "muscleGroups": ["hamstrings"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Leg Extension",
+    "aliases": ["leg extensions", "machine leg extension", "machine leg extensions", "quad extension", "quad extensions"],
+    "muscleGroups": ["quadriceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Lat Pulldown",
+    "aliases": ["lat pull down", "lat pull-down", "cable lat pulldown", "wide grip lat pulldown", "wide grip pulldown"],
+    "muscleGroups": ["back", "biceps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Cable Row",
+    "aliases": ["seated cable row", "seated row", "low row", "cable seated row"],
+    "muscleGroups": ["back", "biceps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "T-Bar Row",
+    "aliases": ["t bar row", "tbar row", "t-bar rows"],
+    "muscleGroups": ["back", "biceps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Face Pull",
+    "aliases": ["face pulls", "cable face pull", "cable face pulls"],
+    "muscleGroups": ["rear delts", "upper back"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Lateral Raise",
+    "aliases": ["lateral raises", "side raise", "side raises", "side lateral raise", "side lateral raises", "dumbbell lateral raise", "dumbbell lateral raises", "db lateral raise"],
+    "muscleGroups": ["shoulders"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Front Raise",
+    "aliases": ["front raises", "dumbbell front raise", "dumbbell front raises", "db front raise"],
+    "muscleGroups": ["shoulders"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Rear Delt Fly",
+    "aliases": ["rear delt flye", "rear delt flies", "reverse fly", "reverse flye", "reverse flies", "rear delt raise", "rear delt raises"],
+    "muscleGroups": ["rear delts", "upper back"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Bicep Curl",
+    "aliases": ["bicep curls", "barbell curl", "barbell curls", "barbell bicep curl", "barbell bicep curls", "bb curl", "bb curls", "standing curl", "standing curls", "curl", "curls"],
+    "muscleGroups": ["biceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Hammer Curl",
+    "aliases": ["hammer curls", "dumbbell hammer curl", "dumbbell hammer curls", "db hammer curl"],
+    "muscleGroups": ["biceps", "forearms"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Preacher Curl",
+    "aliases": ["preacher curls", "ez bar preacher curl", "ez bar preacher curls"],
+    "muscleGroups": ["biceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Concentration Curl",
+    "aliases": ["concentration curls", "dumbbell concentration curl"],
+    "muscleGroups": ["biceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Tricep Pushdown",
+    "aliases": ["tricep pushdowns", "cable pushdown", "cable pushdowns", "rope pushdown", "rope pushdowns", "tricep press down", "triceps pushdown", "triceps pushdowns"],
+    "muscleGroups": ["triceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Tricep Extension",
+    "aliases": ["tricep extensions", "overhead tricep extension", "overhead tricep extensions", "cable tricep extension", "cable overhead extension", "skull crusher", "skull crushers", "skullcrusher", "skullcrushers", "lying tricep extension", "lying tricep extensions"],
+    "muscleGroups": ["triceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Cable Fly",
+    "aliases": ["cable flye", "cable flies", "cable flyes", "cable crossover", "cable crossovers"],
+    "muscleGroups": ["chest"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Dumbbell Fly",
+    "aliases": ["dumbbell flye", "dumbbell flies", "dumbbell flyes", "db fly", "db flye", "db flies", "db flyes", "chest fly", "chest flye", "chest flies"],
+    "muscleGroups": ["chest"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Dumbbell Bench Press",
+    "aliases": ["db bench press", "db bench", "dumbbell flat bench", "flat dumbbell press", "dumbbell press"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Incline Dumbbell Press",
+    "aliases": ["incline dumbbell bench press", "incline db press", "incline db bench", "db incline press", "db incline bench"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Dumbbell Row",
+    "aliases": ["db row", "db rows", "one arm dumbbell row", "one arm db row", "single arm dumbbell row", "single arm row"],
+    "muscleGroups": ["back", "biceps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Dumbbell Shoulder Press",
+    "aliases": ["db shoulder press", "seated dumbbell press", "seated db press", "dumbbell overhead press", "db overhead press", "db ohp"],
+    "muscleGroups": ["shoulders", "triceps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Dumbbell Curl",
+    "aliases": ["dumbbell curls", "db curl", "db curls", "dumbbell bicep curl", "dumbbell bicep curls", "db bicep curl"],
+    "muscleGroups": ["biceps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Calf Raise",
+    "aliases": ["calf raises", "standing calf raise", "standing calf raises", "seated calf raise", "seated calf raises", "machine calf raise"],
+    "muscleGroups": ["calves"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Hip Thrust",
+    "aliases": ["hip thrusts", "barbell hip thrust", "barbell hip thrusts", "bb hip thrust", "glute bridge", "barbell glute bridge"],
+    "muscleGroups": ["glutes", "hamstrings"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Bulgarian Split Squat",
+    "aliases": ["bulgarian split squats", "bss", "rear foot elevated split squat"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Lunge",
+    "aliases": ["lunges", "walking lunge", "walking lunges", "forward lunge", "forward lunges", "barbell lunge", "barbell lunges", "dumbbell lunge", "dumbbell lunges"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Good Morning",
+    "aliases": ["good mornings", "barbell good morning", "barbell good mornings"],
+    "muscleGroups": ["hamstrings", "glutes", "back"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Shrug",
+    "aliases": ["shrugs", "barbell shrug", "barbell shrugs", "dumbbell shrug", "dumbbell shrugs", "db shrug", "db shrugs", "trap shrug", "trap shrugs"],
+    "muscleGroups": ["traps"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Upright Row",
+    "aliases": ["upright rows", "barbell upright row", "barbell upright rows", "cable upright row"],
+    "muscleGroups": ["shoulders", "traps"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Chest Press",
+    "aliases": ["machine chest press", "machine press", "seated chest press"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "compound"
+  },
+  {
+    "canonical": "Pec Deck",
+    "aliases": ["pec deck fly", "pec deck flye", "machine fly", "machine flye", "machine chest fly"],
+    "muscleGroups": ["chest"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Push-Up",
+    "aliases": ["push up", "push ups", "push-ups", "pushup", "pushups"],
+    "muscleGroups": ["chest", "triceps", "shoulders"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Plank",
+    "aliases": ["planks", "front plank"],
+    "muscleGroups": ["core"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Ab Wheel Rollout",
+    "aliases": ["ab wheel", "ab wheel rollouts", "ab rollout", "ab rollouts"],
+    "muscleGroups": ["core"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Hanging Leg Raise",
+    "aliases": ["hanging leg raises", "hanging knee raise", "hanging knee raises", "leg raise", "leg raises"],
+    "muscleGroups": ["core"],
+    "category": "bodyweight"
+  },
+  {
+    "canonical": "Cable Crunch",
+    "aliases": ["cable crunches", "kneeling cable crunch", "kneeling cable crunches"],
+    "muscleGroups": ["core"],
+    "category": "isolation"
+  },
+  {
+    "canonical": "Wrist Curl",
+    "aliases": ["wrist curls", "barbell wrist curl", "barbell wrist curls", "dumbbell wrist curl"],
+    "muscleGroups": ["forearms"],
+    "category": "isolation"
+  }
+]

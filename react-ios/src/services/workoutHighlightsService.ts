@@ -1,4 +1,5 @@
-import { getExerciseBestWeights, getRecentSessions } from '@/db/sessionRepository';
+import { getExerciseBestWeightsNormalized, getRecentSessions } from '@/db/sessionRepository';
+import { getCanonicalName, isSameExercise } from '@/data/exerciseDictionary';
 import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
 
 /**
@@ -65,19 +66,20 @@ export async function calculateWorkoutHighlights(
  * Detect new personal records in the current session
  */
 async function detectPersonalRecords(session: WorkoutSession): Promise<ExercisePR[]> {
-  const bestWeights = await getExerciseBestWeights();
+  const bestWeights = await getExerciseBestWeightsNormalized();
   const prs: ExercisePR[] = [];
 
-  // Get max weight per exercise in current session
+  // Get max weight per exercise in current session, keyed by canonical name
   const sessionMaxes = getSessionMaxWeights(session);
 
   for (const [exerciseName, sessionMax] of sessionMaxes) {
-    const historicalBest = bestWeights.get(exerciseName);
+    const canonical = getCanonicalName(exerciseName);
+    const historicalBest = bestWeights.get(canonical);
 
     // If no historical data, this is a first-time PR
     if (!historicalBest) {
       prs.push({
-        exerciseName,
+        exerciseName: canonical,
         newWeight: sessionMax.weight,
         newReps: sessionMax.reps,
         unit: sessionMax.unit,
@@ -86,7 +88,7 @@ async function detectPersonalRecords(session: WorkoutSession): Promise<ExerciseP
     // Check if we beat the previous PR
     else if (sessionMax.weight > historicalBest.weight) {
       prs.push({
-        exerciseName,
+        exerciseName: canonical,
         newWeight: sessionMax.weight,
         newReps: sessionMax.reps,
         oldWeight: historicalBest.weight,
@@ -122,7 +124,7 @@ async function detectWeightIncreases(session: WorkoutSession): Promise<ExerciseP
 
     if (lastSession) {
       const lastEx = lastSession.exercises.find(
-        (ex) => ex.exerciseName === currentEx.exerciseName
+        (ex) => isSameExercise(ex.exerciseName, currentEx.exerciseName)
       );
       if (lastEx) {
         const lastMax = getExerciseMaxWeight(lastEx);
@@ -301,7 +303,7 @@ function findLastSessionWithExercise(
     if (session.id === excludeSessionId) continue;
 
     const hasExercise = session.exercises.some(
-      (ex) => ex.exerciseName === exerciseName && ex.sets.length > 0
+      (ex) => isSameExercise(ex.exerciseName, exerciseName) && ex.sets.length > 0
     );
 
     if (hasExercise) {

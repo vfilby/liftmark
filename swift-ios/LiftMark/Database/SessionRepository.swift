@@ -216,6 +216,24 @@ struct SessionRepository {
         }
     }
 
+    /// Get best weights normalized by canonical exercise name.
+    /// Merges aliases so "Bench Press" and "Barbell Bench Press" share one entry.
+    func getExerciseBestWeightsNormalized() throws -> [String: (weight: Double, reps: Int, unit: String)] {
+        let raw = try getExerciseBestWeights()
+        var merged: [String: (weight: Double, reps: Int, unit: String)] = [:]
+        for (name, data) in raw {
+            let canonical = ExerciseDictionary.getCanonicalName(name)
+            if let existing = merged[canonical] {
+                if data.weight > existing.weight {
+                    merged[canonical] = data
+                }
+            } else {
+                merged[canonical] = data
+            }
+        }
+        return merged
+    }
+
     // MARK: - Set Mutations
 
     func updateSessionSet(_ setId: String, actualWeight: Double?, actualWeightUnit: WeightUnit?, actualReps: Int?, actualTime: Int?, actualRpe: Int?, status: SetStatus) throws {

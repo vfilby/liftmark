@@ -7,12 +7,14 @@ import type { SessionSet, SessionExercise, WorkoutSession } from '@/types';
 jest.mock('@/db/sessionRepository', () => ({
   getRecentSessions: jest.fn(),
   getExerciseBestWeights: jest.fn(),
+  getExerciseBestWeightsNormalized: jest.fn(),
 }));
 
-import { getRecentSessions, getExerciseBestWeights } from '@/db/sessionRepository';
+import { getRecentSessions, getExerciseBestWeights, getExerciseBestWeightsNormalized } from '@/db/sessionRepository';
 
 const mockedGetRecentSessions = getRecentSessions as jest.MockedFunction<typeof getRecentSessions>;
 const mockedGetExerciseBestWeights = getExerciseBestWeights as jest.MockedFunction<typeof getExerciseBestWeights>;
+const mockedGetExerciseBestWeightsNormalized = getExerciseBestWeightsNormalized as jest.MockedFunction<typeof getExerciseBestWeightsNormalized>;
 
 // ============================================================================
 // Helper Factory Functions
@@ -83,6 +85,7 @@ describe('calculateWorkoutHighlights', () => {
     ]);
 
     mockedGetExerciseBestWeights.mockResolvedValue(bestWeights);
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(bestWeights);
     mockedGetRecentSessions.mockResolvedValue([]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -113,6 +116,7 @@ describe('calculateWorkoutHighlights', () => {
     });
 
     mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
     mockedGetRecentSessions.mockResolvedValue([]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -163,6 +167,7 @@ describe('calculateWorkoutHighlights', () => {
     });
 
     mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
     mockedGetRecentSessions.mockResolvedValue([previousSession]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -221,6 +226,7 @@ describe('calculateWorkoutHighlights', () => {
     });
 
     mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
     mockedGetRecentSessions.mockResolvedValue([previousSession]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -247,6 +253,7 @@ describe('calculateWorkoutHighlights', () => {
       ];
 
       mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
       mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
       const highlights = await calculateWorkoutHighlights(currentSession);
@@ -273,6 +280,7 @@ describe('calculateWorkoutHighlights', () => {
       ];
 
       mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
       mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
       const highlights = await calculateWorkoutHighlights(currentSession);
@@ -294,6 +302,7 @@ describe('calculateWorkoutHighlights', () => {
       ];
 
       mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
       mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
       const highlights = await calculateWorkoutHighlights(currentSession);
@@ -318,6 +327,7 @@ describe('calculateWorkoutHighlights', () => {
       ];
 
       mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
       mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
       const highlights = await calculateWorkoutHighlights(currentSession);
@@ -343,6 +353,7 @@ describe('calculateWorkoutHighlights', () => {
       ];
 
       mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
       mockedGetRecentSessions.mockResolvedValue(recentSessions);
 
       const highlights = await calculateWorkoutHighlights(currentSession);
@@ -379,6 +390,7 @@ describe('calculateWorkoutHighlights', () => {
     ]);
 
     mockedGetExerciseBestWeights.mockResolvedValue(bestWeights);
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(bestWeights);
     mockedGetRecentSessions.mockResolvedValue([]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -403,6 +415,7 @@ describe('calculateWorkoutHighlights', () => {
     });
 
     mockedGetExerciseBestWeights.mockResolvedValue(new Map());
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(new Map());
     mockedGetRecentSessions.mockResolvedValue([]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);
@@ -444,6 +457,7 @@ describe('calculateWorkoutHighlights', () => {
     ]);
 
     mockedGetExerciseBestWeights.mockResolvedValue(bestWeights);
+    mockedGetExerciseBestWeightsNormalized.mockResolvedValue(bestWeights);
     mockedGetRecentSessions.mockResolvedValue([]);
 
     const highlights = await calculateWorkoutHighlights(currentSession);

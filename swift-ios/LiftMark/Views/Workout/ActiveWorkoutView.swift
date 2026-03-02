@@ -1528,7 +1528,7 @@ private struct ExerciseHistoryLastSessionView: View {
     private func loadHistory() {
         let repo = ExerciseHistoryRepository()
         do {
-            historyPoints = try repo.getHistory(forExercise: exerciseName)
+            historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
             print("Failed to load exercise history: \(error)")
         }

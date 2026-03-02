@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01A1B2C3D4E5F6A7B8C9D0E1 /* ExerciseDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* ExerciseDictionary.swift */; };
+		02B3C4D5E6F7A8B9C0D1E2F3 /* exercise-dictionary.json in Resources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7A8B9C0D1E2F3A4 /* exercise-dictionary.json */; };
+		03C4D5E6F7A8B9C0D1E2F3A4 /* ExerciseDictionaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D5E6F7A8B9C0D1E2F3A4B5 /* ExerciseDictionaryTests.swift */; };
 		04462895D8B47403B759F38F /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9441D6B1D8EE6194A1A0631 /* AppNavigation.swift */; };
 		0D172A0CBAA6155A8587C384 /* WorkoutHighlightsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A8B391651053E5147378D2 /* WorkoutHighlightsIntegrationTests.swift */; };
 		1330EAEB43A76F37FAD353AA /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81BB00D28805B71DB987185E /* SessionStore.swift */; };
@@ -133,6 +136,9 @@
 
 /* Begin PBXFileReference section */
 		02B901D64AB8243A498892E4 /* ExercisePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePickerView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ExerciseDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDictionary.swift; sourceTree = "<group>"; };
+		B3C4D5E6F7A8B9C0D1E2F3A4 /* exercise-dictionary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "exercise-dictionary.json"; sourceTree = "<group>"; };
+		C4D5E6F7A8B9C0D1E2F3A4B5 /* ExerciseDictionaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDictionaryTests.swift; sourceTree = "<group>"; };
 		05B7BEBFD01C2F49EF43CD34 /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
 		069E1FA9B7B710571D98821B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		06C9D252D8932F613C54BC51 /* TestSpecRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSpecRunner.swift; sourceTree = "<group>"; };
@@ -273,6 +279,7 @@
 			children = (
 				F33E7AC1F974FF1C4952C4B7 /* .gitkeep */,
 				D9FE10D43C37D15D55CD7E43 /* AnthropicService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* ExerciseDictionary.swift */,
 				D029E8EF3D26021C1DE6232F /* AudioService.swift */,
 				C9721F8131DE667F45760970 /* CloudKitService.swift */,
 				E08159618FF39CFB1C6166D5 /* DatabaseBackupService.swift */,
@@ -306,6 +313,7 @@
 			isa = PBXGroup;
 			children = (
 				C20C4956D9B988C6978BAD36 /* Assets.xcassets */,
+				B3C4D5E6F7A8B9C0D1E2F3A4 /* exercise-dictionary.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -462,6 +470,7 @@
 			isa = PBXGroup;
 			children = (
 				10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */,
+				C4D5E6F7A8B9C0D1E2F3A4B5 /* ExerciseDictionaryTests.swift */,
 				FD62A5DD7A3746F10518F287 /* ExerciseHistoryRepositoryTests.swift */,
 				71BBB53853F20402D24BEFB4 /* FileImportServiceTests.swift */,
 				3E4BB7CEBD7B739F748472F1 /* HealthKitServiceTests.swift */,
@@ -638,6 +647,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				852658F6EF836C0E181BB45C /* Assets.xcassets in Resources */,
+				02B3C4D5E6F7A8B9C0D1E2F3 /* exercise-dictionary.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -662,6 +672,7 @@
 				EC458A0E78182E2C880D66F6 /* EquipmentStore.swift in Sources */,
 				A729B0D0216DC029A3343B47 /* ExerciseCardView.swift in Sources */,
 				546AE7E2A848F9BC65C17886 /* ExerciseHistoryChartView.swift in Sources */,
+				01A1B2C3D4E5F6A7B8C9D0E1 /* ExerciseDictionary.swift in Sources */,
 				23AF3037952B92C52B15C691 /* ExerciseHistoryRepository.swift in Sources */,
 				C84E9480A8E438A11EE0B0DC /* ExercisePickerView.swift in Sources */,
 				6AAEFF60A1CB9A5943574B71 /* ExerciseTrendView.swift in Sources */,
@@ -724,6 +735,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DF373888E7CD580855CE16A4 /* DatabaseBackupServiceTests.swift in Sources */,
+				03C4D5E6F7A8B9C0D1E2F3A4 /* ExerciseDictionaryTests.swift in Sources */,
 				7AB5F2F72412312FF135E237 /* ExerciseHistoryRepositoryTests.swift in Sources */,
 				B85DE5789943AAD087F8090A /* FileImportServiceTests.swift in Sources */,
 				C356CB231094F4126BEFA796 /* HealthKitServiceTests.swift in Sources */,

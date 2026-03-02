@@ -591,7 +591,7 @@ struct ExerciseHistorySheetView: View {
     private func loadHistory() {
         let repo = ExerciseHistoryRepository()
         do {
-            historyPoints = try repo.getHistory(forExercise: exerciseName)
+            historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
             print("Failed to load history: \(error)")
         }

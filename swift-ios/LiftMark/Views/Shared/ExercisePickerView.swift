@@ -2,20 +2,28 @@ import SwiftUI
 
 struct ExercisePickerView: View {
     @State private var searchText = ""
+    @State private var historyExercises: [String] = []
     @Environment(\.dismiss) private var dismiss
     let onSelect: (String) -> Void
 
     private let commonExercises = [
-        "Squat", "Deadlift", "Bench Press", "Overhead Press",
+        "Back Squat", "Deadlift", "Bench Press", "Overhead Press",
         "Barbell Row", "Pull-Up", "Dip", "Leg Press",
         "Romanian Deadlift", "Front Squat", "Incline Bench Press",
         "Lat Pulldown", "Cable Row", "Leg Curl", "Leg Extension",
         "Lateral Raise", "Bicep Curl", "Tricep Pushdown"
     ]
 
+    /// Merged list: common exercises + any history exercises not already in the common list.
+    private var allExercises: [String] {
+        let commonSet = Set(commonExercises.map { $0.lowercased() })
+        let extras = historyExercises.filter { !commonSet.contains($0.lowercased()) }
+        return commonExercises + extras.sorted()
+    }
+
     private var filteredExercises: [String] {
-        if searchText.isEmpty { return commonExercises }
-        return commonExercises.filter { $0.localizedCaseInsensitiveContains(searchText) }
+        if searchText.isEmpty { return allExercises }
+        return allExercises.filter { $0.localizedCaseInsensitiveContains(searchText) }
     }
 
     private var hasExactMatch: Bool {
@@ -71,5 +79,12 @@ struct ExercisePickerView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("exercise-picker-modal")
+        .onAppear {
+            do {
+                historyExercises = try ExerciseHistoryRepository().getAllExerciseNamesNormalized()
+            } catch {
+                // Silently fall back to common exercises only
+            }
+        }
     }
 }

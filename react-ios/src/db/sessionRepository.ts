@@ -1,5 +1,6 @@
 import { getDatabase } from './index';
 import { generateId } from '@/utils/id';
+import { getCanonicalName, getAliases } from '@/data/exerciseDictionary';
 import type {
   WorkoutPlan,
   WorkoutSession,
@@ -666,6 +667,49 @@ export async function getMostFrequentExercise(
     weight: row.max_weight,
     reps: row.reps || 0,
     unit: row.unit,
+  };
+}
+
+/**
+ * Get best weights for each exercise, merging aliases by canonical name.
+ * When multiple aliases share a canonical name, the highest weight wins.
+ */
+export async function getExerciseBestWeightsNormalized(): Promise<Map<string, { weight: number; reps: number; unit: string }>> {
+  const raw = await getExerciseBestWeights();
+  const merged = new Map<string, { weight: number; reps: number; unit: string }>();
+
+  for (const [name, data] of raw) {
+    const canonical = getCanonicalName(name);
+    const existing = merged.get(canonical);
+    if (!existing || data.weight > existing.weight) {
+      merged.set(canonical, data);
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Get the most frequently performed exercise (by distinct sessions),
+ * excluding exercises by name. Expands exclusion list to all aliases.
+ */
+export async function getMostFrequentExerciseNormalized(
+  excludeNames: string[]
+): Promise<{ name: string; weight: number; reps: number; unit: string } | null> {
+  // Expand each excluded name to all its aliases
+  const expandedExcludes = new Set<string>();
+  for (const name of excludeNames) {
+    for (const alias of getAliases(name)) {
+      expandedExcludes.add(alias);
+    }
+  }
+
+  const result = await getMostFrequentExercise(Array.from(expandedExcludes));
+  if (!result) return null;
+
+  return {
+    ...result,
+    name: getCanonicalName(result.name),
   };
 }
 

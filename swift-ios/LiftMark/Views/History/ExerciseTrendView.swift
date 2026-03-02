@@ -108,7 +108,7 @@ struct ExerciseTrendView: View {
         isLoading = true
         let repo = ExerciseHistoryRepository()
         do {
-            historyPoints = try repo.getHistory(forExercise: exerciseName)
+            historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
             print("Failed to load trend data: \(error)")
         }

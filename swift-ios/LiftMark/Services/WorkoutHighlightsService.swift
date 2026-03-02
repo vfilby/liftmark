@@ -68,7 +68,7 @@ struct WorkoutHighlightsService {
 
     /// Detect new personal records in the current session.
     private func detectPersonalRecords(_ session: WorkoutSession) throws -> [ExercisePR] {
-        let bestWeights = try repository.getExerciseBestWeights()
+        let bestWeights = try repository.getExerciseBestWeightsNormalized()
         var prs: [ExercisePR] = []
 
         let sessionMaxes = getSessionMaxWeights(session)
@@ -115,7 +115,7 @@ struct WorkoutHighlightsService {
                 exerciseName: currentEx.exerciseName,
                 excludeSessionId: session.id
             ) {
-                if let lastEx = lastSession.exercises.first(where: { $0.exerciseName == currentEx.exerciseName }),
+                if let lastEx = lastSession.exercises.first(where: { ExerciseDictionary.isSameExercise($0.exerciseName, currentEx.exerciseName) }),
                    let lastMax = getExerciseMaxWeight(lastEx),
                    currentMax.weight > lastMax.weight {
                     increases.append(ExercisePR(
@@ -202,7 +202,14 @@ struct WorkoutHighlightsService {
 
         for exercise in session.exercises where !exercise.sets.isEmpty {
             if let max = getExerciseMaxWeight(exercise) {
-                maxes[exercise.exerciseName] = max
+                let canonical = ExerciseDictionary.getCanonicalName(exercise.exerciseName)
+                if let existing = maxes[canonical] {
+                    if max.weight > existing.weight {
+                        maxes[canonical] = max
+                    }
+                } else {
+                    maxes[canonical] = max
+                }
             }
         }
 
@@ -245,7 +252,7 @@ struct WorkoutHighlightsService {
     ) -> WorkoutSession? {
         sessions.first { session in
             session.id != excludeSessionId &&
-            session.exercises.contains { $0.exerciseName == exerciseName && !$0.sets.isEmpty }
+            session.exercises.contains { ExerciseDictionary.isSameExercise($0.exerciseName, exerciseName) && !$0.sets.isEmpty }
         }
     }
 

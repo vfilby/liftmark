@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import type { WorkoutSession, SessionExercise, SessionSet, ExerciseHistoryPoint, ChartMetricType } from '@/types';
-import { getExerciseHistory } from '@/db/exerciseHistoryRepository';
+import { getExerciseHistoryNormalized } from '@/db/exerciseHistoryRepository';
 import { ExerciseHistoryChart } from './ExerciseHistoryChart';
 import { ExerciseHistoryBottomSheet } from './ExerciseHistoryBottomSheet';
 
@@ -46,7 +46,7 @@ export function HistoryDetailView({ session, onDelete }: HistoryDetailViewProps)
 
     setLoadingHistory(prev => new Set(prev).add(exerciseName));
     try {
-      const data = await getExerciseHistory(exerciseName, 10);
+      const data = await getExerciseHistoryNormalized(exerciseName, 10);
       setHistoryData(prev => new Map(prev).set(exerciseName, data));
     } catch (error) {
       console.error('Failed to load exercise history:', error);

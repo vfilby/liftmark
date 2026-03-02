@@ -258,6 +258,10 @@ Both React Native and Swift apps use the same merge rules:
 
 Import is wrapped in a database transaction — if any insert fails, all changes are rolled back.
 
+### Exercise Names
+
+Exercise names in all export formats are **raw** (as stored in the database), not normalized. The [exercise dictionary](exercise-dictionary.md) is used only for display and aggregation within the app — it does not affect exported data. This ensures exports are a faithful representation of what the user entered.
+
 ### Cross-Platform Compatibility
 
 The unified format is designed for data transfer between the React Native and Swift app versions. Both platforms export and import the same schema. Note:

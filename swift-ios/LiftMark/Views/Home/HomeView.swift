@@ -11,7 +11,7 @@ struct HomeView: View {
     @State private var editingTileIndex: Int?
 
     private var homeTiles: [String] {
-        settingsStore.settings?.homeTiles ?? ["Squat", "Deadlift", "Bench Press", "Overhead Press"]
+        settingsStore.settings?.homeTiles ?? ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"]
     }
 
     private var isRegularWidth: Bool {
@@ -175,7 +175,7 @@ struct HomeView: View {
         // Search all completed sessions for global max weight on this exercise
         var globalMax: Double?
         for session in sessionStore.sessions {
-            for exercise in session.exercises where exercise.exerciseName.lowercased() == exerciseName.lowercased() {
+            for exercise in session.exercises where ExerciseDictionary.isSameExercise(exercise.exerciseName, exerciseName) {
                 let maxW = exercise.sets
                     .filter { $0.status == .completed }
                     .compactMap { $0.actualWeight }
@@ -196,7 +196,7 @@ struct HomeView: View {
 
         var weights: [Double] = []
         for session in completedSessions {
-            for exercise in session.exercises where exercise.exerciseName.lowercased() == exerciseName.lowercased() {
+            for exercise in session.exercises where ExerciseDictionary.isSameExercise(exercise.exerciseName, exerciseName) {
                 if let maxW = exercise.sets
                     .filter({ $0.status == .completed })
                     .compactMap({ $0.actualWeight })

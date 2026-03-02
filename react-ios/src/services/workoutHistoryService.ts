@@ -1,4 +1,5 @@
 import { getRecentSessions, getExerciseBestWeights } from '@/db/sessionRepository';
+import { getCanonicalName } from '@/data/exerciseDictionary';
 import type { WorkoutSession, SessionExercise, SessionSet } from '@/types';
 
 /**
@@ -110,45 +111,42 @@ export function formatSetCompact(set: SessionSet): string {
  * Abbreviate common exercise names to save tokens
  */
 export function abbreviateExerciseName(name: string): string {
+  // Normalize to canonical name first so aliases map to the same abbreviation
+  const canonical = getCanonicalName(name);
+  // Keys are canonical names (lowercase) from the exercise dictionary.
+  // Aliases are resolved to canonical before lookup, so only canonical keys are needed.
   const abbreviations: Record<string, string> = {
-    'barbell bench press': 'Bench',
     'bench press': 'Bench',
     'incline bench press': 'Inc Bench',
     'incline dumbbell press': 'Inc DB',
     'dumbbell bench press': 'DB Bench',
     'overhead press': 'OHP',
-    'military press': 'OHP',
-    'barbell squat': 'Squat',
     'back squat': 'Squat',
     'front squat': 'Fr Squat',
     'deadlift': 'DL',
     'romanian deadlift': 'RDL',
     'barbell row': 'Row',
-    'bent over row': 'Row',
     'dumbbell row': 'DB Row',
     'lat pulldown': 'Pulldown',
-    'pull-ups': 'Pullups',
-    'pull ups': 'Pullups',
-    'chin-ups': 'Chinups',
-    'chin ups': 'Chinups',
-    'bicep curls': 'Curls',
-    'dumbbell bicep curls': 'DB Curls',
-    'tricep pushdowns': 'Pushdowns',
-    'tricep extensions': 'Tri Ext',
+    'pull-up': 'Pullups',
+    'chin-up': 'Chinups',
+    'bicep curl': 'Curls',
+    'dumbbell curl': 'DB Curls',
+    'tricep pushdown': 'Pushdowns',
+    'tricep extension': 'Tri Ext',
     'leg press': 'Leg Press',
     'leg curl': 'Leg Curl',
     'leg extension': 'Leg Ext',
-    'calf raises': 'Calves',
-    'lateral raises': 'Lat Raise',
-    'face pulls': 'Face Pull',
-    'cable flyes': 'Flyes',
-    'dumbbell flyes': 'DB Flyes',
-    'push-ups': 'Pushups',
-    'push ups': 'Pushups',
+    'calf raise': 'Calves',
+    'lateral raise': 'Lat Raise',
+    'face pull': 'Face Pull',
+    'cable fly': 'Flyes',
+    'dumbbell fly': 'DB Flyes',
+    'push-up': 'Pushups',
   };
 
-  const lower = name.toLowerCase();
-  return abbreviations[lower] || name;
+  const lower = canonical.toLowerCase();
+  return abbreviations[lower] || canonical;
 }
 
 /**
