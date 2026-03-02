@@ -50,9 +50,20 @@ public class ExpoCloudKitModule: Module {
           ckRecord = CKRecord(recordType: recordType)
         }
         
-        // Set the record data
+        // Set the record data, converting ISO 8601 date strings to Date objects
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let isoFormatterNoFraction = ISO8601DateFormatter()
+        isoFormatterNoFraction.formatOptions = [.withInternetDateTime]
+
         for (key, value) in data {
-          ckRecord[key] = value as? CKRecordValue
+          if let stringValue = value as? String,
+             (isoFormatter.date(from: stringValue) ?? isoFormatterNoFraction.date(from: stringValue)) != nil {
+            // Store as native CloudKit Date
+            ckRecord[key] = (isoFormatter.date(from: stringValue) ?? isoFormatterNoFraction.date(from: stringValue))! as CKRecordValue
+          } else {
+            ckRecord[key] = value as? CKRecordValue
+          }
         }
         
         let database = CKContainer(identifier: "iCloud.com.eff3.liftmark").privateCloudDatabase
@@ -158,6 +169,13 @@ public class ExpoCloudKitModule: Module {
     return dict
   }
 
+  // ISO 8601 formatter for consistent date serialization
+  private lazy var isoFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+  }()
+
   // Helper function to convert CKRecordValue to Any
   private func ckRecordValueToAny(_ value: CKRecordValue) -> Any {
     switch value {
@@ -166,7 +184,7 @@ public class ExpoCloudKitModule: Module {
     case let numberValue as NSNumber:
       return numberValue
     case let dateValue as Date:
-      return dateValue.timeIntervalSince1970
+      return isoFormatter.string(from: dateValue)
     case let dataValue as Data:
       return dataValue.base64EncodedString()
     default:

@@ -82,11 +82,11 @@ targets:
           - health-records
         com.apple.developer.healthkit.background-delivery: true
         com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.eff3.liftmark
+          - iCloud.com.eff3.liftmark.v2
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.ubiquity-container-identifiers:
-          - iCloud.com.eff3.liftmark
+          - iCloud.com.eff3.liftmark.v2
         com.apple.developer.ubiquity-kvstore-identifier: "$(TeamIdentifierPrefix)com.eff3.liftmark"
 
   LiveWorkouts:

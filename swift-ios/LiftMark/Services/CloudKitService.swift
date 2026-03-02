@@ -44,7 +44,7 @@ final class CloudKitService: @unchecked Sendable {
         // Use the shared container ID (matches the React Native app) rather than
         // .default(), which derives from the bundle ID and would produce
         // "iCloud.com.eff3.liftmark.native-ios" instead of the correct container.
-        self.container = CKContainer(identifier: "iCloud.com.eff3.liftmark")
+        self.container = CKContainer(identifier: "iCloud.com.eff3.liftmark.v2")
         self.database = container.privateCloudDatabase
     }
 
@@ -618,7 +618,7 @@ final class CloudKitService: @unchecked Sendable {
         if let e = ex.equipmentType { fields["equipmentType"] = e }
         if let g = ex.groupType { fields["groupType"] = g }
         if let g = ex.groupName { fields["groupName"] = g }
-        if let p = ex.parentExerciseId { fields["parentExerciseId"] = p }
+        if let p = ex.parentExerciseId { fields["parentExerciseId"] = makeReference(recordType: "PlannedExercise", recordId: p) }
         return CloudKitRecord(recordId: ex.id, recordType: "PlannedExercise", fields: fields)
     }
 
@@ -626,17 +626,19 @@ final class CloudKitService: @unchecked Sendable {
         var fields: [String: Any] = [
             "plannedExerciseId": makeReference(recordType: "PlannedExercise", recordId: ps.templateExerciseId),
             "orderIndex": Int64(ps.orderIndex),
-            "isDropset": Int64(ps.isDropset),
-            "isPerSide": Int64(ps.isPerSide),
-            "isAmrap": Int64(ps.isAmrap),
         ]
+        // Build attributes list from boolean flags
+        var attrs: [String] = []
+        if ps.isDropset != 0 { attrs.append("dropset") }
+        if ps.isPerSide != 0 { attrs.append("perSide") }
+        if ps.isAmrap != 0 { attrs.append("amrap") }
+        if !attrs.isEmpty { fields["attributes"] = attrs }
         if let w = ps.targetWeight { fields["targetWeight"] = w }
         if let u = ps.targetWeightUnit { fields["targetWeightUnit"] = u }
         if let r = ps.targetReps { fields["targetReps"] = Int64(r) }
         if let t = ps.targetTime { fields["targetTime"] = Int64(t) }
         if let rpe = ps.targetRpe { fields["targetRpe"] = Double(rpe) }
         if let r = ps.restSeconds { fields["restSeconds"] = Int64(r) }
-        if let t = ps.tempo { fields["tempo"] = t }
         if let n = ps.notes { fields["notes"] = n }
         return CloudKitRecord(recordId: ps.id, recordType: "PlannedSet", fields: fields)
     }
@@ -667,7 +669,7 @@ final class CloudKitService: @unchecked Sendable {
         if let e = se.equipmentType { fields["equipmentType"] = e }
         if let g = se.groupType { fields["groupType"] = g }
         if let g = se.groupName { fields["groupName"] = g }
-        if let p = se.parentExerciseId { fields["parentExerciseId"] = p }
+        if let p = se.parentExerciseId { fields["parentExerciseId"] = makeReference(recordType: "SessionExercise", recordId: p) }
         return CloudKitRecord(recordId: se.id, recordType: "SessionExercise", fields: fields)
     }
 
@@ -676,10 +678,13 @@ final class CloudKitService: @unchecked Sendable {
             "sessionExerciseId": makeReference(recordType: "SessionExercise", recordId: ss.sessionExerciseId),
             "orderIndex": Int64(ss.orderIndex),
             "status": ss.status,
-            "isDropset": Int64(ss.isDropset),
-            "isPerSide": Int64(ss.isPerSide),
         ]
-        if let p = ss.parentSetId { fields["parentSetId"] = p }
+        // Build attributes list from boolean flags
+        var attrs: [String] = []
+        if ss.isDropset != 0 { attrs.append("dropset") }
+        if ss.isPerSide != 0 { attrs.append("perSide") }
+        if !attrs.isEmpty { fields["attributes"] = attrs }
+        if let p = ss.parentSetId { fields["parentSetId"] = makeReference(recordType: "SessionSet", recordId: p) }
         if let d = ss.dropSequence { fields["dropSequence"] = Int64(d) }
         if let w = ss.targetWeight { fields["targetWeight"] = w }
         if let u = ss.targetWeightUnit { fields["targetWeightUnit"] = u }
@@ -694,7 +699,6 @@ final class CloudKitService: @unchecked Sendable {
         if let rpe = ss.actualRpe { fields["actualRpe"] = Double(rpe) }
         if let d = parseDate(ss.completedAt) { fields["completedAt"] = d }
         if let n = ss.notes { fields["notes"] = n }
-        if let t = ss.tempo { fields["tempo"] = t }
         return CloudKitRecord(recordId: ss.id, recordType: "SessionSet", fields: fields)
     }
 
@@ -738,6 +742,10 @@ final class CloudKitService: @unchecked Sendable {
     private func dateToISO(_ date: Date?) -> String? {
         guard let date else { return nil }
         return isoFormatter.string(from: date)
+    }
+
+    private func stringListField(_ record: CloudKitRecord, _ key: String) -> [String] {
+        record.fields[key] as? [String] ?? []
     }
 
     private func referenceId(_ record: CloudKitRecord, _ key: String) -> String? {
@@ -830,7 +838,7 @@ final class CloudKitService: @unchecked Sendable {
                 equipmentType: stringField(record, "equipmentType"),
                 groupType: stringField(record, "groupType"),
                 groupName: stringField(record, "groupName"),
-                parentExerciseId: stringField(record, "parentExerciseId")
+                parentExerciseId: referenceId(record, "parentExerciseId")
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
             return existing == nil
@@ -840,6 +848,7 @@ final class CloudKitService: @unchecked Sendable {
     private func mergePlannedSet(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try PlannedSetRow.fetchOne(db, key: record.recordId)
+            let attrs = stringListField(record, "attributes")
             let row = PlannedSetRow(
                 id: record.recordId,
                 templateExerciseId: referenceId(record, "plannedExerciseId") ?? existing?.templateExerciseId ?? "",
@@ -850,10 +859,10 @@ final class CloudKitService: @unchecked Sendable {
                 targetTime: int64Field(record, "targetTime").map { Int($0) },
                 targetRpe: int64Field(record, "targetRpe").map { Int($0) } ?? doubleField(record, "targetRpe").map { Int($0) },
                 restSeconds: int64Field(record, "restSeconds").map { Int($0) },
-                tempo: stringField(record, "tempo"),
-                isDropset: Int(int64Field(record, "isDropset") ?? 0),
-                isPerSide: Int(int64Field(record, "isPerSide") ?? 0),
-                isAmrap: Int(int64Field(record, "isAmrap") ?? 0),
+                tempo: nil,
+                isDropset: attrs.contains("dropset") ? 1 : 0,
+                isPerSide: attrs.contains("perSide") ? 1 : 0,
+                isAmrap: attrs.contains("amrap") ? 1 : 0,
                 notes: stringField(record, "notes")
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
@@ -893,7 +902,7 @@ final class CloudKitService: @unchecked Sendable {
                 equipmentType: stringField(record, "equipmentType"),
                 groupType: stringField(record, "groupType"),
                 groupName: stringField(record, "groupName"),
-                parentExerciseId: stringField(record, "parentExerciseId"),
+                parentExerciseId: referenceId(record, "parentExerciseId"),
                 status: stringField(record, "status") ?? existing?.status ?? ExerciseStatus.pending.rawValue
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
@@ -904,11 +913,12 @@ final class CloudKitService: @unchecked Sendable {
     private func mergeSessionSet(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try SessionSetRow.fetchOne(db, key: record.recordId)
+            let attrs = stringListField(record, "attributes")
             let row = SessionSetRow(
                 id: record.recordId,
                 sessionExerciseId: referenceId(record, "sessionExerciseId") ?? existing?.sessionExerciseId ?? "",
                 orderIndex: Int(int64Field(record, "orderIndex") ?? Int64(existing?.orderIndex ?? 0)),
-                parentSetId: stringField(record, "parentSetId"),
+                parentSetId: referenceId(record, "parentSetId"),
                 dropSequence: int64Field(record, "dropSequence").map { Int($0) },
                 targetWeight: doubleField(record, "targetWeight"),
                 targetWeightUnit: stringField(record, "targetWeightUnit"),
@@ -924,9 +934,9 @@ final class CloudKitService: @unchecked Sendable {
                 completedAt: dateToISO(dateField(record, "completedAt")),
                 status: stringField(record, "status") ?? existing?.status ?? SetStatus.pending.rawValue,
                 notes: stringField(record, "notes"),
-                tempo: stringField(record, "tempo"),
-                isDropset: Int(int64Field(record, "isDropset") ?? 0),
-                isPerSide: Int(int64Field(record, "isPerSide") ?? 0)
+                tempo: nil,
+                isDropset: attrs.contains("dropset") ? 1 : 0,
+                isPerSide: attrs.contains("perSide") ? 1 : 0
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
             return existing == nil
