@@ -36,34 +36,21 @@ struct SyncResult {
 final class CloudKitService: @unchecked Sendable {
     static let shared = CloudKitService()
 
-    private let container: CKContainer?
-    private let database: CKDatabase?
+    private let container: CKContainer
+    private let database: CKDatabase
     private var isInitialized = false
 
     private init() {
-        // CKContainer.default() can crash on simulators without CloudKit entitlements.
-        // Guard against that by catching any ObjC exception or Swift trap.
-        let c: CKContainer? = {
-            // Check if CloudKit entitlement exists before attempting to create container
-            if Bundle.main.object(forInfoDictionaryKey: "com.apple.developer.icloud-container-identifiers") == nil,
-               Bundle.main.object(forInfoDictionaryKey: "com.apple.developer.ubiquity-container-identifiers") == nil {
-                // No CloudKit entitlement — skip container creation
-                return nil
-            }
-            return CKContainer.default()
-        }()
-        self.container = c
-        self.database = c?.privateCloudDatabase
+        // CKContainer.default() is safe to call when CloudKit entitlements are
+        // configured in the .entitlements file (they don't appear in Info.plist).
+        self.container = CKContainer.default()
+        self.database = container.privateCloudDatabase
     }
 
     // MARK: - Initialize
 
     /// Initialize the CloudKit connection.
     func initialize() async -> Bool {
-        guard let container else {
-            Logger.shared.warn(.app, "CloudKit not configured — no entitlement found")
-            return false
-        }
         do {
             let status = try await container.accountStatus()
             if status == .available {
@@ -84,7 +71,6 @@ final class CloudKitService: @unchecked Sendable {
 
     /// Check the current iCloud account status.
     func getAccountStatus() async -> CloudKitAccountStatus {
-        guard let container else { return .noAccount }
         do {
             let status = try await container.accountStatus()
             switch status {
@@ -120,7 +106,7 @@ final class CloudKitService: @unchecked Sendable {
 
     /// Save a record to CloudKit.
     func saveRecord(_ record: CloudKitRecord) async -> CloudKitRecord? {
-        guard let database else { return nil }
+
         if !isInitialized {
             let initialized = await initialize()
             if !initialized { return nil }
@@ -154,7 +140,7 @@ final class CloudKitService: @unchecked Sendable {
 
     /// Fetch a single record by ID and type.
     func fetchRecord(recordId: String, recordType: String) async -> CloudKitRecord? {
-        guard let database else { return nil }
+
         if !isInitialized {
             let initialized = await initialize()
             if !initialized { return nil }
@@ -184,7 +170,7 @@ final class CloudKitService: @unchecked Sendable {
 
     /// Fetch all records of a given type.
     func fetchRecords(recordType: String) async -> [CloudKitRecord] {
-        guard let database else { return [] }
+
         if !isInitialized {
             let initialized = await initialize()
             if !initialized { return [] }
@@ -216,7 +202,7 @@ final class CloudKitService: @unchecked Sendable {
 
     /// Delete a record by ID and type.
     func deleteRecord(recordId: String, recordType: String) async -> Bool {
-        guard let database else { return false }
+
         if !isInitialized {
             let initialized = await initialize()
             if !initialized { return false }
