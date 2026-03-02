@@ -105,7 +105,8 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Save Record
 
-    /// Save a record to CloudKit.
+    /// Save a record to CloudKit. If the record already exists on the server,
+    /// fetches the server version (to get its change tag) and retries the save.
     func saveRecord(_ record: CloudKitRecord) async -> CloudKitRecord? {
 
         if !isInitialized {
@@ -120,21 +121,42 @@ final class CloudKitService: @unchecked Sendable {
             }
 
             let savedRecord = try await database.save(ckRecord)
+            return cloudKitRecordToLocal(savedRecord)
+        } catch let error as CKError where error.code == .serverRecordChanged {
+            // Record already exists on server — fetch it to get the change tag, then update
+            Logger.shared.info(.app, "Record \(record.recordId) already exists on server, fetching and retrying save")
+            do {
+                let recordID = CKRecord.ID(recordName: record.recordId)
+                let serverRecord = try await database.record(for: recordID)
 
-            var fields: [String: Any] = [:]
-            for key in savedRecord.allKeys() {
-                fields[key] = savedRecord[key]
+                // Apply our fields onto the server record (which has the correct change tag)
+                for (key, value) in record.fields {
+                    serverRecord[key] = value as? CKRecordValueProtocol
+                }
+
+                let savedRecord = try await database.save(serverRecord)
+                return cloudKitRecordToLocal(savedRecord)
+            } catch {
+                Logger.shared.error(.app, "Failed to save CloudKit record after conflict resolution", error: error)
+                return nil
             }
-
-            return CloudKitRecord(
-                recordId: savedRecord.recordID.recordName,
-                recordType: savedRecord.recordType,
-                fields: fields
-            )
         } catch {
             Logger.shared.error(.app, "Failed to save CloudKit record", error: error)
             return nil
         }
+    }
+
+    /// Convert a CKRecord to our local CloudKitRecord wrapper.
+    private func cloudKitRecordToLocal(_ ckRecord: CKRecord) -> CloudKitRecord {
+        var fields: [String: Any] = [:]
+        for key in ckRecord.allKeys() {
+            fields[key] = ckRecord[key]
+        }
+        return CloudKitRecord(
+            recordId: ckRecord.recordID.recordName,
+            recordType: ckRecord.recordType,
+            fields: fields
+        )
     }
 
     // MARK: - Fetch Record

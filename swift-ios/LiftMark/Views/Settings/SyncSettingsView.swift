@@ -80,12 +80,16 @@ struct SyncSettingsView: View {
                         syncResultMessage = nil
                         syncErrorMessage = nil
                         Task {
-                            let result = await CloudKitService.shared.syncAll()
-                            if result.success {
-                                lastSyncDate = result.timestamp
-                                syncResultMessage = "Synced: \(result.uploaded) up, \(result.downloaded) down, \(result.conflicts) conflicts"
+                            let result = await SyncManager.shared.triggerSync()
+                            if let result {
+                                if result.success {
+                                    lastSyncDate = result.timestamp
+                                    syncResultMessage = "Synced: \(result.uploaded) up, \(result.downloaded) down, \(result.conflicts) conflicts"
+                                } else {
+                                    syncErrorMessage = result.errors.joined(separator: "\n")
+                                }
                             } else {
-                                syncErrorMessage = result.errors.joined(separator: "\n")
+                                syncResultMessage = "Sync already in progress"
                             }
                             isSyncing = false
                         }

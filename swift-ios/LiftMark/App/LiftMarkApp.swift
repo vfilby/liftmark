@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct LiftMarkApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var planStore = WorkoutPlanStore()
     @State private var sessionStore = SessionStore()
     @State private var settingsStore = SettingsStore()
@@ -35,6 +36,31 @@ struct LiftMarkApp: App {
                     settingsStore.loadSettings()
                     gymStore.loadGyms()
                     handleLaunchArguments()
+                    Task {
+                        await SyncManager.shared.triggerSync()
+                        await SyncManager.shared.startPolling()
+                    }
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    switch newPhase {
+                    case .active:
+                        Task {
+                            await SyncManager.shared.triggerSync()
+                            await SyncManager.shared.startPolling()
+                        }
+                    case .background:
+                        Task {
+                            await SyncManager.shared.stopPolling()
+                        }
+                    default:
+                        break
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .syncCompleted)) { _ in
+                    planStore.loadPlans()
+                    sessionStore.loadSessions()
+                    settingsStore.loadSettings()
+                    gymStore.loadGyms()
                 }
                 .onOpenURL { url in
                     handleIncomingURL(url)

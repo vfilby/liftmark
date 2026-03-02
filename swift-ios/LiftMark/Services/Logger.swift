@@ -19,6 +19,7 @@ enum LogCategory: String, Codable, CaseIterable {
     case userAction = "user_action"
     case errorBoundary = "error_boundary"
     case logger
+    case sync
 }
 
 struct LogEntry: Identifiable, Codable, Hashable {
