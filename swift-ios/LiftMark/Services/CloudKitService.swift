@@ -41,9 +41,10 @@ final class CloudKitService: @unchecked Sendable {
     private var isInitialized = false
 
     private init() {
-        // CKContainer.default() is safe to call when CloudKit entitlements are
-        // configured in the .entitlements file (they don't appear in Info.plist).
-        self.container = CKContainer.default()
+        // Use the shared container ID (matches the React Native app) rather than
+        // .default(), which derives from the bundle ID and would produce
+        // "iCloud.com.eff3.liftmark.native-ios" instead of the correct container.
+        self.container = CKContainer(identifier: "iCloud.com.eff3.liftmark")
         self.database = container.privateCloudDatabase
     }
 
