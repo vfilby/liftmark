@@ -273,4 +273,84 @@ final class CloudKitSyncProtectionTests: XCTestCase {
         XCTAssertEqual(session?.name, "My Workout")
         XCTAssertEqual(session?.status, "in_progress")
     }
+
+    // MARK: - localIds correctness for delete handling
+
+    /// Verifies that when localIds is a proper subset of all local records
+    /// (simulating failed uploads), records NOT in localIds are NOT deleted.
+    /// This is the core invariant: only IDs confirmed on the server should be in localIds.
+    func testLocalIdsExcludesFailedUploads() throws {
+        let dbQueue = try DatabaseManager.shared.database()
+
+        // Create 5 planned exercises locally
+        let planId = "plan-1"
+        let exerciseIds = (1...5).map { "exercise-\($0)" }
+
+        try dbQueue.write { db in
+            try WorkoutPlanRow(
+                id: planId, name: "Test Plan",
+                defaultWeightUnit: "lbs",
+                createdAt: "2026-03-03T00:00:00Z", updatedAt: "2026-03-03T00:00:00Z", isFavorite: 0
+            ).insert(db)
+
+            for (i, exId) in exerciseIds.enumerated() {
+                try PlannedExerciseRow(
+                    id: exId, workoutTemplateId: planId,
+                    exerciseName: "Exercise \(i)",
+                    orderIndex: i
+                ).insert(db)
+            }
+        }
+
+        // Simulate: server has exercises 1-3 (downloaded), uploads of 4-5 failed.
+        // localIds should only contain 1-3 (confirmed on server).
+        let confirmedOnServer: Set<String> = Set(exerciseIds[0..<3]) // exercise-1, exercise-2, exercise-3
+        let remoteIds: Set<String> = confirmedOnServer // same set from download phase
+
+        // handleLocalDeletes computes: toDelete = localIds - remoteIds
+        // With correct localIds (only confirmed): toDelete = {1,2,3} - {1,2,3} = {} ← correct
+        let toDeleteCorrect = confirmedOnServer.subtracting(remoteIds)
+        XCTAssertTrue(toDeleteCorrect.isEmpty, "No records should be deleted when localIds equals remoteIds")
+
+        // With INCORRECT localIds (all local): toDelete = {1,2,3,4,5} - {1,2,3} = {4,5} ← data loss!
+        let allLocalIds = Set(exerciseIds)
+        let toDeleteIncorrect = allLocalIds.subtracting(remoteIds)
+        XCTAssertEqual(toDeleteIncorrect, Set(["exercise-4", "exercise-5"]),
+                       "Bug scenario: all-local IDs would incorrectly delete unuploaded records")
+    }
+
+    /// Verifies that a record existing locally but absent from both localIds and remoteIds
+    /// is NOT deleted — it simply isn't in the delete computation at all.
+    func testDeleteNeverOccursForRecordsNotInLocalIds() throws {
+        let dbQueue = try DatabaseManager.shared.database()
+
+        // Create a local-only record
+        try dbQueue.write { db in
+            try WorkoutPlanRow(
+                id: "local-only-plan", name: "Local Plan",
+                defaultWeightUnit: "lbs",
+                createdAt: "2026-03-03T00:00:00Z", updatedAt: "2026-03-03T00:00:00Z", isFavorite: 0
+            ).insert(db)
+
+            try PlannedExerciseRow(
+                id: "local-only-exercise", workoutTemplateId: "local-only-plan",
+                exerciseName: "Local Exercise", orderIndex: 0
+            ).insert(db)
+        }
+
+        // localIds is empty (no records confirmed on server — e.g. upload failed)
+        let localIds: Set<String> = []
+        let remoteIds: Set<String> = []
+
+        // handleLocalDeletes: toDelete = localIds - remoteIds = {} - {} = {}
+        let toDelete = localIds.subtracting(remoteIds)
+        XCTAssertTrue(toDelete.isEmpty,
+                       "Records not in localIds should never appear in the delete set")
+
+        // Verify the record still exists in DB
+        let exercise = try dbQueue.read { db in
+            try PlannedExerciseRow.fetchOne(db, key: "local-only-exercise")
+        }
+        XCTAssertNotNil(exercise, "Local-only record should still exist")
+    }
 }

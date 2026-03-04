@@ -215,9 +215,9 @@ Maps to the `WorkoutPlan` entity in the data model.
 
 The sync runs in **download-first** order to avoid an upload storm when another device (or app version) has already synced records to the CloudKit container:
 
-1. **Download**: Fetch all CloudKit records → deserialize → merge into local database (last-writer-wins)
-2. **Upload new-only**: Serialize local records that do NOT already exist on the server → save as CloudKit records. Records already present on the server were resolved in step 1 and are NOT re-uploaded.
-3. **Local deletes**: Records present locally but absent from the server were deleted on another device → delete locally.
+1. **Download**: Fetch all CloudKit records → deserialize → merge into local database (last-writer-wins). `fetchRecords` MUST paginate through all cursor pages to ensure every record is downloaded.
+2. **Upload new-only**: Serialize local records that do NOT already exist on the server → save as CloudKit records. Records already present on the server were resolved in step 1 and are NOT re-uploaded. `localIds` MUST only contain IDs confirmed on the server (from the download phase or from successful uploads). Failed uploads MUST NOT be included in `localIds`.
+3. **Local deletes**: Records present locally but absent from the server were deleted on another device → delete locally. Correct delete behavior depends on complete remote fetching (pagination) and accurate `localIds`.
 4. **No remote deletes in Phase 1**: Without a sync queue there is no reliable way to distinguish "record deleted locally" from "record recently added by another device". Remote deletes are deferred to Phase 2 to avoid accidental data loss.
 5. **Conflict resolution**: Last-writer-wins based on `updatedAt` timestamp (applied during download merge).
 
@@ -277,6 +277,7 @@ Only **server-to-local** deletes are propagated:
 - Record exists locally but not on server → was deleted on another device → **delete locally**
 - Record exists on server but not locally → **do nothing** (could be a record newly added by another device; cannot distinguish without change tracking)
 - **First sync safety**: Skip all delete processing on first sync entirely.
+- **Prerequisite**: Delete handling depends on two invariants: (1) `fetchRecords` must paginate through all cursor pages so `remoteIds` is complete, and (2) `localIds` must only contain IDs confirmed on the server (downloaded or successfully uploaded). Violating either invariant causes false positives that delete valid local data.
 
 ### Active Session Protection
 
@@ -380,7 +381,7 @@ CloudKitService {
   // CRUD
   saveRecord(record) → record | null
   fetchRecord(recordId, recordType) → record | null
-  fetchRecords(recordType) → record[]
+  fetchRecords(recordType) → record[]   // MUST paginate using CKQueryOperation.Cursor — CloudKit returns max ~100 records per query batch
   deleteRecord(recordId, recordType) → bool
 
   // Sync (Phase 1)

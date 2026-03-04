@@ -199,7 +199,8 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Fetch Records
 
-    /// Fetch all records of a given type.
+    /// Fetch all records of a given type, paginating through all results.
+    /// CloudKit returns a maximum of ~100 records per query batch.
     func fetchRecords(recordType: String) async -> [CloudKitRecord] {
 
         if !isInitialized {
@@ -208,24 +209,43 @@ final class CloudKitService: @unchecked Sendable {
         }
 
         do {
-            let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
-            let (results, _) = try await database.records(matching: query)
+            var allRecords: [CloudKitRecord] = []
+            var pageCount = 0
 
-            return results.compactMap { _, result in
-                guard let ckRecord = try? result.get() else { return nil }
-                var fields: [String: Any] = [:]
-                for key in ckRecord.allKeys() {
-                    fields[key] = ckRecord[key]
-                }
-                return CloudKitRecord(
-                    recordId: ckRecord.recordID.recordName,
-                    recordType: ckRecord.recordType,
-                    fields: fields
-                )
+            let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
+            let (firstResults, firstCursor) = try await database.records(matching: query)
+            pageCount += 1
+            allRecords.append(contentsOf: convertCKResults(firstResults))
+
+            var cursor = firstCursor
+            while let activeCursor = cursor {
+                let (moreResults, nextCursor) = try await database.records(continuingMatchFrom: activeCursor)
+                pageCount += 1
+                allRecords.append(contentsOf: convertCKResults(moreResults))
+                cursor = nextCursor
             }
+
+            Logger.shared.info(.sync, "[Sync] Fetched \(allRecords.count) \(recordType) records (\(pageCount) pages)")
+            return allRecords
         } catch {
             Logger.shared.error(.app, "Failed to fetch CloudKit records", error: error)
             return []
+        }
+    }
+
+    /// Convert raw CloudKit query results into CloudKitRecord values.
+    private func convertCKResults(_ results: [(CKRecord.ID, Result<CKRecord, Error>)]) -> [CloudKitRecord] {
+        results.compactMap { _, result in
+            guard let ckRecord = try? result.get() else { return nil }
+            var fields: [String: Any] = [:]
+            for key in ckRecord.allKeys() {
+                fields[key] = ckRecord[key]
+            }
+            return CloudKitRecord(
+                recordId: ckRecord.recordID.recordName,
+                recordType: ckRecord.recordType,
+                fields: fields
+            )
         }
     }
 
@@ -443,78 +463,92 @@ final class CloudKitService: @unchecked Sendable {
         do {
             let dbQueue = try DatabaseManager.shared.database()
 
+            // localIds tracks IDs confirmed on the server: start from existingServerIds
+            // (downloaded in the merge phase) and add only successfully uploaded IDs.
+            // Failed uploads must NOT appear in localIds — otherwise handleLocalDeletes
+            // would interpret them as "present locally but missing from server" and delete them.
+
             let gyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
-            result.localIds["Gym"] = Set(gyms.map { $0.id })
-            for gym in gyms where !(existingServerIds["Gym"] ?? []).contains(gym.id) {
+            var confirmedGymIds = existingServerIds["Gym"] ?? []
+            for gym in gyms where !confirmedGymIds.contains(gym.id) {
                 let record = gymToRecord(gym)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedGymIds.insert(gym.id) }
                 else { result.errors.append("Failed to upload Gym \(gym.id)") }
             }
+            result.localIds["Gym"] = confirmedGymIds
 
             let equipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
-            result.localIds["GymEquipment"] = Set(equipment.map { $0.id })
-            for eq in equipment where !(existingServerIds["GymEquipment"] ?? []).contains(eq.id) {
+            var confirmedEquipmentIds = existingServerIds["GymEquipment"] ?? []
+            for eq in equipment where !confirmedEquipmentIds.contains(eq.id) {
                 let record = gymEquipmentToRecord(eq)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedEquipmentIds.insert(eq.id) }
                 else { result.errors.append("Failed to upload GymEquipment \(eq.id)") }
             }
+            result.localIds["GymEquipment"] = confirmedEquipmentIds
 
             let plans = try await dbQueue.read { db in try WorkoutPlanRow.fetchAll(db) }
-            result.localIds["WorkoutPlan"] = Set(plans.map { $0.id })
-            for plan in plans where !(existingServerIds["WorkoutPlan"] ?? []).contains(plan.id) {
+            var confirmedPlanIds = existingServerIds["WorkoutPlan"] ?? []
+            for plan in plans where !confirmedPlanIds.contains(plan.id) {
                 let record = workoutPlanToRecord(plan)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlanIds.insert(plan.id) }
                 else { result.errors.append("Failed to upload WorkoutPlan \(plan.id)") }
             }
+            result.localIds["WorkoutPlan"] = confirmedPlanIds
 
             let plannedExercises = try await dbQueue.read { db in try PlannedExerciseRow.fetchAll(db) }
-            result.localIds["PlannedExercise"] = Set(plannedExercises.map { $0.id })
-            for ex in plannedExercises where !(existingServerIds["PlannedExercise"] ?? []).contains(ex.id) {
+            var confirmedPlannedExIds = existingServerIds["PlannedExercise"] ?? []
+            for ex in plannedExercises where !confirmedPlannedExIds.contains(ex.id) {
                 let record = plannedExerciseToRecord(ex)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlannedExIds.insert(ex.id) }
                 else { result.errors.append("Failed to upload PlannedExercise \(ex.id)") }
             }
+            result.localIds["PlannedExercise"] = confirmedPlannedExIds
 
             let plannedSets = try await dbQueue.read { db in try PlannedSetRow.fetchAll(db) }
-            result.localIds["PlannedSet"] = Set(plannedSets.map { $0.id })
-            for ps in plannedSets where !(existingServerIds["PlannedSet"] ?? []).contains(ps.id) {
+            var confirmedPlannedSetIds = existingServerIds["PlannedSet"] ?? []
+            for ps in plannedSets where !confirmedPlannedSetIds.contains(ps.id) {
                 let record = plannedSetToRecord(ps)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlannedSetIds.insert(ps.id) }
                 else { result.errors.append("Failed to upload PlannedSet \(ps.id)") }
             }
+            result.localIds["PlannedSet"] = confirmedPlannedSetIds
 
             let sessions = try await dbQueue.read { db in try WorkoutSessionRow.fetchAll(db) }
-            result.localIds["WorkoutSession"] = Set(sessions.map { $0.id })
-            for session in sessions where !(existingServerIds["WorkoutSession"] ?? []).contains(session.id) {
+            var confirmedSessionIds = existingServerIds["WorkoutSession"] ?? []
+            for session in sessions where !confirmedSessionIds.contains(session.id) {
                 let record = workoutSessionToRecord(session)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionIds.insert(session.id) }
                 else { result.errors.append("Failed to upload WorkoutSession \(session.id)") }
             }
+            result.localIds["WorkoutSession"] = confirmedSessionIds
 
             let sessionExercises = try await dbQueue.read { db in try SessionExerciseRow.fetchAll(db) }
-            result.localIds["SessionExercise"] = Set(sessionExercises.map { $0.id })
-            for se in sessionExercises where !(existingServerIds["SessionExercise"] ?? []).contains(se.id) {
+            var confirmedSessionExIds = existingServerIds["SessionExercise"] ?? []
+            for se in sessionExercises where !confirmedSessionExIds.contains(se.id) {
                 let record = sessionExerciseToRecord(se)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionExIds.insert(se.id) }
                 else { result.errors.append("Failed to upload SessionExercise \(se.id)") }
             }
+            result.localIds["SessionExercise"] = confirmedSessionExIds
 
             let sessionSets = try await dbQueue.read { db in try SessionSetRow.fetchAll(db) }
-            result.localIds["SessionSet"] = Set(sessionSets.map { $0.id })
-            for ss in sessionSets where !(existingServerIds["SessionSet"] ?? []).contains(ss.id) {
+            var confirmedSessionSetIds = existingServerIds["SessionSet"] ?? []
+            for ss in sessionSets where !confirmedSessionSetIds.contains(ss.id) {
                 let record = sessionSetToRecord(ss)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionSetIds.insert(ss.id) }
                 else { result.errors.append("Failed to upload SessionSet \(ss.id)") }
             }
+            result.localIds["SessionSet"] = confirmedSessionSetIds
 
             let settings = try await dbQueue.read { db in try UserSettingsRow.fetchOne(db) }
             if let settings {
-                result.localIds["UserSettings"] = Set(["user-settings"])
-                if !(existingServerIds["UserSettings"] ?? []).contains(settings.id) {
+                var confirmedSettingsIds = existingServerIds["UserSettings"] ?? []
+                if !confirmedSettingsIds.contains(settings.id) {
                     let record = userSettingsToRecord(settings)
-                    if await saveRecord(record) != nil { result.count += 1 }
+                    if await saveRecord(record) != nil { result.count += 1; confirmedSettingsIds.insert(settings.id) }
                     else { result.errors.append("Failed to upload UserSettings") }
                 }
+                result.localIds["UserSettings"] = confirmedSettingsIds
             }
 
         } catch {
@@ -534,85 +568,97 @@ final class CloudKitService: @unchecked Sendable {
         do {
             let dbQueue = try DatabaseManager.shared.database()
 
+            // localIds tracks only IDs confirmed on the server (successful uploads).
+            // Failed uploads must NOT appear in localIds for correct delete handling.
+
             // Gym
             let gyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
-            result.localIds["Gym"] = Set(gyms.map { $0.id })
+            var confirmedGymIds = Set<String>()
             for gym in gyms {
                 let record = gymToRecord(gym)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedGymIds.insert(gym.id) }
                 else { result.errors.append("Failed to upload Gym \(gym.id)") }
             }
+            result.localIds["Gym"] = confirmedGymIds
 
             // GymEquipment
             let equipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
-            result.localIds["GymEquipment"] = Set(equipment.map { $0.id })
+            var confirmedEquipmentIds = Set<String>()
             for eq in equipment {
                 let record = gymEquipmentToRecord(eq)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedEquipmentIds.insert(eq.id) }
                 else { result.errors.append("Failed to upload GymEquipment \(eq.id)") }
             }
+            result.localIds["GymEquipment"] = confirmedEquipmentIds
 
             // WorkoutPlan (just the plan row, not exercises/sets — those are separate record types)
             let plans = try await dbQueue.read { db in try WorkoutPlanRow.fetchAll(db) }
-            result.localIds["WorkoutPlan"] = Set(plans.map { $0.id })
+            var confirmedPlanIds = Set<String>()
             for plan in plans {
                 let record = workoutPlanToRecord(plan)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlanIds.insert(plan.id) }
                 else { result.errors.append("Failed to upload WorkoutPlan \(plan.id)") }
             }
+            result.localIds["WorkoutPlan"] = confirmedPlanIds
 
             // PlannedExercise
             let plannedExercises = try await dbQueue.read { db in try PlannedExerciseRow.fetchAll(db) }
-            result.localIds["PlannedExercise"] = Set(plannedExercises.map { $0.id })
+            var confirmedPlannedExIds = Set<String>()
             for ex in plannedExercises {
                 let record = plannedExerciseToRecord(ex)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlannedExIds.insert(ex.id) }
                 else { result.errors.append("Failed to upload PlannedExercise \(ex.id)") }
             }
+            result.localIds["PlannedExercise"] = confirmedPlannedExIds
 
             // PlannedSet
             let plannedSets = try await dbQueue.read { db in try PlannedSetRow.fetchAll(db) }
-            result.localIds["PlannedSet"] = Set(plannedSets.map { $0.id })
+            var confirmedPlannedSetIds = Set<String>()
             for ps in plannedSets {
                 let record = plannedSetToRecord(ps)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedPlannedSetIds.insert(ps.id) }
                 else { result.errors.append("Failed to upload PlannedSet \(ps.id)") }
             }
+            result.localIds["PlannedSet"] = confirmedPlannedSetIds
 
             // WorkoutSession
             let sessions = try await dbQueue.read { db in try WorkoutSessionRow.fetchAll(db) }
-            result.localIds["WorkoutSession"] = Set(sessions.map { $0.id })
+            var confirmedSessionIds = Set<String>()
             for session in sessions {
                 let record = workoutSessionToRecord(session)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionIds.insert(session.id) }
                 else { result.errors.append("Failed to upload WorkoutSession \(session.id)") }
             }
+            result.localIds["WorkoutSession"] = confirmedSessionIds
 
             // SessionExercise
             let sessionExercises = try await dbQueue.read { db in try SessionExerciseRow.fetchAll(db) }
-            result.localIds["SessionExercise"] = Set(sessionExercises.map { $0.id })
+            var confirmedSessionExIds = Set<String>()
             for se in sessionExercises {
                 let record = sessionExerciseToRecord(se)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionExIds.insert(se.id) }
                 else { result.errors.append("Failed to upload SessionExercise \(se.id)") }
             }
+            result.localIds["SessionExercise"] = confirmedSessionExIds
 
             // SessionSet
             let sessionSets = try await dbQueue.read { db in try SessionSetRow.fetchAll(db) }
-            result.localIds["SessionSet"] = Set(sessionSets.map { $0.id })
+            var confirmedSessionSetIds = Set<String>()
             for ss in sessionSets {
                 let record = sessionSetToRecord(ss)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSessionSetIds.insert(ss.id) }
                 else { result.errors.append("Failed to upload SessionSet \(ss.id)") }
             }
+            result.localIds["SessionSet"] = confirmedSessionSetIds
 
             // UserSettings
             let settings = try await dbQueue.read { db in try UserSettingsRow.fetchOne(db) }
             if let settings {
-                result.localIds["UserSettings"] = Set(["user-settings"])
+                var confirmedSettingsIds = Set<String>()
                 let record = userSettingsToRecord(settings)
-                if await saveRecord(record) != nil { result.count += 1 }
+                if await saveRecord(record) != nil { result.count += 1; confirmedSettingsIds.insert(settings.id) }
                 else { result.errors.append("Failed to upload UserSettings") }
+                result.localIds["UserSettings"] = confirmedSettingsIds
             }
 
         } catch {
