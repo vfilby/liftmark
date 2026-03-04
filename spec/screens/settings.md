@@ -233,7 +233,10 @@ The screen MUST display meaningful content — it must never appear as an empty 
 
 2. **Sync Controls Section** — Only shown when status is `available`:
    - **Enable Sync** toggle — Enables/disables automatic background sync
-   - **Last Synced** label — Shows timestamp of last successful sync, or "Never" if not yet synced
+   - **Last Synced** row — Absolute date/time of last successful sync (e.g., "Mar 1, 2026 at 3:45 PM"), or "Not yet synced" if no sync has occurred. Uses `DateFormatter` with `medium` date style and `short` time style.
+   - **Uploaded** row — Number of records uploaded in the last sync (hidden when no sync has occurred yet)
+   - **Downloaded** row — Number of records downloaded in the last sync (hidden when no sync has occurred yet)
+   - **Conflicts** row — Number of conflicts resolved in the last sync (hidden when 0 or no sync)
    - **Sync Now** button — Manually triggers a sync operation
 
 3. **Sync Info Section** — Always visible:
@@ -251,16 +254,21 @@ The screen MUST display meaningful content — it must never appear as an empty 
 | Status label | `sync-status-label` | Text | Human-readable status text |
 | Status description | `sync-status-description` | Text | Detailed explanation of current status |
 | Enable sync toggle | `switch-enable-sync` | Switch | Toggle sync on/off |
-| Last synced label | `sync-last-synced` | Text | Timestamp of last sync |
+| Last synced date | `sync-last-synced` | Text | Absolute date/time of last sync, or "Not yet synced" |
+| Records uploaded | `sync-records-uploaded` | Text | Count of records uploaded in last sync (hidden until first sync) |
+| Records downloaded | `sync-records-downloaded` | Text | Count of records downloaded in last sync (hidden until first sync) |
+| Conflicts resolved | `sync-records-conflicts` | Text | Count of conflicts resolved (hidden when 0 or no sync) |
 | Sync now button | `sync-now-button` | Button | Manual sync trigger |
 | Check status button | `sync-check-status` | Button | Refresh iCloud status |
 | Info text | `sync-info-text` | Text | Explanatory description |
 
 ### Behavior
-- On screen appear: automatically calls `getAccountStatus()` and displays result
+- On screen appear: automatically calls `getAccountStatus()` and loads last sync stats from persistent storage
 - **Check Status** button: re-fetches status (useful after user signs into iCloud in system Settings)
 - **Enable Sync** toggle: only interactive when status is `available`; grayed out otherwise
-- **Sync Now** button: only enabled when sync is enabled and status is `available`; shows a spinner during sync
+- **Sync Now** button: only enabled when sync is enabled and status is `available`; shows a spinner during sync; updates last synced date and record counts on completion
+- **Last Synced** date/time: displayed as absolute date (not relative); formatted as "MMM d, yyyy 'at' h:mm a"; shows "Not yet synced" when no sync has occurred; updates immediately after a successful Sync Now
+- **Uploaded / Downloaded / Conflicts** rows: only visible after at least one successful sync; update immediately after Sync Now completes; persisted across app launches (stored alongside last sync date in sync metadata)
 
 ---
 

@@ -31,6 +31,14 @@ struct SyncResult {
     var timestamp: Date
 }
 
+// MARK: - Last Sync Stats
+
+struct LastSyncStats {
+    var uploaded: Int
+    var downloaded: Int
+    var conflicts: Int
+}
+
 // MARK: - CloudKitService
 
 final class CloudKitService: @unchecked Sendable {
@@ -243,7 +251,7 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Sync All
 
-    /// Perform a full sync: upload all local entities, download all remote records, merge with last-writer-wins.
+    /// Perform a full sync: download first (merge with last-writer-wins), then upload only new local records.
     func syncAll() async -> SyncResult {
         var result = SyncResult(success: false, uploaded: 0, downloaded: 0, conflicts: 0, errors: [], timestamp: Date())
 
@@ -258,20 +266,30 @@ final class CloudKitService: @unchecked Sendable {
         // 2. Detect first sync
         let isFirstSync = checkIsFirstSync()
 
-        // 3. Upload all local entities in dependency order
-        let uploadResult = await uploadAllEntities()
-        result.uploaded = uploadResult.count
-        result.errors.append(contentsOf: uploadResult.errors)
-
-        // 4. Download all remote records and merge
+        // 3. Download all remote records and merge first.
+        //    This establishes the server state before we decide what to upload,
+        //    avoiding the upload storm where every record fails with serverRecordChanged
+        //    because the server already has it (e.g. synced from another app/device).
         let downloadResult = await downloadAndMergeAllEntities(isFirstSync: isFirstSync)
         result.downloaded = downloadResult.count
         result.conflicts = downloadResult.conflicts
         result.errors.append(contentsOf: downloadResult.errors)
 
-        // 5. Handle deletes (skip on first sync)
+        // 4. Upload only local records that the server does not already have.
+        //    Records already on the server were resolved in the download phase above.
+        let uploadResult = await uploadNewEntities(existingServerIds: downloadResult.remoteIds)
+        result.uploaded = uploadResult.count
+        result.errors.append(contentsOf: uploadResult.errors)
+
+        // 5. Handle local-only deletes: records on server that no longer exist locally
+        //    were deleted on this device → propagate the delete to the server.
+        //    NOTE: We intentionally do NOT delete server records that are missing locally
+        //    before the download phase — those are legitimately new remote records.
+        //    Phase 1 limitation: without a sync queue we cannot distinguish "added remotely"
+        //    from "deleted locally" for records that were present in a previous sync but
+        //    are now absent from the local DB. Remote deletes are deferred to Phase 2.
         if !isFirstSync {
-            let deleteResult = await handleDeletes(
+            let deleteResult = await handleLocalDeletes(
                 localIds: uploadResult.localIds,
                 remoteIds: downloadResult.remoteIds
             )
@@ -279,7 +297,7 @@ final class CloudKitService: @unchecked Sendable {
         }
 
         // 6. Update sync metadata
-        updateLastSyncDate()
+        updateSyncMetadata(uploaded: result.uploaded, downloaded: result.downloaded, conflicts: result.conflicts)
 
         result.success = result.errors.isEmpty
         result.timestamp = Date()
@@ -337,18 +355,74 @@ final class CloudKitService: @unchecked Sendable {
         }
     }
 
-    private func updateLastSyncDate() {
+    func getLastSyncStats() -> LastSyncStats? {
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+            return try dbQueue.read { db in
+                let row = try Row.fetchOne(db, sql: "SELECT last_sync_date, last_uploaded, last_downloaded, last_conflicts FROM sync_metadata LIMIT 1")
+                guard let row, let _: String = row["last_sync_date"] else { return nil }
+                return LastSyncStats(
+                    uploaded: row["last_uploaded"] ?? 0,
+                    downloaded: row["last_downloaded"] ?? 0,
+                    conflicts: row["last_conflicts"] ?? 0
+                )
+            }
+        } catch {
+            Logger.shared.error(.app, "Failed to read last sync stats", error: error)
+            return nil
+        }
+    }
+
+    func getSyncEnabled() -> Bool {
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+            return try dbQueue.read { db in
+                let row = try Row.fetchOne(db, sql: "SELECT sync_enabled FROM sync_metadata LIMIT 1")
+                if let row, let value: Int = row["sync_enabled"] {
+                    return value != 0
+                }
+                return true // default on
+            }
+        } catch {
+            return true
+        }
+    }
+
+    func setSyncEnabled(_ enabled: Bool) {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
             try dbQueue.write { db in
                 let existing = try Row.fetchOne(db, sql: "SELECT id FROM sync_metadata LIMIT 1")
                 if existing != nil {
-                    try db.execute(sql: "UPDATE sync_metadata SET last_sync_date = ?, updated_at = ?", arguments: [now, now])
+                    try db.execute(sql: "UPDATE sync_metadata SET sync_enabled = ?, updated_at = ?", arguments: [enabled ? 1 : 0, now])
                 } else {
                     try db.execute(
-                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-                        arguments: [IDGenerator.generate(), UUID().uuidString, now, 1, now, now]
+                        sql: "INSERT INTO sync_metadata (id, device_id, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                        arguments: [IDGenerator.generate(), UUID().uuidString, enabled ? 1 : 0, now, now]
+                    )
+                }
+            }
+        } catch {
+            Logger.shared.error(.app, "Failed to update sync enabled", error: error)
+        }
+    }
+
+    private func updateSyncMetadata(uploaded: Int, downloaded: Int, conflicts: Int) {
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+            let now = ISO8601DateFormatter().string(from: Date())
+            try dbQueue.write { db in
+                let existing = try Row.fetchOne(db, sql: "SELECT id FROM sync_metadata LIMIT 1")
+                if existing != nil {
+                    try db.execute(
+                        sql: "UPDATE sync_metadata SET last_sync_date = ?, last_uploaded = ?, last_downloaded = ?, last_conflicts = ?, updated_at = ?",
+                        arguments: [now, uploaded, downloaded, conflicts, now]
+                    )
+                } else {
+                    try db.execute(
+                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, last_uploaded, last_downloaded, last_conflicts, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        arguments: [IDGenerator.generate(), UUID().uuidString, now, uploaded, downloaded, conflicts, 1, now, now]
                     )
                 }
             }
@@ -359,6 +433,99 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Upload
 
+    /// Upload only local records that do not yet exist on the server.
+    /// Records already present on the server are resolved by the download/merge phase.
+    private func uploadNewEntities(existingServerIds: [String: Set<String>]) async -> UploadResult {
+        var result = UploadResult()
+
+        // Upload order per spec: Gym, GymEquipment, WorkoutPlan, PlannedExercise, PlannedSet,
+        // WorkoutSession, SessionExercise, SessionSet, UserSettings
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+
+            let gyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
+            result.localIds["Gym"] = Set(gyms.map { $0.id })
+            for gym in gyms where !(existingServerIds["Gym"] ?? []).contains(gym.id) {
+                let record = gymToRecord(gym)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload Gym \(gym.id)") }
+            }
+
+            let equipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
+            result.localIds["GymEquipment"] = Set(equipment.map { $0.id })
+            for eq in equipment where !(existingServerIds["GymEquipment"] ?? []).contains(eq.id) {
+                let record = gymEquipmentToRecord(eq)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload GymEquipment \(eq.id)") }
+            }
+
+            let plans = try await dbQueue.read { db in try WorkoutPlanRow.fetchAll(db) }
+            result.localIds["WorkoutPlan"] = Set(plans.map { $0.id })
+            for plan in plans where !(existingServerIds["WorkoutPlan"] ?? []).contains(plan.id) {
+                let record = workoutPlanToRecord(plan)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload WorkoutPlan \(plan.id)") }
+            }
+
+            let plannedExercises = try await dbQueue.read { db in try PlannedExerciseRow.fetchAll(db) }
+            result.localIds["PlannedExercise"] = Set(plannedExercises.map { $0.id })
+            for ex in plannedExercises where !(existingServerIds["PlannedExercise"] ?? []).contains(ex.id) {
+                let record = plannedExerciseToRecord(ex)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload PlannedExercise \(ex.id)") }
+            }
+
+            let plannedSets = try await dbQueue.read { db in try PlannedSetRow.fetchAll(db) }
+            result.localIds["PlannedSet"] = Set(plannedSets.map { $0.id })
+            for ps in plannedSets where !(existingServerIds["PlannedSet"] ?? []).contains(ps.id) {
+                let record = plannedSetToRecord(ps)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload PlannedSet \(ps.id)") }
+            }
+
+            let sessions = try await dbQueue.read { db in try WorkoutSessionRow.fetchAll(db) }
+            result.localIds["WorkoutSession"] = Set(sessions.map { $0.id })
+            for session in sessions where !(existingServerIds["WorkoutSession"] ?? []).contains(session.id) {
+                let record = workoutSessionToRecord(session)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload WorkoutSession \(session.id)") }
+            }
+
+            let sessionExercises = try await dbQueue.read { db in try SessionExerciseRow.fetchAll(db) }
+            result.localIds["SessionExercise"] = Set(sessionExercises.map { $0.id })
+            for se in sessionExercises where !(existingServerIds["SessionExercise"] ?? []).contains(se.id) {
+                let record = sessionExerciseToRecord(se)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload SessionExercise \(se.id)") }
+            }
+
+            let sessionSets = try await dbQueue.read { db in try SessionSetRow.fetchAll(db) }
+            result.localIds["SessionSet"] = Set(sessionSets.map { $0.id })
+            for ss in sessionSets where !(existingServerIds["SessionSet"] ?? []).contains(ss.id) {
+                let record = sessionSetToRecord(ss)
+                if await saveRecord(record) != nil { result.count += 1 }
+                else { result.errors.append("Failed to upload SessionSet \(ss.id)") }
+            }
+
+            let settings = try await dbQueue.read { db in try UserSettingsRow.fetchOne(db) }
+            if let settings {
+                result.localIds["UserSettings"] = Set(["user-settings"])
+                if !(existingServerIds["UserSettings"] ?? []).contains(settings.id) {
+                    let record = userSettingsToRecord(settings)
+                    if await saveRecord(record) != nil { result.count += 1 }
+                    else { result.errors.append("Failed to upload UserSettings") }
+                }
+            }
+
+        } catch {
+            result.errors.append("Database error during upload: \(error.localizedDescription)")
+            Logger.shared.error(.app, "Sync upload failed", error: error)
+        }
+
+        return result
+    }
+
+    /// Keep the full upload method for internal use (e.g. force-push scenarios).
     private func uploadAllEntities() async -> UploadResult {
         var result = UploadResult()
 
@@ -461,6 +628,9 @@ final class CloudKitService: @unchecked Sendable {
     private func downloadAndMergeAllEntities(isFirstSync: Bool) async -> DownloadResult {
         var result = DownloadResult()
 
+        // Collect IDs belonging to the active workout session — these must not be overwritten by sync.
+        let protected = getActiveSessionProtectedIds()
+
         // Download order per spec (same as upload): parents before children
         let recordTypes = ["Gym", "GymEquipment", "WorkoutPlan", "PlannedExercise", "PlannedSet",
                            "WorkoutSession", "SessionExercise", "SessionSet", "UserSettings"]
@@ -470,6 +640,12 @@ final class CloudKitService: @unchecked Sendable {
             var ids = Set<String>()
             for record in remoteRecords {
                 ids.insert(record.recordId)
+
+                // Skip merging records that belong to the active session
+                if let protectedIds = protected.byRecordType[recordType], protectedIds.contains(record.recordId) {
+                    continue
+                }
+
                 do {
                     let merged = try mergeRecord(record, recordType: recordType)
                     if merged { result.count += 1 }
@@ -511,10 +687,69 @@ final class CloudKitService: @unchecked Sendable {
         }
     }
 
+    // MARK: - Active Session Protection
+
+    /// IDs belonging to an in-progress workout session that must not be deleted or overwritten by sync.
+    struct ActiveSessionProtectedIds {
+        let sessionId: String?
+        let exerciseIds: Set<String>
+        let setIds: Set<String>
+
+        /// All protected IDs keyed by CloudKit record type.
+        var byRecordType: [String: Set<String>] {
+            var map: [String: Set<String>] = [:]
+            if let sid = sessionId { map["WorkoutSession"] = [sid] }
+            if !exerciseIds.isEmpty { map["SessionExercise"] = exerciseIds }
+            if !setIds.isEmpty { map["SessionSet"] = setIds }
+            return map
+        }
+
+        static let empty = ActiveSessionProtectedIds(sessionId: nil, exerciseIds: [], setIds: [])
+    }
+
+    /// Query the database for the active (in_progress) session and collect all IDs that belong to it.
+    func getActiveSessionProtectedIds() -> ActiveSessionProtectedIds {
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+            return try dbQueue.read { db in
+                guard let sessionRow = try Row.fetchOne(db, sql: "SELECT id FROM workout_sessions WHERE status = 'in_progress' LIMIT 1"),
+                      let sessionId: String = sessionRow["id"] else {
+                    return .empty
+                }
+
+                let exerciseRows = try Row.fetchAll(db, sql: "SELECT id FROM session_exercises WHERE workout_session_id = ?", arguments: [sessionId])
+                let exerciseIds = Set(exerciseRows.compactMap { $0["id"] as String? })
+
+                var setIds = Set<String>()
+                if !exerciseIds.isEmpty {
+                    let placeholders = exerciseIds.map { _ in "?" }.joined(separator: ",")
+                    let setRows = try Row.fetchAll(db, sql: "SELECT id FROM session_sets WHERE session_exercise_id IN (\(placeholders))", arguments: StatementArguments(Array(exerciseIds)))
+                    setIds = Set(setRows.compactMap { $0["id"] as String? })
+                }
+
+                return ActiveSessionProtectedIds(sessionId: sessionId, exerciseIds: exerciseIds, setIds: setIds)
+            }
+        } catch {
+            Logger.shared.error(.app, "Failed to query active session for sync protection", error: error)
+            return .empty
+        }
+    }
+
     // MARK: - Delete Handling
 
-    private func handleDeletes(localIds: [String: Set<String>], remoteIds: [String: Set<String>]) async -> DeleteResult {
+    /// Handle deletes propagated from the server: records present locally but absent from the
+    /// server were deleted on another device and should be removed locally.
+    ///
+    /// Remote deletes (propagating local deletions to the server) are intentionally omitted in
+    /// Phase 1. Without a sync queue we cannot reliably distinguish "record deleted locally" from
+    /// "record newly added to the server by another device". That distinction requires Phase 2
+    /// change-tracking. Incorrectly deleting server records would cause data loss in the
+    /// upload-storm scenario we already observed.
+    private func handleLocalDeletes(localIds: [String: Set<String>], remoteIds: [String: Set<String>]) async -> DeleteResult {
         var result = DeleteResult()
+
+        // Collect IDs belonging to the active workout session — these must never be deleted by sync.
+        let protected = getActiveSessionProtectedIds()
 
         // Delete order: children before parents (reverse of sync order)
         let deleteOrder = ["SessionSet", "SessionExercise", "WorkoutSession",
@@ -525,22 +760,19 @@ final class CloudKitService: @unchecked Sendable {
             let local = localIds[recordType] ?? []
             let remote = remoteIds[recordType] ?? []
 
-            // Records in local but not remote → deleted on another device → delete locally
-            let toDeleteLocally = local.subtracting(remote)
+            // Records present locally but missing from server → deleted on another device → delete locally
+            var toDeleteLocally = local.subtracting(remote)
+
+            // Exclude active session records from deletion
+            if let protectedIds = protected.byRecordType[recordType] {
+                toDeleteLocally.subtract(protectedIds)
+            }
+
             for id in toDeleteLocally {
                 do {
                     try deleteLocalRecord(id: id, recordType: recordType)
                 } catch {
                     result.errors.append("Failed to delete local \(recordType) \(id): \(error.localizedDescription)")
-                }
-            }
-
-            // Records in remote but not local → deleted on this device → delete remotely
-            let toDeleteRemotely = remote.subtracting(local)
-            for id in toDeleteRemotely {
-                let success = await deleteRecord(recordId: id, recordType: recordType)
-                if !success {
-                    result.errors.append("Failed to delete remote \(recordType) \(id)")
                 }
             }
         }

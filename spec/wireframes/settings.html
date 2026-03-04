@@ -682,6 +682,180 @@
 </div>
 
 
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  4. iCLOUD SYNC SUB-SCREEN                                      ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">iCloud Sync</div>
+  <div class="example-desc">Sub-screen showing iCloud status, absolute last-sync date with record counts, and sync controls. Pushed from Settings.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Nav header -->
+      <div class="nav-header">
+        <button class="nav-back">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <div class="nav-title">iCloud Sync</div>
+      </div>
+
+      <!-- iCloud Status section -->
+      <div class="settings-section">
+        <div class="settings-section-header">iCloud Status</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:15px;font-weight:500;color:var(--textPrimary);">iCloud Available</span>
+              <span style="font-size:13px;color:var(--textSecondary);">Your iCloud account is connected and ready for sync.</span>
+            </div>
+          </div>
+          <div class="settings-btn" style="justify-content:flex-start;gap:8px;color:var(--blue);">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Check Status
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">sync-status-badge &middot; sync-status-label &middot; sync-status-description &middot; sync-check-status</span>
+        </div>
+      </div>
+
+      <!-- Sync Controls section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Sync Controls</div>
+        <div class="settings-card">
+          <!-- Enable sync toggle -->
+          <div class="settings-row">
+            <span class="settings-row-label">Enable Sync</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <!-- Last synced date (absolute) -->
+          <div class="settings-row">
+            <span class="settings-row-label">Last Synced</span>
+            <span class="settings-row-value" style="font-size:14px;">Mar 1, 2026 at 3:45 PM</span>
+          </div>
+          <!-- Records uploaded -->
+          <div class="settings-row">
+            <span class="settings-row-label">Uploaded</span>
+            <span class="settings-row-value">42 records</span>
+          </div>
+          <!-- Records downloaded -->
+          <div class="settings-row">
+            <span class="settings-row-label">Downloaded</span>
+            <span class="settings-row-value">18 records</span>
+          </div>
+          <!-- Sync Now button -->
+          <div class="settings-btn" style="justify-content:center;gap:8px;color:var(--blue);">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            Sync Now
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">switch-enable-sync &middot; sync-last-synced &middot; sync-records-uploaded &middot; sync-records-downloaded &middot; sync-now-button</span>
+        </div>
+      </div>
+
+      <!-- About iCloud Sync section -->
+      <div class="settings-section">
+        <div class="settings-section-header">About iCloud Sync</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;">
+            <span style="font-size:15px;color:var(--textSecondary);line-height:1.4;">iCloud Sync keeps your workout plans, session history, and settings in sync across all your devices signed into the same iCloud account.</span>
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">sync-info-text</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  5. iCLOUD SYNC — NOT YET SYNCED STATE                         ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">iCloud Sync (Not Yet Synced)</div>
+  <div class="example-desc">Same sub-screen when iCloud is available but no sync has run yet. Record counts are hidden; date shows "Not yet synced".</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Nav header -->
+      <div class="nav-header">
+        <button class="nav-back">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <div class="nav-title">iCloud Sync</div>
+      </div>
+
+      <!-- iCloud Status section -->
+      <div class="settings-section">
+        <div class="settings-section-header">iCloud Status</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:15px;font-weight:500;color:var(--textPrimary);">iCloud Available</span>
+              <span style="font-size:13px;color:var(--textSecondary);">Your iCloud account is connected and ready for sync.</span>
+            </div>
+          </div>
+          <div class="settings-btn" style="justify-content:flex-start;gap:8px;color:var(--blue);">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Check Status
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync Controls section -->
+      <div class="settings-section">
+        <div class="settings-section-header">Sync Controls</div>
+        <div class="settings-card">
+          <!-- Enable sync toggle -->
+          <div class="settings-row">
+            <span class="settings-row-label">Enable Sync</span>
+            <div class="toggle-switch on">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <!-- Not yet synced -->
+          <div class="settings-row">
+            <span class="settings-row-label">Last Synced</span>
+            <span class="settings-row-value" style="font-style:italic;">Not yet synced</span>
+          </div>
+          <!-- Sync Now button -->
+          <div class="settings-btn" style="justify-content:center;gap:8px;color:var(--blue);">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            Sync Now
+          </div>
+        </div>
+        <div style="padding:4px 0 0 4px">
+          <span class="anno-inline">sync-last-synced shows "Not yet synced" &middot; uploaded/downloaded rows hidden</span>
+        </div>
+      </div>
+
+      <!-- About iCloud Sync section -->
+      <div class="settings-section">
+        <div class="settings-section-header">About iCloud Sync</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;">
+            <span style="font-size:15px;color:var(--textSecondary);line-height:1.4;">iCloud Sync keeps your workout plans, session history, and settings in sync across all your devices signed into the same iCloud account.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 </div><!-- /gallery -->
 
 <script>

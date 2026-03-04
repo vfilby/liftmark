@@ -2,6 +2,36 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Ground Rules
+
+1. Spec-based Project
+
+- Anytime you add a feature, fix a bug, or performance maintenance you first update the spec
+- Spec changes should always include tests tests required to validate the changes.
+- Once the spec is correct update the app to match the spec.
+
+2. Delegate to subagents and teams
+
+- Use sub-agent delegation and agent teams liberally to reduce context degradation.
+- Offload research, exploration, and parallel analysis to subagents
+- For complex problems, throw more compute at it via subagents
+- One task per subagent for focused execution
+
+3. Verification Before Done
+- Never mark a task complete without proving it works
+- Diff behavior between main and your changes when relevant
+- Ask yourself, "Would a staff engineer approve this?"
+- Run tests, check logs, and demonstrate correctness.
+
+4. Demand Elegance (Balanced)
+- For non-trivial changes, pause and ask, "Is there a more elegant way?"
+- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
+- Skip this for simple, obvious fixes 
+- Don't over-engineer.
+- Challenge your own work before presenting it
+
+
+
 ## Repository Structure
 
 This is a multi-platform project with two app targets:

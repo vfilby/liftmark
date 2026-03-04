@@ -163,6 +163,12 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - Back (via Pause) → previous screen
 - `/workout/summary` — after finishing workout
 
+## Data Integrity
+
+- All exercises from the workout plan MUST persist throughout the entire workout session — no exercise may be removed except by explicit user action
+- Workout data MUST survive app backgrounding, foreground transitions, and sync operations
+- On crash recovery (app kill/restart), the active session MUST be restored from the database with all exercises and sets intact, including their completion status
+
 ## Error/Empty States
 - **No active session**: LoadingView with "Loading workout..."
 - **Store error**: Alert dialog with error message

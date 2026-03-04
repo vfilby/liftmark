@@ -9,7 +9,7 @@ final class DatabaseManager: @unchecked Sendable {
     private var dbQueue: DatabaseQueue?
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 1
+    private static let currentSchemaVersion = 2
 
     private init() {}
 
@@ -100,6 +100,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 1 {
                 try migrateToV1(db)
+            }
+
+            if currentVersion < 2 {
+                try migrateToV2(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -352,5 +356,12 @@ final class DatabaseManager: @unchecked Sendable {
                 arguments: [IDGenerator.generate(), "lbs", 1, 1, "auto", 1, now, now]
             )
         }
+    }
+
+    private func migrateToV2(_ db: Database) throws {
+        // Add last sync stat columns to sync_metadata for displaying sync history in UI
+        try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_uploaded INTEGER DEFAULT 0")
+        try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_downloaded INTEGER DEFAULT 0")
+        try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_conflicts INTEGER DEFAULT 0")
     }
 }
