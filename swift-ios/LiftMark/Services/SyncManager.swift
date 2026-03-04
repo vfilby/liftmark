@@ -25,7 +25,14 @@ actor SyncManager {
         isSyncing = true
         Logger.shared.info(.sync, "Sync triggered")
 
+        let snapshot = SyncSessionGuard.takeSnapshot()
+
         let result = await CloudKitService.shared.syncAll()
+
+        // Validate BEFORE posting .syncCompleted so SessionStore picks up restored data
+        if let snapshot {
+            SyncSessionGuard.validateAndRestore(snapshot: snapshot)
+        }
 
         isSyncing = false
 

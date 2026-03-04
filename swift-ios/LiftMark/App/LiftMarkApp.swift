@@ -36,17 +36,21 @@ struct LiftMarkApp: App {
                     settingsStore.loadSettings()
                     gymStore.loadGyms()
                     handleLaunchArguments()
-                    Task {
-                        await SyncManager.shared.triggerSync()
-                        await SyncManager.shared.startPolling()
+                    if !Self.isRunningTests {
+                        Task {
+                            await SyncManager.shared.triggerSync()
+                            await SyncManager.shared.startPolling()
+                        }
                     }
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     switch newPhase {
                     case .active:
-                        Task {
-                            await SyncManager.shared.triggerSync()
-                            await SyncManager.shared.startPolling()
+                        if !Self.isRunningTests {
+                            Task {
+                                await SyncManager.shared.triggerSync()
+                                await SyncManager.shared.startPolling()
+                            }
                         }
                     case .background:
                         Task {
@@ -67,6 +71,8 @@ struct LiftMarkApp: App {
                 }
         }
     }
+
+    private static let isRunningTests = NSClassFromString("XCTestCase") != nil
 
     private func handleLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments

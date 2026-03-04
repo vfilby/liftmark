@@ -211,16 +211,19 @@ Maps to the `WorkoutPlan` entity in the data model.
 
 ## Sync Strategy
 
-### Phase 1: Full Upload/Download (Current Target)
+### Phase 1: Full Download-then-Upload (Current Implementation)
 
-The initial sync implementation uses a simple full-state approach:
+The sync runs in **download-first** order to avoid an upload storm when another device (or app version) has already synced records to the CloudKit container:
 
-1. **Upload**: Serialize all local entities → save as CloudKit records
-2. **Download**: Fetch all CloudKit records → deserialize → merge into local database
-3. **Conflict resolution**: Last-writer-wins based on `updatedAt` timestamp
-4. **Trigger**: Manual "Sync Now" button only (no automatic background sync)
+1. **Download**: Fetch all CloudKit records → deserialize → merge into local database (last-writer-wins)
+2. **Upload new-only**: Serialize local records that do NOT already exist on the server → save as CloudKit records. Records already present on the server were resolved in step 1 and are NOT re-uploaded.
+3. **Local deletes**: Records present locally but absent from the server were deleted on another device → delete locally.
+4. **No remote deletes in Phase 1**: Without a sync queue there is no reliable way to distinguish "record deleted locally" from "record recently added by another device". Remote deletes are deferred to Phase 2 to avoid accidental data loss.
+5. **Conflict resolution**: Last-writer-wins based on `updatedAt` timestamp (applied during download merge).
 
-This phase prioritizes correctness and simplicity over efficiency.
+**Why download-first?** If an upload-first strategy is used, every record that already exists on the server (e.g. synced from the React Native app) triggers a `serverRecordChanged` error, requiring a fetch + retry per record — O(2N) CloudKit API calls instead of O(N).
+
+**Sync triggers**: App launch, foreground transition, manual "Sync Now" button, and 5-minute background polling.
 
 ### Phase 2: Change Tracking (Future)
 
@@ -267,19 +270,80 @@ For `UserSettings` (singleton): merge field-by-field, taking the newer value for
 
 ## Delete Handling
 
-Deletes are handled by comparing local and remote record sets:
+### Phase 1 (current)
 
-- Record exists locally but not remotely → was deleted on another device → delete locally
-- Record exists remotely but not locally → was deleted on this device → delete remotely
-- **Safety**: Never auto-delete during the first sync on a new device. On first sync, only merge (add missing records to both sides).
+Only **server-to-local** deletes are propagated:
+
+- Record exists locally but not on server → was deleted on another device → **delete locally**
+- Record exists on server but not locally → **do nothing** (could be a record newly added by another device; cannot distinguish without change tracking)
+- **First sync safety**: Skip all delete processing on first sync entirely.
+
+### Active Session Protection
+
+During sync, all records belonging to an `in_progress` workout session MUST be excluded from:
+
+1. **Delete processing** (`handleLocalDeletes`) — never delete a `WorkoutSession` with `status = 'in_progress'`, nor any `SessionExercise` or `SessionSet` belonging to it
+2. **Download merge overwrite** — never overwrite local session-tier records (`WorkoutSession`, `SessionExercise`, `SessionSet`) that belong to an active session with remote data
+
+Sync of non-session data (plans, gyms, settings, completed sessions) proceeds normally even when a workout is active.
+
+**Rationale**: The active session is the user's live working state. Remote data is always stale relative to the local active session. Sync runs frequently (foreground transitions, 5-minute polling) and the remote snapshot may not include records created since the download phase began — deleting or overwriting them would destroy the user's in-progress work.
+
+### Sync Session Guard
+
+A secondary safety net that wraps every sync operation to detect and restore data loss in active workout sessions, regardless of whether the primary Active Session Protection works correctly.
+
+**Flow**:
+1. Before `syncAll()`: snapshot the in-progress session (session row, all exercise rows, all set rows)
+2. After `syncAll()` returns (before posting `syncCompleted`): compare current DB state against snapshot
+3. If any exercise or set IDs from the snapshot are missing: re-insert them from the snapshot
+
+**Behavior**:
+- No active session → skip snapshot/validation entirely
+- All IDs present after sync → log "intact", no action
+- Missing IDs detected → log as `DATA LOSS` error, restore rows, log as `RESTORED`
+- Restore failure → log as `RESTORE FAILED` error, sync continues normally
+
+**Edge cases**:
+- User adds exercises during sync: new IDs are not in the snapshot, so they are not flagged as missing
+- User deletes during sync: guard restores the deleted rows (acceptable false positive — safer than data loss)
+- Session itself deleted by sync: full restore of session + all children
+- Snapshot failure: returns nil, guard is skipped
+
+**Logging** (all `.sync` category, `[sync-guard]` prefix):
+
+| Event | Level | Pattern |
+|-------|-------|---------|
+| No active session | debug | `[sync-guard] No active session, skipping snapshot` |
+| Snapshot taken | debug | `[sync-guard] Snapshot: session={id}, exercises={n}, sets={n}` |
+| Session intact | debug | `[sync-guard] Intact after sync: exercises={n}, sets={n}` |
+| Data loss detected | error | `[sync-guard] DATA LOSS: missing {n} exercises {ids}, {n} sets {ids}` |
+| Restored | error | `[sync-guard] RESTORED {n} exercises, {n} sets` |
+| Restore failed | error | `[sync-guard] RESTORE FAILED: {error}` |
+
+**Tests** (`SyncSessionGuardTests`):
+1. Snapshot captures active session with correct IDs and counts
+2. Snapshot returns nil when no active session
+3. Snapshot excludes completed sessions
+4. Validate returns true when session is intact
+5. Validate detects and restores missing exercises
+6. Validate detects and restores missing sets
+7. Restore preserves newly-added exercises not in original snapshot
+
+### Phase 2 (future — requires sync_queue)
+
+Once change tracking is in place, both directions are supported:
+
+- Record exists locally but not on server → deleted remotely → delete locally
+- Record exists on server but not locally AND was previously synced → deleted locally → delete from server
 
 ### First Sync Detection
 
 A device is performing its "first sync" when `sync_metadata.last_sync_date` is NULL. In this case:
 - Download all remote records and merge with local data
-- Upload all local records that don't exist remotely
-- Do NOT delete any records on either side
-- Set `last_sync_date` after successful completion
+- Upload only local records that don't exist on the server
+- Skip all delete processing
+- Set `last_sync_date` after completion (regardless of individual record errors)
 
 ## Error Handling
 
@@ -296,6 +360,10 @@ The iCloud Sync settings screen (see `spec/screens/settings.md`, sub-screen: iCl
 1. The current iCloud account status (with a colored badge and human-readable description)
 2. Explanatory text about what iCloud Sync does
 3. Guidance for the user based on their current status (e.g., "Sign in to iCloud to enable sync")
+
+### UI Refresh
+
+The sync settings screen MUST refresh its displayed sync stats (last sync date, uploaded/downloaded counts) whenever a background sync completes — not only when the screen first appears. Subscribe to the `syncCompleted` notification and reload stats from persistent storage on receipt.
 
 See `spec/screens/settings.md` for the complete iCloud Sync sub-screen layout specification.
 
