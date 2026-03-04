@@ -764,6 +764,7 @@ private struct ActiveExerciseCard: View {
                         set: set,
                         setNumber: setIndex + 1,
                         isCurrent: setIndex == currentSetIndex,
+                        exerciseName: exercise.exerciseName,
                         equipmentType: exercise.equipmentType,
                         onComplete: { weight, reps in
                             onCompleteSet(setIndex, weight, reps, nil)
@@ -1387,6 +1388,7 @@ private struct SupersetCard: View {
                         set: item.set,
                         setNumber: item.setIndex + 1,
                         isCurrent: isCurrent,
+                        exerciseName: item.exercise.exerciseName,
                         equipmentType: item.exercise.equipmentType,
                         onComplete: { weight, reps in
                             onCompleteSet(item.exerciseIndex, item.setIndex, weight, reps, nil)

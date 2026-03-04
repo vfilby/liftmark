@@ -16,6 +16,7 @@ struct SetRowView: View {
     let set: SessionSet
     let setNumber: Int
     let isCurrent: Bool
+    let exerciseName: String
     let equipmentType: String?
     let onComplete: (Double?, Int?) -> Void
     let onSkip: () -> Void
@@ -169,6 +170,28 @@ struct SetRowView: View {
                 Text(target)
                     .font(.caption)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+            }
+
+            // Plate math info — barbell exercises only
+            if let plateMathText = plateMathText {
+                HStack(spacing: 6) {
+                    Image(systemName: "scalemass")
+                        .font(.caption2)
+                    Text(plateMathText)
+                        .font(.caption)
+                }
+                .foregroundStyle(Color.blue)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.blue.opacity(0.08))
+                .overlay(
+                    Rectangle()
+                        .frame(width: 3)
+                        .foregroundStyle(Color.blue.opacity(0.4)),
+                    alignment: .leading
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
@@ -379,6 +402,23 @@ struct SetRowView: View {
     }
 
     // MARK: - Helpers
+
+    /// Plate math text for barbell exercises, computed from current weight input.
+    private var plateMathText: String? {
+        guard set.targetWeight != nil,
+              PlateCalculator.isBarbellExercise(exerciseName: exerciseName, equipmentType: equipmentType)
+        else { return nil }
+
+        guard let weight = Double(weightText), weight > 0 else { return nil }
+
+        let unit = set.targetWeightUnit?.rawValue ?? "lbs"
+        let breakdown = PlateCalculator.calculatePlates(totalWeight: weight, unit: unit)
+
+        // Don't show if weight is less than bar
+        guard breakdown.isAchievable || !breakdown.plates.isEmpty else { return nil }
+
+        return PlateCalculator.formatCompletePlateSetup(breakdown)
+    }
 
     private var weightUnitLabel: String {
         if let unit = set.targetWeightUnit ?? set.actualWeightUnit {
