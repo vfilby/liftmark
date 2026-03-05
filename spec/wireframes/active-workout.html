@@ -826,6 +826,87 @@
 
 
 <!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  3b. WEIGHTED TIMED SET (e.g., Weighted Plank)                 ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Weighted Timed Set</div>
+  <div class="example-desc">Exercises with both targetWeight and targetTime (e.g., <code>- 45 x 60s</code>) show a weight input field alongside the timer. No reps field or Complete button — the timer Done button completes the set and saves the user-edited weight.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+      <div class="exercise-list">
+
+        <!-- Weighted-timed: Current set with timer running -->
+        <div>
+          <span class="section-label">Current set: weight input + timer</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-blue">1</div>
+              <div class="card-title">Weighted Plank</div>
+              <div class="card-icons"><span class="card-icon">&#9998;</span></div>
+            </div>
+            <div class="set-list">
+              <div class="set-row set-current">
+                <span class="set-indicator">&#x27A1;</span>
+                <div class="input-group">
+                  <label class="input-label">Weight (lbs)</label>
+                  <input type="text" class="set-input" value="45" style="width:70px">
+                </div>
+                <div style="text-align:center;">
+                  <label class="input-label">Time</label>
+                  <span class="set-values" style="font-size:15px;">1:00</span>
+                </div>
+                <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+              </div>
+              <span class="anno-inline">Weight input + time display &middot; no reps field &middot; no Complete button</span>
+              <div class="exercise-timer">
+                <div class="timer-display">0:22</div>
+                <div class="timer-target">Target: 60s</div>
+                <div class="timer-buttons">
+                  <button class="btn-timer-pause">Pause</button>
+                  <button class="btn-timer-done">Done</button>
+                </div>
+              </div>
+              <span class="anno-inline">Timer Done saves weight from input field as actualWeight</span>
+              <div class="set-row set-pending">
+                <span class="set-number">2</span>
+                <span class="set-values">45 lbs &nbsp; 1:00</span>
+              </div>
+              <div class="set-row set-pending">
+                <span class="set-number">3</span>
+                <span class="set-values">45 lbs &nbsp; 1:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weighted-timed: Completed set -->
+        <div>
+          <hr class="section-divider">
+          <span class="section-label">Completed weighted-timed set</span>
+          <div class="card">
+            <div class="card-header">
+              <div class="badge badge-green">1</div>
+              <div class="card-title">Weighted Plank</div>
+            </div>
+            <div class="set-list">
+              <div class="set-row set-done">
+                <span class="set-indicator">&#10003;</span>
+                <span class="set-values">45 lbs &nbsp; 1:02</span>
+                <span class="set-edit-hint">Tap to edit</span>
+              </div>
+              <span class="anno-inline">Shows actualWeight + actualTime &middot; inline edit shows weight + time (not reps)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
      ║  4. ACTIVE SET: WITH TARGET HINT vs WITHOUT                    ║
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <div class="example">
@@ -1318,6 +1399,173 @@
   </div>
 </div>
 
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  EDIT EXERCISE SHEET                                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="example">
+  <div class="example-title">Edit Exercise Sheet — Form Tab</div>
+  <div class="example-desc">Sheet presented when tapping the pencil icon on an exercise. Shows structured form with name, equipment, notes, and editable set list. Segmented picker toggles between Form and Markdown tabs.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Nav bar -->
+      <div class="anno" style="display:contents">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--grey5);">
+          <span style="color:var(--blue); font-size:17px; cursor:pointer;">Cancel</span>
+          <span style="font-weight:600; font-size:17px;">Edit Exercise</span>
+          <span style="color:var(--blue); font-size:17px; font-weight:600; cursor:pointer;">Save</span>
+        </div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-label">edit-exercise-cancel &middot; edit-exercise-save</span>
+        </div>
+      </div>
+
+      <!-- Segmented picker -->
+      <div style="padding:12px 16px;">
+        <div style="display:flex; background:var(--grey5); border-radius:8px; overflow:hidden;">
+          <span style="flex:1; text-align:center; padding:6px 0; font-size:13px; font-weight:600; background:var(--cardBg); border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">Form</span>
+          <span style="flex:1; text-align:center; padding:6px 0; font-size:13px; color:var(--textSecondary);">Markdown</span>
+        </div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-label">edit-exercise-mode-picker</span>
+        </div>
+      </div>
+
+      <!-- Form fields -->
+      <div style="padding:0 16px;">
+        <!-- Exercise section -->
+        <div style="font-size:12px; font-weight:600; color:var(--textSecondary); text-transform:uppercase; padding:16px 0 6px;">Exercise</div>
+        <div style="background:var(--cardBg); border-radius:10px; overflow:hidden;">
+          <div style="padding:10px 12px; border-bottom:1px solid var(--grey5);">
+            <span style="font-size:15px;">Incline DB Press</span>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-exercise-name</span>
+          </div>
+          <div style="padding:10px 12px;">
+            <span style="font-size:15px; color:var(--textSecondary);">dumbbell</span>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-exercise-equipment</span>
+          </div>
+        </div>
+
+        <!-- Notes section -->
+        <div style="font-size:12px; font-weight:600; color:var(--textSecondary); text-transform:uppercase; padding:16px 0 6px;">Notes</div>
+        <div style="background:var(--cardBg); border-radius:10px; padding:10px 12px; min-height:60px;">
+          <span style="font-size:15px;">30X1 tempo. Keep elbows at 45&deg;.</span>
+        </div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-label">edit-exercise-notes</span>
+        </div>
+
+        <!-- Sets section -->
+        <div style="font-size:12px; font-weight:600; color:var(--textSecondary); text-transform:uppercase; padding:16px 0 6px;">Sets</div>
+        <div style="background:var(--cardBg); border-radius:10px; overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--grey5);">
+            <span style="font-size:13px; color:var(--textSecondary); width:40px;">Set 1</span>
+            <input style="width:55px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="50" readonly>
+            <span style="color:var(--textSecondary);">&times;</span>
+            <input style="width:45px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="8" readonly>
+            <span style="flex:1;"></span>
+            <span style="font-size:11px; color:var(--textSecondary);">completed</span>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-set-weight-0 &middot; edit-set-reps-0</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--grey5);">
+            <span style="font-size:13px; color:var(--textSecondary); width:40px;">Set 2</span>
+            <input style="width:55px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="55" readonly>
+            <span style="color:var(--textSecondary);">&times;</span>
+            <input style="width:45px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="8" readonly>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-set-weight-1 &middot; edit-set-reps-1</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--grey5);">
+            <span style="font-size:13px; color:var(--textSecondary); width:40px;">Set 3</span>
+            <input style="width:55px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="60" readonly>
+            <span style="color:var(--textSecondary);">&times;</span>
+            <input style="width:45px; padding:6px 8px; border:1px solid var(--grey4); border-radius:6px; font-size:15px; text-align:center; background:var(--cardBg); color:var(--textPrimary);" value="8" readonly>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-set-weight-2 &middot; edit-set-reps-2 &middot; swipe to delete</span>
+          </div>
+
+          <!-- Add Set button -->
+          <div style="display:flex; align-items:center; gap:6px; padding:10px 12px; color:var(--blue); cursor:pointer;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            <span style="font-size:15px;">Add Set</span>
+          </div>
+          <div style="padding:2px 0 0 4px">
+            <span class="anno-label">edit-exercise-add-set</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:2px 0 0 20px">
+        <span class="anno-label">edit-exercise-form</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="example">
+  <div class="example-title">Edit Exercise Sheet — Markdown Tab</div>
+  <div class="example-desc">Markdown editing mode for the exercise. Shows the exercise in LMWF format with syntax hint. Switching tabs syncs data bidirectionally.</div>
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen screen-pad-bottom">
+
+      <!-- Nav bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--grey5);">
+        <span style="color:var(--blue); font-size:17px; cursor:pointer;">Cancel</span>
+        <span style="font-weight:600; font-size:17px;">Edit Exercise</span>
+        <span style="color:var(--blue); font-size:17px; font-weight:600; cursor:pointer;">Save</span>
+      </div>
+
+      <!-- Segmented picker — Markdown selected -->
+      <div style="padding:12px 16px;">
+        <div style="display:flex; background:var(--grey5); border-radius:8px; overflow:hidden;">
+          <span style="flex:1; text-align:center; padding:6px 0; font-size:13px; color:var(--textSecondary);">Form</span>
+          <span style="flex:1; text-align:center; padding:6px 0; font-size:13px; font-weight:600; background:var(--cardBg); border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">Markdown</span>
+        </div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-label">edit-exercise-mode-picker</span>
+        </div>
+      </div>
+
+      <!-- Markdown editor -->
+      <div style="padding:0 16px; flex:1;">
+        <div style="background:var(--cardBg); border-radius:10px; padding:12px; min-height:200px; font-family:'SF Mono', 'Menlo', monospace; font-size:14px; line-height:1.6; white-space:pre; color:var(--textPrimary);">## Incline DB Press
+@type: dumbbell
+30X1 tempo. Keep elbows at 45°.
+- 50 x 8
+- 55 x 8
+- 60 x 8</div>
+        <div style="padding:2px 0 0 4px">
+          <span class="anno-label">edit-exercise-markdown</span>
+        </div>
+
+        <div style="font-size:12px; color:var(--textSecondary); padding:10px 0; line-height:1.4;">
+          LMWF format: ## Name [equipment]<br>
+          &gt; notes<br>
+          - weight x reps
+        </div>
+      </div>
+
+      <div style="padding:2px 0 0 20px">
+        <span class="anno-label">edit-exercise-markdown-view</span>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 </div><!-- /gallery -->
 

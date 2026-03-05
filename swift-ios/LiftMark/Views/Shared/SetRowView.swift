@@ -21,6 +21,7 @@ struct SetRowView: View {
     let onComplete: (Double?, Int?) -> Void
     let onSkip: () -> Void
     let onSave: (Double?, Int?) -> Void
+    var onWeightChanged: ((String) -> Void)? = nil
 
     @State private var weightText: String = ""
     @State private var repsText: String = ""
@@ -45,6 +46,7 @@ struct SetRowView: View {
         .onAppear {
             if let w = set.targetWeight ?? set.actualWeight {
                 weightText = formatWeight(w)
+                onWeightChanged?(weightText)
             }
             if let r = set.targetReps ?? set.actualReps {
                 repsText = "\(r)"
@@ -110,16 +112,22 @@ struct SetRowView: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 90)
                             .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                            .onChange(of: weightText) { _, newValue in
+                                onWeightChanged?(newValue)
+                            }
                     }
 
-                    Text("×")
-                        .font(.callout)
-                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                    // Show × separator only when reps follow (not for weighted-timed sets)
+                    if set.targetTime == nil {
+                        Text("×")
+                            .font(.callout)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                    }
                 }
 
-                // Time display — for timed exercises
-                if let targetTime = set.targetTime, set.targetWeight == nil {
+                // Time display — for all timed exercises (including weighted-timed)
+                if let targetTime = set.targetTime {
                     VStack(alignment: .center, spacing: 2) {
                         Text("Time")
                             .font(.caption2)
@@ -317,25 +325,44 @@ struct SetRowView: View {
                         .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                 }
 
-                Text("×")
-                    .font(.caption)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                // Show × separator only for non-timed sets (weighted reps)
+                if set.targetTime == nil {
+                    Text("×")
+                        .font(.caption)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                }
             }
 
-            VStack(alignment: .center, spacing: 2) {
-                Text("Reps")
-                    .font(.caption2)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                TextField("--", text: $repsText)
-                    #if os(iOS)
-                    .keyboardType(.numberPad)
-                    #endif
-                    .font(.body.monospacedDigit())
-                    .multilineTextAlignment(.center)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 60)
-                    .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+            // Reps field — only for non-timed sets
+            if set.targetTime == nil {
+                VStack(alignment: .center, spacing: 2) {
+                    Text("Reps")
+                        .font(.caption2)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    TextField("--", text: $repsText)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                        .font(.body.monospacedDigit())
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 60)
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                }
+            }
+
+            // Time display — read-only for timed sets in inline edit
+            if let time = set.actualTime ?? set.targetTime {
+                VStack(alignment: .center, spacing: 2) {
+                    Text("Time")
+                        .font(.caption2)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    Text(formatTime(time))
+                        .font(.body.monospacedDigit())
+                        .frame(width: 60, alignment: .center)
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                }
             }
 
             Spacer()

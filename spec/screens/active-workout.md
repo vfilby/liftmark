@@ -98,6 +98,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap pencil icon** on exercise → opens Edit Exercise sheet with two tabs:
   - **Form tab** (default): structured fields for name, equipment, notes, and an editable list of sets (weight/reps/time fields, add set, delete set via swipe, reorder via drag)
   - **Markdown tab**: TextEditor with exercise in LMWF format (`## Name`, `@type: equipment`, notes, `- weight x reps`); parsed on save via MarkdownParser
+- **Sheet must display exercise data**: The edit sheet must always be pre-populated with the tapped exercise's current data (name, equipment, notes, sets). A blank or empty sheet is a bug — the sheet presentation must be bound directly to the exercise being edited.
 - **Segmented picker** (`edit-exercise-mode-picker`) toggles between Form and Markdown tabs
 - Switching tabs syncs data: Form→Markdown regenerates LMWF, Markdown→Form parses the text
 - **Save** (`edit-exercise-save`) → updates exercise name/notes/equipment + applies set changes (add/update/delete)
@@ -191,14 +192,16 @@ Renders individual sets with multiple visual states:
 **Critical**: Every set row MUST display the weight when it exists in the set data (`targetWeight` for pending/current sets, `actualWeight` for completed sets). A set row that shows only reps (e.g., "x 5") when weight data exists (e.g., 135 lbs) is a bug. The weight is the primary data point for strength training and must always be visible.
 
 Set rows must display contextually appropriate fields based on exercise type:
-- **Weighted sets** (`targetWeight` exists): show weight field with unit (lbs/kg) and reps field
+- **Weighted sets** (`targetWeight` exists, `targetTime` nil): show weight field with unit (lbs/kg) and reps field
 - **Timed sets** (`targetTime` exists, no `targetWeight`): show time field labeled as "time", not "weight"
+- **Weighted timed sets** (`targetWeight` AND `targetTime` exist, no `targetReps`): show weight input field with unit AND time display. No reps field. Complete button hidden — timer Done button completes the set. The user-edited weight from the input field must be saved as `actualWeight` when the timer completes.
 - **Bodyweight rep sets** (no `targetWeight`, `targetReps` exists): show reps only, no weight field
 
 | Set State | Weight Display | Reps Display | Time Display |
 |-----------|---------------|-------------|-------------|
 | Pending | Target weight + unit (e.g., "135 lbs") | Target reps (e.g., "x 5") | Target time (e.g., "60s") |
 | Current | Pre-filled in weight input field | Pre-filled in reps input field | Pre-filled in time input field |
+| Current (weighted-timed) | Pre-filled weight input field + unit | — (no reps) | Target time shown (completed via timer) |
 | Completed | Actual weight + unit | Actual reps | Actual time |
 | Skipped | "Skipped" label (no weight/reps) | — | — |
 

@@ -176,7 +176,7 @@ tests:
       - action: waitFor
         target: "edit-exercise-form"
         timeout: 3000
-      # Exercise name field should show "Bench Press"
+      # Exercise name field should exist (verifies data binding)
       - action: waitFor
         target: "edit-exercise-name"
         timeout: 3000

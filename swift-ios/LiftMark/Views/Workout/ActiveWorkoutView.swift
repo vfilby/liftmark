@@ -7,7 +7,6 @@ struct ActiveWorkoutView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var showAddExercise = false
-    @State private var showEditExercise = false
     @State private var editingExercise: SessionExercise?
     @State private var addExerciseMarkdown = ""
     @State private var activeRestTimer: RestTimerState?
@@ -217,26 +216,24 @@ struct ActiveWorkoutView: View {
                 addExerciseFromMarkdown(markdown)
             })
         }
-        .sheet(isPresented: $showEditExercise) {
-            if let exercise = editingExercise {
-                EditExerciseSheet(
-                    exercise: exercise,
-                    onSave: { name, notes, equipmentType, setChanges in
-                        sessionStore.updateExercise(exerciseId: exercise.id, name: name, notes: notes, equipmentType: equipmentType)
-                        for change in setChanges {
-                            switch change {
-                            case .update(let setId, let weight, let reps, let time):
-                                sessionStore.updateSetTarget(setId: setId, targetWeight: weight, targetReps: reps, targetTime: time)
-                            case .add(let weight, let unit, let reps, let time):
-                                sessionStore.addSetToExercise(exerciseId: exercise.id, targetWeight: weight, targetWeightUnit: unit, targetReps: reps, targetTime: time)
-                            case .delete(let setId):
-                                sessionStore.deleteSet(setId: setId)
-                            }
+        .sheet(item: $editingExercise) { exercise in
+            EditExerciseSheet(
+                exercise: exercise,
+                onSave: { name, notes, equipmentType, setChanges in
+                    sessionStore.updateExercise(exerciseId: exercise.id, name: name, notes: notes, equipmentType: equipmentType)
+                    for change in setChanges {
+                        switch change {
+                        case .update(let setId, let weight, let reps, let time):
+                            sessionStore.updateSetTarget(setId: setId, targetWeight: weight, targetReps: reps, targetTime: time)
+                        case .add(let weight, let unit, let reps, let time):
+                            sessionStore.addSetToExercise(exerciseId: exercise.id, targetWeight: weight, targetWeightUnit: unit, targetReps: reps, targetTime: time)
+                        case .delete(let setId):
+                            sessionStore.deleteSet(setId: setId)
                         }
-                        showEditExercise = false
                     }
-                )
-            }
+                    editingExercise = nil
+                }
+            )
         }
     }
 
@@ -271,7 +268,6 @@ struct ActiveWorkoutView: View {
                                     },
                                     onEditExercise: {
                                         editingExercise = exercise
-                                        showEditExercise = true
                                     },
                                     onSaveSet: { setIndex, weight, reps in
                                         saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
@@ -677,6 +673,8 @@ private struct ActiveExerciseCard: View {
     let onDismissRest: () -> Void
     var restTimerGeneration: Int = 0
 
+    @State private var currentWeightText: String = ""
+
     private var currentSetIndex: Int? {
         exercise.sets.firstIndex { $0.status == .pending }
     }
@@ -772,7 +770,10 @@ private struct ActiveExerciseCard: View {
                         onSkip: { onSkipSet(setIndex) },
                         onSave: { weight, reps in
                             onSaveSet(setIndex, weight, reps)
-                        }
+                        },
+                        onWeightChanged: setIndex == currentSetIndex ? { newWeight in
+                            currentWeightText = newWeight
+                        } : nil
                     )
 
                     // Inline rest timer — placed after the last completed set
@@ -809,7 +810,8 @@ private struct ActiveExerciseCard: View {
                     let currentSet = exercise.sets[currentIdx]
                     if let targetTime = currentSet.targetTime, targetTime > 0 {
                         ExerciseTimerView(targetSeconds: targetTime, isPerSide: currentSet.isPerSide) { elapsedSeconds in
-                            onCompleteSet(currentIdx, nil, nil, elapsedSeconds)
+                            let weight = Double(currentWeightText)
+                            onCompleteSet(currentIdx, weight, nil, elapsedSeconds)
                         }
                         .id(currentSet.id)
                     }
