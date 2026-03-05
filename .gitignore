@@ -76,3 +76,4 @@ swift-ios/build/
 # Gas Town (added by gt)
 .logs/
 tools/__pycache__/
+data-export.json
