@@ -1268,6 +1268,7 @@ final class CloudKitService: @unchecked Sendable {
                     liveActivitiesEnabled: Int(int64Field(record, "liveActivitiesEnabled") ?? Int64(existing.liveActivitiesEnabled)),
                     keepScreenAwake: Int(int64Field(record, "keepScreenAwake") ?? Int64(existing.keepScreenAwake)),
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? Int64(existing.showOpenInClaudeButton)),
+                    developerModeEnabled: existing.developerModeEnabled,
                     homeTiles: stringField(record, "homeTiles") ?? existing.homeTiles,
                     createdAt: existing.createdAt,
                     updatedAt: updatedAt
@@ -1291,6 +1292,7 @@ final class CloudKitService: @unchecked Sendable {
                     liveActivitiesEnabled: Int(int64Field(record, "liveActivitiesEnabled") ?? 1),
                     keepScreenAwake: Int(int64Field(record, "keepScreenAwake") ?? 1),
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? 0),
+                    developerModeEnabled: 0,
                     homeTiles: stringField(record, "homeTiles"),
                     createdAt: now,
                     updatedAt: dateToISO(remoteUpdatedAt) ?? now

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		04462895D8B47403B759F38F /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9441D6B1D8EE6194A1A0631 /* AppNavigation.swift */; };
+		EE37E0D1F3B1700FCA719771 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4582CC639EBD75AB6D60AE /* ShareSheet.swift */; };
 		0D172A0CBAA6155A8587C384 /* WorkoutHighlightsIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A8B391651053E5147378D2 /* WorkoutHighlightsIntegrationTests.swift */; };
 		12D96B58A9C05219A259D752 /* SyncSessionGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58BA4F2232025DD4B5E50533 /* SyncSessionGuardTests.swift */; };
 		1330EAEB43A76F37FAD353AA /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81BB00D28805B71DB987185E /* SessionStore.swift */; };
@@ -142,6 +143,7 @@
 
 /* Begin PBXFileReference section */
 		02B901D64AB8243A498892E4 /* ExercisePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePickerView.swift; sourceTree = "<group>"; };
+		2A4582CC639EBD75AB6D60AE /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		05B7BEBFD01C2F49EF43CD34 /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
 		069E1FA9B7B710571D98821B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		06C9D252D8932F613C54BC51 /* TestSpecRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSpecRunner.swift; sourceTree = "<group>"; };
@@ -476,6 +478,7 @@
 				B78221ACC77E681F3AD7EC64 /* ImportView.swift */,
 				B9175B7DB4682E974D72FBF5 /* LoadingView.swift */,
 				C826AE567713686B32DDE784 /* RestTimerView.swift */,
+				2A4582CC639EBD75AB6D60AE /* ShareSheet.swift */,
 				F367406D6EAEEB16A1D945D6 /* SetRowView.swift */,
 			);
 			path = Shared;
@@ -717,6 +720,7 @@
 				D1F4C2096E3E879F3919EE3D /* SessionRepository.swift in Sources */,
 				1330EAEB43A76F37FAD353AA /* SessionStore.swift in Sources */,
 				F88CB52BE0BA57049864D90C /* SetRowView.swift in Sources */,
+				EE37E0D1F3B1700FCA719771 /* ShareSheet.swift in Sources */,
 				8BBF02B47D7FB9A7B6A3D233 /* Settings.swift in Sources */,
 				477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */,
 				697ACE9A93DBDD78F0B11F3B /* SettingsView.swift in Sources */,

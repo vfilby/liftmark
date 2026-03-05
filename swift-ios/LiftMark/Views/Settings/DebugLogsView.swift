@@ -8,6 +8,8 @@ struct DebugLogsView: View {
     @State private var logs: [LogEntry] = []
     @State private var selectedLevel: LogLevel? = nil
     @State private var showClearConfirmation = false
+    @State private var showShareSheet = false
+    @State private var shareURL: URL?
 
     private var filteredLogs: [LogEntry] {
         if let level = selectedLevel {
@@ -67,6 +69,13 @@ struct DebugLogsView: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button {
+                        shareLogs()
+                    } label: {
+                        Label("Share Logs", systemImage: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("debug-logs-share")
+
+                    Button {
                         copyLogsToClipboard()
                     } label: {
                         Label("Copy to Clipboard", systemImage: "doc.on.clipboard")
@@ -93,6 +102,11 @@ struct DebugLogsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Are you sure you want to clear all debug logs?")
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let shareURL {
+                ShareSheet(items: [shareURL])
+            }
         }
         .onAppear {
             loadLogs()
@@ -178,6 +192,23 @@ struct DebugLogsView: View {
     private func loadLogs() {
         logs = Logger.shared.getLogs(limit: 200)
         isLoading = false
+    }
+
+    private func shareLogs() {
+        let logText = Logger.shared.exportLogs()
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+            .replacingOccurrences(of: ":", with: "-")
+            .replacingOccurrences(of: ".", with: "-")
+        let fileName = "liftmark_debug_logs_\(timestamp).json"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        do {
+            try logText.write(to: tempURL, atomically: true, encoding: .utf8)
+            shareURL = tempURL
+            showShareSheet = true
+        } catch {
+            print("Failed to write log file: \(error)")
+        }
     }
 
     private func copyLogsToClipboard() {

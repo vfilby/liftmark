@@ -29,6 +29,7 @@ final class SettingsStore {
                 liveActivitiesEnabled: row.liveActivitiesEnabled != 0,
                 keepScreenAwake: row.keepScreenAwake != 0,
                 showOpenInClaudeButton: row.showOpenInClaudeButton != 0,
+                developerModeEnabled: row.developerModeEnabled != 0,
                 homeTiles: row.homeTiles.flatMap { data in
                     (try? JSONDecoder().decode([String].self, from: Data(data.utf8)))
                 },
@@ -59,6 +60,7 @@ final class SettingsStore {
                         live_activities_enabled = ?,
                         keep_screen_awake = ?,
                         show_open_in_claude_button = ?,
+                        developer_mode_enabled = ?,
                         home_tiles = ?,
                         updated_at = ?
                     WHERE id = ?
@@ -74,6 +76,7 @@ final class SettingsStore {
                     settings.liveActivitiesEnabled ? 1 : 0,
                     settings.keepScreenAwake ? 1 : 0,
                     settings.showOpenInClaudeButton ? 1 : 0,
+                    settings.developerModeEnabled ? 1 : 0,
                     homeTilesJSON,
                     now,
                     settings.id

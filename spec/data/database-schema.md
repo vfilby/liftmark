@@ -203,6 +203,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   keep_screen_awake           INTEGER DEFAULT 1,
   show_open_in_claude_button  INTEGER DEFAULT 0,
   home_tiles                  TEXT,
+  developer_mode_enabled      INTEGER DEFAULT 0,     -- Boolean: hidden developer menu
   created_at                  TEXT NOT NULL,
   updated_at                  TEXT NOT NULL
 );

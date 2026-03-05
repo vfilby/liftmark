@@ -17,6 +17,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var liveActivitiesEnabled: Bool
     var keepScreenAwake: Bool
     var showOpenInClaudeButton: Bool
+    var developerModeEnabled: Bool
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -35,6 +36,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         liveActivitiesEnabled: Bool = true,
         keepScreenAwake: Bool = true,
         showOpenInClaudeButton: Bool = false,
+        developerModeEnabled: Bool = false,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -52,6 +54,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.liveActivitiesEnabled = liveActivitiesEnabled
         self.keepScreenAwake = keepScreenAwake
         self.showOpenInClaudeButton = showOpenInClaudeButton
+        self.developerModeEnabled = developerModeEnabled
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -76,6 +79,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var liveActivitiesEnabled: Int // SQLite boolean
     var keepScreenAwake: Int // SQLite boolean
     var showOpenInClaudeButton: Int // SQLite boolean
+    var developerModeEnabled: Int // SQLite boolean
     var homeTiles: String? // JSON array
     var createdAt: String
     var updatedAt: String
@@ -94,6 +98,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case liveActivitiesEnabled = "live_activities_enabled"
         case keepScreenAwake = "keep_screen_awake"
         case showOpenInClaudeButton = "show_open_in_claude_button"
+        case developerModeEnabled = "developer_mode_enabled"
         case homeTiles = "home_tiles"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

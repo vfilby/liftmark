@@ -19,7 +19,7 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
   4. **Integrations** (iOS only) — iCloud Sync nav, HealthKit toggle, Live Activities toggle
   5. **AI Assistance** — Custom prompt text, API key management, button options
   6. **Data Management** — Backup export/import
-  7. **Developer** (non-DEV only) — Debug Logs nav link
+  7. **Developer** (hidden by default, activated via easter egg) — Debug Logs nav link, Database export
   8. **About** — Version + Build info
 
 ## UI Elements
@@ -64,6 +64,27 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 - **Export Database** → see Database Export Behavior below
 - **Import Database** → see Database Import Behavior below
 - **Tap Debug Logs** → navigates to `/settings/debug-logs`
+
+### Developer Mode Activation
+
+The Developer section is hidden by default. Users activate it via a classic easter egg:
+
+1. In the About section, tap the Version row 7 times within 2 seconds
+2. On the 7th tap, toggle `developerModeEnabled` in settings
+3. Show an alert confirming the new state:
+   - Enabled: "Developer Mode Enabled" / "Developer options are now visible in Settings."
+   - Disabled: "Developer Mode Disabled" / "Developer options have been hidden."
+4. The setting persists across app launches via the `developer_mode_enabled` column in `user_settings`
+5. In DEBUG builds, the Developer section is always visible regardless of the setting
+
+**Tap behavior:**
+- Each tap increments a counter
+- Counter resets to 0 after 2 seconds of inactivity
+- On reaching 7, toggle the setting and reset the counter
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Version row (tap target) | `version-info-row` | Button | 7-tap easter egg to toggle developer mode |
 
 ### Theme Application
 
@@ -289,5 +310,20 @@ View, filter, and export application logs for troubleshooting production issues.
 | Clear button | `debug-logs-clear` | TouchableOpacity |
 | Loading state | `debug-logs-loading` | View |
 | Logs list | `debug-logs-list` | ScrollView |
+| Share button | `debug-logs-share` | Button |
 | Empty state | `debug-logs-empty` | Text |
+
+### Behavior
+
+**Log sharing:**
+- "Share Logs" writes the exported log JSON to a timestamped temp file in the caches directory and presents the iOS share sheet
+- "Copy to Clipboard" copies the log JSON to the system clipboard
+- "Clear Logs" shows a confirmation alert before deleting all logs
+
+**Log display:**
+- Shows device info header (platform, OS version, app version, build type)
+- Log statistics by level (debug/info/warn/error)
+- Filterable log list with level filter chips
+- Each log entry is expandable to show metadata and stack traces
+- Maximum 200 logs displayed
 

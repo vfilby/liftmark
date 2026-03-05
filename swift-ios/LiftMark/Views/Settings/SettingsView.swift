@@ -23,6 +23,10 @@ struct SettingsView: View {
     @State private var showImportError = false
     @State private var importErrorMessage = ""
     @State private var selectedSection: SettingsSection? = .appearance
+    @State private var versionTapCount = 0
+    @State private var versionTapTimer: Timer?
+    @State private var showDeveloperModeAlert = false
+    @State private var developerModeAlertMessage = ""
 
     var body: some View {
         Group {
@@ -57,6 +61,14 @@ struct SettingsView: View {
                 EmptyView()
             }
         }
+        .alert(
+            settingsStore.settings?.developerModeEnabled == true ? "Developer Mode Enabled" : "Developer Mode Disabled",
+            isPresented: $showDeveloperModeAlert
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(developerModeAlertMessage)
+        }
         .modifier(DatabaseBackupModifiers(
             showShareSheet: $showShareSheet,
             exportURL: exportURL,
@@ -81,7 +93,7 @@ struct SettingsView: View {
         HStack(spacing: 0) {
             // Left pane - navigation list
             List {
-                ForEach(SettingsSection.allCases) { section in
+                ForEach(visibleSections(settings: settings)) { section in
                     Button {
                         selectedSection = section
                     } label: {
@@ -217,9 +229,17 @@ struct SettingsView: View {
             }
 
             // Developer
+            #if DEBUG
             Section("Developer") {
                 developerContent()
             }
+            #else
+            if settings.developerModeEnabled {
+                Section("Developer") {
+                    developerContent()
+                }
+            }
+            #endif
 
             // About
             Section("About") {
@@ -490,18 +510,59 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func aboutContent() -> some View {
-        HStack {
-            Text("Version")
-            Spacer()
-            Text(appVersionString)
-                .foregroundStyle(.secondary)
+        Button {
+            handleVersionTap()
+        } label: {
+            HStack {
+                Text("Version")
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                Text(appVersionString)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .accessibilityIdentifier("version-info-row")
         HStack {
             Text("Build")
             Spacer()
             Text(appBuildString)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Developer Mode
+
+    private func handleVersionTap() {
+        versionTapCount += 1
+        versionTapTimer?.invalidate()
+        versionTapTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [self] _ in
+            Task { @MainActor in
+                versionTapCount = 0
+            }
+        }
+
+        if versionTapCount >= 7 {
+            versionTapCount = 0
+            versionTapTimer?.invalidate()
+            guard var updated = settingsStore.settings else { return }
+            updated.developerModeEnabled.toggle()
+            settingsStore.updateSettings(updated)
+
+            developerModeAlertMessage = updated.developerModeEnabled
+                ? "Developer options are now visible in Settings."
+                : "Developer options have been hidden."
+            showDeveloperModeAlert = true
+        }
+    }
+
+    private func visibleSections(settings: UserSettings) -> [SettingsSection] {
+        #if DEBUG
+        return SettingsSection.allCases
+        #else
+        return SettingsSection.allCases.filter { section in
+            section != .developer || settings.developerModeEnabled
+        }
+        #endif
     }
 
     // MARK: - Helpers
