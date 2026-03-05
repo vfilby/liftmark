@@ -79,6 +79,7 @@ in_progress → canceled
 | Database save failure on set completion | Error surfaced to user |
 | HealthKit save failure | Workout still completes; HealthKit error is logged but does not block |
 | Live Activity end failure | Workout still completes; error is logged |
+| Orphaned Live Activities from crash | Cleaned up on next `startWorkoutLiveActivity()` call |
 | CloudKit sync during active workout | Sync skips delete/merge for active session records; other data syncs normally |
 | App crash during workout | Session restored from DB on next launch with all exercises and set progress intact |
 

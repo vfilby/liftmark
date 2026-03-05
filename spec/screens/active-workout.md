@@ -154,11 +154,14 @@ Primary workout execution screen. Displays all exercises and sets for the active
 | Collapse/expand toggle | `exercise-toggle-{exerciseId}` | TouchableOpacity |
 
 ### Live Activities (iOS)
-- **On appear**: If `liveActivitiesEnabled` setting is true and Live Activities are available, starts a Live Activity showing the current workout state (exercise name, set progress, overall progress).
+- **On appear**: If `liveActivitiesEnabled` setting is true and Live Activities are available, starts a Live Activity showing the current workout state (exercise name, set progress, overall progress). This handles both initial workout start and resume-after-pause.
 - **On set completion**: Updates the Live Activity with the new current exercise/set and progress. If a rest timer starts, includes rest timer countdown in the Live Activity.
 - **On set skip**: Updates the Live Activity with the new current exercise/set and progress.
+- **On pause (dismiss)**: Ends the Live Activity before dismissing the view. The Live Activity must not persist after the active workout screen is dismissed via the Pause button.
+- **On disappear (any navigation away)**: Ends the Live Activity. This is a safety net — if the view disappears for any reason (back navigation, swipe, tab switch), the Live Activity must be cleaned up.
 - **On finish**: Ends the Live Activity with a "Workout Complete" message.
 - **On discard**: Ends the Live Activity with a "Workout Discarded" message.
+- **No duplicates**: At no point during the workout lifecycle should more than one Live Activity banner exist. The `startWorkoutLiveActivity()` call on appear must await cleanup of any existing activity before creating a new one (see Live Activities service spec).
 - All Live Activity calls are guarded behind `settingsStore.settings?.liveActivitiesEnabled == true` and `LiveActivityService.shared.isAvailable()`.
 
 ### YouTube Links

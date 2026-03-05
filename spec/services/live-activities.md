@@ -41,9 +41,13 @@ Live Activities can be disabled at the OS level by the user (Settings > LiftMark
 
 ### Activity Lifecycle
 
-- The service tracks the current activity ID internally.
-- Before starting a new activity, any existing activity is ended first.
-- Activities are ended when the workout completes or is cancelled.
+- The service tracks the current activity reference internally.
+- **Singleton enforcement**: At most one Live Activity may exist at any time. Before starting a new activity, all existing activities must be fully ended first.
+- **Awaited cleanup before creation**: `startWorkoutLiveActivity()` must await the termination of any existing activity before requesting a new one. The end and start operations must not race — the previous activity must be confirmed ended before `Activity.request()` is called.
+- **Orphan cleanup on start**: When starting a new activity, the service must iterate `Activity<WorkoutActivityAttributes>.activities` and end any activities not tracked by the current reference. This handles activities orphaned by crashes, force-quits, or lost references.
+- Activities are ended when the workout completes, is cancelled, or is paused.
+- **Dismissal on pause**: When the user pauses a workout (dismissing the active workout screen without completing or cancelling), the Live Activity must be ended. A new activity is started when the workout is resumed.
+- **Force-quit recovery**: If the app is force-quit during an active workout, orphaned Live Activities are cleaned up on the next `startWorkoutLiveActivity()` call via the orphan cleanup described above.
 
 ### Display States
 
@@ -63,15 +67,16 @@ When the workout ends, the completion message format is: `"{sets} sets - {minute
 ### Integration Points
 
 The service is called from the session store during these actions:
-- `startWorkout`
-- `resumeSession`
-- `completeSet`
-- `skipSet`
-- `startRestTimer`
-- `tickRestTimer`
-- `stopRestTimer`
-- `completeWorkout`
-- `cancelWorkout`
+- `startWorkout` → `startWorkoutLiveActivity()`
+- `resumeSession` → `startWorkoutLiveActivity()`
+- `completeSet` → `updateWorkoutLiveActivity()`
+- `skipSet` → `updateWorkoutLiveActivity()`
+- `startRestTimer` → `updateWorkoutLiveActivity()`
+- `tickRestTimer` → `updateWorkoutLiveActivity()`
+- `stopRestTimer` → `updateWorkoutLiveActivity()`
+- `completeWorkout` → `endWorkoutLiveActivity()`
+- `cancelWorkout` → `endWorkoutLiveActivity()`
+- `pauseWorkout` (dismiss active workout) → `endWorkoutLiveActivity()`
 
 ## Platform Requirements
 
@@ -90,3 +95,27 @@ The service is called from the session store during these actions:
 ## Error Handling
 
 All operations silently catch and discard errors. Live Activities are an optional enhancement; failures must never affect workout functionality.
+
+## Tests
+
+### Singleton Enforcement
+- Starting a Live Activity when one already exists must end the existing activity before creating a new one.
+- After `startWorkoutLiveActivity()`, `Activity<WorkoutActivityAttributes>.activities` must contain exactly one activity.
+- Calling `startWorkoutLiveActivity()` twice in rapid succession must not produce two simultaneous activities.
+
+### Orphan Cleanup
+- If orphaned activities exist (e.g., from a previous crash), `startWorkoutLiveActivity()` must end them all before creating a new activity.
+- After orphan cleanup, only the newly created activity should be active.
+
+### Pause/Resume Lifecycle
+- Pausing a workout (dismissing the active workout screen) must end the Live Activity.
+- Resuming a paused workout must start a new Live Activity.
+- Pause → Resume must never result in duplicate activities.
+
+### End Lifecycle
+- `endWorkoutLiveActivity()` must set the internal activity reference to nil.
+- After `endWorkoutLiveActivity()`, no Live Activities for this app should be active.
+- Calling `endWorkoutLiveActivity()` when no activity exists is a no-op (no crash).
+
+### Race Condition Prevention
+- The end-then-start sequence in `startWorkoutLiveActivity()` must be serialized — the new activity must not be requested until the previous one is confirmed ended.
