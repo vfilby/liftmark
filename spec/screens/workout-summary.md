@@ -9,7 +9,7 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 ## Layout
 - **Header**: Share button (share icon) in headerRight
 - **Body**: ScrollView containing:
-  1. Success header card (checkmark + "Workout Complete!" + workout name)
+  1. Success header card (checkmark + "Workout Complete!" + workout name, centered and single-line with auto-scaling text)
   2. Workout Highlights (conditional — PRs, streaks, volume/weight increases)
   3. Stats grid (2x2: Duration, Sets Completed, Total Reps, Total Volume)
   4. Completion card (sets completed, sets skipped, completion rate %)

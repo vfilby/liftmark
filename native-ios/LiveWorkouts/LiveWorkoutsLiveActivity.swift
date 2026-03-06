@@ -6,61 +6,20 @@ struct LiveWorkoutsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             // Lock screen / banner UI
-            HStack(spacing: 12) {
-                // Exercise info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(context.state.title)
-                        .font(.headline)
-                        .lineLimit(1)
-                    Text(context.state.subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                // Rest timer countdown or progress
-                if let timerEnd = context.state.timerEndDate {
-                    Text(timerEnd, style: .timer)
-                        .font(.title2.monospacedDigit().bold())
-                        .foregroundStyle(.orange)
-                } else {
-                    Text("\(Int(context.state.progress * 100))%")
-                        .font(.title2.bold())
-                        .foregroundStyle(.blue)
-                }
-            }
-            .padding()
-            .activityBackgroundTint(.black.opacity(0.8))
-            .activitySystemActionForegroundColor(.white)
+            lockScreenView(context: context)
+                .activityBackgroundTint(.black.opacity(0.8))
+                .activitySystemActionForegroundColor(.white)
 
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(context.state.title)
-                            .font(.headline)
-                            .lineLimit(1)
-                        Text(context.state.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
+                    expandedLeading(context: context)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if let timerEnd = context.state.timerEndDate {
-                        Text(timerEnd, style: .timer)
-                            .font(.title3.monospacedDigit().bold())
-                            .foregroundStyle(.orange)
-                    } else {
-                        Text("\(Int(context.state.progress * 100))%")
-                            .font(.title3.bold())
-                    }
+                    expandedTrailing(context: context)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ProgressView(value: context.state.progress)
-                        .tint(.blue)
+                    expandedBottom(context: context)
                 }
             } compactLeading: {
                 Image(systemName: "dumbbell.fill")
@@ -69,7 +28,7 @@ struct LiveWorkoutsLiveActivity: Widget {
                 if let timerEnd = context.state.timerEndDate {
                     Text(timerEnd, style: .timer)
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(timerEnd > Date() ? .green : .red)
                 } else {
                     Text("\(Int(context.state.progress * 100))%")
                         .font(.caption.monospacedDigit())
@@ -81,19 +40,172 @@ struct LiveWorkoutsLiveActivity: Widget {
             .widgetURL(URL(string: "liftmark://workout"))
         }
     }
+
+    // MARK: - Lock Screen View
+
+    @ViewBuilder
+    private func lockScreenView(context: ActivityViewContext<WorkoutActivityAttributes>) -> some View {
+        let state = context.state
+
+        if state.isRestTimer {
+            // Rest timer layout
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Rest")
+                        .font(.headline)
+                    Spacer()
+                    if let timerEnd = state.timerEndDate {
+                        Text(timerEnd, style: .timer)
+                            .font(.title2.monospacedDigit().bold())
+                            .foregroundStyle(timerEnd > Date() ? .green : .red)
+                    }
+                }
+
+                if let nextName = state.nextExerciseName {
+                    HStack {
+                        Text("Up Next: \(nextName)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        if let detail = state.nextSetDetail {
+                            Spacer()
+                            Text(detail)
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                ProgressView(value: state.progress)
+                    .tint(.blue)
+            }
+            .padding()
+        } else {
+            // Active set layout
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(state.exerciseName)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Spacer()
+                    if !state.setInfo.isEmpty {
+                        Text(state.setInfo)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if !state.weightReps.isEmpty {
+                    Text(state.weightReps)
+                        .font(.title3.monospacedDigit().bold())
+                }
+
+                HStack {
+                    if let nextName = state.nextExerciseName {
+                        Text("Next: \(nextName)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Text("\(Int(state.progress * 100))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+
+                ProgressView(value: state.progress)
+                    .tint(.blue)
+            }
+            .padding()
+        }
+    }
+
+    // MARK: - Dynamic Island Expanded
+
+    @ViewBuilder
+    private func expandedLeading(context: ActivityViewContext<WorkoutActivityAttributes>) -> some View {
+        let state = context.state
+
+        if state.isRestTimer {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Rest")
+                    .font(.headline)
+                if let nextName = state.nextExerciseName {
+                    Text("Next: \(nextName)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state.exerciseName)
+                    .font(.headline)
+                    .lineLimit(1)
+                if !state.weightReps.isEmpty {
+                    Text(state.setInfo.isEmpty ? state.weightReps : "\(state.setInfo) \u{2022} \(state.weightReps)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func expandedTrailing(context: ActivityViewContext<WorkoutActivityAttributes>) -> some View {
+        let state = context.state
+
+        if let timerEnd = state.timerEndDate {
+            Text(timerEnd, style: .timer)
+                .font(.title3.monospacedDigit().bold())
+                .foregroundStyle(timerEnd > Date() ? .green : .red)
+        } else {
+            Text("\(Int(state.progress * 100))%")
+                .font(.title3.bold())
+        }
+    }
+
+    @ViewBuilder
+    private func expandedBottom(context: ActivityViewContext<WorkoutActivityAttributes>) -> some View {
+        let state = context.state
+
+        VStack(spacing: 4) {
+            if state.isRestTimer, let detail = state.nextSetDetail {
+                Text(detail)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            } else if !state.isRestTimer, let nextName = state.nextExerciseName {
+                Text("Next: \(nextName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            ProgressView(value: state.progress)
+                .tint(.blue)
+        }
+    }
 }
 
 #Preview("Notification", as: .content, using: WorkoutActivityAttributes(workoutName: "Push Day")) {
     LiveWorkoutsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState(
-        title: "Bench Press",
-        subtitle: "Set 2/4 · 185 lbs × 5",
+        isRestTimer: false,
+        exerciseName: "Bench Press",
+        setInfo: "Set 2/4",
+        weightReps: "185 lbs × 5",
+        nextExerciseName: "Overhead Press",
+        nextSetDetail: "135 lbs × 8",
         progress: 0.35
     )
     WorkoutActivityAttributes.ContentState(
-        title: "Rest",
-        subtitle: "Next: Overhead Press",
+        isRestTimer: true,
+        exerciseName: "Rest",
+        setInfo: "",
+        weightReps: "",
+        nextExerciseName: "Overhead Press",
+        nextSetDetail: "135 lbs × 8",
         progress: 0.35,
         timerEndDate: Date().addingTimeInterval(90)
     )

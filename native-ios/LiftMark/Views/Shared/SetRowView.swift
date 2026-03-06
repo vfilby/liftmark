@@ -92,6 +92,28 @@ struct SetRowView: View {
     @ViewBuilder
     private var currentSetContent: some View {
         VStack(spacing: LiftMarkTheme.spacingSM) {
+            // Plate math info — barbell exercises only (above weight × reps)
+            if let plateMathText = plateMathText {
+                HStack(spacing: 6) {
+                    Image(systemName: "scalemass")
+                        .font(.caption)
+                    Text(plateMathText)
+                        .font(.callout)
+                }
+                .foregroundStyle(Color.blue)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.blue.opacity(0.08))
+                .overlay(
+                    Rectangle()
+                        .frame(width: 3)
+                        .foregroundStyle(Color.blue.opacity(0.4)),
+                    alignment: .leading
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+
             // Top row: indicator + inputs + skip
             HStack(alignment: .textFieldCenter, spacing: LiftMarkTheme.spacingSM) {
                 setIndicator
@@ -178,28 +200,6 @@ struct SetRowView: View {
                 Text(target)
                     .font(.caption)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-            }
-
-            // Plate math info — barbell exercises only
-            if let plateMathText = plateMathText {
-                HStack(spacing: 6) {
-                    Image(systemName: "scalemass")
-                        .font(.caption2)
-                    Text(plateMathText)
-                        .font(.caption)
-                }
-                .foregroundStyle(Color.blue)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.blue.opacity(0.08))
-                .overlay(
-                    Rectangle()
-                        .frame(width: 3)
-                        .foregroundStyle(Color.blue.opacity(0.4)),
-                    alignment: .leading
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)

@@ -49,11 +49,13 @@ final class LiveActivityService: @unchecked Sendable {
             do {
                 let state: WorkoutActivityAttributes.ContentState
                 if let exercise {
-                    state = buildActiveSetState(exercise: exercise, setIndex: setIndex, progress: progress)
+                    state = buildActiveSetState(session: session, exercise: exercise, setIndex: setIndex, progress: progress)
                 } else {
                     state = WorkoutActivityAttributes.ContentState(
-                        title: session.name,
-                        subtitle: "Starting workout...",
+                        isRestTimer: false,
+                        exerciseName: session.name,
+                        setInfo: "",
+                        weightReps: "Starting workout...",
                         progress: 0
                     )
                 }
@@ -94,12 +96,13 @@ final class LiveActivityService: @unchecked Sendable {
 
             if let restTimer, restTimer.remainingSeconds > 0 {
                 state = buildRestState(
+                    session: session,
                     remainingSeconds: restTimer.remainingSeconds,
                     nextExercise: restTimer.nextExercise,
                     progress: progress
                 )
             } else if let exercise {
-                state = buildActiveSetState(exercise: exercise, setIndex: setIndex, progress: progress)
+                state = buildActiveSetState(session: session, exercise: exercise, setIndex: setIndex, progress: progress)
             } else {
                 return
             }
@@ -115,7 +118,7 @@ final class LiveActivityService: @unchecked Sendable {
     // MARK: - End
 
     /// End the Live Activity with an optional completion message.
-    func endWorkoutActivity(message: String? = nil) {
+    func endWorkoutActivity(message: String? = nil, subtitle: String? = nil) {
         #if os(iOS)
         guard isAvailable() else { return }
 
@@ -123,8 +126,10 @@ final class LiveActivityService: @unchecked Sendable {
             guard let activity = currentActivity else { return }
 
             let finalState = WorkoutActivityAttributes.ContentState(
-                title: message ?? "Workout Complete",
-                subtitle: "Great job!",
+                isRestTimer: false,
+                exerciseName: message ?? "Workout Complete",
+                setInfo: "",
+                weightReps: subtitle ?? "Great job!",
                 progress: 1.0
             )
 
@@ -142,6 +147,7 @@ final class LiveActivityService: @unchecked Sendable {
     #if os(iOS)
     @available(iOS 16.2, *)
     private func buildActiveSetState(
+        session: WorkoutSession,
         exercise: SessionExercise,
         setIndex: Int,
         progress: (completed: Int, total: Int)
@@ -151,38 +157,84 @@ final class LiveActivityService: @unchecked Sendable {
         let totalSets = exercise.sets.count
 
         let weight = formatWeight(set?.targetWeight, unit: set?.targetWeightUnit)
-        let reps = set?.targetReps.map { String($0) } ?? "?"
+        let reps = formatReps(set)
 
         let progressValue = progress.total > 0 ? Double(progress.completed) / Double(progress.total) : 0
 
+        // Find the next exercise (first exercise after current with pending sets)
+        let nextExercise = findNextExercise(after: exercise, in: session)
+        let nextSetDetail = nextExercise.flatMap { nextExerciseSetDetail($0) }
+
         return WorkoutActivityAttributes.ContentState(
-            title: exercise.exerciseName,
-            subtitle: "Set \(setNumber)/\(totalSets) \u{2022} \(weight) \u{00D7} \(reps)",
+            isRestTimer: false,
+            exerciseName: exercise.exerciseName,
+            setInfo: "Set \(setNumber)/\(totalSets)",
+            weightReps: "\(weight) \u{00D7} \(reps)",
+            nextExerciseName: nextExercise?.exerciseName,
+            nextSetDetail: nextSetDetail,
             progress: progressValue
         )
     }
 
     @available(iOS 16.2, *)
     private func buildRestState(
+        session: WorkoutSession,
         remainingSeconds: Int,
         nextExercise: SessionExercise?,
         progress: (completed: Int, total: Int)
     ) -> WorkoutActivityAttributes.ContentState {
-        let nextPreview = nextExercise.map { "Next: \($0.exerciseName)" } ?? "Finishing up"
         let progressValue = progress.total > 0 ? Double(progress.completed) / Double(progress.total) : 0
         let timerEnd = Date().addingTimeInterval(TimeInterval(remainingSeconds))
 
+        // For rest state, the "next exercise" is the one with the next pending set
+        let nextSetDetail = nextExercise.flatMap { nextExerciseSetDetail($0) }
+
         return WorkoutActivityAttributes.ContentState(
-            title: "Rest",
-            subtitle: nextPreview,
+            isRestTimer: true,
+            exerciseName: "Rest",
+            setInfo: "",
+            weightReps: "",
+            nextExerciseName: nextExercise?.exerciseName,
+            nextSetDetail: nextSetDetail,
             progress: progressValue,
             timerEndDate: timerEnd
         )
     }
     #endif
 
+    /// Find the next exercise after the current one that has pending sets.
+    private func findNextExercise(after current: SessionExercise, in session: WorkoutSession) -> SessionExercise? {
+        guard let currentIndex = session.exercises.firstIndex(where: { $0.id == current.id }) else { return nil }
+        // Look for exercises after the current one with pending sets
+        for i in (currentIndex + 1)..<session.exercises.count {
+            let ex = session.exercises[i]
+            if ex.sets.contains(where: { $0.status == .pending }) {
+                return ex
+            }
+        }
+        return nil
+    }
+
+    /// Format the first pending set of an exercise as "weight × reps".
+    private func nextExerciseSetDetail(_ exercise: SessionExercise) -> String? {
+        guard let set = exercise.sets.first(where: { $0.status == .pending }) else { return nil }
+        let weight = formatWeight(set.targetWeight, unit: set.targetWeightUnit)
+        let reps = formatReps(set)
+        return "\(weight) \u{00D7} \(reps)"
+    }
+
     private func formatWeight(_ weight: Double?, unit: WeightUnit?) -> String {
         guard let weight, weight > 0 else { return "BW" }
         return "\(Int(weight)) \(unit?.rawValue ?? "lbs")"
+    }
+
+    private func formatReps(_ set: SessionSet?) -> String {
+        guard let set else { return "?" }
+        if let reps = set.targetReps {
+            return String(reps)
+        } else if let time = set.targetTime {
+            return "\(time)s"
+        }
+        return "?"
     }
 }

@@ -91,7 +91,7 @@ struct ActiveWorkoutView: View {
                 saveToHealthKitIfEnabled(completedSession)
             }
             Button("Discard", role: .destructive) {
-                endLiveActivity(message: "Workout Discarded")
+                endLiveActivity(message: "Workout Discarded", subtitle: "Workout not saved")
                 sessionStore.cancelSession()
                 dismiss()
             }
@@ -105,6 +105,7 @@ struct ActiveWorkoutView: View {
             // Header
             HStack(spacing: LiftMarkTheme.spacingSM) {
                 Button {
+                    endLiveActivity()
                     dismiss()
                 } label: {
                     HStack(spacing: 4) {
@@ -632,10 +633,10 @@ struct ActiveWorkoutView: View {
         )
     }
 
-    private func endLiveActivity(message: String? = nil) {
+    private func endLiveActivity(message: String? = nil, subtitle: String? = nil) {
         guard settingsStore.settings?.liveActivitiesEnabled == true,
               LiveActivityService.shared.isAvailable() else { return }
-        LiveActivityService.shared.endWorkoutActivity(message: message)
+        LiveActivityService.shared.endWorkoutActivity(message: message, subtitle: subtitle)
     }
 
     private func saveToHealthKitIfEnabled(_ session: WorkoutSession?) {

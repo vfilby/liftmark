@@ -269,7 +269,7 @@ struct WorkoutsView: View {
                 } label: {
                     Image(systemName: plan.isFavorite ? "heart.fill" : "heart")
                         .font(.title3)
-                        .foregroundStyle(plan.isFavorite ? .yellow : LiftMarkTheme.tertiaryLabel)
+                        .foregroundStyle(plan.isFavorite ? .red : LiftMarkTheme.tertiaryLabel)
                         .frame(width: 36, height: 36)
                 }
                 .buttonStyle(.plain)

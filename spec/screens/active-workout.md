@@ -75,7 +75,8 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - Target label shows "/side" suffix to clarify the target is per-side (e.g., "Target: 1:00/side").
 
 ### Plate Calculator
-- For barbell exercises (detected by `PlateCalculator.isBarbellExercise`): shows plate breakdown in a blue info box between the target hint and the complete button
+- For barbell exercises (detected by `PlateCalculator.isBarbellExercise`): shows plate breakdown in a blue info box **above** the weight × reps input row
+- Font size: `.callout` for text, `.caption` for icon — sized for easy readability during a workout
 - Format: "45lb bar + Xlbs per side" (via `PlateCalculator.formatCompletePlateSetup`)
 - Updates live as the user edits the weight field
 - Hidden when weight is less than bar weight or exercise is not a barbell exercise

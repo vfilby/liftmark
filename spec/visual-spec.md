@@ -134,7 +134,7 @@ Active tab uses filled variant; inactive uses outline/stroke.
 | Complete | `checkmark.circle.fill` | Completed set indicator |
 | Skip indicator | `minus.circle.fill` | Skipped set indicator |
 | Current set | `arrow.right.circle.fill` | Active set indicator |
-| Favorite | `heart` / `heart.fill` | Plan favorite toggle |
+| Favorite | `heart` / `heart.fill` | Plan favorite toggle (red when filled, tertiary label when unfilled) |
 | Timer | `timer` | Rest timer |
 
 ### Data & Visibility

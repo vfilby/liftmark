@@ -89,6 +89,9 @@ struct WorkoutSummaryView: View {
                             Text(name)
                                 .font(.subheadline)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                                .multilineTextAlignment(.center)
                         }
                     }
                     .padding(.top, LiftMarkTheme.spacingLG)
