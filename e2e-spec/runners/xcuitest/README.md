@@ -10,13 +10,13 @@ Reads the shared YAML E2E scenario files and executes them as XCUITest tests aga
 
 ## Integration
 
-These files are consumed by the XCUITest target at `swift-ios/LiftMarkUITests/`. To add them to an Xcode project:
+These files are consumed by the XCUITest target at `native-ios/LiftMarkUITests/`. To add them to an Xcode project:
 
 1. Add all three `.swift` files to the UI test target
 2. Ensure the test target can access `e2e-spec/scenarios/` and `e2e-spec/fixtures/` at runtime
 3. Set the `PROJECT_DIR` environment variable in the test scheme, or rely on `#filePath` resolution
 
-For SPM-based projects, add a `.testTarget` in `Package.swift` — see the main `swift-ios/Package.swift` for the configured target.
+For SPM-based projects, add a `.testTarget` in `Package.swift` — see the main `native-ios/Package.swift` for the configured target.
 
 ## No External Dependencies
 

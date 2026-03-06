@@ -159,7 +159,7 @@ Before any release:
 The Xcode project should mirror the filesystem layout:
 
 ```
-swift-ios/
+native-ios/
   LiftMark.xcodeproj/
   LiftMark/
     App/                    -- @main entry, ContentView

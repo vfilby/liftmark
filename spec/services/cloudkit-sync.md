@@ -4,17 +4,16 @@
 
 Provide iCloud sync capabilities via CloudKit for data synchronization across devices. This enables users to access their workout data on multiple iOS devices signed into the same iCloud account.
 
-Both the React Native (Expo) app and the native Swift app MUST support iCloud sync using the same CloudKit container, record types, and data format. A user should be able to sync data between any combination of app versions.
+The native Swift app provides iCloud sync using CloudKit.
 
 ## iCloud Container
 
 - **Container identifier**: `iCloud.com.eff3.liftmark`
 - **Database**: Private database (user's own data, not shared)
-- Both apps MUST use the same container identifier
 
 ## Entitlements
 
-All iOS app targets (React Native and Swift) MUST include the following entitlements:
+The iOS app target MUST include the following entitlements:
 
 ```xml
 <key>com.apple.developer.icloud-container-identifiers</key>
@@ -37,10 +36,9 @@ All iOS app targets (React Native and Swift) MUST include the following entitlem
 
 | App Target | File | Status |
 |------------|------|--------|
-| React Native | `react-ios/ios/LiftMark/LiftMark.entitlements` | Complete |
-| Swift | `swift-ios/LiftMark/LiftMark.entitlements` | **Missing** — only has HealthKit entitlements |
+| Swift | `native-ios/LiftMark/LiftMark.entitlements` | **Missing** — only has HealthKit entitlements |
 
-**Action required**: Add iCloud entitlements to `swift-ios/LiftMark/LiftMark.entitlements`.
+**Action required**: Add iCloud entitlements to `native-ios/LiftMark/LiftMark.entitlements`.
 
 ## Account Status
 
@@ -56,12 +54,11 @@ The service can report the current iCloud account status as one of:
 ### Account Status Implementation Notes
 
 - **Swift**: Use `CKContainer.accountStatus()` async API. Handle `temporarilyUnavailable` by mapping to `couldNotDetermine`.
-- **React Native**: Use the `expo-cloudkit` native module which wraps the same Swift APIs.
 - **Simulator handling**: On simulator, CloudKit may fail. Return `noAccount` for simulator-specific errors rather than crashing.
 
 ## CloudKit Record Types
 
-All apps MUST use these exact CloudKit record type names and field mappings. This is the shared contract that enables cross-app sync.
+The app MUST use these exact CloudKit record type names and field mappings.
 
 ### Record Type: `WorkoutPlan`
 
@@ -221,7 +218,7 @@ The sync runs in **download-first** order to avoid an upload storm when another 
 4. **No remote deletes in Phase 1**: Without a sync queue there is no reliable way to distinguish "record deleted locally" from "record recently added by another device". Remote deletes are deferred to Phase 2 to avoid accidental data loss.
 5. **Conflict resolution**: Last-writer-wins based on `updatedAt` timestamp (applied during download merge).
 
-**Why download-first?** If an upload-first strategy is used, every record that already exists on the server (e.g. synced from the React Native app) triggers a `serverRecordChanged` error, requiring a fetch + retry per record — O(2N) CloudKit API calls instead of O(N).
+**Why download-first?** If an upload-first strategy is used, every record that already exists on the server triggers a `serverRecordChanged` error, requiring a fetch + retry per record — O(2N) CloudKit API calls instead of O(N).
 
 **Sync triggers**: App launch, foreground transition, manual "Sync Now" button, and 5-minute background polling.
 
@@ -370,7 +367,7 @@ See `spec/screens/settings.md` for the complete iCloud Sync sub-screen layout sp
 
 ## Service Interface
 
-Both platforms MUST implement a CloudKit service with the following capabilities:
+The app MUST implement a CloudKit service with the following capabilities:
 
 ```
 CloudKitService {
@@ -400,26 +397,12 @@ SyncResult {
 
 ## Implementation Checklist
 
-### Swift App (swift-ios)
-
-- [ ] Add iCloud entitlements to `swift-ios/LiftMark/LiftMark.entitlements`
+- [ ] Add iCloud entitlements to `native-ios/LiftMark/LiftMark.entitlements`
 - [ ] Add iCloud capability in Xcode project settings
 - [ ] Verify `CloudKitService.swift` uses container `iCloud.com.eff3.liftmark`
 - [ ] Implement `syncAll()` method using the record type mappings above
 - [ ] Wire up Sync Settings UI to actual sync operations
 - [ ] Test on physical device (CloudKit requires real iCloud account)
-
-### React Native App (react-ios)
-
-- [ ] Verify entitlements are correct (already done)
-- [ ] Implement `syncAll()` in `cloudKitService.ts`
-- [ ] Add sync progress UI to the sync settings screen
-- [ ] Wire up "Sync Now" button to `syncAll()`
-- [ ] Test on physical device
-
-### Shared
-
-- [ ] Verify both apps can read records written by the other
 - [ ] Test conflict resolution with simultaneous edits
 - [ ] Test first-sync behavior on a new device
 - [ ] Test sync with large datasets (100+ workout plans, 500+ sessions)

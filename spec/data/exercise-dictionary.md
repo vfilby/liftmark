@@ -51,9 +51,9 @@ The dictionary is used for **display and aggregation**. Exercise names stored in
 3. Merges/deduplicates results by canonical name
 4. Displays the canonical name to the user
 
-### Lookup API (React Native)
+### Lookup API
 
-Module: `react-ios/src/data/exerciseDictionary.ts`
+The app should import the dictionary and build lookup structures at app startup.
 
 | Function | Returns | Description |
 |----------|---------|-------------|
@@ -75,8 +75,8 @@ Repository functions with `*Normalized()` suffix use the dictionary to merge res
 
 Original (non-normalized) functions remain for backward compatibility.
 
-## Cross-Platform Usage
+## Dictionary Source
 
-The JSON dictionary at `spec/data/exercise-dictionary.json` is the shared source of truth. Both the React Native and Swift apps should import it and build their own lookup structures at app startup.
+The JSON dictionary at `spec/data/exercise-dictionary.json` is the source of truth. The app should import it and build lookup structures at app startup.
 
 The dictionary file should be updated when new common exercises or aliases are identified. Changes are backward-compatible — adding new entries or aliases never breaks existing data.

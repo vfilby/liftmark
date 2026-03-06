@@ -22,7 +22,7 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
-        working-directory: swift-ios
+        working-directory: native-ios
 
     env:
       SCHEME: LiftMark

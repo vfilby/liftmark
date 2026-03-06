@@ -39,10 +39,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/react-ios/ios
-/react-ios/android
-
 # logs
 logs/
 *.log
@@ -71,7 +67,8 @@ PHASE_*.md
 # Xcode
 xcuserdata/
 *.xcuserstate
-swift-ios/build/
+native-ios/build/
+native-ios/.build/
 
 # Gas Town (added by gt)
 .logs/
