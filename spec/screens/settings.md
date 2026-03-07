@@ -28,9 +28,7 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
 |---------|--------|------|
 | Loading state | `settings-loading` | View |
 | Screen container | `settings-screen` | ScrollView |
-| Theme: Light | `button-theme-light` | TouchableOpacity |
-| Theme: Dark | `button-theme-dark` | TouchableOpacity |
-| Theme: Auto | `button-theme-auto` | TouchableOpacity |
+| Theme picker (segmented) | `picker-theme` | Picker (segmented style) |
 | Workout Settings nav | `workout-settings-button` | TouchableOpacity |
 | Gym item | `gym-item` | TouchableOpacity |
 | Set default gym | `set-default-{gym.id}` | TouchableOpacity |
@@ -321,8 +319,9 @@ View, filter, and export application logs for troubleshooting production issues.
 - "Clear Logs" shows a confirmation alert before deleting all logs
 
 **Log display:**
-- Shows device info header (platform, OS version, app version, build type)
-- Log statistics by level (debug/info/warn/error)
+- Uses `List` with `.insetGrouped` style following standard iOS patterns
+- Device info section shows platform, OS version, app version, and build type as standard list rows
+- Log statistics by level (debug/info/warn/error) shown inline
 - Filterable log list with level filter chips
 - Each log entry is expandable to show metadata and stack traces
 - Maximum 200 logs displayed

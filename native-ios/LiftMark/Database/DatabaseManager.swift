@@ -9,7 +9,7 @@ final class DatabaseManager: @unchecked Sendable {
     private var dbQueue: DatabaseQueue?
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 3
+    private static let currentSchemaVersion = 4
 
     private init() {}
 
@@ -108,6 +108,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 3 {
                 try migrateToV3(db)
+            }
+
+            if currentVersion < 4 {
+                try migrateToV4(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -371,5 +375,28 @@ final class DatabaseManager: @unchecked Sendable {
 
     private func migrateToV3(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN developer_mode_enabled INTEGER DEFAULT 0")
+    }
+
+    private func migrateToV4(_ db: Database) throws {
+        // Soft-delete support for gyms and gym_equipment to prevent CloudKit sync
+        // from re-inserting deleted records.
+        try db.execute(sql: "ALTER TABLE gyms ADD COLUMN deleted_at TEXT")
+        try db.execute(sql: "ALTER TABLE gym_equipment ADD COLUMN deleted_at TEXT")
+
+        // Ensure exactly one gym is marked as default
+        let defaultCount = try Int.fetchOne(
+            db,
+            sql: "SELECT COUNT(*) FROM gyms WHERE is_default = 1 AND deleted_at IS NULL"
+        ) ?? 0
+        if defaultCount != 1 {
+            try db.execute(sql: "UPDATE gyms SET is_default = 0 WHERE deleted_at IS NULL")
+            let first = try Row.fetchOne(
+                db,
+                sql: "SELECT id FROM gyms WHERE deleted_at IS NULL ORDER BY name LIMIT 1"
+            )
+            if let id: String = first?["id"] {
+                try db.execute(sql: "UPDATE gyms SET is_default = 1 WHERE id = ?", arguments: [id])
+            }
+        }
     }
 }

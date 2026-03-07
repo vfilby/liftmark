@@ -76,7 +76,10 @@ Shows complete details for the current set so users can perform it without openi
   - Top row: Exercise name (left), "Set X/Y" (right)
   - Middle row: Weight × reps (e.g., "185 lbs × 5")
   - Bottom area: "Next: [exercise name]" and progress bar
-- **Dynamic Island expanded**: Same layout as lock screen
+- **Dynamic Island expanded**: Compact layout optimized for the small Dynamic Island space:
+  - Leading: Exercise name, "Set X/Y • Weight × Reps" detail
+  - Trailing: Percentage complete
+  - Bottom: "Next: [exercise name]" (no progress bar — percentage in trailing is sufficient)
 - **Dynamic Island compact**: Dumbbell icon (leading), percentage complete (trailing)
 - **Dynamic Island minimal**: Dumbbell icon
 
@@ -89,7 +92,10 @@ Shows a countdown timer and previews the next set so users know what's coming:
   - Timer color: Green when time remaining, red when timer has expired (counting up past zero)
   - Middle row: Next exercise name and its set details (weight × reps)
   - Bottom area: Progress bar
-- **Dynamic Island expanded**: Same layout as lock screen
+- **Dynamic Island expanded**: Compact layout optimized for the small Dynamic Island space:
+  - Leading: "Rest" label, "Next: [exercise name]"
+  - Trailing: Countdown timer (green/red color)
+  - Bottom: Next set detail (no progress bar — keeps the island compact)
 - **Dynamic Island compact**: Dumbbell icon (leading), countdown timer (trailing, green/red color)
 - **Dynamic Island minimal**: Dumbbell icon
 

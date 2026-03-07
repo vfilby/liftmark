@@ -81,9 +81,7 @@ Implementations on any platform must attach these identifiers to the correspondi
 |----|-------------|---------|
 | `settings-screen` | ScrollView | Root container for settings |
 | `settings-loading` | View | Loading state container |
-| `button-theme-light` | TouchableOpacity | Light theme selector |
-| `button-theme-dark` | TouchableOpacity | Dark theme selector |
-| `button-theme-auto` | TouchableOpacity | Auto theme selector |
+| `picker-theme` | Picker (segmented) | Theme selector (Light/Dark/Auto) |
 | `workout-settings-button` | TouchableOpacity | Navigate to workout settings sub-screen |
 | `gym-item` | TouchableOpacity | A gym list item (navigates to gym detail) |
 | `set-default-{gym.id}` | TouchableOpacity | Set a gym as default |

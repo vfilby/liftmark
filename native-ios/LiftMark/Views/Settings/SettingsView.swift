@@ -261,20 +261,20 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func appearanceContent(settings: UserSettings) -> some View {
-        HStack {
-            Text("Theme")
-            Spacer()
-            HStack(spacing: 0) {
-                themeButton("Light", theme: .light, currentTheme: settings.theme)
-                    .accessibilityIdentifier("button-theme-light")
-                themeButton("Dark", theme: .dark, currentTheme: settings.theme)
-                    .accessibilityIdentifier("button-theme-dark")
-                themeButton("Auto", theme: .auto, currentTheme: settings.theme)
-                    .accessibilityIdentifier("button-theme-auto")
+        Picker("Theme", selection: Binding(
+            get: { settings.theme },
+            set: { newTheme in
+                var updated = settings
+                updated.theme = newTheme
+                settingsStore.updateSettings(updated)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .frame(width: 200)
+        )) {
+            Text("Light").tag(AppTheme.light)
+            Text("Dark").tag(AppTheme.dark)
+            Text("Auto").tag(AppTheme.auto)
         }
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier("picker-theme")
     }
 
     @ViewBuilder
@@ -614,26 +614,6 @@ struct SettingsView: View {
         case .invalid: return "Invalid"
         case .notSet: return "Not Set"
         }
-    }
-
-    // MARK: - Theme Button
-
-    @ViewBuilder
-    private func themeButton(_ label: String, theme: AppTheme, currentTheme: AppTheme) -> some View {
-        Button {
-            guard let settings = settingsStore.settings else { return }
-            var updated = settings
-            updated.theme = theme
-            settingsStore.updateSettings(updated)
-        } label: {
-            Text(label)
-                .font(.subheadline.weight(currentTheme == theme ? .semibold : .regular))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(currentTheme == theme ? LiftMarkTheme.primary : LiftMarkTheme.secondaryBackground)
-                .foregroundStyle(currentTheme == theme ? .white : LiftMarkTheme.label)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - HealthKit Status

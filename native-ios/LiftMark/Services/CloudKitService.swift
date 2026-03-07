@@ -468,21 +468,35 @@ final class CloudKitService: @unchecked Sendable {
             // Failed uploads must NOT appear in localIds — otherwise handleLocalDeletes
             // would interpret them as "present locally but missing from server" and delete them.
 
-            let gyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
+            let allGyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
+            let activeGyms = allGyms.filter { $0.deletedAt == nil }
+            let deletedGyms = allGyms.filter { $0.deletedAt != nil }
             var confirmedGymIds = existingServerIds["Gym"] ?? []
-            for gym in gyms where !confirmedGymIds.contains(gym.id) {
+            for gym in activeGyms where !confirmedGymIds.contains(gym.id) {
                 let record = gymToRecord(gym)
                 if await saveRecord(record) != nil { result.count += 1; confirmedGymIds.insert(gym.id) }
                 else { result.errors.append("Failed to upload Gym \(gym.id)") }
             }
+            // Delete soft-deleted gyms from CloudKit
+            for gym in deletedGyms {
+                confirmedGymIds.remove(gym.id)
+                await deleteRecord(recordId: gym.id, recordType: "Gym")
+            }
             result.localIds["Gym"] = confirmedGymIds
 
-            let equipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
+            let allEquipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
+            let activeEquipment = allEquipment.filter { $0.deletedAt == nil }
+            let deletedEquipment = allEquipment.filter { $0.deletedAt != nil }
             var confirmedEquipmentIds = existingServerIds["GymEquipment"] ?? []
-            for eq in equipment where !confirmedEquipmentIds.contains(eq.id) {
+            for eq in activeEquipment where !confirmedEquipmentIds.contains(eq.id) {
                 let record = gymEquipmentToRecord(eq)
                 if await saveRecord(record) != nil { result.count += 1; confirmedEquipmentIds.insert(eq.id) }
                 else { result.errors.append("Failed to upload GymEquipment \(eq.id)") }
+            }
+            // Delete soft-deleted equipment from CloudKit
+            for eq in deletedEquipment {
+                confirmedEquipmentIds.remove(eq.id)
+                await deleteRecord(recordId: eq.id, recordType: "GymEquipment")
             }
             result.localIds["GymEquipment"] = confirmedEquipmentIds
 
@@ -571,23 +585,29 @@ final class CloudKitService: @unchecked Sendable {
             // localIds tracks only IDs confirmed on the server (successful uploads).
             // Failed uploads must NOT appear in localIds for correct delete handling.
 
-            // Gym
-            let gyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
+            // Gym (skip soft-deleted, delete them from CloudKit)
+            let allGyms = try await dbQueue.read { db in try GymRow.fetchAll(db) }
             var confirmedGymIds = Set<String>()
-            for gym in gyms {
+            for gym in allGyms where gym.deletedAt == nil {
                 let record = gymToRecord(gym)
                 if await saveRecord(record) != nil { result.count += 1; confirmedGymIds.insert(gym.id) }
                 else { result.errors.append("Failed to upload Gym \(gym.id)") }
             }
+            for gym in allGyms where gym.deletedAt != nil {
+                await deleteRecord(recordId: gym.id, recordType: "Gym")
+            }
             result.localIds["Gym"] = confirmedGymIds
 
-            // GymEquipment
-            let equipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
+            // GymEquipment (skip soft-deleted, delete them from CloudKit)
+            let allEquipment = try await dbQueue.read { db in try GymEquipmentRow.fetchAll(db) }
             var confirmedEquipmentIds = Set<String>()
-            for eq in equipment {
+            for eq in allEquipment where eq.deletedAt == nil {
                 let record = gymEquipmentToRecord(eq)
                 if await saveRecord(record) != nil { result.count += 1; confirmedEquipmentIds.insert(eq.id) }
                 else { result.errors.append("Failed to upload GymEquipment \(eq.id)") }
+            }
+            for eq in allEquipment where eq.deletedAt != nil {
+                await deleteRecord(recordId: eq.id, recordType: "GymEquipment")
             }
             result.localIds["GymEquipment"] = confirmedEquipmentIds
 
@@ -1066,6 +1086,12 @@ final class CloudKitService: @unchecked Sendable {
         let remoteUpdatedAt = dateField(record, "updatedAt")
         return try dbQueue.write { db in
             let existing = try GymRow.fetchOne(db, key: record.recordId)
+
+            // Don't re-insert a gym that was soft-deleted locally
+            if let existing, existing.deletedAt != nil {
+                return false
+            }
+
             if let existing, !remoteIsNewer(remoteDate: remoteUpdatedAt, localUpdatedAt: existing.updatedAt) {
                 return false
             }
@@ -1073,6 +1099,7 @@ final class CloudKitService: @unchecked Sendable {
                 id: record.recordId,
                 name: stringField(record, "name") ?? "Gym",
                 isDefault: Int(int64Field(record, "isDefault") ?? 0),
+                deletedAt: nil,
                 createdAt: dateToISO(dateField(record, "createdAt")) ?? existing?.createdAt ?? isoFormatter.string(from: Date()),
                 updatedAt: dateToISO(remoteUpdatedAt) ?? existing?.updatedAt ?? isoFormatter.string(from: Date())
             )
@@ -1085,6 +1112,12 @@ final class CloudKitService: @unchecked Sendable {
         let remoteUpdatedAt = dateField(record, "updatedAt")
         return try dbQueue.write { db in
             let existing = try GymEquipmentRow.fetchOne(db, key: record.recordId)
+
+            // Don't re-insert equipment that was soft-deleted locally
+            if let existing, existing.deletedAt != nil {
+                return false
+            }
+
             if let existing, !remoteIsNewer(remoteDate: remoteUpdatedAt, localUpdatedAt: existing.updatedAt) {
                 return false
             }
@@ -1093,6 +1126,7 @@ final class CloudKitService: @unchecked Sendable {
                 name: stringField(record, "name") ?? "Equipment",
                 isAvailable: Int(int64Field(record, "isAvailable") ?? 1),
                 lastCheckedAt: dateToISO(dateField(record, "lastCheckedAt")),
+                deletedAt: nil,
                 createdAt: dateToISO(dateField(record, "createdAt")) ?? existing?.createdAt ?? isoFormatter.string(from: Date()),
                 updatedAt: dateToISO(remoteUpdatedAt) ?? existing?.updatedAt ?? isoFormatter.string(from: Date()),
                 gymId: referenceId(record, "gymId")

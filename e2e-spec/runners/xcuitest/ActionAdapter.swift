@@ -60,6 +60,8 @@ class ActionAdapter {
             try executeTryCatch(action)
         case "runFixture":
             try executeRunFixture(action)
+        case "tapSegment":
+            try executeTapSegment(action)
         case "execScript":
             try executeExecScript(action)
         default:
@@ -285,6 +287,24 @@ class ActionAdapter {
         let el = elements.element(boundBy: index)
         XCTAssertTrue(el.waitForExistence(timeout: 5), "Element '\(target)' at index \(index) not found")
         el.tap()
+    }
+
+    private func executeTapSegment(_ action: TestAction) throws {
+        guard let target = action.target else {
+            throw ActionError.missingParam("target", "tapSegment")
+        }
+        guard let segment = action.segment else {
+            throw ActionError.missingParam("segment", "tapSegment")
+        }
+        // Find the segmented control by accessibility identifier, then tap the button matching the segment label
+        guard let picker = waitForAnyElement(byId: target, timeout: 5) else {
+            XCTFail("Element '\(target)' not found for tapSegment")
+            return
+        }
+        let segmentButton = picker.buttons[segment]
+        XCTAssertTrue(segmentButton.waitForExistence(timeout: 3),
+                       "Segment '\(segment)' not found in '\(target)'")
+        segmentButton.tap()
     }
 
     private func executeReplaceText(_ action: TestAction) throws {

@@ -124,6 +124,33 @@ final class SessionRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.status, .canceled)
     }
 
+    func testCancelAllInProgressCancelsStaleSession() throws {
+        let plan = makePlan()
+        try planRepo.create(plan)
+        let s1 = try repo.createFromPlan(plan)
+        let s2 = try repo.createFromPlan(plan)
+
+        try repo.cancelAllInProgress()
+
+        let fetched1 = try repo.getById(s1.id)
+        let fetched2 = try repo.getById(s2.id)
+        XCTAssertEqual(fetched1?.status, .canceled)
+        XCTAssertEqual(fetched2?.status, .canceled)
+        XCTAssertNil(try repo.getActiveSession())
+    }
+
+    func testCancelAllInProgressDoesNotAffectCompletedSessions() throws {
+        let plan = makePlan()
+        try planRepo.create(plan)
+        let s1 = try repo.createFromPlan(plan)
+        try repo.complete(s1.id)
+
+        try repo.cancelAllInProgress()
+
+        let fetched = try repo.getById(s1.id)
+        XCTAssertEqual(fetched?.status, .completed)
+    }
+
     // MARK: - getCompleted
 
     func testGetCompletedReturnsOnlyCompletedSessions() throws {

@@ -624,8 +624,8 @@ struct WorkoutDetailView: View {
 
     private func sectionColor(for name: String) -> Color {
         switch name.lowercased() {
-        case "warmup", "warm-up", "warm up": return .orange
-        case "cooldown", "cool-down", "cool down": return Color(red: 0.35, green: 0.78, blue: 0.98) // light blue
+        case "warmup", "warm-up", "warm up": return LiftMarkTheme.warmupAccent
+        case "cooldown", "cool-down", "cool down": return LiftMarkTheme.cooldownAccent
         default: return LiftMarkTheme.primary
         }
     }

@@ -43,24 +43,27 @@ struct DebugLogsView: View {
                 }
                 .accessibilityIdentifier("debug-logs-empty")
             } else {
-                VStack(spacing: 0) {
-                    // Device info + stats header
-                    deviceInfoHeader
+                List {
+                    // Device info + stats
+                    Section {
+                        deviceInfoContent
+                    }
 
                     // Filter bar
-                    filterBar
+                    Section {
+                        filterBar
+                            .listRowInsets(EdgeInsets())
+                    }
 
                     // Log entries
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-                            ForEach(filteredLogs, id: \.id) { entry in
-                                LogEntryRow(entry: entry)
-                            }
+                    Section {
+                        ForEach(filteredLogs, id: \.id) { entry in
+                            LogEntryRow(entry: entry)
                         }
-                        .padding()
                     }
-                    .accessibilityIdentifier("debug-logs-list")
                 }
+                .listStyle(.insetGrouped)
+                .accessibilityIdentifier("debug-logs-list")
             }
         }
         .accessibilityIdentifier("debug-logs-screen")
@@ -113,54 +116,48 @@ struct DebugLogsView: View {
         }
     }
 
-    // MARK: - Device Info Header
+    // MARK: - Device Info Content
 
     @ViewBuilder
-    private var deviceInfoHeader: some View {
+    private var deviceInfoContent: some View {
         let info = Logger.shared.getDeviceInformation()
-        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-            HStack {
-                Text("Device:")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                Text("\(info.platform) \(info.osVersion)")
-                    .font(.caption)
+
+        HStack {
+            Text("Device")
+            Spacer()
+            Text("\(info.platform) \(info.osVersion)")
+                .foregroundStyle(.secondary)
+            if info.isSimulator {
+                Text("(Simulator)")
                     .foregroundStyle(.secondary)
-                if info.isSimulator {
-                    Text("(Simulator)")
+            }
+        }
+        .font(.subheadline)
+
+        HStack {
+            Text("App")
+            Spacer()
+            Text("v\(info.appVersion) (\(info.buildType))")
+                .foregroundStyle(.secondary)
+        }
+        .font(.subheadline)
+
+        HStack(spacing: LiftMarkTheme.spacingMD) {
+            ForEach(LogLevel.allCases, id: \.self) { level in
+                let count = logStats[level] ?? 0
+                HStack(spacing: 2) {
+                    Circle()
+                        .fill(logLevelColor(level))
+                        .frame(width: 6, height: 6)
+                    Text("\(count)")
                         .font(.caption)
+                        .fontWeight(.medium)
+                    Text(level.rawValue)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
-
-            HStack {
-                Text("App:")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                Text("v\(info.appVersion) (\(info.buildType))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(spacing: LiftMarkTheme.spacingMD) {
-                ForEach(LogLevel.allCases, id: \.self) { level in
-                    let count = logStats[level] ?? 0
-                    HStack(spacing: 2) {
-                        Circle()
-                            .fill(logLevelColor(level))
-                            .frame(width: 6, height: 6)
-                        Text("\(count)")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                        Text(level.rawValue)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
         }
-        .padding()
-        .background(LiftMarkTheme.secondaryBackground)
     }
 
     // MARK: - Filter Bar

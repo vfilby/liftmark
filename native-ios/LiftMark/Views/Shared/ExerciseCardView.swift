@@ -74,8 +74,8 @@ struct ExerciseCardView: View {
 
     private func sectionColor(for label: String) -> Color {
         switch label.lowercased() {
-        case "warmup": return LiftMarkTheme.warning
-        case "cooldown": return LiftMarkTheme.primary
+        case "warmup": return LiftMarkTheme.warmupAccent
+        case "cooldown": return LiftMarkTheme.cooldownAccent
         default: return LiftMarkTheme.secondaryLabel
         }
     }

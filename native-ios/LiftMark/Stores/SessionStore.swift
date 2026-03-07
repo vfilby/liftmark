@@ -20,6 +20,9 @@ final class SessionStore {
 
     func startSession(from plan: WorkoutPlan) -> WorkoutSession? {
         do {
+            // Cancel any stale in-progress sessions before starting a new one.
+            // This prevents discarded or orphaned sessions from reappearing as resume candidates.
+            try repository.cancelAllInProgress()
             let session = try repository.createFromPlan(plan)
             activeSession = session
             return session

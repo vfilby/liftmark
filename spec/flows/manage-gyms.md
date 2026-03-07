@@ -60,14 +60,15 @@
 22. **Validation**: The last remaining gym cannot be deleted.
 23. A confirmation dialog is shown with a warning that all associated equipment will be deleted.
 24. On confirmation:
-    - The gym and its equipment are deleted from the database.
-    - If the deleted gym was the default, the first remaining gym is set as the new default.
+    - The gym and its equipment are soft-deleted (`deleted_at` timestamp set) rather than hard-deleted, so CloudKit sync does not re-insert them.
+    - If the deleted gym was the default, the first remaining active gym (by name) is set as the new default.
     - The screen navigates back to the previous view.
 
 ## Data Flow
 
-- `gymStore` (Zustand) manages gym state, persisted to the SQLite `gyms` table.
-- `equipmentStore` (Zustand) manages equipment state, persisted to the SQLite `gym_equipment` table.
+- `gymStore` manages gym state, persisted to the SQLite `gyms` table. Queries filter on `deleted_at IS NULL`.
+- `equipmentStore` manages equipment state, persisted to the SQLite `gym_equipment` table. Queries filter on `deleted_at IS NULL`.
+- Exactly one gym must be marked as default at all times. A safety-net check in `loadGyms()` corrects any inconsistency.
 
 ## Variations
 

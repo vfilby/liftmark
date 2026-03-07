@@ -122,6 +122,41 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(store.activeSession)
     }
 
+    func testStartSessionCancelsStaleInProgressSessions() throws {
+        let plan = WorkoutPlan(name: "Plan A")
+        try planRepo.create(plan)
+
+        // Start first session (simulates a paused/orphaned workout)
+        let staleSession = store.startSession(from: plan)!
+
+        // Start second session — should cancel the first
+        let newSession = store.startSession(from: plan)
+        XCTAssertNotNil(newSession)
+        XCTAssertNotEqual(newSession?.id, staleSession.id)
+
+        // Reload and verify only the new session is active
+        store.loadSessions()
+        XCTAssertEqual(store.activeSession?.id, newSession?.id)
+
+        // Verify the stale session was canceled in the DB
+        let repo = SessionRepository()
+        let fetched = try repo.getById(staleSession.id)
+        XCTAssertEqual(fetched?.status, .canceled)
+    }
+
+    func testDiscardedWorkoutDoesNotAppearOnReload() throws {
+        let plan = WorkoutPlan(name: "Test")
+        try planRepo.create(plan)
+        _ = store.startSession(from: plan)
+
+        store.cancelSession()
+        XCTAssertNil(store.activeSession)
+
+        // Simulate app restart
+        store.loadSessions()
+        XCTAssertNil(store.activeSession, "Canceled session must not appear as active after reload")
+    }
+
     func testDeleteSession() throws {
         let plan = WorkoutPlan(name: "Test")
         try planRepo.create(plan)
@@ -267,6 +302,86 @@ final class GymStoreTests: XCTestCase {
         store.setDefault(id: newGym.id)
         let updated = store.gyms.first { $0.name == "New Gym" }!
         XCTAssertTrue(updated.isDefault)
+    }
+
+    // MARK: - Issue #36: Deleted gyms reappearing / multiple defaults
+
+    func testDeletedGymStaysDeletedAfterReload() {
+        store.loadGyms()
+        store.createGym(name: "Temp Gym")
+        let tempGym = store.gyms.first { $0.name == "Temp Gym" }!
+
+        store.deleteGym(id: tempGym.id)
+        XCTAssertFalse(store.gyms.contains { $0.name == "Temp Gym" })
+
+        // Simulate app restart by creating a new store and reloading
+        let freshStore = GymStore()
+        freshStore.loadGyms()
+        XCTAssertFalse(freshStore.gyms.contains { $0.name == "Temp Gym" },
+                       "Deleted gym should not reappear after reload")
+    }
+
+    func testDeletedGymIsSoftDeleted() throws {
+        store.loadGyms()
+        store.createGym(name: "Soft Delete Test")
+        let gym = store.gyms.first { $0.name == "Soft Delete Test" }!
+
+        store.deleteGym(id: gym.id)
+
+        // Verify soft-delete: the row still exists in DB with deleted_at set
+        let dbQueue = try DatabaseManager.shared.database()
+        let row = try dbQueue.read { db in
+            try GymRow.fetchOne(db, key: gym.id)
+        }
+        XCTAssertNotNil(row, "Soft-deleted gym row should still exist in DB")
+        XCTAssertNotNil(row?.deletedAt, "Soft-deleted gym should have deleted_at set")
+    }
+
+    func testDeleteDefaultGymReassignsDefault() {
+        store.loadGyms()
+        store.createGym(name: "Second Gym")
+
+        // Set up: first gym is default
+        let defaultGym = store.gyms.first { $0.isDefault }!
+        store.deleteGym(id: defaultGym.id)
+
+        // Exactly one gym should be default
+        let defaults = store.gyms.filter(\.isDefault)
+        XCTAssertEqual(defaults.count, 1, "Exactly one gym should be default after deleting the default")
+    }
+
+    func testExactlyOneDefaultGymAtAllTimes() {
+        store.loadGyms()
+        store.createGym(name: "Gym A")
+        store.createGym(name: "Gym B")
+        store.createGym(name: "Gym C")
+
+        let defaults = store.gyms.filter(\.isDefault)
+        XCTAssertEqual(defaults.count, 1, "Should have exactly one default gym")
+    }
+
+    func testSetDefaultClearsOtherDefaults() {
+        store.loadGyms()
+        store.createGym(name: "Gym A")
+        store.createGym(name: "Gym B")
+
+        let gymA = store.gyms.first { $0.name == "Gym A" }!
+        store.setDefault(id: gymA.id)
+
+        let gymB = store.gyms.first { $0.name == "Gym B" }!
+        store.setDefault(id: gymB.id)
+
+        let defaults = store.gyms.filter(\.isDefault)
+        XCTAssertEqual(defaults.count, 1, "Only one gym should be default")
+        XCTAssertEqual(defaults.first?.id, gymB.id)
+    }
+
+    func testCreateFirstGymIsDefault() {
+        // Start with empty DB — deleteDatabase already ran in setUp
+        // The seeded gym counts as the first gym
+        store.loadGyms()
+        XCTAssertEqual(store.gyms.filter(\.isDefault).count, 1,
+                       "First gym created should be the default")
     }
 }
 

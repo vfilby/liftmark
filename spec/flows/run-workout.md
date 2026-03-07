@@ -3,14 +3,13 @@
 ## Preconditions
 
 - At least one workout plan exists in the database.
-- No other workout session is currently active (only one active session allowed at a time).
 
 ## Flow Steps
 
 1. User taps a workout card on the Home screen, navigating to the workout detail screen.
 2. User taps the **Start Workout** button.
 3. `sessionStore.startWorkout(plan)` creates a new session from the plan via `createSessionFromPlan()`.
-4. The system checks for an existing active session. If one exists, an error is thrown.
+4. The system cancels any existing in-progress sessions before creating the new one. This ensures orphaned or stale sessions (from paused/interrupted workouts) never persist as false resume candidates.
 5. **Navigation to Active Workout**: The app MUST navigate to the active workout screen (`/workout/active`). This is a critical navigation transition — the user must see the active workout UI after tapping "Start Workout". If the session is created but the screen does not change, the workout is effectively unusable.
 6. The active workout screen is displayed showing:
    - Current exercise name.
@@ -75,7 +74,7 @@ in_progress → canceled
 
 | Scenario | Behavior |
 |---|---|
-| Active session already exists | Error thrown when attempting to start a new workout |
+| Stale in-progress sessions exist | Automatically canceled before starting a new workout |
 | Database save failure on set completion | Error surfaced to user |
 | HealthKit save failure | Workout still completes; HealthKit error is logged but does not block |
 | Live Activity end failure | Workout still completes; error is logged |

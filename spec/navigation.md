@@ -130,7 +130,7 @@ An `ActiveWorkoutBanner` component is rendered above the stack navigator. When a
 **Content** (scrollable, grouped into sections):
 
 1. **Preferences**
-   - **Appearance**: Theme selector with segmented control (`button-theme-light`, `button-theme-dark`, `button-theme-auto`).
+   - **Appearance**: Theme selector using iOS `Picker` with `.segmented` style (`picker-theme`).
 
 2. **Workout**
    - **Workout Settings** (`workout-settings-button`): Navigation row to `/settings/workout`.

@@ -13,7 +13,7 @@ final class EquipmentStore {
             let dbQueue = try DatabaseManager.shared.database()
             let rows = try dbQueue.read { db in
                 try GymEquipmentRow
-                    .filter(Column("gym_id") == gymId)
+                    .filter(Column("gym_id") == gymId && Column("deleted_at") == nil)
                     .order(Column("name"))
                     .fetchAll(db)
             }
@@ -43,6 +43,7 @@ final class EquipmentStore {
                     name: name,
                     isAvailable: 1,
                     lastCheckedAt: nil,
+                    deletedAt: nil,
                     createdAt: now,
                     updatedAt: now,
                     gymId: gymId

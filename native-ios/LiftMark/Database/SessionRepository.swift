@@ -165,6 +165,17 @@ struct SessionRepository {
         }
     }
 
+    /// Cancel all in-progress sessions. Used to clean up stale sessions before starting a new workout.
+    func cancelAllInProgress() throws {
+        let dbQueue = try dbManager.database()
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE workout_sessions SET status = ? WHERE status = ?",
+                arguments: [SessionStatus.canceled.rawValue, SessionStatus.inProgress.rawValue]
+            )
+        }
+    }
+
     func delete(_ id: String) throws {
         let dbQueue = try dbManager.database()
         try dbQueue.write { db in

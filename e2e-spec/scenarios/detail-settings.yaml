@@ -36,7 +36,7 @@ tests:
         catch: []
 
   # Issue 1: Dark mode must actually apply, not just store a preference
-  - name: "theme selector buttons are visible and interactive"
+  - name: "theme segmented picker is visible"
     steps:
       - action: tap
         target: "tab-settings"
@@ -44,13 +44,7 @@ tests:
         target: "settings-screen"
         timeout: 5000
       - action: expect
-        target: "button-theme-light"
-        assertion: "toBeVisible"
-      - action: expect
-        target: "button-theme-dark"
-        assertion: "toBeVisible"
-      - action: expect
-        target: "button-theme-auto"
+        target: "picker-theme"
         assertion: "toBeVisible"
 
   - name: "selecting dark theme applies immediately and persists"
@@ -60,9 +54,10 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # Select dark theme
-      - action: tap
-        target: "button-theme-dark"
+      # Select dark theme via segmented picker
+      - action: tapSegment
+        target: "picker-theme"
+        segment: "Dark"
       - action: delay
         ms: 500
       # Navigate to a different tab to verify theme applies globally
@@ -77,9 +72,9 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # The dark theme button should still be visually selected
+      # The picker should still be visible
       - action: expect
-        target: "button-theme-dark"
+        target: "picker-theme"
         assertion: "toBeVisible"
       # Restart the app and verify theme persists
       - action: launchApp
@@ -98,13 +93,14 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # Dark theme should still be selected after restart
+      # Picker should still be visible after restart
       - action: expect
-        target: "button-theme-dark"
+        target: "picker-theme"
         assertion: "toBeVisible"
       # Restore to auto for other tests
-      - action: tap
-        target: "button-theme-auto"
+      - action: tapSegment
+        target: "picker-theme"
+        segment: "Auto"
 
   - name: "selecting light theme applies and differs from dark"
     steps:
@@ -113,9 +109,10 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # Select light explicitly
-      - action: tap
-        target: "button-theme-light"
+      # Select light explicitly via segmented picker
+      - action: tapSegment
+        target: "picker-theme"
+        segment: "Light"
       - action: delay
         ms: 500
       # Verify it persists by navigating away and back
@@ -129,11 +126,12 @@ tests:
         target: "settings-screen"
         timeout: 5000
       - action: expect
-        target: "button-theme-light"
+        target: "picker-theme"
         assertion: "toBeVisible"
       # Restore to auto
-      - action: tap
-        target: "button-theme-auto"
+      - action: tapSegment
+        target: "picker-theme"
+        segment: "Auto"
 
   # Issue 2: iCloud sync screen must not be empty
   - name: "iCloud sync screen displays status and informational content"

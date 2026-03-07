@@ -132,7 +132,7 @@ struct LiveWorkoutsLiveActivity: Widget {
                     .font(.headline)
                 if let nextName = state.nextExerciseName {
                     Text("Next: \(nextName)")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -144,7 +144,7 @@ struct LiveWorkoutsLiveActivity: Widget {
                     .lineLimit(1)
                 if !state.weightReps.isEmpty {
                     Text(state.setInfo.isEmpty ? state.weightReps : "\(state.setInfo) \u{2022} \(state.weightReps)")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -170,19 +170,15 @@ struct LiveWorkoutsLiveActivity: Widget {
     private func expandedBottom(context: ActivityViewContext<WorkoutActivityAttributes>) -> some View {
         let state = context.state
 
-        VStack(spacing: 4) {
-            if state.isRestTimer, let detail = state.nextSetDetail {
-                Text(detail)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            } else if !state.isRestTimer, let nextName = state.nextExerciseName {
-                Text("Next: \(nextName)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            ProgressView(value: state.progress)
-                .tint(.blue)
+        if state.isRestTimer, let detail = state.nextSetDetail {
+            Text(detail)
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+        } else if !state.isRestTimer, let nextName = state.nextExerciseName {
+            Text("Next: \(nextName)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
     }
 }

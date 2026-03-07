@@ -37,6 +37,7 @@ struct TestAction {
     let index: Int?
     let fixture: String?
     let expectedName: String?
+    let segment: String?
     let script: String?
     let args: YAMLValue?
     let trySteps: [TestAction]?
@@ -213,6 +214,7 @@ class TestSpecRunner {
             index: yaml["index"]?.intValue,
             fixture: yaml["fixture"]?.stringValue,
             expectedName: yaml["expectedName"]?.stringValue,
+            segment: yaml["segment"]?.stringValue,
             script: yaml["script"]?.stringValue,
             args: yaml["args"],
             trySteps: yaml["try"]?.arrayValue?.compactMap(parseAction),

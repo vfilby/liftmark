@@ -2,16 +2,18 @@
 
 Design tokens and visual constants for the LiftMark iOS app. The Swift app uses iOS semantic system colors and SF Pro fonts; values below are the resolved defaults.
 
+All custom colors use adaptive light/dark values to meet WCAG AA contrast minimums: 4.5:1 for normal text, 3:1 for large text and UI components. System semantic colors (`label`, `secondaryLabel`, `tertiaryLabel`) are Apple-managed and adapt via iOS "Increase Contrast" accessibility setting.
+
 ## Colors
 
 ### Primary & Status
 
-| Token | Light | Dark | Usage |
-|-------|-------|------|-------|
-| Primary | `#007AFF` | `#007AFF` | Tint, active tab, links, current set highlight |
-| Success | System Green | System Green | Completed sets, checkmarks, enabled toggles |
-| Warning | System Orange | System Orange | Skipped sets, caution badges |
-| Destructive | System Red | System Red | Delete, stop, error |
+| Token | Light | Dark | Contrast (L/D) | Usage |
+|-------|-------|------|----------------|-------|
+| Primary | `#0070E0` | `#007AFF` | 4.8:1 / 8.6:1 | Tint, active tab, links, current set highlight |
+| Success | `#1E7E34` | `#30D158` | 5.4:1 / 10.4:1 | Completed sets, checkmarks, enabled toggles |
+| Warning | `#C45100` | `#FF9F0A` | 4.9:1 / 11.3:1 | Skipped sets, caution badges |
+| Destructive | `#C41F1F` | `#FF453A` | 5.9:1 / 5.5:1 | Delete, stop, error |
 
 ### Backgrounds
 
@@ -32,17 +34,17 @@ Design tokens and visual constants for the LiftMark iOS app. The Swift app uses 
 
 ### Tab Bar
 
-| Token | Light | Dark | Usage |
-|-------|-------|------|-------|
-| Selected | `#007AFF` | `#007AFF` | Active tab icon + label |
-| Default | `#8E8E93` | `#8E8E93` | Inactive tab icon + label |
+| Token | Light | Dark | Contrast (L/D) | Usage |
+|-------|-------|------|----------------|-------|
+| Selected | `#0070E0` | `#007AFF` | 4.8:1 / 8.6:1 | Active tab icon + label |
+| Default | `#8E8E93` | `#8E8E93` | 3.3:1 / 6.4:1 | Inactive tab icon + label (3:1 UI component) |
 
 ### Workout Section Accents
 
-| Token | Color | Usage |
-|-------|-------|-------|
-| Warmup | `#10B981` (Emerald) | Warmup section badge/border |
-| Cooldown | `#06B6D4` (Cyan) | Cooldown section badge/border |
+| Token | Light | Dark | Contrast (L/D) | Usage |
+|-------|-------|------|----------------|-------|
+| Warmup | `#C45100` | `#FF9F0A` | 4.9:1 / 11.3:1 | Warmup section badge/text |
+| Cooldown | `#0077B6` | `#64D2FF` | 4.8:1 / 11.5:1 | Cooldown section badge/text |
 
 ## Typography
 
