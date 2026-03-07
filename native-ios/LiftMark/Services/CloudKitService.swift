@@ -1207,7 +1207,17 @@ final class CloudKitService: @unchecked Sendable {
     private func mergeWorkoutSession(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try WorkoutSessionRow.fetchOne(db, key: record.recordId)
-            // Use startTime for LWW comparison since sessions don't have updatedAt
+
+            // Don't let remote data overwrite a local cancellation — the user's
+            // explicit discard action on this device is authoritative.
+            let remoteStatus = stringField(record, "status")
+            let mergedStatus: String
+            if existing?.status == SessionStatus.canceled.rawValue {
+                mergedStatus = SessionStatus.canceled.rawValue
+            } else {
+                mergedStatus = remoteStatus ?? existing?.status ?? SessionStatus.inProgress.rawValue
+            }
+
             let row = WorkoutSessionRow(
                 id: record.recordId,
                 workoutTemplateId: stringField(record, "workoutPlanId"),
@@ -1217,7 +1227,7 @@ final class CloudKitService: @unchecked Sendable {
                 endTime: dateToISO(dateField(record, "endTime")),
                 duration: int64Field(record, "duration").map { Int($0) },
                 notes: stringField(record, "notes"),
-                status: stringField(record, "status") ?? existing?.status ?? SessionStatus.inProgress.rawValue
+                status: mergedStatus
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
             return existing == nil

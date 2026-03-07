@@ -79,9 +79,17 @@ enum SyncSessionGuard {
 
             let (missingExercises, missingSets) = try dbQueue.read { db -> ([SessionExerciseRow], [SessionSetRow]) in
                 // Check session still exists
-                let sessionExists = try Row.fetchOne(db, sql: "SELECT id FROM workout_sessions WHERE id = ?", arguments: [snapshot.sessionRow.id])
-                guard sessionExists != nil else {
+                let currentSession = try WorkoutSessionRow.fetchOne(db, key: snapshot.sessionRow.id)
+                guard let currentSession else {
                     return (snapshot.exerciseRows, snapshot.setRows)
+                }
+
+                // If the session was canceled since the snapshot was taken,
+                // don't restore anything — the user intentionally discarded it.
+                if currentSession.status == SessionStatus.canceled.rawValue {
+                    Logger.shared.debug(.sync,
+                        "[sync-guard] Session \(snapshot.sessionRow.id) was canceled, skipping restore")
+                    return ([], [])
                 }
 
                 // Find current exercise IDs

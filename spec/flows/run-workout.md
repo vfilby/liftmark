@@ -34,7 +34,7 @@
 
 ## State Management
 
-The Zustand `sessionStore` tracks:
+The `SessionStore` (@Observable) tracks:
 
 - `activeSession`: The current workout session object.
 - `currentExerciseIndex`: Index of the active exercise.
@@ -80,6 +80,7 @@ in_progress → canceled
 | Live Activity end failure | Workout still completes; error is logged |
 | Orphaned Live Activities from crash | Cleaned up on next `startWorkoutLiveActivity()` call |
 | CloudKit sync during active workout | Sync skips delete/merge for active session records; other data syncs normally |
+| CloudKit sync after workout discarded | Remote `in_progress` status never overwrites a local `canceled` status — user's discard action is authoritative |
 | App crash during workout | Session restored from DB on next launch with all exercises and set progress intact |
 
 ## Postconditions
