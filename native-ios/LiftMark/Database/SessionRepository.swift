@@ -32,7 +32,7 @@ struct SessionRepository {
         return try dbQueue.read { db in
             let sessionRows = try WorkoutSessionRow
                 .filter(Column("status") == SessionStatus.completed.rawValue)
-                .order(Column("date").desc)
+                .order(Column("end_time").desc, Column("date").desc)
                 .fetchAll(db)
             return try sessionRows.map { try assembleSession(from: $0, in: db) }
         }
@@ -183,13 +183,13 @@ struct SessionRepository {
         }
     }
 
-    /// Get recent completed sessions, ordered by date descending.
+    /// Get recent completed sessions, ordered by end_time descending (most recently completed first).
     func getRecentSessions(_ limit: Int) throws -> [WorkoutSession] {
         let dbQueue = try dbManager.database()
         return try dbQueue.read { db in
             let sessionRows = try WorkoutSessionRow
                 .filter(Column("status") == SessionStatus.completed.rawValue)
-                .order(Column("date").desc)
+                .order(Column("end_time").desc, Column("date").desc)
                 .limit(limit)
                 .fetchAll(db)
             return try sessionRows.map { try assembleSession(from: $0, in: db) }

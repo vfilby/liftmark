@@ -17,6 +17,7 @@ struct ActiveWorkoutView: View {
     @State private var collapsedExercises: Set<String> = []
     @State private var restTimerGeneration: Int = 0
     @State private var lastInteractedExerciseId: String?
+    @State private var completedSessionForSummary: WorkoutSession?
 
     private var session: WorkoutSession? { sessionStore.activeSession }
 
@@ -58,7 +59,7 @@ struct ActiveWorkoutView: View {
     var body: some View {
         Group {
             if navigateToSummary {
-                WorkoutSummaryView()
+                WorkoutSummaryView(session: completedSessionForSummary)
             } else {
                 workoutContent
             }
@@ -69,6 +70,7 @@ struct ActiveWorkoutView: View {
             Button(incomplete > 0 ? "Finish Anyway" : "Finish") {
                 endLiveActivity(message: "Workout Complete")
                 let completedSession = sessionStore.activeSession
+                completedSessionForSummary = completedSession
                 sessionStore.completeSession()
                 navigateToSummary = true
                 saveToHealthKitIfEnabled(completedSession)
@@ -86,6 +88,7 @@ struct ActiveWorkoutView: View {
             Button("Log Anyway") {
                 endLiveActivity(message: "Workout Complete")
                 let completedSession = sessionStore.activeSession
+                completedSessionForSummary = completedSession
                 sessionStore.completeSession()
                 navigateToSummary = true
                 saveToHealthKitIfEnabled(completedSession)

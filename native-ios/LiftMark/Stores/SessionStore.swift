@@ -36,7 +36,7 @@ final class SessionStore {
         guard let session = activeSession else { return }
         do {
             try repository.complete(session.id)
-            // Reload completed sessions so WorkoutSummaryView can access via sessions.last.
+            // Reload completed sessions for highlights/PR comparison.
             // Keep activeSession non-nil to avoid disrupting navigation to the summary screen.
             sessions = try repository.getCompleted()
         } catch {

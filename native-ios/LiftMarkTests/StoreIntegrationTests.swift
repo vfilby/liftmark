@@ -157,6 +157,35 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(store.activeSession, "Canceled session must not appear as active after reload")
     }
 
+    func testCompletedSessionsOrderedByMostRecentFirst() throws {
+        // Create and complete two sessions to verify ordering.
+        // Use a delay > 1 second to ensure different end_time values
+        // (ISO8601DateFormatter has second-level precision).
+        let plan1 = WorkoutPlan(name: "Older Workout")
+        try planRepo.create(plan1)
+        _ = store.startSession(from: plan1)
+        store.completeSession()
+        store.clearActiveSession()
+
+        // Sleep > 1 second to guarantee different ISO8601 timestamps
+        Thread.sleep(forTimeInterval: 1.1)
+
+        let plan2 = WorkoutPlan(name: "Newer Workout")
+        try planRepo.create(plan2)
+        _ = store.startSession(from: plan2)
+        store.completeSession()
+        store.clearActiveSession()
+
+        // Reload to get fresh data
+        store.loadSessions()
+
+        XCTAssertEqual(store.sessions.count, 2)
+        // sessions.first should be the most recently completed (Newer Workout)
+        XCTAssertEqual(store.sessions.first?.name, "Newer Workout",
+                       "sessions.first must be the most recently completed session")
+        XCTAssertEqual(store.sessions.last?.name, "Older Workout")
+    }
+
     func testDeleteSession() throws {
         let plan = WorkoutPlan(name: "Test")
         try planRepo.create(plan)

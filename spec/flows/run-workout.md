@@ -27,10 +27,11 @@
     - If incomplete sets remain, a "Finish Anyway" confirmation dialog is shown.
     - If the majority of sets were skipped (>50% skipped out of total), the Finish flow shows a "Discard Workout?" dialog with options: "Discard" (destructive, cancels session without logging), "Log Anyway" (completes normally), "Cancel" (returns to workout).
 11. `completeWorkout()` executes:
+    - The active session is captured **before** calling `completeSession()` so it can be passed to the summary screen.
     - Saves `endTime`, `duration`, and sets `status='completed'`.
     - Saves the workout to HealthKit if the integration is enabled.
     - Ends the Live Activity notification.
-12. The summary screen displays workout stats. User taps **Done** to return to the Home screen.
+12. The summary screen receives the completed session directly (not via array lookup) and displays workout stats. User taps **Done** to return to the Home screen.
 
 ## State Management
 

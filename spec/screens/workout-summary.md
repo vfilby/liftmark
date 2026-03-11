@@ -38,14 +38,20 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 ## Navigation
 - `/(tabs)` — via Done button (uses `router.replace`)
 
+## Data Source
+- The completed session is passed directly to `WorkoutSummaryView` as a parameter, not looked up from the sessions array.
+- `ActiveWorkoutView` captures the session before calling `completeSession()` and passes it to the summary view.
+- When navigated to via `AppDestination.workoutSummary` (e.g., from HomeView), the most recently completed session (`sessions.first`, since sessions are sorted newest-first) is used as a fallback.
+- This ensures the summary always shows the correct session regardless of how many completed sessions exist or their sort order.
+
 ## Computed Values
-- Duration formatted from `activeSession.duration`
+- Duration formatted from the passed session's `duration`
 - Total weight/reps/volume computed from trackable exercises
 - Per-exercise completed/skipped set counts
 - Completion rate percentage
 
 ## Error/Empty States
-- **No active session**: LoadingView, then redirects to home via `router.replace('/(tabs)')`
+- **No session provided and no completed sessions**: Shows empty state
 - **No highlights**: Highlights section hidden (not rendered)
 - **Highlight calculation error**: Silently falls back to empty highlights array
 - **Export failure**: Alert titled "Export Failed" with error description. Export failures must show a user-visible alert, not fail silently.
@@ -63,3 +69,7 @@ Renders when highlights array is non-empty:
   - `weight_increase` — "Weight Increase!" with old/new comparison
   - `volume_increase` — "Volume Increase!" with percentage
   - `streak` — "Consistency!" with day/week count
+
+## Tests
+- **Completed sessions sorted correctly**: `getCompleted()` returns sessions ordered by `end_time` descending (most recently completed first), so `sessions.first` is always the newest completed session.
+- **Summary shows correct session**: When multiple completed sessions exist, the summary screen displays the session that was just completed, not an older one.

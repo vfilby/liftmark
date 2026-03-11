@@ -6,9 +6,16 @@ struct WorkoutSummaryView: View {
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(\.dismiss) private var dismiss
 
-    /// The most recently completed session (last in sessions list)
+    /// The completed session to display. When provided directly (from ActiveWorkoutView),
+    /// uses the passed session. Otherwise falls back to the most recently completed session.
+    private let providedSession: WorkoutSession?
+
     private var session: WorkoutSession? {
-        sessionStore.sessions.last
+        providedSession ?? sessionStore.sessions.first
+    }
+
+    init(session: WorkoutSession? = nil) {
+        self.providedSession = session
     }
 
     private var completedSets: Int {
