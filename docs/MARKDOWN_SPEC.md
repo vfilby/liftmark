@@ -314,10 +314,16 @@ Modifiers provide functional metadata that affects how the app behaves. They use
 - 45s @perside
 
 # Per-side (auto-detected from exercise notes)
+# Recognized keywords: per side, per leg, per arm, each side, each leg, each arm, each
 ## Side Plank
 per side
 - 60s
 - 45s
+
+## Single Leg RDL Hold
+each leg
+- 30s
+- 30s
 
 # Multiple modifiers
 - 225 lbs x 5 reps @rest: 180s

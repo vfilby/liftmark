@@ -48,6 +48,7 @@ Live Activities can be disabled at the OS level by the user (Settings > LiftMark
 - Activities are ended when the workout completes, is cancelled, or is paused.
 - **Dismissal on pause**: When the user pauses a workout (dismissing the active workout screen without completing or cancelling), the Live Activity must be ended. A new activity is started when the workout is resumed.
 - **Force-quit recovery**: If the app is force-quit during an active workout, orphaned Live Activities are cleaned up on the next `startWorkoutLiveActivity()` call via the orphan cleanup described above.
+- **App launch cleanup**: On app launch, the service must end any orphaned Live Activities from previous sessions. This handles cases where the app was terminated without a clean workout end. A dedicated `cleanupOrphanedActivities()` method is called during app initialization.
 
 ### Display States
 
@@ -114,9 +115,9 @@ The progress bar displays the ratio of completed sets to total sets in the worko
 ### Completion Message
 
 When the workout ends, the Live Activity shows a final state before dismissing:
-- **Completed**: title "Workout Complete", subtitle "Great job!"
-- **Discarded**: title "Workout Discarded", subtitle "Workout not saved"
-- **Paused**: no message (activity is silently ended)
+- **Completed**: title "Workout Complete", subtitle "Great job!" — uses `.default` dismissal policy (brief display then auto-dismiss)
+- **Discarded**: title "Workout Discarded", subtitle "Workout not saved" — uses `.immediate` dismissal policy (removed instantly, no lingering on lock screen)
+- **Paused**: no message — uses `.immediate` dismissal policy (silently removed)
 
 ### Integration Points
 
@@ -167,9 +168,14 @@ All operations silently catch and discard errors. Live Activities are an optiona
 - Pause → Resume must never result in duplicate activities.
 
 ### End Lifecycle
-- `endWorkoutLiveActivity()` must set the internal activity reference to nil.
+- `endWorkoutLiveActivity()` must await the `activity.end()` call before setting the internal activity reference to nil.
 - After `endWorkoutLiveActivity()`, no Live Activities for this app should be active.
 - Calling `endWorkoutLiveActivity()` when no activity exists is a no-op (no crash).
+- Discarded and paused workouts use `.immediate` dismissal policy; completed workouts use `.default`.
+
+### App Launch Cleanup
+- On app launch, `cleanupOrphanedActivities()` must end all existing Live Activities for this app.
+- This prevents stale activities from lingering after force-quit or crash scenarios.
 
 ### Display State Content
 - Active set state must include: exercise name, set number/total, formatted weight × reps, next exercise name, and progress.

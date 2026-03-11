@@ -443,8 +443,9 @@ enum MarkdownParser {
         // Parse sets
         var sets = parseSets(context, exerciseHeaderLevel: headerLevel, exerciseId: exerciseId)
 
-        // Auto-detect "per side" in exercise notes → flag timed sets as isPerSide
-        if let notes = notes, notes.range(of: "per side", options: .caseInsensitive) != nil {
+        // Auto-detect per-side keywords in exercise notes → flag timed sets as isPerSide
+        let perSideKeywords = ["per side", "per leg", "per arm", "each side", "each leg", "each arm", "each"]
+        if let notes = notes, perSideKeywords.contains(where: { notes.range(of: $0, options: .caseInsensitive) != nil }) {
             sets = sets.map { set in
                 guard set.targetTime != nil, !set.isPerSide else { return set }
                 var modified = set

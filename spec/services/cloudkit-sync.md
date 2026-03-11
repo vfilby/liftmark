@@ -265,6 +265,31 @@ Simple last-writer-wins strategy:
 
 For `UserSettings` (singleton): merge field-by-field, taking the newer value for each field independently.
 
+## Foreign Key Validation in Merge Functions
+
+All merge functions for child records (`PlannedExercise`, `PlannedSet`, `SessionExercise`, `SessionSet`, `GymEquipment`) MUST validate that required foreign key values are non-empty before inserting a new record.
+
+**Rule**: When merging a remote record, the FK value is resolved via this fallback chain:
+1. `referenceId()` from the CloudKit record
+2. Existing local record's FK value (if updating)
+3. Empty string `""` (fallback)
+
+If the resolved FK value is empty AND no existing local record exists (i.e., this would be a new insert), the merge MUST skip the record and log an error. Inserting a record with an empty FK causes foreign key constraint failures and potential data corruption.
+
+If an existing record already has a valid FK, an update with empty remote FK should retain the existing value (the fallback chain handles this naturally).
+
+**Affected merge functions and their required FK fields**:
+- `mergePlannedExercise`: `workoutTemplateId` (FK to `WorkoutPlan`)
+- `mergePlannedSet`: `templateExerciseId` (FK to `PlannedExercise`)
+- `mergeSessionExercise`: `workoutSessionId` (FK to `WorkoutSession`)
+- `mergeSessionSet`: `sessionExerciseId` (FK to `SessionExercise`)
+- `mergeGymEquipment`: `gymId` (FK to `Gym`)
+
+**Tests** (`CloudKitSyncProtectionTests`):
+1. Merge function skips insert when FK reference is missing (returns false, no DB insert)
+2. Merge function allows update when existing record has valid FK even if remote FK is nil
+3. Each affected merge function is covered
+
 ## Delete Handling
 
 ### Phase 1 (current)
@@ -283,7 +308,23 @@ During sync, all records belonging to an `in_progress` workout session MUST be e
 1. **Delete processing** (`handleLocalDeletes`) — never delete a `WorkoutSession` with `status = 'in_progress'`, nor any `SessionExercise` or `SessionSet` belonging to it
 2. **Download merge overwrite** — never overwrite local session-tier records (`WorkoutSession`, `SessionExercise`, `SessionSet`) that belong to an active session with remote data
 
-Sync of non-session data (plans, gyms, settings, completed sessions) proceeds normally even when a workout is active.
+#### Parent WorkoutPlan Protection
+
+When a session is active and has a `workoutTemplateId` (FK to a `WorkoutPlan`), the parent plan's records MUST also be protected from deletion and merge overwrite during sync:
+
+- The `WorkoutPlan` referenced by `workoutTemplateId`
+- All `PlannedExercise` records belonging to that plan
+- All `PlannedSet` records belonging to those exercises
+
+**Rationale**: The active session's structure is derived from the parent plan. If sync deletes or overwrites the plan's exercises/sets while a session is in progress, the session UI may show stale or missing template data. The plan records must remain stable until the session completes.
+
+**Implementation**: `getActiveSessionProtectedIds()` must query for the parent plan's records when `workoutTemplateId` is non-nil, and include them in the `byRecordType` mapping under `WorkoutPlan`, `PlannedExercise`, and `PlannedSet` keys.
+
+**Tests** (`CloudKitSyncProtectionTests`):
+1. Protected IDs include parent plan, its exercises, and its sets when session has `workoutTemplateId`
+2. Protected IDs do NOT include plan records when session has no `workoutTemplateId`
+
+Sync of non-session data (plans not linked to active session, gyms, settings, completed sessions) proceeds normally even when a workout is active.
 
 **Rationale**: The active session is the user's live working state. Remote data is always stale relative to the local active session. Sync runs frequently (foreground transitions, 5-minute polling) and the remote snapshot may not include records created since the download phase began — deleting or overwriting them would destroy the user's in-progress work.
 

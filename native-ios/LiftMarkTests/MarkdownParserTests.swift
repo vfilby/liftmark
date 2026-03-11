@@ -1185,6 +1185,125 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertTrue(result2.data?.exercises[0].sets[0].isPerSide ?? false)
     }
 
+    func testPerLegNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Single Leg RDL Hold
+        per leg
+        - 30s
+        - 25s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertTrue(sets?[0].isPerSide ?? false)
+        XCTAssertTrue(sets?[1].isPerSide ?? false)
+    }
+
+    func testPerArmNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Single Arm Hang
+        per arm
+        - 30s
+        - 25s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertTrue(sets?[0].isPerSide ?? false)
+        XCTAssertTrue(sets?[1].isPerSide ?? false)
+    }
+
+    func testEachSideNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Side Plank
+        each side
+        - 60s
+        - 45s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertTrue(sets?[0].isPerSide ?? false)
+        XCTAssertTrue(sets?[1].isPerSide ?? false)
+    }
+
+    func testEachLegNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Single Leg Balance
+        each leg
+        - 30s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+    }
+
+    func testEachArmNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Farmer Hold
+        each arm
+        - 30s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+    }
+
+    func testEachKeywordNotesAutoFlagsTimedSets() {
+        let markdown = """
+        # Workout
+        ## Side Plank
+        Hold each for full duration
+        - 60s
+        - 45s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertTrue(sets?[0].isPerSide ?? false)
+        XCTAssertTrue(sets?[1].isPerSide ?? false)
+    }
+
+    func testPerLegNotesDoesNotFlagRepBasedSets() {
+        let markdown = """
+        # Workout
+        ## Single Leg RDL
+        per leg
+        - 50 lbs x 10
+        - 60 lbs x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let sets = result.data?.exercises[0].sets
+        XCTAssertFalse(sets?[0].isPerSide ?? true)
+        XCTAssertFalse(sets?[1].isPerSide ?? true)
+    }
+
+    func testEachArmNotesDoesNotFlagRepBasedSets() {
+        let markdown = """
+        # Workout
+        ## Single Arm Curl
+        each arm
+        - 25 lbs x 10
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertFalse(result.data?.exercises[0].sets[0].isPerSide ?? true)
+    }
+
     func testExplicitPerSideModifierStillWorks() {
         let markdown = """
         # Workout

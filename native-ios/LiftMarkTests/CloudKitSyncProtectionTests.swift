@@ -105,7 +105,8 @@ final class CloudKitSyncProtectionTests: XCTestCase {
         let protected = CloudKitService.ActiveSessionProtectedIds(
             sessionId: "s1",
             exerciseIds: Set(["e1", "e2"]),
-            setIds: Set(["set1"])
+            setIds: Set(["set1"]),
+            planId: nil, plannedExerciseIds: [], plannedSetIds: []
         )
 
         let map = protected.byRecordType
@@ -113,6 +114,22 @@ final class CloudKitSyncProtectionTests: XCTestCase {
         XCTAssertEqual(map["SessionExercise"], Set(["e1", "e2"]))
         XCTAssertEqual(map["SessionSet"], Set(["set1"]))
         XCTAssertNil(map["WorkoutPlan"])
+    }
+
+    func testByRecordTypeIncludesParentPlanRecords() {
+        let protected = CloudKitService.ActiveSessionProtectedIds(
+            sessionId: "s1",
+            exerciseIds: Set(["e1"]),
+            setIds: Set(["set1"]),
+            planId: "plan1",
+            plannedExerciseIds: Set(["pe1", "pe2"]),
+            plannedSetIds: Set(["ps1", "ps2", "ps3"])
+        )
+
+        let map = protected.byRecordType
+        XCTAssertEqual(map["WorkoutPlan"], Set(["plan1"]))
+        XCTAssertEqual(map["PlannedExercise"], Set(["pe1", "pe2"]))
+        XCTAssertEqual(map["PlannedSet"], Set(["ps1", "ps2", "ps3"]))
     }
 
     func testByRecordTypeEmptyWhenNoActiveSession() {
@@ -272,6 +289,79 @@ final class CloudKitSyncProtectionTests: XCTestCase {
         }
         XCTAssertEqual(session?.name, "My Workout")
         XCTAssertEqual(session?.status, "in_progress")
+    }
+
+    // MARK: - Parent Plan Protection
+
+    func testProtectedIdsIncludesParentPlanWhenSessionHasTemplate() throws {
+        let dbQueue = try DatabaseManager.shared.database()
+
+        let planId = "plan-1"
+        let peId1 = "pe-1"
+        let peId2 = "pe-2"
+        let psId1 = "ps-1"
+        let psId2 = "ps-2"
+        let sessionId = "active-session"
+
+        try dbQueue.write { db in
+            try WorkoutPlanRow(
+                id: planId, name: "Push Day",
+                defaultWeightUnit: "lbs",
+                createdAt: "2026-03-03T00:00:00Z", updatedAt: "2026-03-03T00:00:00Z", isFavorite: 0
+            ).insert(db)
+            try PlannedExerciseRow(
+                id: peId1, workoutTemplateId: planId,
+                exerciseName: "Bench Press", orderIndex: 0
+            ).insert(db)
+            try PlannedExerciseRow(
+                id: peId2, workoutTemplateId: planId,
+                exerciseName: "OHP", orderIndex: 1
+            ).insert(db)
+            try PlannedSetRow(
+                id: psId1, templateExerciseId: peId1, orderIndex: 0,
+                isDropset: 0, isPerSide: 0, isAmrap: 0
+            ).insert(db)
+            try PlannedSetRow(
+                id: psId2, templateExerciseId: peId2, orderIndex: 0,
+                isDropset: 0, isPerSide: 0, isAmrap: 0
+            ).insert(db)
+
+            try WorkoutSessionRow(
+                id: sessionId, workoutTemplateId: planId, name: "Push Day",
+                date: "2026-03-03", status: "in_progress"
+            ).insert(db)
+        }
+
+        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+
+        XCTAssertEqual(protected.planId, planId)
+        XCTAssertEqual(protected.plannedExerciseIds, Set([peId1, peId2]))
+        XCTAssertEqual(protected.plannedSetIds, Set([psId1, psId2]))
+
+        // Verify byRecordType includes plan records
+        let map = protected.byRecordType
+        XCTAssertEqual(map["WorkoutPlan"], Set([planId]))
+        XCTAssertEqual(map["PlannedExercise"], Set([peId1, peId2]))
+        XCTAssertEqual(map["PlannedSet"], Set([psId1, psId2]))
+    }
+
+    func testProtectedIdsExcludesPlanWhenSessionHasNoTemplate() throws {
+        let dbQueue = try DatabaseManager.shared.database()
+
+        try dbQueue.write { db in
+            try WorkoutSessionRow(
+                id: "session-no-plan", workoutTemplateId: nil, name: "Quick Workout",
+                date: "2026-03-03", status: "in_progress"
+            ).insert(db)
+        }
+
+        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+
+        XCTAssertEqual(protected.sessionId, "session-no-plan")
+        XCTAssertNil(protected.planId)
+        XCTAssertTrue(protected.plannedExerciseIds.isEmpty)
+        XCTAssertTrue(protected.plannedSetIds.isEmpty)
+        XCTAssertNil(protected.byRecordType["WorkoutPlan"])
     }
 
     // MARK: - localIds correctness for delete handling

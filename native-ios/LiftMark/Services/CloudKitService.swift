@@ -760,6 +760,10 @@ final class CloudKitService: @unchecked Sendable {
         let sessionId: String?
         let exerciseIds: Set<String>
         let setIds: Set<String>
+        /// Parent plan IDs protected because the active session references this plan.
+        let planId: String?
+        let plannedExerciseIds: Set<String>
+        let plannedSetIds: Set<String>
 
         /// All protected IDs keyed by CloudKit record type.
         var byRecordType: [String: Set<String>] {
@@ -767,18 +771,25 @@ final class CloudKitService: @unchecked Sendable {
             if let sid = sessionId { map["WorkoutSession"] = [sid] }
             if !exerciseIds.isEmpty { map["SessionExercise"] = exerciseIds }
             if !setIds.isEmpty { map["SessionSet"] = setIds }
+            if let pid = planId { map["WorkoutPlan"] = [pid] }
+            if !plannedExerciseIds.isEmpty { map["PlannedExercise"] = plannedExerciseIds }
+            if !plannedSetIds.isEmpty { map["PlannedSet"] = plannedSetIds }
             return map
         }
 
-        static let empty = ActiveSessionProtectedIds(sessionId: nil, exerciseIds: [], setIds: [])
+        static let empty = ActiveSessionProtectedIds(
+            sessionId: nil, exerciseIds: [], setIds: [],
+            planId: nil, plannedExerciseIds: [], plannedSetIds: []
+        )
     }
 
-    /// Query the database for the active (in_progress) session and collect all IDs that belong to it.
+    /// Query the database for the active (in_progress) session and collect all IDs that belong to it,
+    /// including the parent WorkoutPlan's PlannedExercise and PlannedSet records.
     func getActiveSessionProtectedIds() -> ActiveSessionProtectedIds {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             return try dbQueue.read { db in
-                guard let sessionRow = try Row.fetchOne(db, sql: "SELECT id FROM workout_sessions WHERE status = 'in_progress' LIMIT 1"),
+                guard let sessionRow = try Row.fetchOne(db, sql: "SELECT id, workout_template_id FROM workout_sessions WHERE status = 'in_progress' LIMIT 1"),
                       let sessionId: String = sessionRow["id"] else {
                     return .empty
                 }
@@ -793,7 +804,26 @@ final class CloudKitService: @unchecked Sendable {
                     setIds = Set(setRows.compactMap { $0["id"] as String? })
                 }
 
-                return ActiveSessionProtectedIds(sessionId: sessionId, exerciseIds: exerciseIds, setIds: setIds)
+                // Protect parent plan records if the session references a workout plan
+                let planId: String? = sessionRow["workout_template_id"]
+                var plannedExerciseIds = Set<String>()
+                var plannedSetIds = Set<String>()
+
+                if let planId, !planId.isEmpty {
+                    let peRows = try Row.fetchAll(db, sql: "SELECT id FROM template_exercises WHERE workout_template_id = ?", arguments: [planId])
+                    plannedExerciseIds = Set(peRows.compactMap { $0["id"] as String? })
+
+                    if !plannedExerciseIds.isEmpty {
+                        let pePlaceholders = plannedExerciseIds.map { _ in "?" }.joined(separator: ",")
+                        let psRows = try Row.fetchAll(db, sql: "SELECT id FROM template_sets WHERE template_exercise_id IN (\(pePlaceholders))", arguments: StatementArguments(Array(plannedExerciseIds)))
+                        plannedSetIds = Set(psRows.compactMap { $0["id"] as String? })
+                    }
+                }
+
+                return ActiveSessionProtectedIds(
+                    sessionId: sessionId, exerciseIds: exerciseIds, setIds: setIds,
+                    planId: planId, plannedExerciseIds: plannedExerciseIds, plannedSetIds: plannedSetIds
+                )
             }
         } catch {
             Logger.shared.error(.app, "Failed to query active session for sync protection", error: error)
@@ -1162,10 +1192,16 @@ final class CloudKitService: @unchecked Sendable {
     private func mergePlannedExercise(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try PlannedExerciseRow.fetchOne(db, key: record.recordId)
+            let fk = referenceId(record, "workoutPlanId") ?? existing?.workoutTemplateId ?? ""
+            // Skip insert if FK is empty — would violate foreign key constraint
+            if fk.isEmpty && existing == nil {
+                Logger.shared.error(.sync, "[sync-merge] Skipping PlannedExercise \(record.recordId): missing workoutPlanId FK")
+                return false
+            }
             // PlannedExercise has no updatedAt — always overwrite from remote if newer parent or new record
             let row = PlannedExerciseRow(
                 id: record.recordId,
-                workoutTemplateId: referenceId(record, "workoutPlanId") ?? existing?.workoutTemplateId ?? "",
+                workoutTemplateId: fk,
                 exerciseName: stringField(record, "exerciseName") ?? existing?.exerciseName ?? "",
                 orderIndex: Int(int64Field(record, "orderIndex") ?? Int64(existing?.orderIndex ?? 0)),
                 notes: stringField(record, "notes"),
@@ -1182,10 +1218,16 @@ final class CloudKitService: @unchecked Sendable {
     private func mergePlannedSet(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try PlannedSetRow.fetchOne(db, key: record.recordId)
+            let fk = referenceId(record, "plannedExerciseId") ?? existing?.templateExerciseId ?? ""
+            // Skip insert if FK is empty — would violate foreign key constraint
+            if fk.isEmpty && existing == nil {
+                Logger.shared.error(.sync, "[sync-merge] Skipping PlannedSet \(record.recordId): missing plannedExerciseId FK")
+                return false
+            }
             let attrs = stringListField(record, "attributes")
             let row = PlannedSetRow(
                 id: record.recordId,
-                templateExerciseId: referenceId(record, "plannedExerciseId") ?? existing?.templateExerciseId ?? "",
+                templateExerciseId: fk,
                 orderIndex: Int(int64Field(record, "orderIndex") ?? Int64(existing?.orderIndex ?? 0)),
                 targetWeight: doubleField(record, "targetWeight"),
                 targetWeightUnit: stringField(record, "targetWeightUnit"),
@@ -1237,9 +1279,15 @@ final class CloudKitService: @unchecked Sendable {
     private func mergeSessionExercise(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try SessionExerciseRow.fetchOne(db, key: record.recordId)
+            let fk = referenceId(record, "workoutSessionId") ?? existing?.workoutSessionId ?? ""
+            // Skip insert if FK is empty — would violate foreign key constraint
+            if fk.isEmpty && existing == nil {
+                Logger.shared.error(.sync, "[sync-merge] Skipping SessionExercise \(record.recordId): missing workoutSessionId FK")
+                return false
+            }
             let row = SessionExerciseRow(
                 id: record.recordId,
-                workoutSessionId: referenceId(record, "workoutSessionId") ?? existing?.workoutSessionId ?? "",
+                workoutSessionId: fk,
                 exerciseName: stringField(record, "exerciseName") ?? existing?.exerciseName ?? "",
                 orderIndex: Int(int64Field(record, "orderIndex") ?? Int64(existing?.orderIndex ?? 0)),
                 notes: stringField(record, "notes"),
@@ -1257,10 +1305,16 @@ final class CloudKitService: @unchecked Sendable {
     private func mergeSessionSet(_ record: CloudKitRecord, dbQueue: DatabaseQueue) throws -> Bool {
         return try dbQueue.write { db in
             let existing = try SessionSetRow.fetchOne(db, key: record.recordId)
+            let fk = referenceId(record, "sessionExerciseId") ?? existing?.sessionExerciseId ?? ""
+            // Skip insert if FK is empty — would violate foreign key constraint
+            if fk.isEmpty && existing == nil {
+                Logger.shared.error(.sync, "[sync-merge] Skipping SessionSet \(record.recordId): missing sessionExerciseId FK")
+                return false
+            }
             let attrs = stringListField(record, "attributes")
             let row = SessionSetRow(
                 id: record.recordId,
-                sessionExerciseId: referenceId(record, "sessionExerciseId") ?? existing?.sessionExerciseId ?? "",
+                sessionExerciseId: fk,
                 orderIndex: Int(int64Field(record, "orderIndex") ?? Int64(existing?.orderIndex ?? 0)),
                 parentSetId: referenceId(record, "parentSetId"),
                 dropSequence: int64Field(record, "dropSequence").map { Int($0) },

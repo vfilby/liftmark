@@ -36,6 +36,7 @@ struct LiftMarkApp: App {
                     settingsStore.loadSettings()
                     gymStore.loadGyms()
                     handleLaunchArguments()
+                    LiveActivityService.shared.cleanupOrphanedActivities()
                     if !Self.isRunningTests {
                         Task {
                             await SyncManager.shared.triggerSync()

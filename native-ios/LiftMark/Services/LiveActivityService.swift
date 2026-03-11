@@ -33,6 +33,7 @@ final class LiveActivityService: @unchecked Sendable {
     // MARK: - Start
 
     /// Start a Live Activity for a workout session.
+    /// Awaits cleanup of any existing or orphaned activities before creating a new one.
     func startWorkoutActivity(
         session: WorkoutSession,
         exercise: SessionExercise?,
@@ -43,34 +44,39 @@ final class LiveActivityService: @unchecked Sendable {
         guard isAvailable() else { return }
 
         if #available(iOS 16.2, *) {
-            // End any existing activity first
-            endWorkoutActivity()
+            Task {
+                // End any existing tracked activity first (awaited)
+                await endWorkoutActivityAsync()
 
-            do {
-                let state: WorkoutActivityAttributes.ContentState
-                if let exercise {
-                    state = buildActiveSetState(session: session, exercise: exercise, setIndex: setIndex, progress: progress)
-                } else {
-                    state = WorkoutActivityAttributes.ContentState(
-                        isRestTimer: false,
-                        exerciseName: session.name,
-                        setInfo: "",
-                        weightReps: "Starting workout...",
-                        progress: 0
+                // Clean up any orphaned activities not tracked by currentActivity
+                await cleanupOrphanedActivitiesInternal()
+
+                do {
+                    let state: WorkoutActivityAttributes.ContentState
+                    if let exercise {
+                        state = buildActiveSetState(session: session, exercise: exercise, setIndex: setIndex, progress: progress)
+                    } else {
+                        state = WorkoutActivityAttributes.ContentState(
+                            isRestTimer: false,
+                            exerciseName: session.name,
+                            setInfo: "",
+                            weightReps: "Starting workout...",
+                            progress: 0
+                        )
+                    }
+
+                    let attributes = WorkoutActivityAttributes(workoutName: session.name)
+                    let content = ActivityContent(state: state, staleDate: nil)
+
+                    let activity = try Activity.request(
+                        attributes: attributes,
+                        content: content,
+                        pushType: nil
                     )
+                    currentActivity = activity
+                } catch {
+                    // Silently fail — Live Activities are optional
                 }
-
-                let attributes = WorkoutActivityAttributes(workoutName: session.name)
-                let content = ActivityContent(state: state, staleDate: nil)
-
-                let activity = try Activity.request(
-                    attributes: attributes,
-                    content: content,
-                    pushType: nil
-                )
-                currentActivity = activity
-            } catch {
-                // Silently fail — Live Activities are optional
             }
         }
         #endif
@@ -118,7 +124,8 @@ final class LiveActivityService: @unchecked Sendable {
     // MARK: - End
 
     /// End the Live Activity with an optional completion message.
-    func endWorkoutActivity(message: String? = nil, subtitle: String? = nil) {
+    /// Uses `.immediate` dismissal for discards/pauses and `.default` for completions.
+    func endWorkoutActivity(message: String? = nil, subtitle: String? = nil, immediate: Bool = false) {
         #if os(iOS)
         guard isAvailable() else { return }
 
@@ -134,10 +141,61 @@ final class LiveActivityService: @unchecked Sendable {
             )
 
             let content = ActivityContent(state: finalState, staleDate: nil)
-            Task {
-                await activity.end(content, dismissalPolicy: .default)
-            }
+            let dismissalPolicy: ActivityUIDismissalPolicy = immediate ? .immediate : .default
+            let activityToEnd = activity
             currentActivity = nil
+
+            Task {
+                await activityToEnd.end(content, dismissalPolicy: dismissalPolicy)
+            }
+        }
+        #endif
+    }
+
+    /// Internal async version of endWorkoutActivity that awaits the end call.
+    /// Used by startWorkoutActivity to ensure proper serialization.
+    #if os(iOS)
+    @available(iOS 16.2, *)
+    private func endWorkoutActivityAsync() async {
+        guard let activity = currentActivity else { return }
+
+        let finalState = WorkoutActivityAttributes.ContentState(
+            isRestTimer: false,
+            exerciseName: "Workout Complete",
+            setInfo: "",
+            weightReps: "",
+            progress: 1.0
+        )
+
+        let content = ActivityContent(state: finalState, staleDate: nil)
+        currentActivity = nil
+        await activity.end(content, dismissalPolicy: .immediate)
+    }
+
+    /// Clean up any orphaned activities not tracked by currentActivity.
+    @available(iOS 16.2, *)
+    private func cleanupOrphanedActivitiesInternal() async {
+        for activity in Activity<WorkoutActivityAttributes>.activities {
+            let finalState = WorkoutActivityAttributes.ContentState(
+                isRestTimer: false,
+                exerciseName: "",
+                setInfo: "",
+                weightReps: "",
+                progress: 0
+            )
+            let content = ActivityContent(state: finalState, staleDate: nil)
+            await activity.end(content, dismissalPolicy: .immediate)
+        }
+    }
+    #endif
+
+    /// Clean up any orphaned Live Activities on app launch.
+    func cleanupOrphanedActivities() {
+        #if os(iOS)
+        if #available(iOS 16.2, *) {
+            Task {
+                await cleanupOrphanedActivitiesInternal()
+            }
         }
         #endif
     }
