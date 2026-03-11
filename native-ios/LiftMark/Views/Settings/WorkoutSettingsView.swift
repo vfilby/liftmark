@@ -48,6 +48,16 @@ struct WorkoutSettingsView: View {
                         }
                     ))
                     .accessibilityIdentifier("switch-auto-start-rest")
+
+                    Toggle("Countdown Sounds", isOn: Binding(
+                        get: { settings.countdownSoundsEnabled },
+                        set: { newValue in
+                            var updated = settings
+                            updated.countdownSoundsEnabled = newValue
+                            settingsStore.updateSettings(updated)
+                        }
+                    ))
+                    .accessibilityIdentifier("switch-countdown-sounds")
                 }
 
                 Section("Screen") {

@@ -18,6 +18,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var keepScreenAwake: Bool
     var showOpenInClaudeButton: Bool
     var developerModeEnabled: Bool
+    var countdownSoundsEnabled: Bool
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -37,6 +38,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         keepScreenAwake: Bool = true,
         showOpenInClaudeButton: Bool = false,
         developerModeEnabled: Bool = false,
+        countdownSoundsEnabled: Bool = true,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -55,6 +57,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.keepScreenAwake = keepScreenAwake
         self.showOpenInClaudeButton = showOpenInClaudeButton
         self.developerModeEnabled = developerModeEnabled
+        self.countdownSoundsEnabled = countdownSoundsEnabled
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -80,6 +83,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var keepScreenAwake: Int // SQLite boolean
     var showOpenInClaudeButton: Int // SQLite boolean
     var developerModeEnabled: Int // SQLite boolean
+    var countdownSoundsEnabled: Int // SQLite boolean
     var homeTiles: String? // JSON array
     var createdAt: String
     var updatedAt: String
@@ -99,6 +103,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case keepScreenAwake = "keep_screen_awake"
         case showOpenInClaudeButton = "show_open_in_claude_button"
         case developerModeEnabled = "developer_mode_enabled"
+        case countdownSoundsEnabled = "countdown_sounds_enabled"
         case homeTiles = "home_tiles"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

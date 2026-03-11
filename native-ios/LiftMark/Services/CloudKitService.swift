@@ -1063,6 +1063,7 @@ final class CloudKitService: @unchecked Sendable {
             "liveActivitiesEnabled": Int64(s.liveActivitiesEnabled),
             "keepScreenAwake": Int64(s.keepScreenAwake),
             "showOpenInClaudeButton": Int64(s.showOpenInClaudeButton),
+            "countdownSoundsEnabled": Int64(s.countdownSoundsEnabled),
         ]
         if let c = s.customPromptAddition { fields["customPromptAddition"] = c }
         if let h = s.homeTiles { fields["homeTiles"] = h } // Already JSON string
@@ -1367,6 +1368,7 @@ final class CloudKitService: @unchecked Sendable {
                     keepScreenAwake: Int(int64Field(record, "keepScreenAwake") ?? Int64(existing.keepScreenAwake)),
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? Int64(existing.showOpenInClaudeButton)),
                     developerModeEnabled: existing.developerModeEnabled,
+                    countdownSoundsEnabled: Int(int64Field(record, "countdownSoundsEnabled") ?? Int64(existing.countdownSoundsEnabled)),
                     homeTiles: stringField(record, "homeTiles") ?? existing.homeTiles,
                     createdAt: existing.createdAt,
                     updatedAt: updatedAt
@@ -1391,6 +1393,7 @@ final class CloudKitService: @unchecked Sendable {
                     keepScreenAwake: Int(int64Field(record, "keepScreenAwake") ?? 1),
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? 0),
                     developerModeEnabled: 0,
+                    countdownSoundsEnabled: Int(int64Field(record, "countdownSoundsEnabled") ?? 1),
                     homeTiles: stringField(record, "homeTiles"),
                     createdAt: now,
                     updatedAt: dateToISO(remoteUpdatedAt) ?? now

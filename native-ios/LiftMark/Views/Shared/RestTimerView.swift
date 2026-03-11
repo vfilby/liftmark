@@ -10,7 +10,9 @@ struct RestTimerView: View {
     @State private var timer: Timer?
     @State private var isRunning = false
     @State private var displayRemaining: Int
+    @State private var lastPlayedSecond: Int = -1
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(SettingsStore.self) private var settingsStore
 
     init(totalSeconds: Int, onSkip: @escaping () -> Void) {
         self.totalSeconds = totalSeconds
@@ -59,7 +61,10 @@ struct RestTimerView: View {
             RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
                 .strokeBorder(LiftMarkTheme.primary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5, 3]))
         )
-        .onAppear { startTimer() }
+        .onAppear {
+            AudioService.shared.preloadSounds()
+            startTimer()
+        }
         .onDisappear { stopTimer() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -76,7 +81,22 @@ struct RestTimerView: View {
 
     private func recalculate() {
         let elapsed = Int(Date().timeIntervalSince(startDate))
-        displayRemaining = max(0, totalSeconds - elapsed)
+        let newRemaining = max(0, totalSeconds - elapsed)
+        let previousRemaining = displayRemaining
+        displayRemaining = newRemaining
+
+        // Play countdown sounds if enabled
+        if settingsStore.settings?.countdownSoundsEnabled == true && newRemaining != previousRemaining {
+            if newRemaining >= 1 && newRemaining <= 5 && lastPlayedSecond != newRemaining {
+                lastPlayedSecond = newRemaining
+                AudioService.shared.playTick()
+            }
+            if newRemaining == 0 && lastPlayedSecond != 0 {
+                lastPlayedSecond = 0
+                AudioService.shared.playComplete()
+            }
+        }
+
         if displayRemaining <= 0 {
             stopTimer()
         }
@@ -127,7 +147,10 @@ struct ExerciseTimerView: View {
     @State private var isRunning = false
     /// Display value updated by the 1-second timer tick.
     @State private var displayElapsed: Int = 0
+    @State private var lastPlayedSecond: Int = -1
+    @State private var completionPlayed: Bool = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(SettingsStore.self) private var settingsStore
 
     // Per-side state
     @State private var currentSide: TimerSide = .left
@@ -267,11 +290,28 @@ struct ExerciseTimerView: View {
     }
 
     private func recalculate() {
+        let previousElapsed = displayElapsed
         displayElapsed = currentElapsed
+
+        // Play countdown sounds if enabled and there is a target
+        if let target = targetSeconds,
+           settingsStore.settings?.countdownSoundsEnabled == true,
+           displayElapsed != previousElapsed {
+            let remaining = target - displayElapsed
+            if remaining >= 1 && remaining <= 5 && lastPlayedSecond != remaining {
+                lastPlayedSecond = remaining
+                AudioService.shared.playTick()
+            }
+            if displayElapsed >= target && !completionPlayed {
+                completionPlayed = true
+                AudioService.shared.playComplete()
+            }
+        }
     }
 
     private func startTimer() {
         guard !isRunning else { return }
+        AudioService.shared.preloadSounds()
         startDate = Date()
         isRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in

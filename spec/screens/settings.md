@@ -226,6 +226,7 @@ Configure weight units, rest timer behavior, and screen preferences.
 | Workout timer switch | `switch-workout-timer` | Switch |
 | Auto-start rest timer switch | `switch-auto-start-rest` | Switch |
 | Keep screen awake switch | `switch-keep-screen-awake` | Switch |
+| Countdown sounds switch | `switch-countdown-sounds` | Switch |
 
 ---
 

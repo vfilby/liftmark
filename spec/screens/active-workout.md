@@ -48,7 +48,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 
 ### Rest Timer
 - After set completion with rest seconds: rest timer or suggestion appears inline after the completed set
-- **Tap "Start"** → starts countdown timer with audio ticks at 3/2/1s
+- **Tap "Start"** → starts countdown timer with audio ticks at 5/4/3/2/1s and completion tone at 0 (when Countdown Sounds setting is enabled)
 - **Tap "Skip"** → dismisses rest suggestion
 - **Tap "Stop"** → stops running timer
 - Timer completion plays completion sound, clears "Up Next" preview

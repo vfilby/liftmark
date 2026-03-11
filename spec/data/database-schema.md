@@ -204,6 +204,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   show_open_in_claude_button  INTEGER DEFAULT 0,
   home_tiles                  TEXT,
   developer_mode_enabled      INTEGER DEFAULT 0,     -- Boolean: hidden developer menu
+  countdown_sounds_enabled    INTEGER DEFAULT 1,     -- Boolean: audible countdown ticks
   created_at                  TEXT NOT NULL,
   updated_at                  TEXT NOT NULL
 );
