@@ -51,6 +51,9 @@ final class Logger: @unchecked Sendable {
     private let maxQueueSize = 100
     private let logRetentionDays = 7
     private let deviceInfo: DeviceInfo
+    /// Dedicated serial queue for async database writes, preventing reentrant access
+    /// when Logger is called from inside a GRDB read/write closure.
+    private let writeQueue = DispatchQueue(label: "com.liftmark.logger.write", qos: .utility)
 
     private init() {
         self.deviceInfo = Self.getDeviceInfo()
@@ -133,38 +136,44 @@ final class Logger: @unchecked Sendable {
             return
         }
 
-        do {
-            let db = try DatabaseManager.shared.database()
-            let id = entry.id ?? generateId()
-            let metadataJSON: String? = entry.metadata.flatMap { dict in
-                guard let data = try? JSONEncoder().encode(dict) else { return nil }
-                return String(data: data, encoding: .utf8)
-            }
-            let deviceInfoJSON: String? = {
-                guard let data = try? JSONEncoder().encode(deviceInfo) else { return nil }
-                return String(data: data, encoding: .utf8)
-            }()
+        // Prepare serializable values on the calling thread
+        let id = entry.id ?? generateId()
+        let metadataJSON: String? = entry.metadata.flatMap { dict in
+            guard let data = try? JSONEncoder().encode(dict) else { return nil }
+            return String(data: data, encoding: .utf8)
+        }
+        let deviceInfoJSON: String? = {
+            guard let data = try? JSONEncoder().encode(self.deviceInfo) else { return nil }
+            return String(data: data, encoding: .utf8)
+        }()
 
-            try db.write { db in
-                try db.execute(
-                    sql: """
-                        INSERT INTO app_logs (id, timestamp, level, category, message, metadata, stack_trace, device_info)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    arguments: [
-                        id,
-                        entry.timestamp,
-                        entry.level.rawValue,
-                        entry.category.rawValue,
-                        entry.message,
-                        metadataJSON,
-                        entry.stackTrace,
-                        deviceInfoJSON
-                    ]
-                )
+        // Dispatch the database write asynchronously on a dedicated serial queue.
+        // This prevents reentrant GRDB access when Logger is called from inside
+        // a dbQueue.read { } or dbQueue.write { } closure.
+        writeQueue.async {
+            do {
+                let db = try DatabaseManager.shared.database()
+                try db.write { db in
+                    try db.execute(
+                        sql: """
+                            INSERT INTO app_logs (id, timestamp, level, category, message, metadata, stack_trace, device_info)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        arguments: [
+                            id,
+                            entry.timestamp,
+                            entry.level.rawValue,
+                            entry.category.rawValue,
+                            entry.message,
+                            metadataJSON,
+                            entry.stackTrace,
+                            deviceInfoJSON
+                        ]
+                    )
+                }
+            } catch {
+                print("[Logger] Failed to write log: \(error)")
             }
-        } catch {
-            print("[Logger] Failed to write log: \(error)")
         }
     }
 

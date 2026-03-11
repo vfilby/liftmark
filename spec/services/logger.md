@@ -111,6 +111,17 @@ Table: `app_logs`
 - SQLite database (separate `app_logs` table, not the main data tables).
 - Platform constants for device info and build type detection.
 
+## Thread Safety & Reentrancy
+
+- **Log writes must be asynchronous.** The `writeLog` method must dispatch database writes to a dedicated serial queue so that logging never blocks the caller. This prevents reentrant database access when Logger is called from inside a GRDB `read` or `write` closure on the same `DatabaseQueue`.
+- The dedicated write queue must be serial to preserve log ordering.
+- Callers of `debug`, `info`, `warn`, and `error` must never experience a deadlock or precondition failure regardless of the calling context (including from within database transactions).
+
+### Tests
+
+- A unit test must verify that calling `Logger.shared.debug(...)` does not cause a crash or deadlock when invoked from any context.
+- A unit test must verify that log entries written asynchronously are eventually persisted to the database.
+
 ## Error Handling
 
 - Logging methods never throw. If a write fails, the error is silently dropped (a logger that crashes the app defeats its purpose).
