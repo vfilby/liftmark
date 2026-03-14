@@ -123,6 +123,19 @@ struct SetRowView: View {
                 setIndicator
                     .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
 
+                // Side label for per-side sets (Left/Right)
+                if let side = set.side {
+                    Text(side.capitalized)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(LiftMarkTheme.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(LiftMarkTheme.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                }
+
                 // Weight input — only for weighted exercises (not bodyweight/timed)
                 if set.targetWeight != nil {
                     VStack(alignment: .center, spacing: 2) {

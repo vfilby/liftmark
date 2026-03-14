@@ -702,6 +702,24 @@ enum MarkdownParser {
         if let isPerSide = modifiers.isPerSide { result.isPerSide = isPerSide }
         if !combined.isEmpty { result.notes = combined }
 
+        // Auto-detect per-side keywords in set-line trailing text for timed sets
+        if result.time != nil && result.isPerSide != true {
+            let perSideKeywords = ["per side", "per leg", "per arm", "each side", "each leg", "each arm", "each"]
+            let textToCheck = combined
+            if !textToCheck.isEmpty, perSideKeywords.contains(where: { textToCheck.range(of: $0, options: .caseInsensitive) != nil }) {
+                result.isPerSide = true
+                // Strip the per-side keyword from notes since it's now conveyed by the flag
+                var cleaned = textToCheck
+                for keyword in perSideKeywords {
+                    if let range = cleaned.range(of: keyword, options: .caseInsensitive) {
+                        cleaned.replaceSubrange(range, with: "")
+                    }
+                }
+                cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+                result.notes = cleaned.isEmpty ? nil : cleaned
+            }
+        }
+
         return result
     }
 

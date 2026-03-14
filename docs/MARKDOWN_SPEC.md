@@ -325,6 +325,15 @@ each leg
 - 30s
 - 30s
 
+# Per-side (auto-detected from set-line trailing text)
+# Same keywords recognized inline on the set line itself
+## Standing Quad Stretch
+Pull heel to glutes, keep knees together
+- 60s per leg
+
+## Pigeon Pose
+- 90s per side
+
 # Multiple modifiers
 - 225 lbs x 5 reps @rest: 180s
 

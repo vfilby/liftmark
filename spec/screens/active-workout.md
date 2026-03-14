@@ -190,7 +190,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 ## SetRow Component
 Renders individual sets with multiple visual states:
 - **Pending**: Shows target weight/reps (e.g., "135 lbs x 5"), neutral styling
-- **Current (active form)**: Blue highlight, weight/reps input fields pre-filled with target values, Skip and Complete buttons. Uses consistent padding (spacingXS vertical, spacingSM horizontal) matching other set rows. Larger fonts (.title3.monospacedDigit() for inputs) and 44pt minimum tap targets. Layout is two rows: top row has inputs + skip button, bottom row has a full-width "Complete Set" button to separate it from skip and provide a large tap target.
+- **Current (active form)**: Blue highlight, weight/reps input fields pre-filled with target values, Skip and Complete buttons. Uses consistent padding (spacingXS vertical, spacingSM horizontal) matching other set rows. Larger fonts (.title3.monospacedDigit() for inputs) and 44pt minimum tap targets. Layout is two rows: top row has inputs + skip button, bottom row has a full-width "Complete Set" button to separate it from skip and provide a large tap target. For per-side sets, a side label badge ("Left" or "Right") is displayed next to the set indicator, before the input fields.
 - **Up Next preview**: Compact single-line with "UP NEXT" label
 - **Completed**: Green background, shows actual values (weight + reps), "Tap to edit"
 - **Skipped**: Yellow/warning background, "Skipped", "Tap to edit"

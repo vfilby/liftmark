@@ -1318,6 +1318,114 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertFalse(result.data?.exercises[0].sets[1].isPerSide ?? true)
     }
 
+    // MARK: - Per-Side Auto-Detection from Set Line Text
+
+    func testPerLegInSetLineAutoFlagsTimedSet() {
+        let markdown = """
+        # Workout
+        ## Standing Quad Stretch
+        Pull heel to glutes
+        - 60s per leg
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetTime, 60)
+        XCTAssertTrue(set?.isPerSide ?? false, "Should detect 'per leg' in set line text")
+        // "per leg" should be stripped from notes
+        XCTAssertNil(set?.notes, "Per-side keyword should be stripped from set notes")
+    }
+
+    func testPerSideInSetLineAutoFlagsTimedSet() {
+        let markdown = """
+        # Workout
+        ## Pigeon Pose
+        - 90s per side
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetTime, 90)
+        XCTAssertTrue(set?.isPerSide ?? false, "Should detect 'per side' in set line text")
+        XCTAssertNil(set?.notes, "Per-side keyword should be stripped from set notes")
+    }
+
+    func testEachSideInSetLineAutoFlagsTimedSet() {
+        let markdown = """
+        # Workout
+        ## Stretch
+        - 45s each side
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+    }
+
+    func testPerLegInSetLineDoesNotFlagRepBasedSet() {
+        let markdown = """
+        # Workout
+        ## Lunges
+        - 25 per leg
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetReps, 25)
+        XCTAssertFalse(set?.isPerSide ?? true, "Should not flag rep-based set from set line keyword")
+    }
+
+    func testPerSideSetLineCaseInsensitive() {
+        let markdown = """
+        # Workout
+        ## Stretch
+        - 60s Per Leg
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+    }
+
+    func testPerSideSetLineWithSectionHeaders() {
+        // Reproduces the user's workout structure with ## sections and ### exercises
+        let markdown = """
+        # Post-Snowboarding Stretch
+        @tags: stretching
+
+        ## Lower Body
+
+        ### Standing Quad Stretch
+        Pull heel to glutes
+        - 60s per leg
+
+        ### Pigeon Pose
+        - 90s per side
+
+        ### Wide-Leg Forward Fold
+        - 90s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let exercises = result.data?.exercises ?? []
+        // Find exercises with sets (not section headers)
+        let exercisesWithSets = exercises.filter { !$0.sets.isEmpty }
+        XCTAssertEqual(exercisesWithSets.count, 3)
+
+        // Standing Quad Stretch: 60s per leg → isPerSide
+        XCTAssertTrue(exercisesWithSets[0].sets[0].isPerSide, "Standing Quad Stretch should be per-side")
+        XCTAssertEqual(exercisesWithSets[0].sets[0].targetTime, 60)
+
+        // Pigeon Pose: 90s per side → isPerSide
+        XCTAssertTrue(exercisesWithSets[1].sets[0].isPerSide, "Pigeon Pose should be per-side")
+        XCTAssertEqual(exercisesWithSets[1].sets[0].targetTime, 90)
+
+        // Wide-Leg Forward Fold: 90s → NOT per-side
+        XCTAssertFalse(exercisesWithSets[2].sets[0].isPerSide, "Wide-Leg Forward Fold should not be per-side")
+    }
+
     func testSingleNumberWithTrailingTextNotSeconds() {
         let markdown = """
         # Workout
