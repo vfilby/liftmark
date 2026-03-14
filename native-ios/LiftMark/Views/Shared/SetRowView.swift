@@ -18,13 +18,14 @@ struct SetRowView: View {
     let isCurrent: Bool
     let exerciseName: String
     let equipmentType: String?
-    let onComplete: (Double?, Int?) -> Void
+    let onComplete: (Double?, Int?, Int?) -> Void
     let onSkip: () -> Void
-    let onSave: (Double?, Int?) -> Void
+    let onSave: (Double?, Int?, Int?) -> Void
     var onWeightChanged: ((String) -> Void)? = nil
 
     @State private var weightText: String = ""
     @State private var repsText: String = ""
+    @State private var timeText: String = ""
     @State private var isEditing = false
 
     var body: some View {
@@ -50,6 +51,9 @@ struct SetRowView: View {
             }
             if let r = set.targetReps ?? set.actualReps {
                 repsText = "\(r)"
+            }
+            if let t = set.targetTime ?? set.actualTime {
+                timeText = "\(t)"
             }
         }
     }
@@ -148,15 +152,20 @@ struct SetRowView: View {
                     }
                 }
 
-                // Time display — for all timed exercises (including weighted-timed)
-                if let targetTime = set.targetTime {
+                // Time input — for all timed exercises (including weighted-timed)
+                if set.targetTime != nil {
                     VStack(alignment: .center, spacing: 2) {
-                        Text("Time")
+                        Text("Time (s)")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        Text(formatTime(targetTime))
+                        TextField("--", text: $timeText)
+                            #if os(iOS)
+                            .keyboardType(.numberPad)
+                            #endif
                             .font(.title3.monospacedDigit())
-                            .frame(width: 70, alignment: .center)
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 70)
                             .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                     }
                 }
@@ -205,7 +214,7 @@ struct SetRowView: View {
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
             if set.targetTime == nil {
                 Button {
-                    onComplete(Double(weightText), Int(repsText))
+                    onComplete(Double(weightText), Int(repsText), Int(timeText))
                 } label: {
                     HStack {
                         Image(systemName: "checkmark")
@@ -241,6 +250,9 @@ struct SetRowView: View {
                     }
                     if let r = set.actualReps ?? set.targetReps {
                         repsText = "\(r)"
+                    }
+                    if let t = set.actualTime ?? set.targetTime {
+                        timeText = "\(t)"
                     }
                 }
             } label: {
@@ -352,15 +364,20 @@ struct SetRowView: View {
                 }
             }
 
-            // Time display — read-only for timed sets in inline edit
-            if let time = set.actualTime ?? set.targetTime {
+            // Time input — editable for timed sets in inline edit
+            if set.actualTime != nil || set.targetTime != nil {
                 VStack(alignment: .center, spacing: 2) {
-                    Text("Time")
+                    Text("Time (s)")
                         .font(.caption2)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    Text(formatTime(time))
+                    TextField("--", text: $timeText)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
                         .font(.body.monospacedDigit())
-                        .frame(width: 60, alignment: .center)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 60)
                         .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                 }
             }
@@ -369,7 +386,7 @@ struct SetRowView: View {
 
             // Update button
             Button {
-                onSave(Double(weightText), Int(repsText))
+                onSave(Double(weightText), Int(repsText), Int(timeText))
                 isEditing = false
             } label: {
                 Image(systemName: "checkmark")

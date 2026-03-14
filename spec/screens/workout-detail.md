@@ -9,7 +9,7 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 ## Layout
 - **Header**: Native stack header with plan name as title, share button (share icon) in headerRight
 - **Body**: WorkoutDetailView component (ScrollView) containing:
-  1. **Header card**: Plan name, favorite button, description, tags, meta stats (exercises count, total sets, units), Reprocess button
+  1. **Header card**: Plan name, favorite button, description, tags, meta stats (exercises count, total sets, units), Edit and Reprocess buttons
   2. **Exercises section**: Grouped by sections (warmup/cooldown/default) with exercise cards showing set details
 - **Footer**: Fixed "Start Workout" button pinned to the bottom of the screen, outside the ScrollView
 
@@ -28,6 +28,9 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 | Superset card | `superset-{globalIndex}` | View |
 | Set row | `set-{set.id}` | View |
 | YouTube link | `youtube-link-{exerciseName}` | Link |
+| Edit markdown button | `edit-plan-markdown-button` | Button |
+| Reprocess button | `reprocess-plan-button` | Button |
+| Exercise edit button | `edit-plan-exercise-{exerciseId}` | Button |
 
 ## User Interactions
 - **Tap share button (header)** → exports plan's original markdown (`sourceMarkdown`) as `.md` file via `exportPlanAsMarkdown` → share sheet
@@ -35,7 +38,9 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 - **Tap "Start Workout"** → checks for active session → starts workout → navigates to `/workout/active`
   - If active session exists: alert with "Resume Workout" option
   - **Critical**: After tapping "Start Workout", the app MUST navigate to the Active Workout screen (`/workout/active`) and display the workout exercises with their sets. The active workout screen must be fully functional — showing exercise names, set targets (weight, reps, time), and input controls. If the session is created but navigation fails or the active workout screen does not appear, this is a blocking bug.
-- **Tap "Reprocess from Markdown"** → confirmation alert → re-parses plan from original markdown
+- **Tap "Edit"** → opens Edit Plan Markdown sheet pre-populated with `sourceMarkdown`. User can edit the markdown text with real-time parse validation (same as import flow). Save updates `sourceMarkdown` and reprocesses the plan. Cancel discards changes.
+- **Tap "Reprocess"** → confirmation alert → re-parses plan from original `sourceMarkdown` (no editing)
+- **Tap pencil icon on exercise card** → opens Edit Exercise sheet (same Form/Markdown dual-tab sheet as active workout) pre-populated with the exercise's data. Save updates the exercise within the plan. Changes are persisted to the plan's `sourceMarkdown` by regenerating it.
 - **Tap YouTube icon** on exercise name → opens YouTube search for that exercise
 
 ## Navigation
@@ -56,9 +61,16 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 - Tags as pill badges
 - Meta stats row: Exercises count, Total Sets, Units (if set)
 
+### Edit / Reprocess Buttons
+- Displayed only when `sourceMarkdown != nil`
+- Two half-width buttons side by side in an HStack:
+  - **Edit** (`edit-plan-markdown-button`): Opens Edit Plan Markdown sheet
+  - **Reprocess** (`reprocess-plan-button`): Shows confirmation alert, then reprocesses from stored markdown
+- Both buttons use secondary styling (same as the previous single Reprocess button)
+
 ### Exercise Cards
 - Numbered with section-colored index
-- Exercise name with YouTube search link
+- Exercise name with pencil edit icon (`edit-plan-exercise-{exerciseId}`) and YouTube search link
 - Equipment type (if set)
 - Notes (italic, if present)
 - Sets listed with all applicable fields:

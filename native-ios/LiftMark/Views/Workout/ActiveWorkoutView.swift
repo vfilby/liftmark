@@ -273,8 +273,8 @@ struct ActiveWorkoutView: View {
                                     onEditExercise: {
                                         editingExercise = exercise
                                     },
-                                    onSaveSet: { setIndex, weight, reps in
-                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                    onSaveSet: { setIndex, weight, reps, time in
+                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps, time: time)
                                     },
                                     onDismissRest: {
                                         activeRestTimer = nil
@@ -304,8 +304,8 @@ struct ActiveWorkoutView: View {
                                     onSkipSet: { exerciseIndex, setIndex in
                                         skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
                                     },
-                                    onSaveSet: { exerciseIndex, setIndex, weight, reps in
-                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+                                    onSaveSet: { exerciseIndex, setIndex, weight, reps, time in
+                                        saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps, time: time)
                                     },
                                     onDismissRest: {
                                         activeRestTimer = nil
@@ -417,7 +417,7 @@ struct ActiveWorkoutView: View {
         updateLiveActivity()
     }
 
-    private func saveEditedSet(exerciseIndex: Int, setIndex: Int, weight: Double?, reps: Int?) {
+    private func saveEditedSet(exerciseIndex: Int, setIndex: Int, weight: Double?, reps: Int?, time: Int?) {
         guard let session, exerciseIndex < session.exercises.count else { return }
         let exercise = session.exercises[exerciseIndex]
         guard setIndex < exercise.sets.count else { return }
@@ -428,7 +428,7 @@ struct ActiveWorkoutView: View {
             actualWeight: weight,
             actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
             actualReps: reps,
-            actualTime: set.actualTime ?? set.targetTime,
+            actualTime: time ?? set.actualTime ?? set.targetTime,
             actualRpe: set.actualRpe ?? set.targetRpe
         )
     }
@@ -673,7 +673,7 @@ private struct ActiveExerciseCard: View {
     let onCompleteSet: (Int, Double?, Int?, Int?) -> Void
     let onSkipSet: (Int) -> Void
     let onEditExercise: () -> Void
-    let onSaveSet: (Int, Double?, Int?) -> Void
+    let onSaveSet: (Int, Double?, Int?, Int?) -> Void
     let onDismissRest: () -> Void
     var restTimerGeneration: Int = 0
 
@@ -768,12 +768,12 @@ private struct ActiveExerciseCard: View {
                         isCurrent: setIndex == currentSetIndex,
                         exerciseName: exercise.exerciseName,
                         equipmentType: exercise.equipmentType,
-                        onComplete: { weight, reps in
-                            onCompleteSet(setIndex, weight, reps, nil)
+                        onComplete: { weight, reps, time in
+                            onCompleteSet(setIndex, weight, reps, time)
                         },
                         onSkip: { onSkipSet(setIndex) },
-                        onSave: { weight, reps in
-                            onSaveSet(setIndex, weight, reps)
+                        onSave: { weight, reps, time in
+                            onSaveSet(setIndex, weight, reps, time)
                         },
                         onWeightChanged: setIndex == currentSetIndex ? { newWeight in
                             currentWeightText = newWeight
@@ -1126,20 +1126,61 @@ private struct EditExerciseSheet: View {
     }
 
     private func saveExercise() {
+        // When in markdown mode, parse into local variables directly.
+        // We cannot rely on @State updates from parseMarkdownIntoForm() because
+        // SwiftUI batches state changes — they won't be visible until next render.
+        var saveName = name
+        var saveNotes = notes
+        var saveEquipment = equipmentType
+        var saveSets = editableSets
+
         if editMode == 1 {
-            parseMarkdownIntoForm()
-            if markdownError != nil { return }
+            let wrappedMarkdown = "# Workout\n\(markdownText)"
+            let result = MarkdownParser.parseWorkout(wrappedMarkdown)
+            guard let plan = result.data, let parsedExercise = plan.exercises.first else {
+                markdownError = result.errors.first ?? "Failed to parse markdown"
+                return
+            }
+            markdownError = nil
+
+            saveName = parsedExercise.exerciseName
+            saveEquipment = parsedExercise.equipmentType ?? ""
+            saveNotes = parsedExercise.notes ?? ""
+
+            var newSets: [EditableSetRow] = []
+            for (i, parsedSet) in parsedExercise.sets.enumerated() {
+                let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
+                let existingStatus: SetStatus = i < exercise.sets.count ? exercise.sets[i].status : .pending
+                newSets.append(EditableSetRow(
+                    id: existingId ?? UUID().uuidString,
+                    existingSetId: existingId,
+                    weightText: parsedSet.targetWeight.map {
+                        $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
+                    } ?? "",
+                    repsText: parsedSet.targetReps.map { "\($0)" } ?? "",
+                    timeText: parsedSet.targetTime.map { "\($0)" } ?? "",
+                    weightUnit: parsedSet.targetWeightUnit,
+                    status: existingStatus
+                ))
+            }
+            saveSets = newSets
+
+            // Also update @State for UI consistency
+            name = saveName
+            equipmentType = saveEquipment
+            notes = saveNotes
+            editableSets = newSets
         }
 
         var changes: [EditExerciseSetChange] = []
         let originalSetIds = Set(exercise.sets.map { $0.id })
-        let currentSetIds = Set(editableSets.compactMap { $0.existingSetId })
+        let currentSetIds = Set(saveSets.compactMap { $0.existingSetId })
 
         for originalId in originalSetIds where !currentSetIds.contains(originalId) {
             changes.append(.delete(setId: originalId))
         }
 
-        for setRow in editableSets {
+        for setRow in saveSets {
             let weight = Double(setRow.weightText)
             let reps = Int(setRow.repsText)
             let time = Int(setRow.timeText)
@@ -1152,9 +1193,9 @@ private struct EditExerciseSheet: View {
         }
 
         onSave(
-            name,
-            notes.isEmpty ? nil : notes,
-            equipmentType.isEmpty ? nil : equipmentType,
+            saveName,
+            saveNotes.isEmpty ? nil : saveNotes,
+            saveEquipment.isEmpty ? nil : saveEquipment,
             changes
         )
         dismiss()
@@ -1280,7 +1321,7 @@ private struct SupersetCard: View {
     let onToggleCollapse: () -> Void
     let onCompleteSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
     let onSkipSet: (Int, Int) -> Void  // exerciseIndex, setIndex
-    let onSaveSet: (Int, Int, Double?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps
+    let onSaveSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
     let onDismissRest: () -> Void
     var restTimerGeneration: Int = 0
 
@@ -1396,12 +1437,12 @@ private struct SupersetCard: View {
                         isCurrent: isCurrent,
                         exerciseName: item.exercise.exerciseName,
                         equipmentType: item.exercise.equipmentType,
-                        onComplete: { weight, reps in
-                            onCompleteSet(item.exerciseIndex, item.setIndex, weight, reps, nil)
+                        onComplete: { weight, reps, time in
+                            onCompleteSet(item.exerciseIndex, item.setIndex, weight, reps, time)
                         },
                         onSkip: { onSkipSet(item.exerciseIndex, item.setIndex) },
-                        onSave: { weight, reps in
-                            onSaveSet(item.exerciseIndex, item.setIndex, weight, reps)
+                        onSave: { weight, reps, time in
+                            onSaveSet(item.exerciseIndex, item.setIndex, weight, reps, time)
                         }
                     )
 

@@ -57,6 +57,17 @@ final class WorkoutPlanStore {
         updatePlan(plan)
     }
 
+    func updatePlanMarkdown(id: String, newMarkdown: String) {
+        let result = MarkdownParser.parseWorkout(newMarkdown)
+        guard result.success, let parsed = result.data, var plan = getPlan(id: id) else { return }
+        plan.sourceMarkdown = newMarkdown
+        plan.exercises = parsed.exercises
+        plan.name = parsed.name
+        plan.tags = parsed.tags
+        plan.defaultWeightUnit = parsed.defaultWeightUnit
+        updatePlan(plan)
+    }
+
     func toggleFavorite(id: String) {
         do {
             try repository.toggleFavorite(id)

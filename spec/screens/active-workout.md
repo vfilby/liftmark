@@ -42,8 +42,8 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap "Skip"** → marks set as skipped, advances
 
 ### Set Editing (completed/skipped sets)
-- **Tap completed/skipped set** → opens inline edit form
-- **Tap "Update"** → saves changes to completed set
+- **Tap completed/skipped set** → opens inline edit form with editable fields for weight, reps, and/or time (matching the set type). Time fields are editable TextFields for timed sets (not read-only).
+- **Tap "Update"** → saves changes to completed set (including edited time for timed sets)
 - **Tap again** → closes edit form
 
 ### Rest Timer
@@ -202,15 +202,15 @@ Renders individual sets with multiple visual states:
 
 Set rows must display contextually appropriate fields based on exercise type:
 - **Weighted sets** (`targetWeight` exists, `targetTime` nil): show weight field with unit (lbs/kg) and reps field
-- **Timed sets** (`targetTime` exists, no `targetWeight`): show time field labeled as "time", not "weight"
-- **Weighted timed sets** (`targetWeight` AND `targetTime` exist, no `targetReps`): show weight input field with unit AND time display. No reps field. Complete button hidden — timer Done button completes the set. The user-edited weight from the input field must be saved as `actualWeight` when the timer completes.
+- **Timed sets** (`targetTime` exists, no `targetWeight`): show editable time input field labeled as "time" (in seconds), not "weight". The user can adjust the target time before starting the timer.
+- **Weighted timed sets** (`targetWeight` AND `targetTime` exist, no `targetReps`): show weight input field with unit AND editable time input field. No reps field. Complete button hidden — timer Done button completes the set. The user-edited weight from the input field must be saved as `actualWeight` when the timer completes. The user-edited time is used as the new target for the timer.
 - **Bodyweight rep sets** (no `targetWeight`, `targetReps` exists): show reps only, no weight field
 
 | Set State | Weight Display | Reps Display | Time Display |
 |-----------|---------------|-------------|-------------|
 | Pending | Target weight + unit (e.g., "135 lbs") | Target reps (e.g., "x 5") | Target time (e.g., "60s") |
-| Current | Pre-filled in weight input field | Pre-filled in reps input field | Pre-filled in time input field |
-| Current (weighted-timed) | Pre-filled weight input field + unit | — (no reps) | Target time shown (completed via timer) |
+| Current | Pre-filled in weight input field | Pre-filled in reps input field | Pre-filled in editable time input field |
+| Current (weighted-timed) | Pre-filled weight input field + unit | — (no reps) | Pre-filled in editable time input field (completed via timer) |
 | Completed | Actual weight + unit | Actual reps | Actual time |
 | Skipped | "Skipped" label (no weight/reps) | — | — |
 
