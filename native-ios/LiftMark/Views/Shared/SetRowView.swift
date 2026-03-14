@@ -416,14 +416,25 @@ struct SetRowView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             if set.isPerSide {
-                Text("/side")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(LiftMarkTheme.primary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1)
-                    .background(LiftMarkTheme.primary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                if let side = set.side {
+                    Text(side.capitalized)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(LiftMarkTheme.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(LiftMarkTheme.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                } else {
+                    Text("/side")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(LiftMarkTheme.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(LiftMarkTheme.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
             }
         }
     }

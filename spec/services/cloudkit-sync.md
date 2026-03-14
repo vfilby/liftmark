@@ -369,6 +369,26 @@ A secondary safety net that wraps every sync operation to detect and restore dat
 6. Validate detects and restores missing sets
 7. Restore preserves newly-added exercises not in original snapshot
 
+### Plan Exercise Deduplication
+
+During merge, `mergePlannedExercise` and `mergePlannedSet` must guard against inserting duplicate child records for the same workout plan.
+
+**Problem**: `PlannedExercise` and `PlannedSet` records lack `updatedAt` timestamps. If sync delivers the same logical exercise with a different CloudKit record ID (e.g., after a plan was reprocessed from markdown), merge inserts a second copy — duplicating exercises in the plan.
+
+**Deduplication rule for `mergePlannedExercise`**:
+- Before inserting a new exercise (record ID not found locally), check if an exercise with the same `(workoutTemplateId, exerciseName, orderIndex)` already exists.
+- If a match exists, **skip the insert** and log a warning. The local record is authoritative.
+
+**Deduplication rule for `mergePlannedSet`**:
+- Before inserting a new set (record ID not found locally), check if a set with the same `(templateExerciseId, orderIndex)` already exists.
+- If a match exists, **skip the insert** and log a warning.
+
+**Tests** (`CloudKitSyncProtectionTests`):
+1. `mergePlannedExercise` skips insert when duplicate (same plan, name, orderIndex) already exists locally
+2. `mergePlannedSet` skips insert when duplicate (same exercise, orderIndex) already exists locally
+3. `mergePlannedExercise` allows insert when no duplicate exists
+4. `mergePlannedExercise` allows update of existing record (same record ID)
+
 ### Phase 2 (future — requires sync_queue)
 
 Once change tracking is in place, both directions are supported:

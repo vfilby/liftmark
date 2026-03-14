@@ -69,10 +69,15 @@ struct RestTimerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
-                // Restart tick timer if still running (may have been invalidated in background)
+                // Restart tick timer aligned to second boundaries if still running
                 if isRunning && displayRemaining > 0 && timer == nil {
-                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                    let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+                    let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
+                    timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
                         recalculate()
+                        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                            recalculate()
+                        }
                     }
                 }
             }
@@ -106,8 +111,16 @@ struct RestTimerView: View {
         guard !isRunning else { return }
         startDate = Date()
         isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+
+        // Align to next whole-second boundary so countdown sounds fire precisely
+        let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+        let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
+
+        timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                recalculate()
+            }
         }
     }
 
@@ -129,15 +142,9 @@ struct RestTimerView: View {
 
 /// Large exercise timer for timed exercises (e.g., planks).
 /// Uses wall-clock Date() timestamps so the timer survives app backgrounding.
-/// When `isPerSide` is true, shows two sequential timers (left then right).
 struct ExerciseTimerView: View {
     let targetSeconds: Int?
-    let isPerSide: Bool
     let onComplete: (Int) -> Void
-
-    enum TimerSide {
-        case left, right
-    }
 
     /// The Date when the timer was last started/resumed. nil when paused or stopped.
     @State private var startDate: Date?
@@ -152,13 +159,8 @@ struct ExerciseTimerView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(SettingsStore.self) private var settingsStore
 
-    // Per-side state
-    @State private var currentSide: TimerSide = .left
-    @State private var leftElapsed: Int = 0
-
-    init(targetSeconds: Int?, isPerSide: Bool = false, onComplete: @escaping (Int) -> Void) {
+    init(targetSeconds: Int?, onComplete: @escaping (Int) -> Void) {
         self.targetSeconds = targetSeconds
-        self.isPerSide = isPerSide
         self.onComplete = onComplete
     }
 
@@ -175,30 +177,8 @@ struct ExerciseTimerView: View {
         return displayElapsed >= target
     }
 
-    private var sideLabel: String {
-        switch currentSide {
-        case .left: return "Left Side"
-        case .right: return "Right Side"
-        }
-    }
-
     var body: some View {
         VStack(spacing: LiftMarkTheme.spacingSM) {
-            // Side label for per-side exercises
-            if isPerSide {
-                Text(sideLabel)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(LiftMarkTheme.primary)
-            }
-
-            // Left side result while timing right side
-            if isPerSide && currentSide == .right {
-                Text("Left: \(formatTime(leftElapsed))")
-                    .font(.caption)
-                    .foregroundStyle(LiftMarkTheme.success)
-            }
-
             // Timer display
             Text(formatTime(displayElapsed))
                 .font(.system(size: 40, weight: .light, design: .monospaced))
@@ -208,7 +188,7 @@ struct ExerciseTimerView: View {
             // Target label
             if let target = targetSeconds {
                 HStack(spacing: 4) {
-                    Text("Target: \(formatTime(target))\(isPerSide ? "/side" : "")")
+                    Text("Target: \(formatTime(target))")
                         .font(.caption)
                         .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.secondaryLabel)
                     if isComplete {
@@ -243,17 +223,8 @@ struct ExerciseTimerView: View {
                 if isRunning || displayElapsed > 0 {
                     Button {
                         let elapsed = currentElapsed
-                        if isPerSide && currentSide == .left {
-                            // Capture left side, reset timer, switch to right side
-                            leftElapsed = elapsed
-                            stopTimer()
-                            currentSide = .right
-                        } else {
-                            // Single-side or right side done — complete the set
-                            let totalElapsed = isPerSide ? leftElapsed + elapsed : elapsed
-                            stopTimer()
-                            onComplete(totalElapsed)
-                        }
+                        stopTimer()
+                        onComplete(elapsed)
                     } label: {
                         Text("Done")
                             .font(.body)
@@ -279,10 +250,15 @@ struct ExerciseTimerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
-                // Restart tick timer if still running (may have been invalidated in background)
+                // Restart tick timer aligned to second boundaries if still running
                 if isRunning && timer == nil {
-                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                    let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+                    let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
+                    timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
                         recalculate()
+                        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                            recalculate()
+                        }
                     }
                 }
             }
@@ -314,8 +290,16 @@ struct ExerciseTimerView: View {
         AudioService.shared.preloadSounds()
         startDate = Date()
         isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+
+        // Align to next whole-second boundary so countdown sounds fire precisely
+        let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+        let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
+
+        timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                recalculate()
+            }
         }
     }
 

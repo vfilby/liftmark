@@ -48,7 +48,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 
 ### Rest Timer
 - After set completion with rest seconds: rest timer or suggestion appears inline after the completed set
-- **Tap "Start"** → starts countdown timer with audio ticks at 5/4/3/2/1s and completion tone at 0 (when Countdown Sounds setting is enabled)
+- **Tap "Start"** → starts countdown timer with audio ticks at 5/4/3/2/1s and completion tone at 0 (when Countdown Sounds setting is enabled). Audio ticks must fire at whole-second boundaries — the timer display tick must be aligned to second boundaries (not offset by the fractional time at which the timer was started).
 - **Tap "Skip"** → dismisses rest suggestion
 - **Tap "Stop"** → stops running timer
 - Timer completion plays completion sound, clears "Up Next" preview
@@ -61,18 +61,23 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap Pause** → pauses timer; elapsed time is frozen
 - **Done button** → visible immediately once the timer is started (including at 0:00 elapsed), whether the timer is running or paused. Always uses success (green) styling to be visually consistent with the "Complete Set" button. Logs the current elapsed time as `actualTime`.
 - **Background resilience**: Exercise timer uses wall-clock `Date()` timestamps. A `startDate` is set on start/resume. On pause, elapsed time is accumulated into `pausedElapsed` and `startDate` is cleared. Total elapsed = `pausedElapsed + (startDate != nil ? Date().timeIntervalSince(startDate!) : 0)`. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods).
+- **Timer tick alignment**: Both rest timers and exercise timers must align their 1-second display ticks to whole-second boundaries. On start, compute the delay to the next whole second, fire the first tick at that boundary, then schedule repeating 1-second ticks. This ensures countdown sounds at 5/4/3/2/1s fire precisely when the displayed time transitions, not at arbitrary offsets.
 - **On set completion (timed sets)**:
   - If the exercise timer was started (elapsed > 0): log `actualTime` as the elapsed seconds from the timer at the moment of completion. If the timer is running, capture the current elapsed time. If the timer is paused, capture the paused elapsed time.
   - If the exercise timer was NOT started (completed via the set checkmark without starting the timer): log `actualTime` as the `targetTime` value from the plan.
   - **After logging**: the timer is dismissed and reset to 0. If there is a next timed set, a fresh timer appears ready for the next set.
 
 ### Per-Side Timed Sets
-- When a timed set has `isPerSide == true`, ExerciseTimerView shows two sequential timers.
-- First timer labeled "Left Side" — user taps Start, then Done.
-- Timer resets, second timer labeled "Right Side" — user taps Start, then Done.
-- Set marked complete after both sides finish; `actualTime` = left + right elapsed.
-- Left side result shown while timing right side (e.g., "Left: 1:02").
+- During session creation, each timed set (`targetTime != nil`) with `isPerSide == true` is **expanded** into two separate session sets: one with `side = "left"` and one with `side = "right"`.
+- Both sets are visible upfront in the exercise card — they are not hidden or sequential within a single timer.
+- Example: An exercise with `- 30s per side` × 2 sets produces 4 session sets: Set 1 Left, Set 1 Right, Set 2 Left, Set 2 Right.
+- Each expanded set has its own independent ExerciseTimerView — no sequential left/right logic within the timer.
+- The set row displays a side label badge ("Left" or "Right") next to the set number.
 - Target label shows "/side" suffix to clarify the target is per-side (e.g., "Target: 1:00/side").
+- `actualTime` is recorded independently per side (each set stores its own elapsed time).
+- The `is_per_side` flag is preserved on both expanded sets for display purposes.
+- **Non-timed** per-side sets (rep-based, e.g., `25 x 12 @perside`) are NOT expanded — they remain a single set with the `/side` badge, as they have no timer.
+- **Order indexing**: Expanded sets use fractional-style ordering to maintain correct position. For a per-side set at `order_index` N, the left set gets `order_index` 2*N and the right set gets `order_index` 2*N+1 (all sets in the exercise are re-indexed during expansion).
 
 ### Plate Calculator
 - For barbell exercises (detected by `PlateCalculator.isBarbellExercise`): shows plate breakdown in a blue info box **above** the weight × reps input row

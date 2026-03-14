@@ -173,6 +173,7 @@ struct SessionSet: Identifiable, Codable, Hashable {
     var tempo: String?
     var isDropset: Bool
     var isPerSide: Bool
+    var side: String?
 
     init(
         id: String = UUID().uuidString,
@@ -196,7 +197,8 @@ struct SessionSet: Identifiable, Codable, Hashable {
         notes: String? = nil,
         tempo: String? = nil,
         isDropset: Bool = false,
-        isPerSide: Bool = false
+        isPerSide: Bool = false,
+        side: String? = nil
     ) {
         self.id = id
         self.sessionExerciseId = sessionExerciseId
@@ -220,6 +222,7 @@ struct SessionSet: Identifiable, Codable, Hashable {
         self.tempo = tempo
         self.isDropset = isDropset
         self.isPerSide = isPerSide
+        self.side = side
     }
 }
 
@@ -253,6 +256,7 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var tempo: String?
     var isDropset: Int // SQLite boolean
     var isPerSide: Int // SQLite boolean
+    var side: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -277,6 +281,7 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case tempo
         case isDropset = "is_dropset"
         case isPerSide = "is_per_side"
+        case side
     }
 }
 

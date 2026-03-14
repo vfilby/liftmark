@@ -1211,7 +1211,21 @@ final class CloudKitService: @unchecked Sendable {
                 groupName: stringField(record, "groupName"),
                 parentExerciseId: referenceId(record, "parentExerciseId")
             )
-            if existing != nil { try row.update(db) } else { try row.insert(db) }
+            if existing != nil {
+                try row.update(db)
+            } else {
+                // Deduplication: skip if exercise with same plan, name, and order already exists
+                let duplicate = try PlannedExerciseRow
+                    .filter(Column("workout_template_id") == row.workoutTemplateId)
+                    .filter(Column("exercise_name") == row.exerciseName)
+                    .filter(Column("order_index") == row.orderIndex)
+                    .fetchOne(db)
+                if duplicate != nil {
+                    Logger.shared.warn(.sync, "Skipping duplicate exercise: \(row.exerciseName) at index \(row.orderIndex)")
+                    return false
+                }
+                try row.insert(db)
+            }
             return existing == nil
         }
     }
@@ -1242,7 +1256,20 @@ final class CloudKitService: @unchecked Sendable {
                 isAmrap: attrs.contains("amrap") ? 1 : 0,
                 notes: stringField(record, "notes")
             )
-            if existing != nil { try row.update(db) } else { try row.insert(db) }
+            if existing != nil {
+                try row.update(db)
+            } else {
+                // Deduplication: skip if set with same exercise and order already exists
+                let duplicate = try PlannedSetRow
+                    .filter(Column("template_exercise_id") == row.templateExerciseId)
+                    .filter(Column("order_index") == row.orderIndex)
+                    .fetchOne(db)
+                if duplicate != nil {
+                    Logger.shared.warn(.sync, "Skipping duplicate set at index \(row.orderIndex)")
+                    return false
+                }
+                try row.insert(db)
+            }
             return existing == nil
         }
     }
@@ -1335,7 +1362,8 @@ final class CloudKitService: @unchecked Sendable {
                 notes: stringField(record, "notes"),
                 tempo: nil,
                 isDropset: attrs.contains("dropset") ? 1 : 0,
-                isPerSide: attrs.contains("perSide") ? 1 : 0
+                isPerSide: attrs.contains("perSide") ? 1 : 0,
+                side: stringField(record, "side")
             )
             if existing != nil { try row.update(db) } else { try row.insert(db) }
             return existing == nil

@@ -174,11 +174,13 @@ A single set within a session exercise, tracking both target and actual performa
 | tempo | string | No | — | |
 | isDropset | boolean | No | false | |
 | isPerSide | boolean | No | false | |
+| side | string | No | — | "left" or "right" for expanded per-side timed sets, nil otherwise |
 
 **Business rules**:
 - On completion, if no actualWeight/actualReps are provided, values are copied from targets.
 - Drop sets link via parentSetId + dropSequence for ordering.
 - Completing a set automatically advances the session to the next pending set.
+- During session creation, timed per-side sets (`isPerSide && targetTime != nil`) are expanded into two sets with `side = "left"` and `side = "right"`. Each gets its own timer and records `actualTime` independently.
 
 ---
 

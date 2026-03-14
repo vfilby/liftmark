@@ -813,7 +813,7 @@ private struct ActiveExerciseCard: View {
                 if let currentIdx = currentSetIndex {
                     let currentSet = exercise.sets[currentIdx]
                     if let targetTime = currentSet.targetTime, targetTime > 0 {
-                        ExerciseTimerView(targetSeconds: targetTime, isPerSide: currentSet.isPerSide) { elapsedSeconds in
+                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
                             let weight = Double(currentWeightText)
                             onCompleteSet(currentIdx, weight, nil, elapsedSeconds)
                         }

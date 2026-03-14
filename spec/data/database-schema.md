@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS session_sets (
   tempo                TEXT,
   is_dropset           INTEGER DEFAULT 0,
   is_per_side          INTEGER DEFAULT 0,
+  side                 TEXT,                 -- 'left' or 'right' for expanded per-side timed sets, NULL otherwise
   FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE,
   FOREIGN KEY (parent_set_id) REFERENCES session_sets(id) ON DELETE CASCADE
 );
