@@ -728,7 +728,7 @@
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <div class="example">
   <div class="example-title">Exercise Timer States</div>
-  <div class="example-desc">Timed sets show an ExerciseTimerView instead of weight/reps inputs. Three states: pre-start, running, and completed (target reached).</div>
+  <div class="example-desc">Timed sets show an ExerciseTimerView <strong>inline directly after the current set row</strong> (not at the bottom of the card). Three states: pre-start, running, and completed (target reached).</div>
   <div class="device">
     <div class="device-notch"></div>
     <div class="screen screen-pad-bottom">
@@ -736,7 +736,7 @@
 
         <!-- Timer: Pre-start -->
         <div>
-          <span class="section-label">Timer state: pre-start</span>
+          <span class="section-label">Timer state: pre-start (timer inline after current set)</span>
           <div class="card">
             <div class="card-header">
               <div class="badge badge-blue">1</div>
@@ -744,15 +744,19 @@
               <div class="card-icons"><span class="card-icon">&#9998;</span></div>
             </div>
             <div class="set-list">
-              <div class="exercise-timer">
+              <div class="set-row set-current">
+                <span class="set-number set-number-current">&#8594;</span>
+                <span class="set-values">60s</span>
                 <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+              </div>
+              <div class="exercise-timer">
                 <div class="timer-display">0:00</div>
                 <div class="timer-target">Target: 60s</div>
                 <div class="timer-buttons">
                   <button class="btn-timer-start">Start</button>
                 </div>
               </div>
-              <span class="anno-inline">exercise-timer-start-button &middot; Done not yet visible</span>
+              <span class="anno-inline">Timer appears inline below the active set row</span>
               <div class="set-row set-pending">
                 <span class="set-number">2</span>
                 <span class="set-values">60s</span>
@@ -768,7 +772,7 @@
         <!-- Timer: Running -->
         <div>
           <hr class="section-divider">
-          <span class="section-label">Timer state: running (mid-count)</span>
+          <span class="section-label">Timer state: running (mid-count, timer inline after current set)</span>
           <div class="card">
             <div class="card-header">
               <div class="badge badge-blue">1</div>
@@ -776,8 +780,12 @@
               <div class="card-icons"><span class="card-icon">&#9998;</span></div>
             </div>
             <div class="set-list">
-              <div class="exercise-timer">
+              <div class="set-row set-current">
+                <span class="set-number set-number-current">&#8594;</span>
+                <span class="set-values">60s</span>
                 <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+              </div>
+              <div class="exercise-timer">
                 <div class="timer-display">0:34</div>
                 <div class="timer-target">Target: 60s</div>
                 <div class="timer-buttons">
@@ -797,7 +805,7 @@
         <!-- Timer: Target reached -->
         <div>
           <hr class="section-divider">
-          <span class="section-label">Timer state: target reached (still running)</span>
+          <span class="section-label">Timer state: target reached (still running, timer inline after current set)</span>
           <div class="card">
             <div class="card-header">
               <div class="badge badge-blue">1</div>
@@ -805,8 +813,12 @@
               <div class="card-icons"><span class="card-icon">&#9998;</span></div>
             </div>
             <div class="set-list">
-              <div class="exercise-timer">
+              <div class="set-row set-current">
+                <span class="set-number set-number-current">&#8594;</span>
+                <span class="set-values">60s</span>
                 <button class="btn-skip" title="Skip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4z"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg></button>
+              </div>
+              <div class="exercise-timer">
                 <div class="timer-display timer-display-done">1:03</div>
                 <div class="timer-target" style="color: var(--green);">Target: 60s &#10003;</div>
                 <div class="timer-buttons">

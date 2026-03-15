@@ -56,6 +56,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Background resilience**: Rest timer uses wall-clock `Date()` timestamps internally (not counter-based). A `startDate` is recorded on timer start, and `remainingSeconds` is computed as `max(0, totalSeconds - elapsed)` where `elapsed = Date().timeIntervalSince(startDate)`. The 1-second Timer is kept only for UI updates. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods).
 
 ### Exercise Timer (timed sets)
+- ExerciseTimer component appears **inline directly below the current set row** (not at the bottom of the exercise card). This keeps the timer visually associated with the active set when multiple timed sets exist.
 - ExerciseTimer component appears for sets with `targetTime`
 - **Tap Start** → begins counting up toward target
 - **Tap Pause** → pauses timer; elapsed time is frozen
@@ -100,8 +101,14 @@ Primary workout execution screen. Displays all exercises and sets for the active
     - "Log Anyway" → completes workout normally → navigates to `/workout/summary`
     - "Cancel" → returns to active workout
 
+### YouTube Links
+- Displayed at the **bottom of the expanded exercise card** (below all sets), not in the header
+- Shown as a centered descriptive link: `Search "Exercise Name" on YouTube` with play.rectangle icon
+- Hidden when the exercise card is collapsed
+- Tapping opens YouTube search for the exercise
+
 ### Exercise Editing
-- **Tap pencil icon** on exercise → opens Edit Exercise sheet with two tabs:
+- **Tap pencil icon** (top-right of exercise card header, 36x36 tap target, `.body` font) on exercise → opens Edit Exercise sheet with two tabs:
   - **Form tab** (default): structured fields for name, equipment, notes, and an editable list of sets (weight/reps/time fields, add set, delete set via swipe, reorder via drag)
   - **Markdown tab**: TextEditor with exercise in LMWF format (`## Name`, `@type: equipment`, notes, `- weight x reps`); parsed on save via MarkdownParser
 - **Sheet must display exercise data**: The edit sheet must always be pre-populated with the tapped exercise's current data (name, equipment, notes, sets). A blank or empty sheet is a bug — the sheet presentation must be bound directly to the exercise being edited.
@@ -131,6 +138,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 
 ### Section Display
 - Workouts may contain organizational sections (e.g., Warmup, Main Workout, Cool Down) defined by section headers in the LMWF format.
+- Section header dividers give priority horizontal space to the section name text (`layoutPriority(1)`, `fixedSize`), with divider lines flexing to fill remaining width. When text wraps, it is centered.
 - Section headers (`groupType == .section`, empty sets) are **not** rendered as exercise cards — they are purely organizational.
 - Exercises within a section (`parentExerciseId` pointing to the section header) are rendered as **individual standalone exercise cards**, identical to top-level exercises.
 - Section children must not be skipped or treated as orphans — they are the primary content of the workout.
@@ -171,7 +179,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - All Live Activity calls are guarded behind `settingsStore.settings?.liveActivitiesEnabled == true` and `LiveActivityService.shared.isAvailable()`.
 
 ### YouTube Links
-- **Tap external link icon** (`youtube-link-{exerciseName}`) next to exercise name → opens YouTube search
+- See "YouTube Links" section above — displayed at bottom of expanded exercise card, not in the header
 
 ## Navigation
 - Back (via Pause) → previous screen

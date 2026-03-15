@@ -39,22 +39,43 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("history-empty-state")
             } else {
-                List {
-                    ForEach(filteredSessions) { session in
-                        NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
-                            SessionCardView(session: session)
-                        }
-                        .accessibilityIdentifier("history-session-card")
+                VStack(spacing: 0) {
+                    // Search bar
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .font(.system(size: 14))
+                        TextField("Search workouts...", text: $searchText)
+                            .font(.body)
                     }
-                    .onDelete { offsets in
-                        let sessionsToDelete = offsets.map { filteredSessions[$0] }
-                        for session in sessionsToDelete {
-                            sessionStore.deleteSession(id: session.id)
+                    .padding(.horizontal, LiftMarkTheme.spacingMD)
+                    .padding(.vertical, LiftMarkTheme.spacingSM)
+                    .background(LiftMarkTheme.secondaryBackground)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(LiftMarkTheme.tertiaryLabel.opacity(0.3), lineWidth: 1.5))
+                    .padding(.horizontal)
+                    .padding(.vertical, LiftMarkTheme.spacingSM)
+
+                    ScrollView {
+                        LazyVStack(spacing: LiftMarkTheme.spacingSM) {
+                            ForEach(filteredSessions) { session in
+                                NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
+                                    SessionCardView(session: session)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("history-session-card")
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        sessionStore.deleteSession(id: session.id)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
+                        .padding(.horizontal)
                     }
                 }
-                .listStyle(.plain)
-                .searchable(text: $searchText, prompt: "Search workouts")
                 .accessibilityIdentifier("history-list")
             }
         }
@@ -190,46 +211,50 @@ private struct SessionCardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Row 1: Name (left) + relative date (right)
-            HStack(alignment: .firstTextBaseline) {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(session.name)
                     .font(.headline)
-                Spacer()
-                Text(formattedDate)
-                    .font(.subheadline)
-                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-            }
+                    .foregroundStyle(LiftMarkTheme.label)
+                    .lineLimit(1)
 
-            // Row 2: Start time · duration
-            HStack(spacing: 0) {
-                if let time = startTimeFormatted {
-                    Text(time)
-                    if durationFormatted != nil {
-                        Text(" \u{00B7} ")
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    Text(formattedDate)
+                    if startTimeFormatted != nil || durationFormatted != nil {
+                        Text("·")
+                        if let time = startTimeFormatted {
+                            Text(time)
+                        }
+                        if let duration = durationFormatted {
+                            Text("·")
+                            Text(duration)
+                        }
                     }
                 }
-                if let duration = durationFormatted {
-                    Text(duration)
-                }
-            }
-            .font(.subheadline)
-            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .font(.subheadline)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
 
-            // Row 3: sets · exercises · volume
-            HStack(spacing: 0) {
-                Text("\(completedSetsCount) sets")
-                Text(" \u{00B7} ")
-                Text("\(exerciseCount) exercises")
-                if totalVolume > 0 {
-                    Text(" \u{00B7} ")
-                    Text(formatVolume(totalVolume))
+                HStack(spacing: 0) {
+                    Text("\(completedSetsCount) sets")
+                    Text(" · ")
+                    Text("\(exerciseCount) exercises")
+                    if totalVolume > 0 {
+                        Text(" · ")
+                        Text(formatVolume(totalVolume))
+                    }
                 }
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
             }
-            .font(.subheadline)
-            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
         }
-        .padding(.vertical, LiftMarkTheme.spacingXS)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
     }
 
     private func formatVolume(_ volume: Double) -> String {

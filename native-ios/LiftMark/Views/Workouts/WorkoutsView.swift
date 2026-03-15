@@ -228,61 +228,69 @@ struct WorkoutsView: View {
     }
 
     private var plansList: some View {
-        List {
-            ForEach(Array(filteredPlans.enumerated()), id: \.element.id) { index, plan in
-                planRow(plan: plan, index: index)
+        ScrollView {
+            LazyVStack(spacing: LiftMarkTheme.spacingSM) {
+                ForEach(Array(filteredPlans.enumerated()), id: \.element.id) { index, plan in
+                    planRow(plan: plan, index: index)
+                }
             }
+            .padding(.horizontal)
         }
-        .listStyle(.plain)
         .accessibilityIdentifier("workout-list")
     }
 
     private func planRow(plan: WorkoutPlan, index: Int) -> some View {
         NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
-            HStack(spacing: LiftMarkTheme.spacingMD) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(plan.name)
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-
-                    if !plan.tags.isEmpty {
-                        HStack(spacing: 4) {
-                            ForEach(plan.tags.prefix(3), id: \.self) { tag in
-                                Text(tag.lowercased())
-                                    .font(.caption2)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(LiftMarkTheme.primary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
-                                    .background(LiftMarkTheme.primary.opacity(0.1))
-                                    .clipShape(Capsule())
-                            }
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: LiftMarkTheme.spacingXS) {
+                        Text(plan.name)
+                            .font(.headline)
+                            .foregroundStyle(LiftMarkTheme.label)
+                            .lineLimit(1)
+                        if plan.isFavorite {
+                            Image(systemName: "heart.fill")
+                                .font(.caption)
+                                .foregroundStyle(.pink)
+                        }
+                    }
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        let exerciseCount = plan.exercises.filter { exercise in
+                            !(exercise.groupType == .superset && exercise.sets.isEmpty) &&
+                            !(exercise.groupType == .section && exercise.sets.isEmpty)
+                        }.count
+                        Text("\(exerciseCount) exercises")
+                            .font(.subheadline)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        if !plan.tags.isEmpty {
+                            Text(plan.tags.prefix(2).joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
                     }
                 }
-
                 Spacer()
-
-                Button {
-                    planStore.toggleFavorite(id: plan.id)
-                } label: {
-                    Image(systemName: plan.isFavorite ? "heart.fill" : "heart")
-                        .font(.title3)
-                        .foregroundStyle(plan.isFavorite ? .red : LiftMarkTheme.tertiaryLabel)
-                        .frame(width: 36, height: 36)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("favorite-\(plan.id)")
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(LiftMarkTheme.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         }
+        .buttonStyle(.plain)
         .accessibilityIdentifier("workout-card-\(plan.id)")
-        .listRowInsets(EdgeInsets(top: LiftMarkTheme.spacingSM, leading: LiftMarkTheme.spacingLG, bottom: LiftMarkTheme.spacingSM, trailing: LiftMarkTheme.spacingLG))
         .overlay(
             Color.clear
                 .accessibilityIdentifier("workout-card-index-\(index)")
         )
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        .contextMenu {
+            Button {
+                planStore.toggleFavorite(id: plan.id)
+            } label: {
+                Label(plan.isFavorite ? "Unfavorite" : "Favorite", systemImage: plan.isFavorite ? "heart.slash" : "heart")
+            }
             Button(role: .destructive) {
                 planStore.deletePlan(id: plan.id)
             } label: {

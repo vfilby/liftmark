@@ -70,10 +70,11 @@ Display full details of a workout plan template — exercises, sets, tags, metad
 
 ### Exercise Cards
 - Numbered with section-colored index
-- Exercise name with pencil edit icon (`edit-plan-exercise-{exerciseId}`) and YouTube search link
+- Exercise name (left) with pencil edit icon (`edit-plan-exercise-{exerciseId}`) in the top-right corner (36x36 tap target, `.body` font)
 - Equipment type (if set)
 - Notes (italic, if present)
-- Sets listed with all applicable fields:
+- Sets listed with all applicable fields
+- YouTube search link at the bottom of the card (below sets), displayed as a centered descriptive link: `Search "Exercise Name" on YouTube` with play.rectangle icon. Hidden when card is collapsed.
 
 #### Set Display Format
 
@@ -94,7 +95,9 @@ Each set row MUST display all data that was parsed from the workout plan. The fo
 **Critical**: Weight MUST be displayed when it exists in the parsed data. A set row showing only "x 5" when the plan specifies "135 x 5" is a bug — it must show "135 lbs x 5" (or the appropriate unit). The weight is the most important piece of information in a strength training set and must never be silently omitted.
 
 ### Section Headers
-- Styled divider lines with section name
+- Styled divider lines with section name centered between them
+- Text uses `fixedSize(horizontal: false, vertical: true)` with `layoutPriority(1)` so the section name gets priority horizontal space and the divider lines flex to fill remaining width
+- When the section name wraps to multiple lines, text is centered (`multilineTextAlignment(.center)`)
 - Color-coded: warmup (sectionWarmup), cooldown (sectionCooldown), default (primary)
 
 ### Supersets

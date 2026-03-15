@@ -568,7 +568,7 @@ struct ActiveWorkoutView: View {
 
     @ViewBuilder
     private func sectionHeader(name: String) -> some View {
-        HStack(spacing: LiftMarkTheme.spacingMD) {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)
@@ -577,6 +577,9 @@ struct ActiveWorkoutView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(sectionColor(for: name))
                 .tracking(1)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)
@@ -699,56 +702,52 @@ private struct ActiveExerciseCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-            // Exercise header — tappable to toggle collapse
-            Button {
-                onToggleCollapse()
-            } label: {
-                HStack(spacing: LiftMarkTheme.spacingSM) {
-                    Text("\(displayNumber)")
-                        .font(.caption.bold())
-                        .foregroundStyle(.white)
-                        .frame(width: 24, height: 24)
-                        .background(exerciseStatusColor)
-                        .clipShape(Circle())
+            // Exercise header
+            HStack(spacing: LiftMarkTheme.spacingSM) {
+                // Collapse toggle — covers number + name + spacer
+                Button {
+                    onToggleCollapse()
+                } label: {
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        Text("\(displayNumber)")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 24, height: 24)
+                            .background(exerciseStatusColor)
+                            .clipShape(Circle())
 
-                    Text(exercise.exerciseName)
-                        .font(.headline)
-                        .foregroundStyle(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
+                        Text(exercise.exerciseName)
+                            .font(.headline)
+                            .foregroundStyle(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
 
-                    Spacer()
+                        Spacer()
 
-                    if isCollapsed {
-                        Text("\(completedSetCount)/\(exercise.sets.count) sets")
-                            .font(.caption)
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                    } else {
-                        // Edit button
-                        Button {
-                            onEditExercise()
-                        } label: {
-                            Image(systemName: "pencil")
+                        if isCollapsed {
+                            Text("\(completedSetCount)/\(exercise.sets.count) sets")
                                 .font(.caption)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("edit-exercise-button-\(exerciseIndex)")
-
-                        // YouTube link
-                        if let url = youtubeSearchURL(for: exercise.exerciseName) {
-                            Link(destination: url) {
-                                Image(systemName: "play.rectangle")
-                                    .font(.caption)
-                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                            }
-                            .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
                     }
                 }
+                .buttonStyle(.plain)
+
+                // Edit button — separate from collapse toggle for reliable tap handling
+                if !isCollapsed {
+                    Button {
+                        onEditExercise()
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.body)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("edit-exercise-button-\(exerciseIndex)")
+                }
             }
-            .buttonStyle(.plain)
 
             if !isCollapsed {
                 // Notes — indented to align with title
@@ -780,6 +779,16 @@ private struct ActiveExerciseCard: View {
                         } : nil
                     )
 
+                    // Timed exercise timer — inline after the current set
+                    if setIndex == currentSetIndex,
+                       let targetTime = set.targetTime, targetTime > 0 {
+                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
+                            let weight = Double(currentWeightText)
+                            onCompleteSet(setIndex, weight, nil, elapsedSeconds)
+                        }
+                        .id(set.id)
+                    }
+
                     // Inline rest timer — placed after the last completed set
                     if let lastIdx = lastCompletedSetIndex, setIndex == lastIdx,
                        let restState = activeRestTimer {
@@ -809,16 +818,20 @@ private struct ActiveExerciseCard: View {
                     }
                 }
 
-                // Timed exercise timer — keyed by set ID so it resets between sets
-                if let currentIdx = currentSetIndex {
-                    let currentSet = exercise.sets[currentIdx]
-                    if let targetTime = currentSet.targetTime, targetTime > 0 {
-                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
-                            let weight = Double(currentWeightText)
-                            onCompleteSet(currentIdx, weight, nil, elapsedSeconds)
+                // YouTube search — bottom of expanded card
+                if let url = youtubeSearchURL(for: exercise.exerciseName) {
+                    Divider()
+                    Link(destination: url) {
+                        HStack(spacing: LiftMarkTheme.spacingSM) {
+                            Image(systemName: "play.rectangle")
+                                .font(.caption)
+                            Text("Search \"\(exercise.exerciseName)\" on YouTube")
+                                .font(.caption)
                         }
-                        .id(currentSet.id)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
                 }
             }
         }

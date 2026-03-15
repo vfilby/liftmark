@@ -212,7 +212,7 @@ struct HistoryDetailView: View {
 
     @ViewBuilder
     private func sectionHeader(name: String) -> some View {
-        HStack(spacing: LiftMarkTheme.spacingMD) {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)
@@ -221,6 +221,9 @@ struct HistoryDetailView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(sectionColor(for: name))
                 .tracking(1)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)

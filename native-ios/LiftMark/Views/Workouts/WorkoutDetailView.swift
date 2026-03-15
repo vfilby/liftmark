@@ -376,7 +376,7 @@ struct WorkoutDetailView: View {
 
     @ViewBuilder
     private func sectionHeader(name: String) -> some View {
-        HStack(spacing: LiftMarkTheme.spacingMD) {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)
@@ -385,6 +385,9 @@ struct WorkoutDetailView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(sectionColor(for: name))
                 .tracking(1)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             Rectangle()
                 .fill(sectionColor(for: name))
                 .frame(height: 1)
@@ -422,29 +425,9 @@ struct WorkoutDetailView: View {
                     }
 
                     // Exercise name
-                    HStack {
-                        Text(exercise.exerciseName)
-                            .font(.callout)
-                            .fontWeight(.semibold)
-                        Spacer()
-                        Button {
-                            editingPlanExercise = exercise
-                        } label: {
-                            Image(systemName: "pencil")
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("edit-plan-exercise-\(exercise.id)")
-                        if let url = youtubeSearchURL(for: exercise.exerciseName) {
-                            Link(destination: url) {
-                                Image(systemName: "play.rectangle")
-                                    .font(.caption)
-                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                            }
-                            .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
-                        }
-                    }
+                    Text(exercise.exerciseName)
+                        .font(.callout)
+                        .fontWeight(.semibold)
 
                     // Equipment
                     if let equipment = exercise.equipmentType {
@@ -461,6 +444,20 @@ struct WorkoutDetailView: View {
                             .italic()
                     }
                 }
+
+                Spacer()
+
+                // Edit button — larger tap target, top-right
+                Button {
+                    editingPlanExercise = exercise
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.body)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("edit-plan-exercise-\(exercise.id)")
             }
 
             // Sets
@@ -493,6 +490,22 @@ struct WorkoutDetailView: View {
                 }
             }
             .padding(.leading, 32)
+
+            // YouTube search — bottom of card, descriptive link
+            if let url = youtubeSearchURL(for: exercise.exerciseName) {
+                Divider()
+                Link(destination: url) {
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        Image(systemName: "play.rectangle")
+                            .font(.caption)
+                        Text("Search \"\(exercise.exerciseName)\" on YouTube")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
+            }
         }
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
