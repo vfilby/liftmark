@@ -295,7 +295,7 @@ Imported via `fileImportService.ts`. Reads `.txt`, `.md`, or `.markdown` files a
 
 ### LMWF Quick Reference
 
-Full spec in `docs/MARKDOWN_SPEC.md`. Example:
+Full spec in `liftmark-workout-format/MARKDOWN_SPEC.md`. Example:
 
 ```markdown
 # Push Day

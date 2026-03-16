@@ -1,5 +1,8 @@
 # LiftMark Workout Format (LMWF) Specification v1.0
 
+> This specification is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+> See `MARKDOWN_SPEC_LICENSE` for details.
+
 ## Overview
 
 The LiftMark Workout Format (LMWF) is a markdown-based format designed for easy workout creation and import. It's optimized to be:

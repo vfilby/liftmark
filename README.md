@@ -77,29 +77,23 @@ Configure your preferences:
 - **Live Activities**: Track workouts from lock screen
 - **AI Generation**: Configure API key for AI workout generation
 
-## LMWF Parser
+## LMWF Format
 
-The markdown parser (`src/services/MarkdownParser.ts`) implements the LiftMark Workout Format specification:
+The LiftMark Workout Format is a markdown-based syntax for defining workouts. The LMWF specification is openly licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) — anyone is free to use, adapt, and build on it.
 
-### Supported Features
-- Flexible header levels (workouts can be any H level)
-- Metadata (@tags, @units, @type)
-- Freeform notes
-- Set parsing (SetsxReps @Weight)
-- Set modifiers (@rpe, @rest, @tempo, @dropset)
-- Supersets and sections
-- Equipment types
-- Comprehensive validation with error messages
-- Warning system for non-critical issues
-
-See `docs/MARKDOWN_SPEC.md` for the full specification and `docs/QUICK_REFERENCE.md` for a quick syntax guide.
+See `liftmark-workout-format/MARKDOWN_SPEC.md` for the full specification.
 
 ## Tech Stack
 
-- **Expo SDK 54** / React Native 0.81 / TypeScript
-- **expo-router** for file-based navigation
-- **expo-sqlite** with repository pattern
-- **Zustand** for state management
-- **HealthKit**, **Live Activities**, **Clipboard** via native modules
+- **Swift 6.0** / SwiftUI
+- **GRDB.swift** for SQLite database
+- **HealthKit**, **ActivityKit**, **CloudKit** via Apple frameworks
+- **XCTest** / **XCUITest** for unit and UI testing
 
-See `CLAUDE.md` for build commands and `docs/DEVELOPER_DOCS.md` for developer documentation.
+See `CLAUDE.md` for build commands and developer documentation.
+
+## License
+
+The application code is licensed under the [Mozilla Public License 2.0](LICENSE).
+
+The [LMWF specification](liftmark-workout-format/MARKDOWN_SPEC.md) is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

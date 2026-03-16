@@ -36,9 +36,9 @@ The iOS app target MUST include the following entitlements:
 
 | App Target | File | Status |
 |------------|------|--------|
-| Swift | `native-ios/LiftMark/LiftMark.entitlements` | **Missing** — only has HealthKit entitlements |
+| Swift | `mobile-apps/ios/LiftMark/LiftMark.entitlements` | **Missing** — only has HealthKit entitlements |
 
-**Action required**: Add iCloud entitlements to `native-ios/LiftMark/LiftMark.entitlements`.
+**Action required**: Add iCloud entitlements to `mobile-apps/ios/LiftMark/LiftMark.entitlements`.
 
 ## Account Status
 
@@ -458,7 +458,7 @@ SyncResult {
 
 ## Implementation Checklist
 
-- [ ] Add iCloud entitlements to `native-ios/LiftMark/LiftMark.entitlements`
+- [ ] Add iCloud entitlements to `mobile-apps/ios/LiftMark/LiftMark.entitlements`
 - [ ] Add iCloud capability in Xcode project settings
 - [ ] Verify `CloudKitService.swift` uses container `iCloud.com.eff3.liftmark`
 - [ ] Implement `syncAll()` method using the record type mappings above

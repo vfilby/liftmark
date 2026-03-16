@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'native-ios/**'
+      - 'mobile-apps/ios/**'
       - 'e2e-spec/**'
       - '.github/workflows/swift-ci.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'native-ios/**'
+      - 'mobile-apps/ios/**'
       - 'e2e-spec/**'
       - '.github/workflows/swift-ci.yml'
 
@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
-        working-directory: native-ios
+        working-directory: mobile-apps/ios
 
     steps:
       - name: Checkout code
@@ -62,5 +62,5 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: native-ios/TestResults.xcresult
+          path: mobile-apps/ios/TestResults.xcresult
           retention-days: 7

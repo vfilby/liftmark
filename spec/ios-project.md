@@ -1,6 +1,6 @@
 # iOS Project Requirements
 
-This document defines the requirements for building a deployable iOS application from the LiftMark spec. Any iOS implementation (React Native or native Swift) must satisfy these requirements to be App Store deployable.
+This document defines the requirements for building a deployable native Swift iOS application from the LiftMark spec.
 
 ## Xcode Project Structure
 
@@ -159,7 +159,7 @@ Before any release:
 The Xcode project should mirror the filesystem layout:
 
 ```
-native-ios/
+mobile-apps/ios/
   LiftMark.xcodeproj/
   LiftMark/
     App/                    -- @main entry, ContentView

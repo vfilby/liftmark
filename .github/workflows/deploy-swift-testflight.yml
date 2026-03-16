@@ -22,7 +22,7 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
-        working-directory: native-ios
+        working-directory: mobile-apps/ios
 
     env:
       SCHEME: LiftMark

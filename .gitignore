@@ -1,33 +1,13 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
-# runtime
-.runtime/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
+# Native / signing
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
 
 # macOS
 .DS_Store
@@ -36,7 +16,7 @@ yarn-error.*
 # local env files
 .env*.local
 
-# typescript
+# typescript (lmwf-validator)
 *.tsbuildinfo
 
 # logs
@@ -67,8 +47,8 @@ PHASE_*.md
 # Xcode
 xcuserdata/
 *.xcuserstate
-native-ios/build/
-native-ios/.build/
+mobile-apps/ios/build/
+mobile-apps/ios/.build/
 
 # Gas Town (added by gt)
 .logs/

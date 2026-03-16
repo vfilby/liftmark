@@ -448,11 +448,12 @@ final class WorkoutExportIntegrationTests: XCTestCase {
 
     private func findProjectRoot() -> URL? {
         // Try to find the project root by walking up from the source file location
-        // The source file is at native-ios/LiftMarkTests/WorkoutExportIntegrationTests.swift
-        // Project root is 2 levels up from native-ios/
+        // The source file is at mobile-apps/ios/LiftMarkTests/WorkoutExportIntegrationTests.swift
+        // Project root is 3 levels up from mobile-apps/ios/
         let sourceFile = URL(fileURLWithPath: #filePath)
         var dir = sourceFile.deletingLastPathComponent() // LiftMarkTests/
-        dir = dir.deletingLastPathComponent() // native-ios/
+        dir = dir.deletingLastPathComponent() // ios/
+        dir = dir.deletingLastPathComponent() // mobile-apps/
         dir = dir.deletingLastPathComponent() // project root
 
         if FileManager.default.fileExists(atPath: dir.appendingPathComponent("spec").path) {

@@ -34,17 +34,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Structure
 
-- `native-ios/` — Native Swift iOS app
+- `mobile-apps/ios/` — Native Swift iOS app
+- `validator/` — LMWF validation service (TypeScript, AWS Lambda)
+- `liftmark-workout-format/` — LiftMark Workout Format specification (CC BY-SA 4.0)
+- `website/` — Project website
 - `spec/` — Shared specifications
 - `e2e-spec/` — Shared E2E test specifications
 - `docs/` — Documentation
 - `assets/` — Shared assets
+- `tools/` — Data export/validation test tools (Python)
+- `prompts/` — Prompt templates
 - `test-workouts/` — Test workout files
 - `test-fixtures/` — Test fixture files
 
 ## Build & Development
 
-All app commands run from `native-ios/`:
+All app commands run from `mobile-apps/ios/`:
 
 ```bash
 # From repo root — delegating Makefile
@@ -55,8 +60,8 @@ make test-ui          # Run UI tests only
 make generate         # Regenerate Xcode project
 make release-alpha    # Trigger TestFlight build
 
-# Or from native-ios/ directly
-cd native-ios
+# Or from mobile-apps/ios/ directly
+cd mobile-apps/ios
 make build
 make test
 make test-unit
@@ -73,10 +78,10 @@ Always push commits to main before releasing — `make release-alpha` creates a 
 
 Native Swift iOS fitness tracking app.
 
-### Directory Layout (native-ios/)
+### Directory Layout (mobile-apps/ios/)
 
 ```
-native-ios/
+mobile-apps/ios/
   LiftMark.xcodeproj/
   LiftMark/
     App/                    -- @main entry, ContentView
@@ -98,7 +103,7 @@ native-ios/
 
 ### LiftMark Workout Format (LMWF)
 
-Custom markdown-based format for workout plans. Full spec in `docs/MARKDOWN_SPEC.md`.
+Custom markdown-based format for workout plans. Full spec in `liftmark-workout-format/MARKDOWN_SPEC.md`. Licensed under CC BY-SA 4.0.
 
 ```markdown
 # Push Day
@@ -110,3 +115,8 @@ Custom markdown-based format for workout plans. Full spec in `docs/MARKDOWN_SPEC
 - 185 x 5
 - 225 x 5
 ```
+
+## License
+
+- **App code**: [Mozilla Public License 2.0](LICENSE)
+- **LMWF spec**: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)

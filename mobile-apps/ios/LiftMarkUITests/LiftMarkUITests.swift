@@ -19,7 +19,7 @@ final class LiftMarkUITests: XCTestCase {
         let projectRoot = ProcessInfo.processInfo.environment["PROJECT_DIR"]
             ?? (#filePath as NSString)
                 .deletingLastPathComponent  // LiftMarkUITests/
-                .appending("/../..")        // -> project root (LiftMark/)
+                .appending("/../../..")      // -> project root (LiftMark/)
 
         let scenariosPath = (projectRoot as NSString).appendingPathComponent("e2e-spec/scenarios")
         let fixturesPath = (projectRoot as NSString).appendingPathComponent("e2e-spec/fixtures")

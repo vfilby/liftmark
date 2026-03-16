@@ -5,7 +5,7 @@
 help:
 	@echo "LiftMark Build"
 	@echo ""
-	@echo "App (native-ios/):"
+	@echo "App (mobile-apps/ios/):"
 	@echo "  make build          - Build the app"
 	@echo "  make test           - Run all tests"
 	@echo "  make test-unit      - Run unit tests only"
@@ -19,22 +19,22 @@ help:
 	@echo "  make tools-generate   - Generate export fixture (ARGS='--single -o out.json')"
 
 build:
-	cd native-ios && make build
+	cd mobile-apps/ios && make build
 
 test:
-	cd native-ios && make test
+	cd mobile-apps/ios && make test
 
 test-unit:
-	cd native-ios && make test-unit
+	cd mobile-apps/ios && make test-unit
 
 test-ui:
-	cd native-ios && make test-ui
+	cd mobile-apps/ios && make test-ui
 
 generate:
-	cd native-ios && make generate
+	cd mobile-apps/ios && make generate
 
 release-alpha:
-	cd native-ios && make release-alpha
+	cd mobile-apps/ios && make release-alpha
 
 # Tools
 tools-test:

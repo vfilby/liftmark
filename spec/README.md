@@ -19,7 +19,7 @@ This specification is an **implementation-agnostic functional description** of L
 | **Rep** | A single repetition of an exercise movement. |
 | **Superset** | Two or more exercises performed back-to-back without rest between them. Represented as a group with interleaved sets during execution. |
 | **Section** | A named grouping within a workout (e.g., "Warmup", "Cooldown"). Sections organize exercises visually but don't change execution behavior. |
-| **LMWF** | LiftMark Workout Format. A custom markdown-based format for defining workout plans. See `docs/MARKDOWN_SPEC.md` for the full specification. |
+| **LMWF** | LiftMark Workout Format. A custom markdown-based format for defining workout plans. See `liftmark-workout-format/MARKDOWN_SPEC.md` for the full specification. |
 | **Gym** | A named location where the user works out. Each gym has its own set of available equipment. One gym is designated as the default. |
 | **Equipment** | A piece of exercise equipment (e.g., "barbell", "dumbbell", "cable machine") associated with a gym. Equipment can be toggled available/unavailable. Plans can be filtered by equipment availability. |
 | **Rest Timer** | A countdown timer that starts (automatically or manually) after completing a set. Duration is defined per-set via the `@rest` modifier in LMWF. |
@@ -61,7 +61,7 @@ spec/
 
 2. **Test IDs**: Use the IDs in `accessibility-ids.md` as the accessibility/test identifier contract. E2E tests reference these IDs, so implementations must attach them to the corresponding UI elements.
 
-3. **LMWF Parsing**: The `docs/MARKDOWN_SPEC.md` file in the main repository defines the workout format. Any implementation must parse and produce LMWF-compliant data.
+3. **LMWF Parsing**: The `liftmark-workout-format/MARKDOWN_SPEC.md` file in the main repository defines the workout format. Any implementation must parse and produce LMWF-compliant data.
 
 4. **Data Model**: The glossary above defines the core domain objects. Implementations should model their data layer around these concepts, regardless of the storage technology used.
 
