@@ -1,6 +1,6 @@
 # LMWF Validator
 
-Validation service for the [LiftMark Workout Format (LMWF)](../liftmark-workout-format/MARKDOWN_SPEC.md). Accepts workout markdown and returns structured validation results.
+Validation service for the [LiftMark Workout Format (LMWF)](../liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md). Accepts workout markdown and returns structured validation results.
 
 **Live endpoint:** `https://validate.liftmark.app/validate`
 
@@ -76,7 +76,7 @@ POST the markdown as JSON, check `success` in the response, and iterate on any `
 
 ## Format reference
 
-See the full [LMWF Markdown Specification](../liftmark-workout-format/MARKDOWN_SPEC.md) for the workout format.
+See the full [LMWF Markdown Specification](../liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md) for the workout format.
 
 Quick example:
 

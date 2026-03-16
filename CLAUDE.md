@@ -103,7 +103,7 @@ mobile-apps/ios/
 
 ### LiftMark Workout Format (LMWF)
 
-Custom markdown-based format for workout plans. Full spec in `liftmark-workout-format/MARKDOWN_SPEC.md`. Licensed under CC BY-SA 4.0.
+Custom markdown-based format for workout plans. Full spec in `liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md`. Licensed under CC BY-SA 4.0.
 
 ```markdown
 # Push Day

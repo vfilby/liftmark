@@ -1,7 +1,7 @@
 # LiftMark Workout Format (LMWF) Specification v1.0
 
 > This specification is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-> See `MARKDOWN_SPEC_LICENSE` for details.
+> See `LICENSE` for details.
 
 ## Overview
 

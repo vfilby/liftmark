@@ -81,7 +81,7 @@ Configure your preferences:
 
 The LiftMark Workout Format is a markdown-based syntax for defining workouts. The LMWF specification is openly licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) — anyone is free to use, adapt, and build on it.
 
-See `liftmark-workout-format/MARKDOWN_SPEC.md` for the full specification.
+See `liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md` for the full specification.
 
 ## Tech Stack
 
@@ -96,4 +96,4 @@ See `CLAUDE.md` for build commands and developer documentation.
 
 The application code is licensed under the [Mozilla Public License 2.0](LICENSE).
 
-The [LMWF specification](liftmark-workout-format/MARKDOWN_SPEC.md) is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The [LMWF specification](liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md) is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
