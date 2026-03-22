@@ -36,17 +36,9 @@ The following disclaimer text is displayed in a scrollable area with clear visua
 >
 > Strength training and physical exercise carry inherent risks including injury, disability, and in rare cases death. By using this app, you acknowledge these risks and accept full responsibility for your physical safety during workouts.
 >
-> **Not Medical Advice**
->
-> Nothing in this app constitutes medical advice. Consult a qualified healthcare provider before starting any exercise program, especially if you have pre-existing health conditions.
->
 > **Younger Users**
 >
 > If you are under 18, we recommend working with a parent, guardian, or qualified fitness professional when performing strength training exercises.
->
-> **No Warranty**
->
-> This app is provided as-is. The developers are not liable for any injury, loss, or damage arising from the use of this app or reliance on any data it records.
 
 ### Bottom Section — Accept Button
 

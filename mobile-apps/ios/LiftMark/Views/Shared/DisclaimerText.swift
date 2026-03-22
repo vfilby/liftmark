@@ -14,18 +14,8 @@ struct DisclaimerText: View {
             )
 
             disclaimerSection(
-                title: "Not Medical Advice",
-                body: "Nothing in this app constitutes medical advice. Consult a qualified healthcare provider before starting any exercise program, especially if you have pre-existing health conditions."
-            )
-
-            disclaimerSection(
                 title: "Younger Users",
                 body: "If you are under 18, we recommend working with a parent, guardian, or qualified fitness professional when performing strength training exercises."
-            )
-
-            disclaimerSection(
-                title: "No Warranty",
-                body: "This app is provided as-is. The developers are not liable for any injury, loss, or damage arising from the use of this app or reliance on any data it records."
             )
         }
     }
