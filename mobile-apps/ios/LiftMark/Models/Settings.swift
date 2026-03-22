@@ -19,6 +19,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var showOpenInClaudeButton: Bool
     var developerModeEnabled: Bool
     var countdownSoundsEnabled: Bool
+    var hasAcceptedDisclaimer: Bool
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -39,6 +40,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         showOpenInClaudeButton: Bool = false,
         developerModeEnabled: Bool = false,
         countdownSoundsEnabled: Bool = true,
+        hasAcceptedDisclaimer: Bool = false,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -58,6 +60,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.showOpenInClaudeButton = showOpenInClaudeButton
         self.developerModeEnabled = developerModeEnabled
         self.countdownSoundsEnabled = countdownSoundsEnabled
+        self.hasAcceptedDisclaimer = hasAcceptedDisclaimer
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -84,6 +87,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var showOpenInClaudeButton: Int // SQLite boolean
     var developerModeEnabled: Int // SQLite boolean
     var countdownSoundsEnabled: Int // SQLite boolean
+    var hasAcceptedDisclaimer: Int // SQLite boolean
     var homeTiles: String? // JSON array
     var createdAt: String
     var updatedAt: String
@@ -104,6 +108,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case showOpenInClaudeButton = "show_open_in_claude_button"
         case developerModeEnabled = "developer_mode_enabled"
         case countdownSoundsEnabled = "countdown_sounds_enabled"
+        case hasAcceptedDisclaimer = "has_accepted_disclaimer"
         case homeTiles = "home_tiles"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

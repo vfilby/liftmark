@@ -1,0 +1,66 @@
+# Onboarding Screen
+
+## Purpose
+
+Welcome new users and present a legal disclaimer that must be accepted before using the app.
+
+## Presentation
+
+- Full screen, no tab bar, no navigation bar
+- Shown once on first launch when `hasAcceptedDisclaimer` is `false`
+- Cannot be dismissed — user must tap "I Understand" to proceed
+
+## Layout
+
+### Top Section — Welcome
+
+- **App icon** (centered, moderate size)
+- **Title**: "Welcome to LiftMark"
+- **Subtitle**: "Your workout tracking companion"
+
+### Middle Section — Brief Explanation
+
+A short paragraph explaining what the app does:
+
+> LiftMark helps you track your strength training workouts. Import workout plans, log your sets, reps, and weights during sessions, and review your progress over time.
+
+### Disclaimer Section — Scrollable
+
+The following disclaimer text is displayed in a scrollable area with clear visual distinction (e.g., secondary background, inset card):
+
+> **Tracking Only**
+>
+> LiftMark is a workout tracking tool. It does not provide exercise instruction, form guidance, coaching, or medical advice. You are solely responsible for knowing how to safely perform any exercises you track.
+>
+> **Assumption of Risk**
+>
+> Strength training and physical exercise carry inherent risks including injury, disability, and in rare cases death. By using this app, you acknowledge these risks and accept full responsibility for your physical safety during workouts.
+>
+> **Not Medical Advice**
+>
+> Nothing in this app constitutes medical advice. Consult a qualified healthcare provider before starting any exercise program, especially if you have pre-existing health conditions.
+>
+> **Younger Users**
+>
+> If you are under 18, we recommend working with a parent, guardian, or qualified fitness professional when performing strength training exercises.
+>
+> **No Warranty**
+>
+> This app is provided as-is. The developers are not liable for any injury, loss, or damage arising from the use of this app or reliance on any data it records.
+
+### Bottom Section — Accept Button
+
+- **"I Understand"** button (primary style, full width)
+  - testID: `onboarding-accept-button`
+  - On tap: sets `hasAcceptedDisclaimer = true`, transitions to Home Screen
+
+## Test IDs
+
+| Element | testID |
+|---------|--------|
+| Onboarding screen | `onboarding-screen` |
+| Accept button | `onboarding-accept-button` |
+
+## Settings Re-access
+
+The disclaimer text (without the accept button) is accessible from **Settings > About > Disclaimer** as a read-only view. This uses a shared component or identical text constant to ensure consistency.

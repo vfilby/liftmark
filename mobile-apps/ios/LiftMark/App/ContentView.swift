@@ -4,6 +4,7 @@ struct ContentView: View {
     @Binding var pendingImportContent: String?
     @Environment(SettingsStore.self) private var settingsStore
     @State private var showPendingImport = false
+    @State private var showOnboarding = false
     @State private var navCoordinator = NavigationCoordinator()
 
     private var colorScheme: ColorScheme? {
@@ -51,6 +52,20 @@ struct ContentView: View {
         }
         .tint(LiftMarkTheme.tabIconSelected)
         .preferredColorScheme(colorScheme)
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                guard var updated = settingsStore.settings else { return }
+                updated.hasAcceptedDisclaimer = true
+                settingsStore.updateSettings(updated)
+                showOnboarding = false
+            }
+        }
+        .onAppear {
+            updateOnboardingState()
+        }
+        .onChange(of: settingsStore.settings?.hasAcceptedDisclaimer) {
+            updateOnboardingState()
+        }
         .sheet(isPresented: $showPendingImport) {
             ImportView(initialContent: pendingImportContent ?? "")
                 .onDisappear {
@@ -61,6 +76,13 @@ struct ContentView: View {
             if pendingImportContent != nil {
                 showPendingImport = true
             }
+        }
+    }
+
+    private func updateOnboardingState() {
+        let needsOnboarding = settingsStore.settings != nil && !(settingsStore.settings?.hasAcceptedDisclaimer ?? false)
+        if needsOnboarding != showOnboarding {
+            showOnboarding = needsOnboarding
         }
     }
 }

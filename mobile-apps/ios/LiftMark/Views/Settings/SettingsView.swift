@@ -528,6 +528,12 @@ struct SettingsView: View {
             Text(appBuildString)
                 .foregroundStyle(.secondary)
         }
+        NavigationLink {
+            DisclaimerView()
+        } label: {
+            Text("Disclaimer")
+        }
+        .accessibilityIdentifier("disclaimer-button")
     }
 
     // MARK: - Developer Mode

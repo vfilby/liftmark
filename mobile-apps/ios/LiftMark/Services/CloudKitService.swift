@@ -1397,6 +1397,7 @@ final class CloudKitService: @unchecked Sendable {
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? Int64(existing.showOpenInClaudeButton)),
                     developerModeEnabled: existing.developerModeEnabled,
                     countdownSoundsEnabled: Int(int64Field(record, "countdownSoundsEnabled") ?? Int64(existing.countdownSoundsEnabled)),
+                    hasAcceptedDisclaimer: existing.hasAcceptedDisclaimer, // Never sync — local-only
                     homeTiles: stringField(record, "homeTiles") ?? existing.homeTiles,
                     createdAt: existing.createdAt,
                     updatedAt: updatedAt
@@ -1422,6 +1423,7 @@ final class CloudKitService: @unchecked Sendable {
                     showOpenInClaudeButton: Int(int64Field(record, "showOpenInClaudeButton") ?? 0),
                     developerModeEnabled: 0,
                     countdownSoundsEnabled: Int(int64Field(record, "countdownSoundsEnabled") ?? 1),
+                    hasAcceptedDisclaimer: 0, // New device — must accept again
                     homeTiles: stringField(record, "homeTiles"),
                     createdAt: now,
                     updatedAt: dateToISO(remoteUpdatedAt) ?? now

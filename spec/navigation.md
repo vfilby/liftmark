@@ -31,6 +31,9 @@ Inactive tab tint: theme `tabIconDefault` (default `#8E8E93`).
 The root navigator is a native stack (`Stack`) that contains the tab navigator and all non-tab screens. It provides shared header styling from the theme.
 
 ```
+Root
+  |-- onboarding                [fullScreenCover, shown once when hasAcceptedDisclaimer=false]
+  |
 Root Stack
   |-- (tabs)                    [headerShown: false]
   |     |-- index               Home

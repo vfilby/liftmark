@@ -1,0 +1,20 @@
+name: "Onboarding"
+
+tests:
+  - name: "onboarding screen is shown on first launch and dismisses on accept"
+    tags: ["onboarding"]
+    steps:
+      - action: launchApp
+        newInstance: true
+        launchArgs: ["--show-onboarding"]
+      - action: waitFor
+        target: "onboarding-screen"
+        timeout: 10000
+      - action: expect
+        target: "onboarding-accept-button"
+        assertion: "toBeVisible"
+      - action: tap
+        target: "onboarding-accept-button"
+      - action: waitFor
+        target: "home-screen"
+        timeout: 10000

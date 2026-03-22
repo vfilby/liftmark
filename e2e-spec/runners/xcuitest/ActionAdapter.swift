@@ -487,15 +487,37 @@ class ActionAdapter {
         if action.newInstance == true {
             app.terminate()
         }
+        // Build launch arguments from scratch each time
+        var args: [String] = []
+
         // Reset data on first launch of each scenario for test isolation
         if isFirstLaunch {
-            app.launchArguments = app.launchArguments.filter { $0 != "--reset-data" }
-            app.launchArguments.append("--reset-data")
+            args.append("--reset-data")
             isFirstLaunch = false
-        } else {
-            app.launchArguments = app.launchArguments.filter { $0 != "--reset-data" }
         }
+
+        // Apply additional launch arguments from the YAML action
+        if case .array(let yamlArgs) = action.launchArgs {
+            for arg in yamlArgs {
+                if case .string(let value) = arg {
+                    args.append(value)
+                }
+            }
+        }
+
+        app.launchArguments = args
         app.launch()
+
+        // Auto-dismiss onboarding disclaimer on fresh launches
+        if !args.contains("--show-onboarding") {
+            // Try multiple element types since SwiftUI may render the button differently
+            let acceptButton = app.descendants(matching: .any)["onboarding-accept-button"]
+            if acceptButton.waitForExistence(timeout: 5) {
+                acceptButton.tap()
+                // Wait for onboarding to fully dismiss
+                _ = app.descendants(matching: .any)["home-screen"].waitForExistence(timeout: 10)
+            }
+        }
     }
 
     private func executeOpenURL(_ action: TestAction) throws {
@@ -513,6 +535,13 @@ class ActionAdapter {
         app.terminate()
         app.launchArguments = ["-url", url]
         app.launch()
+
+        // Auto-dismiss onboarding if it appears after URL launch
+        let acceptButton = app.descendants(matching: .any)["onboarding-accept-button"]
+        if acceptButton.waitForExistence(timeout: 5) {
+            acceptButton.tap()
+            _ = app.descendants(matching: .any)["home-screen"].waitForExistence(timeout: 10)
+        }
     }
 
     private func executeDismissAlert(_ action: TestAction) throws {

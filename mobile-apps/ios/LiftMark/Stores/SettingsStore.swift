@@ -31,6 +31,7 @@ final class SettingsStore {
                 showOpenInClaudeButton: row.showOpenInClaudeButton != 0,
                 developerModeEnabled: row.developerModeEnabled != 0,
                 countdownSoundsEnabled: row.countdownSoundsEnabled != 0,
+                hasAcceptedDisclaimer: row.hasAcceptedDisclaimer != 0,
                 homeTiles: row.homeTiles.flatMap { data in
                     (try? JSONDecoder().decode([String].self, from: Data(data.utf8)))
                 },
@@ -63,6 +64,7 @@ final class SettingsStore {
                         show_open_in_claude_button = ?,
                         developer_mode_enabled = ?,
                         countdown_sounds_enabled = ?,
+                        has_accepted_disclaimer = ?,
                         home_tiles = ?,
                         updated_at = ?
                     WHERE id = ?
@@ -80,6 +82,7 @@ final class SettingsStore {
                     settings.showOpenInClaudeButton ? 1 : 0,
                     settings.developerModeEnabled ? 1 : 0,
                     settings.countdownSoundsEnabled ? 1 : 0,
+                    settings.hasAcceptedDisclaimer ? 1 : 0,
                     homeTilesJSON,
                     now,
                     settings.id

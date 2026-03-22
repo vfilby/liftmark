@@ -95,4 +95,8 @@ final class LiftMarkUITests: XCTestCase {
         runner.runScenario(named: "database-backup")
     }
 
+    func testOnboarding() throws {
+        runner.runScenario(named: "onboarding")
+    }
+
 }

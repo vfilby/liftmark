@@ -206,6 +206,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   home_tiles                  TEXT,
   developer_mode_enabled      INTEGER DEFAULT 0,     -- Boolean: hidden developer menu
   countdown_sounds_enabled    INTEGER DEFAULT 1,     -- Boolean: audible countdown ticks
+  has_accepted_disclaimer     INTEGER DEFAULT 0,     -- Boolean: onboarding disclaimer accepted
   created_at                  TEXT NOT NULL,
   updated_at                  TEXT NOT NULL
 );

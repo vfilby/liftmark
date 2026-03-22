@@ -6,6 +6,15 @@ Implementations on any platform must attach these identifiers to the correspondi
 
 ---
 
+## Onboarding Screen
+
+| ID | Element Type | Purpose |
+|----|-------------|---------|
+| `onboarding-screen` | View | Onboarding screen container |
+| `onboarding-accept-button` | Button | "I Understand" disclaimer acceptance |
+
+---
+
 ## Tab Bar
 
 | ID | Element Type | Purpose |

@@ -9,7 +9,7 @@ final class DatabaseManager: @unchecked Sendable {
     private var dbQueue: DatabaseQueue?
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 6
+    private static let currentSchemaVersion = 7
 
     private init() {}
 
@@ -120,6 +120,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 6 {
                 try migrateToV6(db)
+            }
+
+            if currentVersion < 7 {
+                try migrateToV7(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -391,6 +395,10 @@ final class DatabaseManager: @unchecked Sendable {
 
     private func migrateToV6(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN side TEXT")
+    }
+
+    private func migrateToV7(_ db: Database) throws {
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN has_accepted_disclaimer INTEGER DEFAULT 0")
     }
 
     private func migrateToV4(_ db: Database) throws {

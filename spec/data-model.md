@@ -203,6 +203,7 @@ Singleton record for user preferences.
 | liveActivitiesEnabled | boolean | Yes | true | Show on lock screen |
 | keepScreenAwake | boolean | Yes | true | During active workouts |
 | showOpenInClaudeButton | boolean | Yes | false | Always show "Open in Claude" button |
+| hasAcceptedDisclaimer | boolean | Yes | false | Whether user has accepted the onboarding disclaimer |
 | homeTiles | string[] | No | [Squat, Deadlift, Bench Press, Overhead Press] | Custom home screen max lift tiles |
 | createdAt | datetime | Yes | — | ISO 8601 |
 | updatedAt | datetime | Yes | — | ISO 8601 |
