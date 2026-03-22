@@ -1,6 +1,6 @@
 # LiftMark Build
 
-.PHONY: help build test test-unit test-ui generate release-alpha tools-test tools-validate tools-generate
+.PHONY: help build test test-unit test-ui generate release-alpha tools-test tools-validate tools-generate spec-generate spec-check
 
 help:
 	@echo "LiftMark Build"
@@ -12,6 +12,10 @@ help:
 	@echo "  make test-ui        - Run UI tests only"
 	@echo "  make generate       - Regenerate Xcode project"
 	@echo "  make release-alpha  - Trigger TestFlight build"
+	@echo ""
+	@echo "Spec:"
+	@echo "  make spec-generate  - Generate LMWF spec from template (validates examples)"
+	@echo "  make spec-check     - Validate spec examples without generating"
 	@echo ""
 	@echo "Tools:"
 	@echo "  make tools-test       - Run tools tests"
@@ -35,6 +39,13 @@ generate:
 
 release-alpha:
 	cd mobile-apps/ios && make release-alpha
+
+# Spec
+spec-generate:
+	cd liftmark-workout-format && npx --prefix=../validator tsx generate-spec.ts
+
+spec-check:
+	cd liftmark-workout-format && npx --prefix=../validator tsx generate-spec.ts --check
 
 # Tools
 tools-test:

@@ -73,63 +73,16 @@ Every workout follows this hierarchical structure:
 ```
 
 **With freeform notes:**
-```markdown
-# Push Day A
-
-Feeling strong today, going for PRs on bench.
-Sleep was good, nutrition on point.
-
-## Bench Press
-- 225 x 5
-```
+<!-- EXAMPLE: valid/push-day-with-notes.md -->
 
 **With tags:**
-```markdown
-# Push Day A
-@tags: push, strength, upper
-
-Ready to hit some PRs today!
-
-## Bench Press
-- 225 x 5
-```
+<!-- EXAMPLE: valid/push-day-with-tags.md -->
 
 **With default units:**
-```markdown
-# Push Day
-@units: kg
-
-Prefer using kilograms - easier for tracking.
-
-## Bench Press
-- 100 x 5
-- 110 x 5
-- 120 kg x 3
-- 225 lbs x 1
-
-## Overhead Press
-- 50 x 8
-- 55 x 8
-```
+<!-- EXAMPLE: valid/push-day-with-units.md -->
 
 **Flexible header levels for document organization:**
-```markdown
-# My Training Log
-
-Weekly notes: Focusing on progressive overload this month.
-
-## Week 1 - Day 1: Push
-@tags: push
-
-Great session, felt strong.
-
-### Bench Press
-- 225 x 5
-- 245 x 3
-
-### Overhead Press
-- 135 x 8
-```
+<!-- EXAMPLE: valid/flexible-headers.md -->
 
 Note: The workout is "Week 1 - Day 1: Push" (the first header with exercises). Headers above it are for document organization.
 
@@ -155,77 +108,16 @@ Note: The workout is "Week 1 - Day 1: Push" (the first header with exercises). H
 ```
 
 **With freeform notes:**
-```markdown
-# Push Day
-
-## Bench Press
-
-Retract scapula, touch chest on every rep.
-Focus on driving through the floor.
-
-- 135 lbs x 5 reps
-- 185 lbs x 5 reps
-- 225 lbs x 5 reps
-```
+<!-- EXAMPLE: valid/exercise-with-notes.md -->
 
 **With optional type:**
-```markdown
-# Workout
-
-## Bench Press
-@type: barbell
-
-- 135 lbs x 5 reps
-- 185 lbs x 5 reps
-
-## Band Pull-Apart
-@type: resistance band
-
-- 20 reps
-- 20 reps
-```
+<!-- EXAMPLE: valid/exercise-with-type.md -->
 
 **Superset (nested headers):**
-```markdown
-# Arm Day
-
-## Superset: Arms
-
-### Dumbbell Curl
-- 30 lbs x 12
-- 30 lbs x 12
-- 30 lbs x 10
-
-### Tricep Extension
-- 40 lbs x 12
-- 40 lbs x 12
-- 40 lbs x 12
-```
+<!-- EXAMPLE: valid/superset.md -->
 
 **Multiple supersets:**
-```markdown
-# Upper Body Finisher
-
-## Superset 1
-
-### Cable Fly
-- 30 lbs x 15
-- 30 lbs x 15
-
-### Dumbbell Pullover
-- 50 lbs x 15
-- 50 lbs x 15
-
-## Superset 2
-
-### Lateral Raise
-- 20 lbs x 12
-- 20 lbs x 12
-
-### Face Pull
-- 40 lbs x 15
-- 40 lbs x 15
-```
+<!-- EXAMPLE: valid/multiple-supersets.md -->
 
 ---
 
@@ -357,26 +249,7 @@ Pull heel to glutes, keep knees together
 
 For tempo, RPE, and other descriptive data, use freeform notes:
 
-```markdown
-# Modifier Examples
-@tags: demo
-
-## Bench Press
-
-Going for slow tempo today - 3-0-1-0 on all sets.
-Felt really strong, first set was maybe a 7, last set was a hard 9.
-
-- 185 lbs x 8 reps @rest: 90s
-- 205 lbs x 6 reps @rest: 90s
-- 225 lbs x 4 reps @rest: 90s
-
-## Pause Squat
-
-2 second pause at bottom, really focusing on staying tight.
-
-- 315 lbs x 3 reps @rest: 180s
-- 315 lbs x 3 reps @rest: 180s
-```
+<!-- EXAMPLE: valid/modifiers-rest-and-dropset.md -->
 
 ---
 
@@ -384,283 +257,35 @@ Felt really strong, first set was maybe a 7, last set was a hard 9.
 
 ### Example 1: Beginner Full Body
 
-```markdown
-# Full Body A
-@tags: beginner, full-body
-
-First week back, keeping it light and focusing on form.
-
-## Squat
-- 135 x 5
-- 135 x 5
-- 135 x 5
-
-## Bench Press
-- 95 x 5
-- 95 x 5
-- 95 x 5
-
-## Barbell Row
-- 85 x 8
-- 85 x 8
-- 85 x 8
-```
+<!-- EXAMPLE: valid/beginner-full-body.md -->
 
 ### Example 2: Advanced Powerlifting
 
-```markdown
-# Squat Day - Week 3 Heavy
-@tags: powerlifting, squat, heavy
-
-Competition prep, 4 weeks out. Feeling good, bodyweight at 220.
-
-## Low Bar Squat
-
-Competition depth, belt on work sets starting at 315.
-Warmups felt easy (RPE 4-5), working sets got tough (8-9.5).
-
-- 135 lbs x 5 reps @rest: 60s
-- 225 lbs x 5 reps @rest: 90s
-- 315 lbs x 3 reps @rest: 120s
-- 365 lbs x 1 reps @rest: 180s
-- 405 lbs x 3 reps @rest: 300s
-- 405 lbs x 3 reps @rest: 300s
-- 405 lbs x 3 reps @rest: 300s
-
-## Pause Squat
-
-2 second pause at bottom, 3-2-3-0 tempo, no belt.
-
-- 315 lbs x 3 reps @rest: 180s
-- 315 lbs x 3 reps @rest: 180s
-- 315 lbs x 3 reps @rest: 180s
-
-## Front Squat
-- 225 lbs x 5 reps @rest: 120s
-- 225 lbs x 5 reps @rest: 120s
-- 225 lbs x 5 reps @rest: 120s
-
-## Leg Curl
-- 90 lbs x 12 reps @rest: 60s
-- 90 lbs x 12 reps @rest: 60s
-- 90 lbs x 12 reps @rest: 60s
-```
+<!-- EXAMPLE: valid/advanced-powerlifting.md -->
 
 ### Example 3: Bodybuilding with Supersets
 
-```markdown
-# Chest & Triceps
-@tags: bodybuilding, push, hypertrophy
-
-## Barbell Bench Press
-- 135 lbs x 12 reps @rest: 90s
-- 185 lbs x 10 reps @rest: 90s
-- 205 lbs x 8 reps @rest: 90s
-- 205 lbs x 8 reps @rest: 90s
-
-## Incline Dumbbell Press
-- 70 lbs x 12 reps @rest: 90s
-- 75 lbs x 10 reps @rest: 90s
-- 75 lbs x 9 reps @rest: 90s
-
-## Superset: Chest Finisher
-
-### Cable Fly
-- 30 lbs x 15 reps @rest: 30s
-- 30 lbs x 15 reps @rest: 30s
-- 30 lbs x 12 reps @rest: 30s
-
-### Dumbbell Pullover
-- 50 lbs x 15 reps @rest: 90s
-- 50 lbs x 15 reps @rest: 90s
-- 50 lbs x 15 reps @rest: 90s
-
-## Tricep Pushdown
-
-Final set is a drop set.
-
-- 60 lbs x 15 reps @rest: 60s
-- 70 lbs x 12 reps @rest: 60s
-- 80 lbs x 10 reps @rest: 60s
-- 60 lbs x 15 reps @dropset
-```
+<!-- EXAMPLE: valid/bodybuilding-supersets.md -->
 
 ### Example 4: Bodyweight & Time-Based
 
-```markdown
-# Calisthenics
-@tags: bodyweight, calisthenics
-
-## Pull-ups
-- 10 @rest: 120s
-- 8 @rest: 120s
-- 6 @rest: 120s
-- AMRAP
-
-## Dips
-- 12 @rest: 90s
-- 10 @rest: 90s
-- 8 @rest: 90s
-
-## Plank
-
-Adding weight on last two sets.
-
-- 60s @rest: 30s
-- 45 lbs x 60s @rest: 30s
-- 45 lbs for 45s
-
-## Weighted Plank Hold
-- 45 lbs for 45s @rest: 60s
-- 25 lbs for 60s
-
-## Hanging Leg Raise
-- 15 @rest: 60s
-- 12 @rest: 60s
-- 10 @rest: 60s
-```
+<!-- EXAMPLE: valid/bodyweight-time-based.md -->
 
 ### Example 5: CrossFit/HIIT Circuit
 
-```markdown
-# Workout: EMOM 20
-@date: 2026-01-15
-@tags: crossfit, conditioning, EMOM
-@notes: Every minute on the minute for 20 minutes
-
-## Kettlebell Swing
-@type: other
-@circuit: A
-- 53 lbs x 15 reps
-
-## Box Jump
-@type: bodyweight
-@circuit: A
-- 24 inches x 10 reps
-
-## Burpee
-@type: bodyweight
-@circuit: A
-- 10
-
-## Row
-@type: machine
-@circuit: A
-- 200m
-```
+<!-- EXAMPLE: valid/crossfit-hiit.md -->
 
 ### Example 6: Olympic Lifting
 
-```markdown
-# Workout: Snatch Technique
-@date: 2026-01-15
-@tags: weightlifting, snatch, technique
-
-## Snatch
-@type: barbell
-
-Focus on third pull, fast elbows.
-
-- 45 lbs x 5 reps @rest: 90s
-- 75 lbs x 3 reps @rest: 90s
-- 95 lbs x 2 reps @rest: 120s
-- 115 lbs x 2 reps @rest: 150s
-- 135 lbs x 1 reps @rest: 180s
-- 155 lbs x 1 reps @rest: 180s
-- 165 lbs x 1 reps @rest: 180s
-- 165 lbs x 1 reps @rest: 180s
-
-## Snatch Pull
-@type: barbell
-- 175 lbs x 3 reps @rest: 120s
-- 185 lbs x 3 reps @rest: 120s
-- 185 lbs x 3 reps @rest: 120s
-
-## Overhead Squat
-@type: barbell
-- 95 lbs x 5 reps @rest: 90s
-- 115 lbs x 3 reps @rest: 90s
-- 135 lbs x 3 reps @rest: 90s
-- 135 lbs x 3 reps @rest: 90s
-```
+<!-- EXAMPLE: valid/olympic-lifting.md -->
 
 ### Example 7: Workout with Warmup and Cooldown
 
-```markdown
-# Push Day
-@tags: strength, push
-
-## Warmup
-
-### Arm Circles
-- 10 reps
-
-### Band Pull-Aparts
-- 20 reps
-
-### Light Bench Press
-- 45 lbs x 10
-- 95 lbs x 5
-
-## Bench Press
-
-Last two sets felt hard - 8/10 and 9/10 effort.
-
-- 135 lbs x 5 @rest: 120s
-- 185 lbs x 5 @rest: 180s
-- 225 lbs x 5 @rest: 180s
-- 245 lbs x 3
-
-## Overhead Press
-
-Final set was tough, really close to failure.
-
-- 95 lbs x 8 @rest: 90s
-- 115 lbs x 8 @rest: 90s
-- 135 lbs x 6
-
-## Cooldown
-
-### Chest Stretch
-- 60s
-
-### Shoulder Stretch
-- 60s
-
-### Foam Rolling
-- 2m
-```
+<!-- EXAMPLE: valid/warmup-cooldown.md -->
 
 ### Example 8: Rehabilitation/Physical Therapy
 
-```markdown
-# Knee Rehab - Day 3
-@tags: rehab, knee, physical-therapy
-
-No pain during exercises, feeling good. PT says I can progress weight next week.
-
-## Terminal Knee Extension
-- 10 lbs x 20 reps @rest: 30s
-- 10 lbs x 20 reps @rest: 30s
-- 10 lbs x 20 reps @rest: 30s
-
-## Wall Sit
-- 30s @rest: 60s
-- 30s @rest: 60s
-- 30s @rest: 60s
-
-## Single Leg Balance
-
-Eyes closed on last set.
-
-- 45s @rest: 30s
-- 45s @rest: 30s
-- 30s
-
-## Leg Curl
-- 20 lbs x 15 reps @rest: 45s
-- 20 lbs x 15 reps @rest: 45s
-```
+<!-- EXAMPLE: valid/rehabilitation.md -->
 
 ---
 
@@ -690,54 +315,22 @@ Eyes closed on last set.
 ### Error Examples
 
 **Invalid - No workout header:**
-```markdown
-## Squats
-- 225 x 5
-```
-❌ No workout header found. Must have a header (# Workout Name) with exercises below it.
+<!-- EXAMPLE: errors/no-workout-header.md EXPECT_ERROR -->
 
 **Invalid - No exercises:**
-```markdown
-# Empty Workout
-@tags: test
-
-Some notes but no exercises.
-```
-❌ No workout header found. Must have a header (# Workout Name) with exercises below it.
+<!-- EXAMPLE: errors/no-exercises.md EXPECT_ERROR -->
 
 **Invalid - No sets:**
-```markdown
-# Workout: Test
-## Bench Press
-```
-❌ No workout header found. Must have a header (# Workout Name) with exercises below it.
+<!-- EXAMPLE: errors/no-sets.md EXPECT_ERROR -->
 
 **Invalid - Negative weight:**
-```markdown
-# Workout: Test
-## Squat
-- -135 x 5
-```
-❌ Line 3: Invalid set format: "-135 x 5". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 2: Exercise "Squat" has no sets
+<!-- EXAMPLE: errors/negative-weight.md EXPECT_ERROR -->
 
 **Invalid - Invalid rest time:**
-```markdown
-# Workout: Test
-## Bench Press
-- 225 x 5 @rest: -30s
-```
-❌ Line 3: Invalid rest time format: -30s. Expected format: "180s" or "3m"
+<!-- EXAMPLE: errors/invalid-rest.md EXPECT_ERROR -->
 
 **Invalid - Invalid units:**
-```markdown
-# Workout: Test
-@units: pounds
-
-## Bench Press
-- 225 x 5
-```
-❌ Line 2: Invalid @units value "pounds". Must be "lbs" or "kg"
+<!-- EXAMPLE: errors/invalid-units.md EXPECT_ERROR -->
 
 ---
 
