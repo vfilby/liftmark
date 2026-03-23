@@ -286,6 +286,7 @@ All of these are valid:
 - 45 lbs x 60s  # Weighted plank with 45lb plate for 60 seconds
 - 100 kg x 30s  # Weighted holds
 - 25 lbs for 45s # Alternative "for" syntax
+- bw for 60s    # Bodyweight "for" syntax
 
 # AMRAP
 - 135 x AMRAP
@@ -1329,8 +1330,8 @@ Pull heel to glutes, keep knees together
 - 70 lbs for 30s
 
 ## Dead Hang
-- bw x 60s
-- bw x 45s
+- bw for 60s
+- bw for 45s
 ```
 
 **TC-V19: Single superset**
@@ -1699,6 +1700,8 @@ Today is the big one. Eat well, sleep well, lift well.
 - 100 kg x 30s
 - 25 lbs for 45s
 - 50 kg for 30s
+- bw for 60s
+- bw x 30s
 
 ## AMRAP Variations
 - 135 x AMRAP
@@ -1851,15 +1854,17 @@ Forgot to add sets here.
 ❌ Line 5: Invalid set format: "best session ever". Expected format: "weight unit x reps" or "time" or "AMRAP"
 ❌ Line 2: Exercise "Bench Press" has no sets
 
-**TC-E14: Unit without weight number**
+**TC-E14: Weight with unit but no reps/time**
 ```markdown
-# Bad Set Format
+# Incomplete Sets
 ## Squat
-- lbs x 5
-- kg x 8
+- 135 lbs
+- 225 lbs
+- 100 kg
 ```
-❌ Line 3: Invalid set format: "lbs x 5". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 4: Invalid set format: "kg x 8". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Incomplete set: "135 lbs". Weight with unit requires reps (x 5) or time (x 60s)
+❌ Line 4: Incomplete set: "225 lbs". Weight with unit requires reps (x 5) or time (x 60s)
+❌ Line 5: Incomplete set: "100 kg". Weight with unit requires reps (x 5) or time (x 60s)
 ❌ Line 2: Exercise "Squat" has no sets
 
 **TC-E15: Zero reps**

@@ -24,6 +24,8 @@
 - 100 kg x 30s
 - 25 lbs for 45s
 - 50 kg for 30s
+- bw for 60s
+- bw x 30s
 
 ## AMRAP Variations
 - 135 x AMRAP

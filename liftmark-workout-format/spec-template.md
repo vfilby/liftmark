@@ -178,6 +178,7 @@ All of these are valid:
 - 45 lbs x 60s  # Weighted plank with 45lb plate for 60 seconds
 - 100 kg x 30s  # Weighted holds
 - 25 lbs for 45s # Alternative "for" syntax
+- bw for 60s    # Bodyweight "for" syntax
 
 # AMRAP
 - 135 x AMRAP
@@ -767,7 +768,7 @@ All test cases below are validated against the LMWF parser at spec generation ti
 **TC-E13: Unparseable set text**
 <!-- EXAMPLE: errors/tc-unparseable-set-text.md EXPECT_ERROR -->
 
-**TC-E14: Unit without weight number**
+**TC-E14: Weight with unit but no reps/time**
 <!-- EXAMPLE: errors/tc-weight-no-reps.md EXPECT_ERROR -->
 
 **TC-E15: Zero reps**

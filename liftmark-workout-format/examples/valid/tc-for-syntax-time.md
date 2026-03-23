@@ -10,5 +10,5 @@
 - 70 lbs for 30s
 
 ## Dead Hang
-- bw x 60s
-- bw x 45s
+- bw for 60s
+- bw for 45s

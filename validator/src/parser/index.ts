@@ -722,8 +722,8 @@ function parseMainSetContent(
   // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
   const pattern1 = /^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
 
-  // Pattern 2: bodyweight x reps/time (e.g., "x 10", "bw x 12")
-  const pattern2 = /^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
+  // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
+  const pattern2 = /^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
 
   // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
   const pattern3 = /^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
@@ -841,6 +841,19 @@ function parseMainSetContent(
     const valueStr = match[1];
     const unitStr = match[2] || null;
     const trailing = match[3]?.trim() || null;
+
+    // Reject "135 lbs" or "100 kg" — weight unit without reps/time is incomplete
+    if (!unitStr && trailing) {
+      const trailingLower = trailing.toLowerCase();
+      if (/^(lbs?|kgs?|kg)\b/.test(trailingLower)) {
+        context.errors.push({
+          line: lineNumber,
+          message: `Incomplete set: "${content}". Weight with unit requires reps (x 5) or time (x 60s)`,
+          code: 'INCOMPLETE_SET',
+        });
+        return null;
+      }
+    }
 
     const value = parseInt(valueStr, 10);
     if (value <= 0) {
