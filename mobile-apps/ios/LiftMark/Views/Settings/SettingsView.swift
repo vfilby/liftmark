@@ -22,7 +22,7 @@ struct SettingsView: View {
     @State private var importResultMessage = ""
     @State private var showImportError = false
     @State private var importErrorMessage = ""
-    @State private var selectedSection: SettingsSection? = .appearance
+    @State private var selectedSection: SettingsSection? = .general
     @State private var versionTapCount = 0
     @State private var versionTapTimer: Timer?
     @State private var showDeveloperModeAlert = false
@@ -93,7 +93,7 @@ struct SettingsView: View {
         HStack(spacing: 0) {
             // Left pane - navigation list
             List {
-                ForEach(visibleSections(settings: settings)) { section in
+                ForEach(visibleSections(settings: settings, forIPad: true)) { section in
                     Button {
                         selectedSection = section
                     } label: {
@@ -123,6 +123,22 @@ struct SettingsView: View {
     @ViewBuilder
     private func iPadDetailContent(for section: SettingsSection, settings: UserSettings) -> some View {
         switch section {
+        case .general:
+            List {
+                Section("Appearance") {
+                    appearanceContent(settings: settings)
+                }
+                Section("iCloud Sync") {
+                    NavigationLink(value: AppDestination.syncSettings) {
+                        Label("iCloud Sync", systemImage: "icloud")
+                    }
+                    .accessibilityIdentifier("sync-settings-button")
+                }
+                Section("Health & Activities") {
+                    healthKitContent(settings: settings)
+                    liveActivitiesContent(settings: settings)
+                }
+            }
         case .appearance:
             List {
                 Section(section.rawValue) {
@@ -561,13 +577,22 @@ struct SettingsView: View {
         }
     }
 
-    private func visibleSections(settings: UserSettings) -> [SettingsSection] {
-        #if DEBUG
-        return SettingsSection.allCases
-        #else
-        return SettingsSection.allCases.filter { section in
-            section != .developer || settings.developerModeEnabled
+    private func visibleSections(settings: UserSettings, forIPad: Bool = false) -> [SettingsSection] {
+        let allSections = SettingsSection.allCases
+        let filtered: [SettingsSection]
+
+        if forIPad {
+            // iPad: use .general instead of separate .appearance/.integrations
+            filtered = allSections.filter { $0 != .appearance && $0 != .integrations }
+        } else {
+            // iPhone: use .appearance/.integrations, skip .general
+            filtered = allSections.filter { $0 != .general }
         }
+
+        #if DEBUG
+        return filtered
+        #else
+        return filtered.filter { $0 != .developer || settings.developerModeEnabled }
         #endif
     }
 
@@ -793,6 +818,7 @@ struct SettingsView: View {
     // MARK: - Settings Section Enum
 
     private enum SettingsSection: String, CaseIterable, Identifiable {
+        case general = "General"
         case appearance = "Appearance"
         case workout = "Workout Settings"
         case gyms = "Gyms"
@@ -806,6 +832,7 @@ struct SettingsView: View {
 
         var icon: String {
             switch self {
+            case .general: return "gearshape"
             case .appearance: return "paintbrush"
             case .workout: return "figure.strengthtraining.traditional"
             case .gyms: return "building.2"
@@ -819,6 +846,7 @@ struct SettingsView: View {
 
         var iconColor: Color {
             switch self {
+            case .general: return .blue
             case .appearance: return .purple
             case .workout: return .orange
             case .gyms: return .blue

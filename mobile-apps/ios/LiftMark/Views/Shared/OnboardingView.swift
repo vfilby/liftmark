@@ -51,6 +51,7 @@ struct OnboardingView: View {
                 }
             }
         }
+        .frame(maxWidth: 500)
         .accessibilityIdentifier("onboarding-screen")
     }
 }

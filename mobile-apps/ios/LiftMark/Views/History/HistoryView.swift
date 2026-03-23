@@ -2,11 +2,13 @@ import SwiftUI
 
 struct HistoryView: View {
     @Environment(SessionStore.self) private var sessionStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var searchText = ""
     @State private var showExportConfirmation = false
     @State private var exportFileURL: URL?
     @State private var showShareSheet = false
     @State private var exportError: String?
+    @State private var selectedSessionId: String?
 
     private var completedSessions: [WorkoutSession] {
         sessionStore.sessions.filter { $0.status == .completed }
@@ -23,60 +25,10 @@ struct HistoryView: View {
 
     var body: some View {
         Group {
-            if completedSessions.isEmpty {
-                VStack(spacing: LiftMarkTheme.spacingSM) {
-                    Spacer()
-                    Image(systemName: "clock")
-                        .font(.system(size: 48))
-                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                    Text("No Workouts Yet")
-                        .font(.title3.weight(.semibold))
-                    Text("Complete a workout to see it here")
-                        .font(.subheadline)
-                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .accessibilityIdentifier("history-empty-state")
+            if horizontalSizeClass == .regular {
+                iPadLayout
             } else {
-                VStack(spacing: 0) {
-                    // Search bar
-                    HStack(spacing: LiftMarkTheme.spacingSM) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                            .font(.system(size: 14))
-                        TextField("Search workouts...", text: $searchText)
-                            .font(.body)
-                    }
-                    .padding(.horizontal, LiftMarkTheme.spacingMD)
-                    .padding(.vertical, LiftMarkTheme.spacingSM)
-                    .background(LiftMarkTheme.secondaryBackground)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(LiftMarkTheme.tertiaryLabel.opacity(0.3), lineWidth: 1.5))
-                    .padding(.horizontal)
-                    .padding(.vertical, LiftMarkTheme.spacingSM)
-
-                    ScrollView {
-                        LazyVStack(spacing: LiftMarkTheme.spacingSM) {
-                            ForEach(filteredSessions) { session in
-                                NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
-                                    SessionCardView(session: session)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("history-session-card")
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        sessionStore.deleteSession(id: session.id)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-                .accessibilityIdentifier("history-list")
+                iPhoneLayout
             }
         }
         .accessibilityIdentifier("history-screen")
@@ -126,6 +78,136 @@ struct HistoryView: View {
                 EmptyView()
             }
         }
+        .onChange(of: sessionStore.sessions) {
+            if let id = selectedSessionId, !sessionStore.sessions.contains(where: { $0.id == id }) {
+                selectedSessionId = nil
+            }
+        }
+    }
+
+    // MARK: - iPad Layout
+
+    private var iPadLayout: some View {
+        HStack(spacing: 0) {
+            // Left pane - session list
+            VStack(spacing: 0) {
+                if completedSessions.isEmpty {
+                    emptyState
+                } else {
+                    searchBar
+                    iPadSessionList
+                }
+            }
+            .frame(width: 320)
+
+            Divider()
+
+            // Right pane - session detail
+            Group {
+                if let selectedSessionId {
+                    HistoryDetailView(sessionId: selectedSessionId, isEmbedded: true)
+                } else {
+                    ContentUnavailableView("Select a Workout", systemImage: "dumbbell", description: Text("Choose a workout from the sidebar."))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var iPadSessionList: some View {
+        ScrollView {
+            LazyVStack(spacing: LiftMarkTheme.spacingSM) {
+                ForEach(filteredSessions) { session in
+                    Button {
+                        selectedSessionId = session.id
+                    } label: {
+                        SessionCardView(session: session, isSelected: selectedSessionId == session.id)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("history-session-card")
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            sessionStore.deleteSession(id: session.id)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+        .accessibilityIdentifier("history-list")
+    }
+
+    // MARK: - iPhone Layout
+
+    private var iPhoneLayout: some View {
+        Group {
+            if completedSessions.isEmpty {
+                emptyState
+            } else {
+                VStack(spacing: 0) {
+                    searchBar
+                    ScrollView {
+                        LazyVStack(spacing: LiftMarkTheme.spacingSM) {
+                            ForEach(filteredSessions) { session in
+                                NavigationLink(value: AppDestination.historyDetail(id: session.id)) {
+                                    SessionCardView(session: session)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("history-session-card")
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        sessionStore.deleteSession(id: session.id)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                .accessibilityIdentifier("history-list")
+            }
+        }
+    }
+
+    // MARK: - Shared Components
+
+    private var emptyState: some View {
+        VStack(spacing: LiftMarkTheme.spacingSM) {
+            Spacer()
+            Image(systemName: "clock")
+                .font(.system(size: 48))
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+            Text("No Workouts Yet")
+                .font(.title3.weight(.semibold))
+            Text("Complete a workout to see it here")
+                .font(.subheadline)
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("history-empty-state")
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .font(.system(size: 14))
+            TextField("Search workouts...", text: $searchText)
+                .font(.body)
+        }
+        .padding(.horizontal, LiftMarkTheme.spacingMD)
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(LiftMarkTheme.tertiaryLabel.opacity(0.3), lineWidth: 1.5))
+        .padding(.horizontal)
+        .padding(.vertical, LiftMarkTheme.spacingSM)
     }
 
     private func exportAllSessions() {
@@ -144,6 +226,7 @@ struct HistoryView: View {
 
 private struct SessionCardView: View {
     let session: WorkoutSession
+    var isSelected: Bool = false
 
     private var completedSetsCount: Int {
         session.exercises.flatMap(\.sets).filter { $0.status == .completed }.count
@@ -180,7 +263,6 @@ private struct SessionCardView: View {
             return "Yesterday"
         } else if let daysAgo = calendar.dateComponents([.day], from: date, to: now).day,
                   daysAgo < 7 {
-            // Show weekday name for dates within the past week
             let weekdayFormatter = DateFormatter()
             weekdayFormatter.dateFormat = "EEEE"
             return weekdayFormatter.string(from: date)
@@ -253,7 +335,7 @@ private struct SessionCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(LiftMarkTheme.secondaryBackground)
+        .background(isSelected ? LiftMarkTheme.primary.opacity(0.12) : LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
     }
 
@@ -272,4 +354,3 @@ struct ShareableURL: Identifiable {
     let id = UUID()
     let url: URL
 }
-

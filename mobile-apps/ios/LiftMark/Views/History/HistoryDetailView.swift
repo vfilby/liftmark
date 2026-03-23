@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryDetailView: View {
     let sessionId: String
+    var isEmbedded: Bool = false
     @Environment(SessionStore.self) private var sessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
@@ -109,7 +110,7 @@ struct HistoryDetailView: View {
             }
         }
         .accessibilityIdentifier("history-detail-screen")
-        .navigationTitle(session?.name ?? "Workout")
+        .navigationTitle(isEmbedded ? "" : (session?.name ?? "Workout"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

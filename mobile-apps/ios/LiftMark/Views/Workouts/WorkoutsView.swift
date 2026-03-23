@@ -4,6 +4,7 @@ struct WorkoutsView: View {
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(GymStore.self) private var gymStore
     @Environment(EquipmentStore.self) private var equipmentStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var searchText = ""
     @State private var showFavoritesOnly = false
@@ -11,6 +12,7 @@ struct WorkoutsView: View {
     @State private var showFilters = false
     @State private var selectedGymId: String?
     @State private var showImport = false
+    @State private var selectedPlanId: String?
 
     private var filteredPlans: [WorkoutPlan] {
         planStore.plans.filter { plan in
@@ -22,13 +24,12 @@ struct WorkoutsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            searchBar
-            filterToggle
-            if showFilters {
-                filterPanel
+        Group {
+            if horizontalSizeClass == .regular {
+                iPadLayout
+            } else {
+                iPhoneLayout
             }
-            plansContent
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workouts-screen")
@@ -57,6 +58,99 @@ struct WorkoutsView: View {
             default:
                 EmptyView()
             }
+        }
+        .onChange(of: planStore.plans) {
+            if let id = selectedPlanId, planStore.getPlan(id: id) == nil {
+                selectedPlanId = nil
+            }
+        }
+    }
+
+    // MARK: - iPad Layout
+
+    private var iPadLayout: some View {
+        HStack(spacing: 0) {
+            // Left pane - plan list
+            VStack(spacing: 0) {
+                searchBar
+                filterToggle
+                if showFilters {
+                    filterPanel
+                }
+                iPadPlansList
+            }
+            .frame(width: 320)
+
+            Divider()
+
+            // Right pane - plan detail
+            Group {
+                if let selectedPlanId {
+                    WorkoutDetailView(planId: selectedPlanId, isEmbedded: true)
+                } else {
+                    ContentUnavailableView("Select a Plan", systemImage: "doc.on.clipboard", description: Text("Choose a plan from the sidebar."))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var iPadPlansList: some View {
+        if filteredPlans.isEmpty {
+            emptyStateView
+        } else {
+            ScrollView {
+                LazyVStack(spacing: LiftMarkTheme.spacingSM) {
+                    ForEach(Array(filteredPlans.enumerated()), id: \.element.id) { index, plan in
+                        iPadPlanRow(plan: plan, index: index)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .accessibilityIdentifier("workout-list")
+        }
+    }
+
+    private func iPadPlanRow(plan: WorkoutPlan, index: Int) -> some View {
+        Button {
+            selectedPlanId = plan.id
+        } label: {
+            planRowContent(plan: plan)
+                .background(selectedPlanId == plan.id ? LiftMarkTheme.primary.opacity(0.12) : LiftMarkTheme.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("workout-card-\(plan.id)")
+        .overlay(
+            Color.clear
+                .accessibilityIdentifier("workout-card-index-\(index)")
+        )
+        .contextMenu {
+            Button {
+                planStore.toggleFavorite(id: plan.id)
+            } label: {
+                Label(plan.isFavorite ? "Unfavorite" : "Favorite", systemImage: plan.isFavorite ? "heart.slash" : "heart")
+            }
+            Button(role: .destructive) {
+                planStore.deletePlan(id: plan.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .accessibilityIdentifier("delete-\(plan.id)")
+        }
+    }
+
+    // MARK: - iPhone Layout
+
+    private var iPhoneLayout: some View {
+        VStack(spacing: 0) {
+            searchBar
+            filterToggle
+            if showFilters {
+                filterPanel
+            }
+            plansContent
         }
     }
 
@@ -239,45 +333,51 @@ struct WorkoutsView: View {
         .accessibilityIdentifier("workout-list")
     }
 
-    private func planRow(plan: WorkoutPlan, index: Int) -> some View {
-        NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: LiftMarkTheme.spacingXS) {
-                        Text(plan.name)
-                            .font(.headline)
-                            .foregroundStyle(LiftMarkTheme.label)
-                            .lineLimit(1)
-                        if plan.isFavorite {
-                            Image(systemName: "heart.fill")
-                                .font(.caption)
-                                .foregroundStyle(.pink)
-                        }
-                    }
-                    HStack(spacing: LiftMarkTheme.spacingSM) {
-                        let exerciseCount = plan.exercises.filter { exercise in
-                            !(exercise.groupType == .superset && exercise.sets.isEmpty) &&
-                            !(exercise.groupType == .section && exercise.sets.isEmpty)
-                        }.count
-                        Text("\(exerciseCount) exercises")
-                            .font(.subheadline)
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        if !plan.tags.isEmpty {
-                            Text(plan.tags.prefix(2).joined(separator: ", "))
-                                .font(.caption)
-                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                        }
+    // MARK: - Plan Row
+
+    private func planRowContent(plan: WorkoutPlan) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: LiftMarkTheme.spacingXS) {
+                    Text(plan.name)
+                        .font(.headline)
+                        .foregroundStyle(LiftMarkTheme.label)
+                        .lineLimit(1)
+                    if plan.isFavorite {
+                        Image(systemName: "heart.fill")
+                            .font(.caption)
+                            .foregroundStyle(.pink)
                     }
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                HStack(spacing: LiftMarkTheme.spacingSM) {
+                    let exerciseCount = plan.exercises.filter { exercise in
+                        !(exercise.groupType == .superset && exercise.sets.isEmpty) &&
+                        !(exercise.groupType == .section && exercise.sets.isEmpty)
+                    }.count
+                    Text("\(exerciseCount) exercises")
+                        .font(.subheadline)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    if !plan.tags.isEmpty {
+                        Text(plan.tags.prefix(2).joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(LiftMarkTheme.secondaryBackground)
-            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+    }
+
+    private func planRow(plan: WorkoutPlan, index: Int) -> some View {
+        NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
+            planRowContent(plan: plan)
+                .background(LiftMarkTheme.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("workout-card-\(plan.id)")

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WorkoutDetailView: View {
     let planId: String
+    var isEmbedded: Bool = false
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(SessionStore.self) private var sessionStore
     @Environment(\.dismiss) private var dismiss
@@ -291,9 +292,9 @@ struct WorkoutDetailView: View {
                 .accessibilityIdentifier("workout-detail-loading")
             }
         }
-        .navigationTitle(plan?.name ?? "Workout Details")
+        .navigationTitle(isEmbedded ? "" : (plan?.name ?? "Workout Details"))
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(isEmbedded ? .inline : .large)
         #endif
         .toolbar {
             if plan != nil {
@@ -311,7 +312,7 @@ struct WorkoutDetailView: View {
             ActiveWorkoutView()
         }
         .onAppear {
-            if plan == nil {
+            if plan == nil && !isEmbedded {
                 dismiss()
             }
         }
