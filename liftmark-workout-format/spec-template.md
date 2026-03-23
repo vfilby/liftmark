@@ -624,6 +624,206 @@ Last set felt like an 8/10 effort.
 
 ---
 
+## Appendix: Validated Test Cases
+
+All test cases below are validated against the LMWF parser at spec generation time. Valid examples must parse successfully; error examples must produce the expected validation errors. Error messages shown are generated directly from the parser.
+
+### Valid Test Cases — Simple
+
+**TC-V01: Minimal single exercise**
+<!-- EXAMPLE: valid/tc-minimal-single-exercise.md -->
+
+**TC-V02: Basic two exercises**
+<!-- EXAMPLE: valid/tc-basic-two-exercises.md -->
+
+**TC-V03: Bodyweight only (all formats)**
+<!-- EXAMPLE: valid/tc-bodyweight-only.md -->
+
+**TC-V04: Time-based only (all time units)**
+<!-- EXAMPLE: valid/tc-time-based-only.md -->
+
+**TC-V05: Tags metadata**
+<!-- EXAMPLE: valid/tc-with-tags.md -->
+
+**TC-V06: Default units — lbs**
+<!-- EXAMPLE: valid/tc-units-lbs.md -->
+
+**TC-V07: Default units — kg**
+<!-- EXAMPLE: valid/tc-units-kg.md -->
+
+**TC-V08: Freeform notes everywhere**
+<!-- EXAMPLE: valid/tc-freeform-notes-everywhere.md -->
+
+**TC-V09: Decimal weights**
+<!-- EXAMPLE: valid/tc-decimal-weights.md -->
+
+**TC-V10: Explicit units on every set**
+<!-- EXAMPLE: valid/tc-explicit-units-every-set.md -->
+
+### Valid Test Cases — Medium
+
+**TC-V11: Mixed units per set**
+<!-- EXAMPLE: valid/tc-mixed-units-per-set.md -->
+
+**TC-V12: AMRAP variations**
+<!-- EXAMPLE: valid/tc-amrap-variations.md -->
+
+**TC-V13: Rest modifiers — boundary values**
+<!-- EXAMPLE: valid/tc-rest-modifiers-range.md -->
+
+**TC-V14: Dropset chain**
+<!-- EXAMPLE: valid/tc-dropset-chain.md -->
+
+**TC-V15: Per-side — explicit modifier**
+<!-- EXAMPLE: valid/tc-perside-explicit.md -->
+
+**TC-V16: Per-side — auto-detected from exercise notes**
+<!-- EXAMPLE: valid/tc-perside-auto-exercise-notes.md -->
+
+**TC-V17: Per-side — auto-detected from trailing text**
+<!-- EXAMPLE: valid/tc-perside-auto-trailing-text.md -->
+
+**TC-V18: "for" syntax for time-based sets**
+<!-- EXAMPLE: valid/tc-for-syntax-time.md -->
+
+**TC-V19: Single superset**
+<!-- EXAMPLE: valid/tc-single-superset.md -->
+
+**TC-V20: Multiple supersets**
+<!-- EXAMPLE: valid/tc-multiple-supersets.md -->
+
+### Valid Test Cases — Complex
+
+**TC-V21: Sections — warmup and cooldown**
+<!-- EXAMPLE: valid/tc-sections-warmup-cooldown.md -->
+
+**TC-V22: Sections and supersets combined**
+<!-- EXAMPLE: valid/tc-sections-and-supersets.md -->
+
+**TC-V23: Deep header nesting (H3 workout)**
+<!-- EXAMPLE: valid/tc-deep-header-nesting.md -->
+
+**TC-V24: Mixed set types in one exercise**
+<!-- EXAMPLE: valid/tc-mixed-set-types.md -->
+
+**TC-V25: All modifiers combined**
+<!-- EXAMPLE: valid/tc-all-modifiers-combined.md -->
+
+**TC-V26: Large workout (10 exercises, 50+ sets)**
+<!-- EXAMPLE: valid/tc-large-workout.md -->
+
+**TC-V27: Exercise @type metadata**
+<!-- EXAMPLE: valid/tc-exercise-type-metadata.md -->
+
+**TC-V28: Unknown metadata — silently ignored**
+<!-- EXAMPLE: valid/tc-unknown-metadata-ignored.md -->
+
+**TC-V29: Deprecated modifiers (@rpe, @tempo)**
+<!-- EXAMPLE: valid/tc-deprecated-modifiers.md -->
+
+**TC-V30: Every valid set format**
+<!-- EXAMPLE: valid/tc-all-set-formats.md -->
+
+### Invalid Test Cases — Structure Errors
+
+**TC-E01: Empty file**
+<!-- EXAMPLE: errors/tc-empty-file.md EXPECT_ERROR -->
+
+**TC-E02: Whitespace only**
+<!-- EXAMPLE: errors/tc-whitespace-only.md EXPECT_ERROR -->
+
+**TC-E03: No headers — just text and sets**
+<!-- EXAMPLE: errors/tc-no-headers.md EXPECT_ERROR -->
+
+**TC-E04: Header but no exercises**
+<!-- EXAMPLE: errors/tc-header-no-exercises.md EXPECT_ERROR -->
+
+**TC-E05: Exercise with no sets**
+<!-- EXAMPLE: errors/tc-exercise-no-sets.md EXPECT_ERROR -->
+
+**TC-E06: One exercise missing sets (others valid)**
+<!-- EXAMPLE: errors/tc-one-exercise-missing-sets.md EXPECT_ERROR -->
+
+**TC-E07: Same-level headers (no hierarchy)**
+<!-- EXAMPLE: errors/tc-same-level-headers.md EXPECT_ERROR -->
+
+**TC-E08: Exercise headers without workout header**
+<!-- EXAMPLE: errors/tc-only-exercise-no-workout.md EXPECT_ERROR -->
+
+### Invalid Test Cases — Unit/Format Errors
+
+**TC-E09: Invalid units — "pounds"**
+<!-- EXAMPLE: errors/tc-invalid-units-pounds.md EXPECT_ERROR -->
+
+**TC-E10: Invalid units — "kilograms"**
+<!-- EXAMPLE: errors/tc-invalid-units-kilograms.md EXPECT_ERROR -->
+
+**TC-E11: Negative weight**
+<!-- EXAMPLE: errors/tc-negative-weight.md EXPECT_ERROR -->
+
+**TC-E12: Negative decimal weight**
+<!-- EXAMPLE: errors/tc-negative-decimal-weight.md EXPECT_ERROR -->
+
+**TC-E13: Unparseable set text**
+<!-- EXAMPLE: errors/tc-unparseable-set-text.md EXPECT_ERROR -->
+
+**TC-E14: Unit without weight number**
+<!-- EXAMPLE: errors/tc-weight-no-reps.md EXPECT_ERROR -->
+
+**TC-E15: Zero reps**
+<!-- EXAMPLE: errors/tc-zero-reps.md EXPECT_ERROR -->
+
+**TC-E16: Zero time**
+<!-- EXAMPLE: errors/tc-zero-time.md EXPECT_ERROR -->
+
+### Invalid Test Cases — Modifier Errors
+
+**TC-E17: Negative rest time**
+<!-- EXAMPLE: errors/tc-negative-rest.md EXPECT_ERROR -->
+
+**TC-E18: Non-numeric rest**
+<!-- EXAMPLE: errors/tc-rest-non-numeric.md EXPECT_ERROR -->
+
+**TC-E19: RPE below range (0)**
+<!-- EXAMPLE: errors/tc-rpe-zero.md EXPECT_ERROR -->
+
+**TC-E20: RPE above range (11+)**
+<!-- EXAMPLE: errors/tc-rpe-above-ten.md EXPECT_ERROR -->
+
+**TC-E21: RPE non-numeric**
+<!-- EXAMPLE: errors/tc-rpe-non-numeric.md EXPECT_ERROR -->
+
+**TC-E22: Tempo — wrong segment count**
+<!-- EXAMPLE: errors/tc-tempo-three-segments.md EXPECT_ERROR -->
+
+**TC-E23: Tempo — non-numeric**
+<!-- EXAMPLE: errors/tc-tempo-non-numeric.md EXPECT_ERROR -->
+
+**TC-E24: Rest — non-numeric unit**
+<!-- EXAMPLE: errors/tc-rest-empty-value.md EXPECT_ERROR -->
+
+### Invalid Test Cases — Combined/Edge Errors
+
+**TC-E25: Valid workout with one bad set**
+<!-- EXAMPLE: errors/tc-valid-workout-one-bad-set.md EXPECT_ERROR -->
+
+**TC-E26: All sets unparseable**
+<!-- EXAMPLE: errors/tc-all-sets-invalid.md EXPECT_ERROR -->
+
+**TC-E27: Multiple error types at once**
+<!-- EXAMPLE: errors/tc-multiple-errors.md EXPECT_ERROR -->
+
+**TC-E28: Empty exercise name**
+<!-- EXAMPLE: errors/tc-empty-exercise-name.md EXPECT_ERROR -->
+
+**TC-E29: Multiple negative rest values**
+<!-- EXAMPLE: errors/tc-sets-before-exercise.md EXPECT_ERROR -->
+
+**TC-E30: Superset with no child exercises**
+<!-- EXAMPLE: errors/tc-nested-superset-no-children.md EXPECT_ERROR -->
+
+---
+
 ## Changelog
 
 ### Version 1.1 (2026-01-16)
