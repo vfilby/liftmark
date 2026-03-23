@@ -167,6 +167,10 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      # Scroll down to reveal Integrations section
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
       # The toggle must exist
       - action: expect
         target: "switch-live-activities"
