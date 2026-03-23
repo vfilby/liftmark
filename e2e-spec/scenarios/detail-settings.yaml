@@ -36,7 +36,7 @@ tests:
         catch: []
 
   # Issue 1: Dark mode must actually apply, not just store a preference
-  - name: "theme segmented picker is visible"
+  - name: "theme appearance picker is visible"
     steps:
       - action: tap
         target: "tab-settings"
@@ -54,10 +54,9 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # Select dark theme via segmented picker
-      - action: tapSegment
-        target: "picker-theme"
-        segment: "Dark"
+      # Select dark theme via appearance picker
+      - action: tap
+        target: "theme-option-dark"
       - action: delay
         ms: 500
       # Navigate to a different tab to verify theme applies globally
@@ -98,9 +97,8 @@ tests:
         target: "picker-theme"
         assertion: "toBeVisible"
       # Restore to auto for other tests
-      - action: tapSegment
-        target: "picker-theme"
-        segment: "Auto"
+      - action: tap
+        target: "theme-option-auto"
 
   - name: "selecting light theme applies and differs from dark"
     steps:
@@ -109,10 +107,9 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
-      # Select light explicitly via segmented picker
-      - action: tapSegment
-        target: "picker-theme"
-        segment: "Light"
+      # Select light explicitly via appearance picker
+      - action: tap
+        target: "theme-option-light"
       - action: delay
         ms: 500
       # Verify it persists by navigating away and back
@@ -129,9 +126,8 @@ tests:
         target: "picker-theme"
         assertion: "toBeVisible"
       # Restore to auto
-      - action: tapSegment
-        target: "picker-theme"
-        segment: "Auto"
+      - action: tap
+        target: "theme-option-auto"
 
   # Issue 2: iCloud sync screen must not be empty
   - name: "iCloud sync screen displays status and informational content"
