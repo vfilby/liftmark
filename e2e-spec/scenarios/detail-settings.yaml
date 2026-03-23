@@ -191,6 +191,9 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
       # When OS permission is denied, the toggle should be disabled
       # and a link to open system Settings should be visible
       - action: tryCatch
@@ -213,6 +216,10 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      # Scroll down to reveal Integrations section
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
       # The HealthKit toggle must exist
       - action: expect
         target: "switch-healthkit"
@@ -232,6 +239,9 @@ tests:
       - action: waitFor
         target: "settings-screen"
         timeout: 5000
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
       # When authorization is denied, a link to open Health Settings should appear
       - action: tryCatch
         try:
