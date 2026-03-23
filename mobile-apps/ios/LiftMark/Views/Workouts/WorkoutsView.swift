@@ -56,6 +56,16 @@ struct WorkoutsView: View {
                     }
                 }
             }
+            if selectedPlanId != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        sharePlan()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("share-plan-button")
+                }
+            }
         }
         .sheet(isPresented: $showImport) {
             ImportView()
@@ -402,6 +412,17 @@ struct WorkoutsView: View {
             return "Try a different search term"
         }
         return "Import your first workout plan to get started"
+    }
+
+    private func sharePlan() {
+        guard let id = selectedPlanId,
+              let plan = planStore.getPlan(id: id),
+              let markdown = plan.sourceMarkdown else { return }
+        let activityVC = UIActivityViewController(activityItems: [markdown], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
+        }
     }
 
     private func planMatchesEquipment(_ plan: WorkoutPlan) -> Bool {

@@ -8,6 +8,7 @@ struct HistoryView: View {
     @State private var showShareSheet = false
     @State private var exportError: String?
     @State private var selectedSessionId: String?
+    @State private var singleExportFileItem: ShareableURL?
 
     private var completedSessions: [WorkoutSession] {
         sessionStore.sessions.filter { $0.status == .completed }
@@ -49,11 +50,21 @@ struct HistoryView: View {
             sessionStore.loadSessions()
         }
         .toolbar {
+            if let selectedSessionId {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        exportSingleSession(id: selectedSessionId)
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("share-session-button")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     showExportConfirmation = true
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: "square.and.arrow.up.on.square")
                 }
                 .disabled(completedSessions.isEmpty)
                 .accessibilityIdentifier("history-export-button")
@@ -80,6 +91,9 @@ struct HistoryView: View {
             if let url = exportFileURL {
                 ShareSheet(items: [url])
             }
+        }
+        .sheet(item: $singleExportFileItem) { item in
+            ShareSheet(items: [item.url])
         }
         #endif
         .navigationDestination(for: AppDestination.self) { destination in
@@ -191,6 +205,17 @@ struct HistoryView: View {
         .overlay(Capsule().stroke(LiftMarkTheme.tertiaryLabel.opacity(0.3), lineWidth: 1.5))
         .padding(.horizontal)
         .padding(.vertical, LiftMarkTheme.spacingSM)
+    }
+
+    private func exportSingleSession(id: String) {
+        guard let session = sessionStore.sessions.first(where: { $0.id == id }) else { return }
+        let exportService = WorkoutExportService()
+        do {
+            let url = try exportService.exportSingleSessionAsJson(session)
+            singleExportFileItem = ShareableURL(url: url)
+        } catch {
+            exportError = error.localizedDescription
+        }
     }
 
     private func exportAllSessions() {

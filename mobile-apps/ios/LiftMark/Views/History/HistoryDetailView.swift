@@ -112,13 +112,15 @@ struct HistoryDetailView: View {
         .accessibilityIdentifier("history-detail-screen")
         .navigationTitle(isEmbedded ? "" : (session?.name ?? "Workout"))
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    exportSession()
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
+            if !isEmbedded {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        exportSession()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("share-session-button")
                 }
-                .accessibilityIdentifier("share-session-button")
             }
         }
         .alert("Delete Workout", isPresented: $showDeleteConfirmation) {

@@ -297,7 +297,7 @@ struct WorkoutDetailView: View {
         .navigationBarTitleDisplayMode(isEmbedded ? .inline : .large)
         #endif
         .toolbar {
-            if plan != nil {
+            if plan != nil && !isEmbedded {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         sharePlan()
