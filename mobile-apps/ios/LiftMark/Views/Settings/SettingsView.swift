@@ -261,19 +261,14 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func appearanceContent(settings: UserSettings) -> some View {
-        Picker("Theme", selection: Binding(
+        AppearancePicker(selection: Binding(
             get: { settings.theme },
             set: { newTheme in
                 var updated = settings
                 updated.theme = newTheme
                 settingsStore.updateSettings(updated)
             }
-        )) {
-            Text("Light").tag(AppTheme.light)
-            Text("Dark").tag(AppTheme.dark)
-            Text("Auto").tag(AppTheme.auto)
-        }
-        .pickerStyle(.segmented)
+        ))
         .accessibilityIdentifier("picker-theme")
     }
 
