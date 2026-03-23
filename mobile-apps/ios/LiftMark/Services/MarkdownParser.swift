@@ -740,8 +740,8 @@ enum MarkdownParser {
         // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
         let pattern1 = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
 
-        // Pattern 2: bodyweight x reps/time (e.g., "x 10", "bw x 12")
-        let pattern2 = try! NSRegularExpression(pattern: #"^(?:(bw|x)\s*)?x\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
+        // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
+        let pattern2 = try! NSRegularExpression(pattern: #"^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
 
         // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
         let pattern3 = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
@@ -854,6 +854,19 @@ enum MarkdownParser {
             let valueStr = substring(of: original, range: match.range(at: 1))!
             let unitStr = substring(of: original, range: match.range(at: 2))
             let trailing = substring(of: original, range: match.range(at: 3))?.trimmingCharacters(in: .whitespaces)
+
+            // Reject "135 lbs" or "100 kg" — weight unit without reps/time is incomplete
+            if unitStr == nil, let trailing = trailing, !trailing.isEmpty {
+                let trailingLower = trailing.lowercased()
+                if trailingLower.hasPrefix("lb") || trailingLower.hasPrefix("kg") {
+                    context.errors.append(ParseError(
+                        line: lineNumber,
+                        message: "Incomplete set: \"\(content)\". Weight with unit requires reps (x 5) or time (x 60s)",
+                        code: "INCOMPLETE_SET"
+                    ))
+                    return nil
+                }
+            }
 
             let value = Int(valueStr)!
             if value <= 0 {
