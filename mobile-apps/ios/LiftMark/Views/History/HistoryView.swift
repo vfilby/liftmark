@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HistoryView: View {
     @Environment(SessionStore.self) private var sessionStore
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var searchText = ""
     @State private var showExportConfirmation = false
     @State private var exportFileURL: URL?
@@ -24,12 +23,25 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                iPadLayout
-            } else {
-                iPhoneLayout
+        AdaptiveSplitView(sidebarWidth: 320) {
+            // iPad sidebar - session list
+            VStack(spacing: 0) {
+                if completedSessions.isEmpty {
+                    emptyState
+                } else {
+                    searchBar
+                    iPadSessionList
+                }
             }
+        } detail: {
+            // iPad detail - session detail
+            if let selectedSessionId {
+                HistoryDetailView(sessionId: selectedSessionId, isEmbedded: true)
+            } else {
+                ContentUnavailableView("Select a Workout", systemImage: "dumbbell", description: Text("Choose a workout from the sidebar."))
+            }
+        } compact: {
+            iPhoneLayout
         }
         .accessibilityIdentifier("history-screen")
         .navigationTitle("Workouts")
@@ -82,35 +94,6 @@ struct HistoryView: View {
             if let id = selectedSessionId, !sessionStore.sessions.contains(where: { $0.id == id }) {
                 selectedSessionId = nil
             }
-        }
-    }
-
-    // MARK: - iPad Layout
-
-    private var iPadLayout: some View {
-        HStack(spacing: 0) {
-            // Left pane - session list
-            VStack(spacing: 0) {
-                if completedSessions.isEmpty {
-                    emptyState
-                } else {
-                    searchBar
-                    iPadSessionList
-                }
-            }
-            .frame(width: 320)
-
-            Divider()
-
-            // Right pane - session detail
-            Group {
-                if let selectedSessionId {
-                    HistoryDetailView(sessionId: selectedSessionId, isEmbedded: true)
-                } else {
-                    ContentUnavailableView("Select a Workout", systemImage: "dumbbell", description: Text("Choose a workout from the sidebar."))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

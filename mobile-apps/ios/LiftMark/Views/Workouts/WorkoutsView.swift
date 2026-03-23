@@ -4,8 +4,6 @@ struct WorkoutsView: View {
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(GymStore.self) private var gymStore
     @Environment(EquipmentStore.self) private var equipmentStore
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @State private var searchText = ""
     @State private var showFavoritesOnly = false
     @State private var showEquipmentFilter = false
@@ -24,12 +22,25 @@ struct WorkoutsView: View {
     }
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                iPadLayout
-            } else {
-                iPhoneLayout
+        AdaptiveSplitView(sidebarWidth: 320) {
+            // iPad sidebar - plan list
+            VStack(spacing: 0) {
+                searchBar
+                filterToggle
+                if showFilters {
+                    filterPanel
+                }
+                iPadPlansList
             }
+        } detail: {
+            // iPad detail - plan detail
+            if let selectedPlanId {
+                WorkoutDetailView(planId: selectedPlanId, isEmbedded: true)
+            } else {
+                ContentUnavailableView("Select a Plan", systemImage: "doc.on.clipboard", description: Text("Choose a plan from the sidebar."))
+            }
+        } compact: {
+            iPhoneLayout
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workouts-screen")
@@ -63,35 +74,6 @@ struct WorkoutsView: View {
             if let id = selectedPlanId, planStore.getPlan(id: id) == nil {
                 selectedPlanId = nil
             }
-        }
-    }
-
-    // MARK: - iPad Layout
-
-    private var iPadLayout: some View {
-        HStack(spacing: 0) {
-            // Left pane - plan list
-            VStack(spacing: 0) {
-                searchBar
-                filterToggle
-                if showFilters {
-                    filterPanel
-                }
-                iPadPlansList
-            }
-            .frame(width: 320)
-
-            Divider()
-
-            // Right pane - plan detail
-            Group {
-                if let selectedPlanId {
-                    WorkoutDetailView(planId: selectedPlanId, isEmbedded: true)
-                } else {
-                    ContentUnavailableView("Select a Plan", systemImage: "doc.on.clipboard", description: Text("Choose a plan from the sidebar."))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

@@ -168,11 +168,8 @@ struct ActiveWorkoutView: View {
 
             // Workout content — adaptive layout for iPad
             GeometryReader { geometry in
-                let isLandscape = geometry.size.width > geometry.size.height
-                let showSidebar = isRegularWidth && isLandscape
-
-                if showSidebar {
-                    // iPad landscape: two-column layout
+                if isRegularWidth {
+                    // iPad: two-column layout
                     HStack(spacing: 0) {
                         exerciseListView
                             .frame(width: geometry.size.width * 0.6)
@@ -183,10 +180,8 @@ struct ActiveWorkoutView: View {
                             .frame(width: geometry.size.width * 0.4)
                     }
                 } else {
-                    // iPhone or iPad portrait: single column, constrained width on iPad
+                    // iPhone: single column
                     exerciseListView
-                        .frame(maxWidth: isRegularWidth ? 800 : .infinity)
-                        .frame(maxWidth: .infinity)
                 }
             }
             .accessibilityElement(children: .contain)

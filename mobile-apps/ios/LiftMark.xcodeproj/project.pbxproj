@@ -72,6 +72,7 @@
 		A2994975FB6B2B6580CA34C5 /* PlateCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4406CB6F8705596A59036876 /* PlateCalculatorTests.swift */; };
 		A47498AD84CC4B09D112D56A /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C826AE567713686B32DDE784 /* RestTimerView.swift */; };
 		A729B0D0216DC029A3343B47 /* ExerciseCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EE730B57432DA41F655940 /* ExerciseCardView.swift */; };
+		B24A5E45EBCB75DEE61DC2AC /* AdaptiveSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38E018F88DC33EB2158C6AC /* AdaptiveSplitView.swift */; };
 		B391EB80E72BA000101D5666 /* WorkoutGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D211B6F3FC0D3B798CCF7F /* WorkoutGenerationService.swift */; };
 		B65C76AE0A8148FEA0518541 /* HistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEE07A8ED79EB88BFE43E5D3 /* HistoryDetailView.swift */; };
 		B65E08E944C710E6569FF173 /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3A038D0DDA3325870FBB86 /* WorkoutDetailView.swift */; };
@@ -222,6 +223,7 @@
 		BE23FF382474D10663FDF662 /* MarkdownParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParserTests.swift; sourceTree = "<group>"; };
 		C20C4956D9B988C6978BAD36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C215C0708BFBE0805A18EF8D /* GymDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymDetailView.swift; sourceTree = "<group>"; };
+		C38E018F88DC33EB2158C6AC /* AdaptiveSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveSplitView.swift; sourceTree = "<group>"; };
 		C3E789B9A675739D485DEB8B /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		C70744D9027695A5A6176D54 /* LiftMark.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiftMark.entitlements; sourceTree = "<group>"; };
 		C826AE567713686B32DDE784 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
@@ -496,6 +498,7 @@
 		BDD7F147FF4E8B9B1329906E /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				C38E018F88DC33EB2158C6AC /* AdaptiveSplitView.swift */,
 				DF5E7925F25E5F7CFE3C109B /* DisclaimerText.swift */,
 				F2EE730B57432DA41F655940 /* ExerciseCardView.swift */,
 				02B901D64AB8243A498892E4 /* ExercisePickerView.swift */,
@@ -708,6 +711,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1DFDE4AC5DFE4BF6AB8B611D /* ActiveWorkoutView.swift in Sources */,
+				B24A5E45EBCB75DEE61DC2AC /* AdaptiveSplitView.swift in Sources */,
 				C9C3DB99E5E6CCF0F06942A1 /* AnthropicService.swift in Sources */,
 				04462895D8B47403B759F38F /* AppNavigation.swift in Sources */,
 				5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */,

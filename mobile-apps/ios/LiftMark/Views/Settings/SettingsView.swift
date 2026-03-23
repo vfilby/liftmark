@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(GymStore.self) private var gymStore
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showApiKey = false
     @State private var apiKeyText = ""
     @State private var showExportConfirmation = false
@@ -31,9 +30,28 @@ struct SettingsView: View {
     var body: some View {
         Group {
             if let settings = settingsStore.settings {
-                if horizontalSizeClass == .regular {
-                    iPadLayout(settings: settings)
-                } else {
+                AdaptiveSplitView(sidebarWidth: 280) {
+                    // iPad sidebar - navigation list
+                    List {
+                        ForEach(visibleSections(settings: settings, forIPad: true)) { section in
+                            Button {
+                                selectedSection = section
+                            } label: {
+                                SettingsNavRow(section: section, isSelected: selectedSection == section)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
+                        }
+                    }
+                    .listStyle(.plain)
+                } detail: {
+                    // iPad detail - section content
+                    if let selectedSection {
+                        iPadDetailContent(for: selectedSection, settings: settings)
+                    } else {
+                        ContentUnavailableView("Select a Category", systemImage: "gear", description: Text("Choose a settings category from the sidebar."))
+                    }
+                } compact: {
                     iPhoneLayout(settings: settings)
                 }
             } else {
@@ -84,40 +102,6 @@ struct SettingsView: View {
             showImportError: $showImportError,
             importErrorMessage: importErrorMessage
         ))
-    }
-
-    // MARK: - iPad Layout
-
-    @ViewBuilder
-    private func iPadLayout(settings: UserSettings) -> some View {
-        HStack(spacing: 0) {
-            // Left pane - navigation list
-            List {
-                ForEach(visibleSections(settings: settings, forIPad: true)) { section in
-                    Button {
-                        selectedSection = section
-                    } label: {
-                        SettingsNavRow(section: section, isSelected: selectedSection == section)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
-                }
-            }
-            .listStyle(.plain)
-            .frame(width: 280)
-
-            Divider()
-
-            // Right pane - detail content
-            Group {
-                if let selectedSection {
-                    iPadDetailContent(for: selectedSection, settings: settings)
-                } else {
-                    ContentUnavailableView("Select a Category", systemImage: "gear", description: Text("Choose a settings category from the sidebar."))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
     }
 
     @ViewBuilder
