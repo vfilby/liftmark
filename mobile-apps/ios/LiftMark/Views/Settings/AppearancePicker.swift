@@ -21,11 +21,13 @@ struct AppearancePicker: View {
                             .font(.title3)
                             .foregroundStyle(selection == theme ? LiftMarkTheme.primary : LiftMarkTheme.tertiaryLabel)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("theme-option-\(theme.rawValue)")
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("theme-option-\(theme.rawValue)")
             }
         }
+        .accessibilityElement(children: .contain)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
     }
