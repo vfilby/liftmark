@@ -24,7 +24,7 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        AdaptiveSplitView(sidebarWidth: 320) {
+        AdaptiveSplitView {
             // iPad sidebar - session list
             VStack(spacing: 0) {
                 if completedSessions.isEmpty {

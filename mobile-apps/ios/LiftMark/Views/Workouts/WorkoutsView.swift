@@ -22,7 +22,7 @@ struct WorkoutsView: View {
     }
 
     var body: some View {
-        AdaptiveSplitView(sidebarWidth: 320) {
+        AdaptiveSplitView {
             // iPad sidebar - plan list
             VStack(spacing: 0) {
                 searchBar

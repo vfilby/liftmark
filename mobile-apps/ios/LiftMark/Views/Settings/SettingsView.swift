@@ -30,7 +30,7 @@ struct SettingsView: View {
     var body: some View {
         Group {
             if let settings = settingsStore.settings {
-                AdaptiveSplitView(sidebarWidth: 280) {
+                AdaptiveSplitView {
                     // iPad sidebar - navigation list
                     List {
                         ForEach(visibleSections(settings: settings, forIPad: true)) { section in

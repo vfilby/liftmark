@@ -172,12 +172,12 @@ struct ActiveWorkoutView: View {
                     // iPad: two-column layout
                     HStack(spacing: 0) {
                         exerciseListView
-                            .frame(width: geometry.size.width * 0.6)
+                            .frame(width: geometry.size.width / 3)
 
                         Divider()
 
                         exerciseHistoryPanel
-                            .frame(width: geometry.size.width * 0.4)
+                            .frame(width: geometry.size.width * 2 / 3)
                     }
                 } else {
                     // iPhone: single column
