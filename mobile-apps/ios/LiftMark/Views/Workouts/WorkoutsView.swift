@@ -4,6 +4,7 @@ struct WorkoutsView: View {
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(GymStore.self) private var gymStore
     @Environment(EquipmentStore.self) private var equipmentStore
+    @Environment(NavigationCoordinator.self) private var navCoordinator
     @State private var searchText = ""
     @State private var showFavoritesOnly = false
     @State private var showEquipmentFilter = false
@@ -83,6 +84,18 @@ struct WorkoutsView: View {
         .onChange(of: planStore.plans) {
             if let id = selectedPlanId, planStore.getPlan(id: id) == nil {
                 selectedPlanId = nil
+            }
+        }
+        .onChange(of: navCoordinator.pendingPlanId) {
+            if let id = navCoordinator.pendingPlanId {
+                selectedPlanId = id
+                navCoordinator.pendingPlanId = nil
+            }
+        }
+        .onAppear {
+            if let id = navCoordinator.pendingPlanId {
+                selectedPlanId = id
+                navCoordinator.pendingPlanId = nil
             }
         }
     }

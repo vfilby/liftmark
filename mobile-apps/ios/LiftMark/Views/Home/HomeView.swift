@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    @Environment(NavigationCoordinator.self) private var navCoordinator
     @State private var showImport = false
     @State private var showExercisePicker = false
     @State private var editingTileIndex: Int?
@@ -102,17 +103,23 @@ struct HomeView: View {
                     } else if isRegularWidth {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 280))], spacing: LiftMarkTheme.spacingSM) {
                             ForEach(planStore.plans.prefix(3)) { plan in
-                                NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
+                                Button {
+                                    navCoordinator.navigateToPlan(id: plan.id)
+                                } label: {
                                     WorkoutPlanCard(plan: plan)
                                 }
+                                .buttonStyle(.plain)
                                 .accessibilityIdentifier("workout-card-\(plan.id)")
                             }
                         }
                     } else {
                         ForEach(planStore.plans.prefix(3)) { plan in
-                            NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
+                            Button {
+                                navCoordinator.navigateToPlan(id: plan.id)
+                            } label: {
                                 WorkoutPlanCard(plan: plan)
                             }
+                            .buttonStyle(.plain)
                             .accessibilityIdentifier("workout-card-\(plan.id)")
                         }
                     }
@@ -159,8 +166,6 @@ struct HomeView: View {
         }
         .navigationDestination(for: AppDestination.self) { destination in
             switch destination {
-            case .workoutDetail(let id):
-                WorkoutDetailView(planId: id)
             case .activeWorkout:
                 ActiveWorkoutView()
             case .workoutSummary:
@@ -398,7 +403,7 @@ private struct WorkoutPlanCard: View {
                 .font(.caption)
                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))

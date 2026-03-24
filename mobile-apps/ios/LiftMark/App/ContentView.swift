@@ -16,7 +16,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: Bindable(navCoordinator).selectedTab) {
             NavigationStack(path: $navCoordinator.homeNavPath) {
                 HomeView()
             }
@@ -24,14 +24,17 @@ struct ContentView: View {
             .tabItem {
                 Label("LiftMark", systemImage: "house")
             }
+            .tag(AppTab.home)
             .accessibilityIdentifier("tab-home")
 
             NavigationStack {
                 WorkoutsView()
             }
+            .environment(navCoordinator)
             .tabItem {
                 Label("Plans", systemImage: "doc.on.clipboard")
             }
+            .tag(AppTab.plans)
             .accessibilityIdentifier("tab-workouts")
 
             NavigationStack {
@@ -40,6 +43,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Workouts", systemImage: "dumbbell")
             }
+            .tag(AppTab.workouts)
             .accessibilityIdentifier("tab-history")
 
             NavigationStack {
@@ -48,6 +52,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Settings", systemImage: "gearshape")
             }
+            .tag(AppTab.settings)
             .accessibilityIdentifier("tab-settings")
         }
         .tint(LiftMarkTheme.tabIconSelected)
