@@ -50,9 +50,6 @@ xcuserdata/
 mobile-apps/ios/build/
 mobile-apps/ios/.build/
 
-# Generated at build time
-mobile-apps/ios/LiftMark/App/BuildInfo.swift
-
 # Gas Town (added by gt)
 .logs/
 tools/__pycache__/
