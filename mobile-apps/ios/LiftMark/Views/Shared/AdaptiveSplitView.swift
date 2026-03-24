@@ -26,7 +26,7 @@ struct AdaptiveSplitView<Sidebar: View, Detail: View, Compact: View>: View {
             GeometryReader { geometry in
                 HStack(spacing: 0) {
                     sidebar
-                        .frame(width: geometry.size.width / 3)
+                        .frame(width: geometry.size.width * 0.4)
                     Divider()
                     detail
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
