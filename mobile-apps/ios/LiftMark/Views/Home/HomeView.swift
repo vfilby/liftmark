@@ -114,12 +114,9 @@ struct HomeView: View {
                         }
                     } else {
                         ForEach(planStore.plans.prefix(3)) { plan in
-                            Button {
-                                navCoordinator.navigateToPlan(id: plan.id)
-                            } label: {
+                            NavigationLink(value: AppDestination.workoutDetail(id: plan.id)) {
                                 WorkoutPlanCard(plan: plan)
                             }
-                            .buttonStyle(.plain)
                             .accessibilityIdentifier("workout-card-\(plan.id)")
                         }
                     }
@@ -166,6 +163,8 @@ struct HomeView: View {
         }
         .navigationDestination(for: AppDestination.self) { destination in
             switch destination {
+            case .workoutDetail(let id):
+                WorkoutDetailView(planId: id)
             case .activeWorkout:
                 ActiveWorkoutView()
             case .workoutSummary:
