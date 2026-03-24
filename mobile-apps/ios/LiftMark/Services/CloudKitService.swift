@@ -269,6 +269,24 @@ final class CloudKitService: @unchecked Sendable {
         }
     }
 
+    // MARK: - Push Session Status
+
+    /// Push a session's current status to CloudKit immediately.
+    /// Used when canceling a session to ensure the canceled status is synced
+    /// before the next full sync downloads the stale in_progress version.
+    func pushSessionStatus(sessionId: String, status: SessionStatus) async {
+        do {
+            let dbQueue = try DatabaseManager.shared.database()
+            guard let session = try await dbQueue.read({ db in
+                try WorkoutSessionRow.fetchOne(db, key: sessionId)
+            }) else { return }
+            let record = workoutSessionToRecord(session)
+            _ = await saveRecord(record)
+        } catch {
+            Logger.shared.error(.app, "Failed to push session status", error: error)
+        }
+    }
+
     // MARK: - Sync All
 
     /// Perform a full sync: download first (merge with last-writer-wins), then upload only new local records.
