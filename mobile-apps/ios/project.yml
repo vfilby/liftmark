@@ -71,6 +71,18 @@ targets:
               - public.plain-text
         LSSupportsOpeningDocumentsInPlace: false
         ITSAppUsesNonExemptEncryption: false
+    preBuildScripts:
+      - name: Generate BuildInfo
+        script: |
+          GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+          cat > "${SRCROOT}/LiftMark/App/BuildInfo.swift" << SWIFT
+          // Auto-generated at build time — do not edit
+          enum BuildInfo {
+              static let gitHash = "${GIT_HASH}"
+          }
+          SWIFT
+        outputFiles:
+          - $(SRCROOT)/LiftMark/App/BuildInfo.swift
     dependencies:
       - package: GRDB
       - target: LiveWorkouts

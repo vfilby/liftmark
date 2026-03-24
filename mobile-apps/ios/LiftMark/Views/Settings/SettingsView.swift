@@ -512,17 +512,11 @@ struct SettingsView: View {
                 Text("Version")
                     .foregroundStyle(Color.primary)
                 Spacer()
-                Text(appVersionString)
+                Text("\(appVersionString) (\(BuildInfo.gitHash))")
                     .foregroundStyle(.secondary)
             }
         }
         .accessibilityIdentifier("version-info-row")
-        HStack {
-            Text("Build")
-            Spacer()
-            Text(appBuildString)
-                .foregroundStyle(.secondary)
-        }
         NavigationLink {
             DisclaimerView()
         } label: {
@@ -581,9 +575,6 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     }
 
-    private var appBuildString: String {
-        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-    }
 
     // MARK: - API Key Actions
 

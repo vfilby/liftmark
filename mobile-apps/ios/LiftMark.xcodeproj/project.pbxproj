@@ -95,6 +95,7 @@
 		D5B7C32B70E4920D239F01B9 /* LiveWorkouts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6F8EBA5E1977823E7524816C /* LiveWorkouts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D5D8A7C48522D2B240101090 /* WorkoutPlanRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCF35B4BE5F3808F7C7098B /* WorkoutPlanRepositoryTests.swift */; };
 		D6259E2C8BECA8FA87C34DBA /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 339BCDD3A3DD50EB4BE72127 /* HistoryView.swift */; };
+		D76A9B26D9C1583D5A4E7C95 /* BuildInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA93F33BB15CE056E4A94451 /* BuildInfo.swift */; };
 		DAE84428789E0D6CA78B74D4 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9175B7DB4682E974D72FBF5 /* LoadingView.swift */; };
 		DC281FEEC2342BDA851A5E3D /* DebugLogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BC30CC7136FEBF11EFB81E /* DebugLogsView.swift */; };
 		DF373888E7CD580855CE16A4 /* DatabaseBackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */; };
@@ -239,6 +240,7 @@
 		D83446B2AFC5D21A415A51FA /* NavigationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationCoordinator.swift; sourceTree = "<group>"; };
 		D9FE10D43C37D15D55CD7E43 /* AnthropicService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicService.swift; sourceTree = "<group>"; };
 		DA3A038D0DDA3325870FBB86 /* WorkoutDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
+		DA93F33BB15CE056E4A94451 /* BuildInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildInfo.swift; sourceTree = "<group>"; };
 		DCCF35B4BE5F3808F7C7098B /* WorkoutPlanRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanRepositoryTests.swift; sourceTree = "<group>"; };
 		DD702828FD007982A779D112 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		DEE07A8ED79EB88BFE43E5D3 /* HistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDetailView.swift; sourceTree = "<group>"; };
@@ -451,6 +453,7 @@
 		8AA25FDA4A7882829225A30C /* App */ = {
 			isa = PBXGroup;
 			children = (
+				DA93F33BB15CE056E4A94451 /* BuildInfo.swift */,
 				888A9E535EF4C68643D49640 /* ContentView.swift */,
 				70B5C9C6A595B9A570A75396 /* LiftMarkApp.swift */,
 			);
@@ -593,6 +596,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = DE2284B086CFFEA7FEB322E3 /* Build configuration list for PBXNativeTarget "LiftMark" */;
 			buildPhases = (
+				BE8AA02ED848F896828C98D8 /* Generate BuildInfo */,
 				1E9564402A0D8C22CC68839C /* Sources */,
 				A0AF0BAA864D0D6B6DA7FBF1 /* Resources */,
 				E8BA941CBD1AFD3AC7EF19A2 /* Frameworks */,
@@ -708,6 +712,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		BE8AA02ED848F896828C98D8 /* Generate BuildInfo */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate BuildInfo";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/LiftMark/App/BuildInfo.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo \"unknown\")\ncat > \"${SRCROOT}/LiftMark/App/BuildInfo.swift\" << SWIFT\n// Auto-generated at build time — do not edit\nenum BuildInfo {\n    static let gitHash = \"${GIT_HASH}\"\n}\nSWIFT\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		1E9564402A0D8C22CC68839C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -719,6 +745,7 @@
 				04462895D8B47403B759F38F /* AppNavigation.swift in Sources */,
 				046BDEE4D56EEF1A07640A9D /* AppearancePicker.swift in Sources */,
 				5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */,
+				D76A9B26D9C1583D5A4E7C95 /* BuildInfo.swift in Sources */,
 				39172B31AE8E2CCC73AAF995 /* CloudKitService.swift in Sources */,
 				2683EA07E89C34E9DB15B061 /* ContentView.swift in Sources */,
 				347BDEA12B7813E2E5100A23 /* DatabaseBackupService.swift in Sources */,

@@ -118,6 +118,14 @@ jobs:
           echo "Profile Name: $PROFILE_NAME"
 
       # --- Build archive ---
+      - name: Set version numbers
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          BUILD="${{ github.run_number }}"
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "APP_BUILD=$BUILD" >> $GITHUB_ENV
+          echo "Setting version to $VERSION (build $BUILD)"
+
       - name: Build archive
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -131,7 +139,9 @@ jobs:
             -archivePath $ARCHIVE_PATH \
             -destination 'generic/platform=iOS' \
             -skipPackagePluginValidation \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            MARKETING_VERSION="$APP_VERSION" \
+            CURRENT_PROJECT_VERSION="$APP_BUILD"
 
       # --- Setup API key (needed for export and upload) ---
       - name: Setup App Store Connect API key
@@ -169,7 +179,7 @@ jobs:
       - name: Summary
         run: |
           echo "## Swift Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Bump:** ${{ github.event.inputs.bump }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** $APP_VERSION (build $APP_BUILD)" >> $GITHUB_STEP_SUMMARY
           echo "- **Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
