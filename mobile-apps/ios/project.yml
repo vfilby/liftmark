@@ -49,6 +49,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.eff3.liftmark.native-ios.dev
+          INFOPLIST_KEY_CFBundleDisplayName: "LiftMark Dev"
           CODE_SIGN_IDENTITY: "-"
           CODE_SIGN_STYLE: Automatic
         Release:
@@ -124,6 +126,7 @@ targets:
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
       configs:
         Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.eff3.liftmark.native-ios.dev.LiveWorkouts
           CODE_SIGN_IDENTITY: "-"
           CODE_SIGN_STYLE: Automatic
         Release:

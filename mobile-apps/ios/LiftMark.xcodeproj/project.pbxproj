@@ -29,7 +29,6 @@
 		347BDEA12B7813E2E5100A23 /* DatabaseBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08159618FF39CFB1C6166D5 /* DatabaseBackupService.swift */; };
 		355E1C1963C45CE3D6B9F1CF /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C9B42D3BD8986494435EF5 /* HomeView.swift */; };
 		3611C9685758E95D89F2DEFE /* Gym.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E89B9A3831EAEC53F6B8048 /* Gym.swift */; };
-		39172B31AE8E2CCC73AAF995 /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9721F8131DE667F45760970 /* CloudKitService.swift */; };
 		39D05647DD77A9B90DD4730C /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 9BACEAB18D55AF17C12768D1 /* GRDB */; };
 		406622C47E2E20CD649B12C4 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E789B9A675739D485DEB8B /* Enums.swift */; };
 		477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85D10A4E19321EE0AEF31C1 /* SettingsStore.swift */; };
@@ -40,6 +39,7 @@
 		5804635F274D09ACE63243BD /* YAMLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38D2F26B7F5D04BCBF925F49 /* YAMLParser.swift */; };
 		5A42ABE16700DB181A6DF24D /* WorkoutHighlightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C597DD1B866C5E697491391 /* WorkoutHighlightsService.swift */; };
 		5AFB4BC3349F22E53C712DCB /* StoreIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A76A2194E3AF636AD5C75F /* StoreIntegrationTests.swift */; };
+		5F55ACA6E2E8C4EF04EF35EE /* CKSyncEngineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */; };
 		5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D029E8EF3D26021C1DE6232F /* AudioService.swift */; };
 		632B08C759934F9473839948 /* LiveWorkoutsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100FA0E0A273C20AB13B252D /* LiveWorkoutsBundle.swift */; };
 		63651EB054FBB107FBF226D2 /* SecureStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF868F5979A1635824B2B27 /* SecureStorageTests.swift */; };
@@ -53,7 +53,6 @@
 		77DC164C212FE5675DDA696B /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AABEE074F959694604AA09E /* DatabaseManager.swift */; };
 		789A92F54B181AE5B0F2E526 /* CloudKitSyncProtectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8B0A4526BD762457DD4ABF /* CloudKitSyncProtectionTests.swift */; };
 		7AB5F2F72412312FF135E237 /* ExerciseHistoryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD62A5DD7A3746F10518F287 /* ExerciseHistoryRepositoryTests.swift */; };
-		7B971F54292FA3A7F729306F /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AA76B80D240DBA0B61904C /* SyncManager.swift */; };
 		80C8D2569FADEDE15CE14823 /* SyncSessionGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAF9A728BCBE8C842B01E9D /* SyncSessionGuard.swift */; };
 		80F3FA9DC819E0E96FA89511 /* WorkoutSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13676ADC45623CA579A19E96 /* WorkoutSummaryView.swift */; };
 		81292E8D3BFED539C4C74A68 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78221ACC77E681F3AD7EC64 /* ImportView.swift */; };
@@ -91,6 +90,7 @@
 		D1F4C2096E3E879F3919EE3D /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB133008B74E2A84E1FC8E73 /* SessionRepository.swift */; };
 		D2713AEF7AA13AFF954D3E84 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FD57CEFF5022DFA698C39EF /* Logger.swift */; };
 		D4253627DCB5BC93C317573D /* LiveActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A219D1B838B112723669B571 /* LiveActivityService.swift */; };
+		D51863263DFBB6D10A1DEB3E /* CKRecordMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 954B57205C002E2857EE075A /* CKRecordMapper.swift */; };
 		D58394B7DD799753774BD0A9 /* SyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC7055EA2B5CF16CA09CB3AA /* SyncSettingsView.swift */; };
 		D5B7C32B70E4920D239F01B9 /* LiveWorkouts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6F8EBA5E1977823E7524816C /* LiveWorkouts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D5D8A7C48522D2B240101090 /* WorkoutPlanRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCF35B4BE5F3808F7C7098B /* WorkoutPlanRepositoryTests.swift */; };
@@ -165,6 +165,7 @@
 		14DB416A43A59922B4ADF59B /* ExerciseDictionaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDictionaryTests.swift; sourceTree = "<group>"; };
 		15EA23E7429BD21894662F92 /* JsonImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JsonImportService.swift; sourceTree = "<group>"; };
 		183AA7541B9622B31C10CC50 /* WorkoutPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanStore.swift; sourceTree = "<group>"; };
+		18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CKSyncEngineManager.swift; sourceTree = "<group>"; };
 		1B9F099C51166F64AE909892 /* SessionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepositoryTests.swift; sourceTree = "<group>"; };
 		2953F81E7032C951FC7802E7 /* EquipmentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentStore.swift; sourceTree = "<group>"; };
 		2D356A67A58628F0D7881CC0 /* ExerciseTrendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseTrendView.swift; sourceTree = "<group>"; };
@@ -200,10 +201,10 @@
 		81BB00D28805B71DB987185E /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		85CB06D57A0B9533D74D0431 /* WorkoutHistoryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryServiceTests.swift; sourceTree = "<group>"; };
 		888A9E535EF4C68643D49640 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		89AA76B80D240DBA0B61904C /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
 		8AABEE074F959694604AA09E /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		8AD29EB730B2F397E5B80216 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		9017628E208B7ED9FDC9E047 /* ParserConformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParserConformanceTests.swift; sourceTree = "<group>"; };
+		954B57205C002E2857EE075A /* CKRecordMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CKRecordMapper.swift; sourceTree = "<group>"; };
 		97D5191B081A643D264F9790 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9998EA6926EF208F23FBFCC9 /* tick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = tick.mp3; sourceTree = "<group>"; };
 		9E064AE978D172E88F26E1DF /* complete.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = complete.mp3; sourceTree = "<group>"; };
@@ -231,7 +232,6 @@
 		C70744D9027695A5A6176D54 /* LiftMark.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiftMark.entitlements; sourceTree = "<group>"; };
 		C826AE567713686B32DDE784 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		C9441D6B1D8EE6194A1A0631 /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
-		C9721F8131DE667F45760970 /* CloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitService.swift; sourceTree = "<group>"; };
 		CA82799CCA999F7300940D76 /* WorkoutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutsView.swift; sourceTree = "<group>"; };
 		CAA5808AEA3816FAC1B69639 /* LiftMarkUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftMarkUITests.swift; sourceTree = "<group>"; };
 		CB64AAA0256291C97FA9D19B /* ExerciseHistoryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseHistoryChartView.swift; sourceTree = "<group>"; };
@@ -312,7 +312,8 @@
 				F33E7AC1F974FF1C4952C4B7 /* .gitkeep */,
 				D9FE10D43C37D15D55CD7E43 /* AnthropicService.swift */,
 				D029E8EF3D26021C1DE6232F /* AudioService.swift */,
-				C9721F8131DE667F45760970 /* CloudKitService.swift */,
+				954B57205C002E2857EE075A /* CKRecordMapper.swift */,
+				18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */,
 				E08159618FF39CFB1C6166D5 /* DatabaseBackupService.swift */,
 				4D27BE6564E91C3C656A48BC /* ExerciseDictionary.swift */,
 				470878A407B7BB8EB252FDB4 /* FileImportService.swift */,
@@ -323,7 +324,6 @@
 				F60A15DD48ACEE99146D8D6B /* MarkdownParser.swift */,
 				6CBE5F077F0F3EA293E45AE5 /* PlateCalculator.swift */,
 				3F69FC1D6757DC923E65FCFF /* SecureStorage.swift */,
-				89AA76B80D240DBA0B61904C /* SyncManager.swift */,
 				EAAF9A728BCBE8C842B01E9D /* SyncSessionGuard.swift */,
 				A8488F5EFBF4053E8DE028BC /* WorkoutExportService.swift */,
 				E0D211B6F3FC0D3B798CCF7F /* WorkoutGenerationService.swift */,
@@ -746,7 +746,8 @@
 				046BDEE4D56EEF1A07640A9D /* AppearancePicker.swift in Sources */,
 				5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */,
 				D76A9B26D9C1583D5A4E7C95 /* BuildInfo.swift in Sources */,
-				39172B31AE8E2CCC73AAF995 /* CloudKitService.swift in Sources */,
+				D51863263DFBB6D10A1DEB3E /* CKRecordMapper.swift in Sources */,
+				5F55ACA6E2E8C4EF04EF35EE /* CKSyncEngineManager.swift in Sources */,
 				2683EA07E89C34E9DB15B061 /* ContentView.swift in Sources */,
 				347BDEA12B7813E2E5100A23 /* DatabaseBackupService.swift in Sources */,
 				77DC164C212FE5675DDA696B /* DatabaseManager.swift in Sources */,
@@ -790,7 +791,6 @@
 				477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */,
 				697ACE9A93DBDD78F0B11F3B /* SettingsView.swift in Sources */,
 				BDF8B36AB77641C02F745A82 /* ShareSheet.swift in Sources */,
-				7B971F54292FA3A7F729306F /* SyncManager.swift in Sources */,
 				80C8D2569FADEDE15CE14823 /* SyncSessionGuard.swift in Sources */,
 				D58394B7DD799753774BD0A9 /* SyncSettingsView.swift in Sources */,
 				73297C88CA6649D0C63AEB78 /* Theme.swift in Sources */,
@@ -893,7 +893,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.eff3.liftmark.native-ios.LiveWorkouts";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.eff3.liftmark.native-ios.dev.LiveWorkouts";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1159,7 +1159,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftMark/Info.plist;
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
-				INFOPLIST_KEY_CFBundleDisplayName = LiftMark;
+				INFOPLIST_KEY_CFBundleDisplayName = "LiftMark Dev";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "LiftMark reads your workout history to track progress.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "LiftMark saves your completed workouts to Apple Health.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1173,7 +1173,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.eff3.liftmark.native-ios";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.eff3.liftmark.native-ios.dev";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
