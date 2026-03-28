@@ -73,6 +73,8 @@ targets:
               - public.plain-text
         LSSupportsOpeningDocumentsInPlace: false
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - remote-notification
     preBuildScripts:
       - name: Generate BuildInfo
         script: |
