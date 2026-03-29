@@ -220,6 +220,9 @@ tests:
       - action: scroll
         target: "settings-screen"
         direction: "up"
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
       # The HealthKit toggle must exist
       - action: expect
         target: "switch-healthkit"
