@@ -336,15 +336,31 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     // MARK: - Event Handlers
 
+    /// Dependency order for merging: parents before children.
+    private static let mergeOrder = [
+        "Gym", "GymEquipment", "WorkoutPlan", "PlannedExercise", "PlannedSet",
+        "WorkoutSession", "SessionExercise", "SessionSet", "UserSettings"
+    ]
+
     private func handleFetchedChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {
         let protectedIds = mapper.getActiveSessionProtectedIds()
 
-        for modification in event.modifications {
+        // Sort modifications by dependency order (parents before children)
+        let sortedModifications = event.modifications.sorted { a, b in
+            let aIndex = Self.mergeOrder.firstIndex(of: a.record.recordType) ?? Int.max
+            let bIndex = Self.mergeOrder.firstIndex(of: b.record.recordType) ?? Int.max
+            return aIndex < bIndex
+        }
+
+        // Two-pass merge: first pass inserts what it can, second pass retries
+        // failures (e.g., superset children that depend on parent exercises).
+        var failedRecords: [CKRecord] = []
+
+        for modification in sortedModifications {
             let record = modification.record
             let recordId = record.recordID.recordName
             let recordType = record.recordType
 
-            // Skip if this record belongs to an active workout session
             if let protectedSet = protectedIds.byRecordType[recordType], protectedSet.contains(recordId) {
                 Logger.shared.debug(.sync, "[sync-engine] Skipping protected record: \(recordType)/\(recordId)")
                 continue
@@ -354,6 +370,20 @@ final class CKSyncEngineManager: @unchecked Sendable {
                 let merged = try mapper.mergeIncoming(record)
                 if merged {
                     Logger.shared.debug(.sync, "[sync-engine] Merged \(recordType)/\(recordId)")
+                }
+            } catch {
+                failedRecords.append(record)
+            }
+        }
+
+        // Retry failed records (parents should exist now)
+        for record in failedRecords {
+            let recordId = record.recordID.recordName
+            let recordType = record.recordType
+            do {
+                let merged = try mapper.mergeIncoming(record)
+                if merged {
+                    Logger.shared.debug(.sync, "[sync-engine] Merged (retry) \(recordType)/\(recordId)")
                 }
             } catch {
                 Logger.shared.error(.sync, "[sync-engine] Failed to merge \(recordType)/\(recordId)", error: error)

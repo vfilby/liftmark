@@ -618,6 +618,8 @@ struct WorkoutDetailView: View {
         if let reps = set.targetReps {
             let amrapSuffix = set.isAmrap ? "+" : ""
             parts.append("× \(reps)\(amrapSuffix) reps")
+        } else if set.isAmrap {
+            parts.append("AMRAP")
         }
 
         if let time = set.targetTime {

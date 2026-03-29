@@ -103,6 +103,9 @@ private struct SetDisplayRow: View {
             if let reps = set.targetReps {
                 Text("x \(reps)\(set.isAmrap ? "+" : "")")
                     .font(.subheadline.monospacedDigit())
+            } else if set.isAmrap {
+                Text("AMRAP")
+                    .font(.subheadline.monospacedDigit())
             }
 
             // Time
