@@ -39,6 +39,7 @@ final class GymStore {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
+            let gymId = IDGenerator.generate()
             try dbQueue.write { db in
                 // If no active gyms exist, make this the default
                 let activeCount = try Int.fetchOne(
@@ -46,7 +47,7 @@ final class GymStore {
                     sql: "SELECT COUNT(*) FROM gyms WHERE deleted_at IS NULL"
                 ) ?? 0
                 let row = GymRow(
-                    id: IDGenerator.generate(),
+                    id: gymId,
                     name: name,
                     isDefault: activeCount == 0 ? 1 : 0,
                     deletedAt: nil,
@@ -55,6 +56,7 @@ final class GymStore {
                 )
                 try row.insert(db)
             }
+            CKSyncEngineManager.notifySave(recordType: "Gym", recordID: gymId)
             loadGyms()
         } catch {
             print("Failed to create gym: \(error)")
@@ -70,6 +72,12 @@ final class GymStore {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
+            // Collect equipment IDs for sync notification
+            let equipmentIds = try dbQueue.read { db -> [String] in
+                let rows = try Row.fetchAll(db, sql: "SELECT id FROM gym_equipment WHERE gym_id = ?", arguments: [id])
+                return rows.compactMap { $0["id"] as String? }
+            }
+            var newDefaultId: String?
             try dbQueue.write { db in
                 // Soft-delete the gym
                 try db.execute(
@@ -89,14 +97,23 @@ final class GymStore {
                         sql: "SELECT id FROM gyms WHERE deleted_at IS NULL AND id != ? ORDER BY name LIMIT 1",
                         arguments: [id]
                     )
-                    if let newDefaultId: String = firstRemaining?["id"] {
+                    if let defaultId: String = firstRemaining?["id"] {
+                        newDefaultId = defaultId
                         try db.execute(sql: "UPDATE gyms SET is_default = 0 WHERE deleted_at IS NULL")
                         try db.execute(
                             sql: "UPDATE gyms SET is_default = 1, updated_at = ? WHERE id = ?",
-                            arguments: [now, newDefaultId]
+                            arguments: [now, defaultId]
                         )
                     }
                 }
+            }
+            // Notify sync engine (soft-delete = save with deleted_at set)
+            CKSyncEngineManager.notifySave(recordType: "Gym", recordID: id)
+            for eqId in equipmentIds {
+                CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: eqId)
+            }
+            if let newDefaultId {
+                CKSyncEngineManager.notifySave(recordType: "Gym", recordID: newDefaultId)
             }
             loadGyms()
         } catch {
@@ -108,6 +125,11 @@ final class GymStore {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
+            // Collect all active gym IDs to notify (they all get updated_at changed)
+            let activeGymIds = try dbQueue.read { db -> [String] in
+                let rows = try Row.fetchAll(db, sql: "SELECT id FROM gyms WHERE deleted_at IS NULL")
+                return rows.compactMap { $0["id"] as String? }
+            }
             try dbQueue.write { db in
                 // Clear all defaults, then set the chosen one
                 try db.execute(
@@ -118,6 +140,9 @@ final class GymStore {
                     sql: "UPDATE gyms SET is_default = 1, updated_at = ? WHERE id = ?",
                     arguments: [now, id]
                 )
+            }
+            for gymId in activeGymIds {
+                CKSyncEngineManager.notifySave(recordType: "Gym", recordID: gymId)
             }
             loadGyms()
         } catch {

@@ -161,7 +161,7 @@
 		100FA0E0A273C20AB13B252D /* LiveWorkoutsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutsBundle.swift; sourceTree = "<group>"; };
 		10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseBackupServiceTests.swift; sourceTree = "<group>"; };
 		13676ADC45623CA579A19E96 /* WorkoutSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSummaryView.swift; sourceTree = "<group>"; };
-		1376C535AFA86CB726E7F73F /* LiftMark.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LiftMark.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1376C535AFA86CB726E7F73F /* LiftMark.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiftMark.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14DB416A43A59922B4ADF59B /* ExerciseDictionaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDictionaryTests.swift; sourceTree = "<group>"; };
 		15EA23E7429BD21894662F92 /* JsonImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JsonImportService.swift; sourceTree = "<group>"; };
 		183AA7541B9622B31C10CC50 /* WorkoutPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanStore.swift; sourceTree = "<group>"; };
@@ -193,7 +193,7 @@
 		6F8EBA5E1977823E7524816C /* LiveWorkouts.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiveWorkouts.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FF93345D4144D74BDEB39C8 /* WorkoutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSettingsView.swift; sourceTree = "<group>"; };
 		70B5C9C6A595B9A570A75396 /* LiftMarkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftMarkApp.swift; sourceTree = "<group>"; };
-		70F9114019B0D4447CAAADD6 /* LiftMarkTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LiftMarkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		70F9114019B0D4447CAAADD6 /* LiftMarkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiftMarkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		71BBB53853F20402D24BEFB4 /* FileImportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImportServiceTests.swift; sourceTree = "<group>"; };
 		790A5CDE07EFFF281DAC47FA /* WorkoutExportIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutExportIntegrationTests.swift; sourceTree = "<group>"; };
 		790BF9E2E0D248724753225B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -219,7 +219,7 @@
 		A9DBA645D80EF8F29BC26002 /* DisclaimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisclaimerView.swift; sourceTree = "<group>"; };
 		B5A19C073FB83621738F4CA3 /* GymStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymStore.swift; sourceTree = "<group>"; };
 		B6A81B15C6333E3651B09FEC /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		B7490BF0D1105001D9B883EE /* LiftMarkUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LiftMarkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7490BF0D1105001D9B883EE /* LiftMarkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiftMarkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B78221ACC77E681F3AD7EC64 /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
 		B7B54090FD3C32CBDBBCA904 /* WorkoutExportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutExportServiceTests.swift; sourceTree = "<group>"; };
 		B85D10A4E19321EE0AEF31C1 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
@@ -943,6 +943,7 @@
 				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -963,6 +964,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -1038,6 +1040,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LiftMark/LiftMark.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1120,6 +1123,7 @@
 				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -1133,6 +1137,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -1164,8 +1169,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LiftMark/LiftMark.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43DNX2P3T6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftMark/Info.plist;
 				INFOPLIST_GENERATION_MODE = GeneratedFile;

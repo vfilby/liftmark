@@ -88,7 +88,12 @@ final class SettingsStore {
                     settings.id
                 ])
             }
+            let previousSettings = self.settings
             self.settings = settings
+            // Only sync if a syncable field changed (not local-only fields like hasAcceptedDisclaimer)
+            if previousSettings == nil || settings.hasSyncableChanges(from: previousSettings!) {
+                CKSyncEngineManager.notifySave(recordType: "UserSettings", recordID: settings.id)
+            }
         } catch {
             print("Failed to update settings: \(error)")
         }

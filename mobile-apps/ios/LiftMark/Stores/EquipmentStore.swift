@@ -37,9 +37,10 @@ final class EquipmentStore {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
+            let equipmentId = IDGenerator.generate()
             try dbQueue.write { db in
                 let row = GymEquipmentRow(
-                    id: IDGenerator.generate(),
+                    id: equipmentId,
                     name: name,
                     isAvailable: 1,
                     lastCheckedAt: nil,
@@ -50,6 +51,7 @@ final class EquipmentStore {
                 )
                 try row.insert(db)
             }
+            CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: equipmentId)
             loadEquipment(forGym: gymId)
         } catch {
             print("Failed to add equipment: \(error)")
@@ -62,6 +64,7 @@ final class EquipmentStore {
             try dbQueue.write { db in
                 try db.execute(sql: "DELETE FROM gym_equipment WHERE id = ?", arguments: [id])
             }
+            CKSyncEngineManager.notifyDelete(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
             print("Failed to remove equipment: \(error)")
@@ -78,6 +81,7 @@ final class EquipmentStore {
                     arguments: [now, id]
                 )
             }
+            CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
             print("Failed to toggle equipment: \(error)")

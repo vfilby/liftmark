@@ -62,7 +62,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         XCTAssertEqual(protected.sessionId, sessionId)
         XCTAssertEqual(protected.exerciseIds, Set([exerciseId1, exerciseId2]))
@@ -70,7 +70,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
     }
 
     func testProtectedIdsEmptyWhenNoActiveSession() throws {
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         XCTAssertNil(protected.sessionId)
         XCTAssertTrue(protected.exerciseIds.isEmpty)
@@ -92,7 +92,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         XCTAssertNil(protected.sessionId)
         XCTAssertTrue(protected.exerciseIds.isEmpty)
@@ -102,7 +102,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
     // MARK: - byRecordType mapping
 
     func testByRecordTypeReturnsCorrectMapping() {
-        let protected = CloudKitService.ActiveSessionProtectedIds(
+        let protected = CKRecordMapper.ActiveSessionProtectedIds(
             sessionId: "s1",
             exerciseIds: Set(["e1", "e2"]),
             setIds: Set(["set1"]),
@@ -117,7 +117,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
     }
 
     func testByRecordTypeIncludesParentPlanRecords() {
-        let protected = CloudKitService.ActiveSessionProtectedIds(
+        let protected = CKRecordMapper.ActiveSessionProtectedIds(
             sessionId: "s1",
             exerciseIds: Set(["e1"]),
             setIds: Set(["set1"]),
@@ -133,7 +133,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
     }
 
     func testByRecordTypeEmptyWhenNoActiveSession() {
-        let map = CloudKitService.ActiveSessionProtectedIds.empty.byRecordType
+        let map = CKRecordMapper.ActiveSessionProtectedIds.empty.byRecordType
         XCTAssertTrue(map.isEmpty)
     }
 
@@ -190,7 +190,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
         // Call syncAll is not feasible without CloudKit, so we verify the protection IDs
         // and then verify that the database state would be correct by checking what
         // handleLocalDeletes would compute as the delete set.
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         // Verify active session records are protected
         XCTAssertEqual(protected.sessionId, activeSessionId)
@@ -238,7 +238,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         // No active session — byRecordType should be empty
         XCTAssertNil(protected.sessionId)
@@ -272,7 +272,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         // Verify the active session records would be skipped during merge
         let protectedSessionIds = protected.byRecordType["WorkoutSession"] ?? []
@@ -332,7 +332,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         XCTAssertEqual(protected.planId, planId)
         XCTAssertEqual(protected.plannedExerciseIds, Set([peId1, peId2]))
@@ -355,7 +355,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
         }
 
-        let protected = CloudKitService.shared.getActiveSessionProtectedIds()
+        let protected = CKRecordMapper().getActiveSessionProtectedIds()
 
         XCTAssertEqual(protected.sessionId, "session-no-plan")
         XCTAssertNil(protected.planId)

@@ -53,10 +53,6 @@ final class SessionStore {
         do {
             try repository.cancel(session.id)
             activeSession = nil
-            // Push the canceled status to CloudKit so other devices see it
-            Task {
-                await CloudKitService.shared.pushSessionStatus(sessionId: session.id, status: .canceled)
-            }
         } catch {
             print("Failed to cancel session: \(error)")
         }

@@ -54,6 +54,7 @@ struct WorkoutSessionRow: Codable, FetchableRecord, PersistableRecord, Hashable 
     var duration: Int?
     var notes: String?
     var status: String
+    var updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -65,6 +66,7 @@ struct WorkoutSessionRow: Codable, FetchableRecord, PersistableRecord, Hashable 
         case duration
         case notes
         case status
+        case updatedAt = "updated_at"
     }
 }
 
@@ -125,6 +127,7 @@ struct SessionExerciseRow: Codable, FetchableRecord, PersistableRecord, Hashable
     var groupName: String?
     var parentExerciseId: String?
     var status: String
+    var updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -137,6 +140,7 @@ struct SessionExerciseRow: Codable, FetchableRecord, PersistableRecord, Hashable
         case groupName = "group_name"
         case parentExerciseId = "parent_exercise_id"
         case status
+        case updatedAt = "updated_at"
     }
 }
 
@@ -257,6 +261,7 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var isDropset: Int // SQLite boolean
     var isPerSide: Int // SQLite boolean
     var side: String?
+    var updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -282,6 +287,7 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case isDropset = "is_dropset"
         case isPerSide = "is_per_side"
         case side
+        case updatedAt = "updated_at"
     }
 }
 

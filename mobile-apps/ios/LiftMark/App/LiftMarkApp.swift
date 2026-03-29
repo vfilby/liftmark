@@ -39,8 +39,7 @@ struct LiftMarkApp: App {
                     LiveActivityService.shared.cleanupOrphanedActivities()
                     if !Self.isRunningTests {
                         Task {
-                            await SyncManager.shared.triggerSync()
-                            await SyncManager.shared.startPolling()
+                            await CKSyncEngineManager.shared.start()
                         }
                     }
                 }
@@ -49,13 +48,8 @@ struct LiftMarkApp: App {
                     case .active:
                         if !Self.isRunningTests {
                             Task {
-                                await SyncManager.shared.triggerSync()
-                                await SyncManager.shared.startPolling()
+                                await CKSyncEngineManager.shared.start()
                             }
-                        }
-                    case .background:
-                        Task {
-                            await SyncManager.shared.stopPolling()
                         }
                     default:
                         break

@@ -5,6 +5,8 @@ import GRDB
 struct WorkoutPlanRepository {
     private let dbManager: DatabaseManager
 
+    private var now: String { ISO8601DateFormatter().string(from: Date()) }
+
     init(dbManager: DatabaseManager = .shared) {
         self.dbManager = dbManager
     }
@@ -70,6 +72,7 @@ struct WorkoutPlanRepository {
             )
             try planRow.insert(db)
 
+            let now = plan.updatedAt
             for exercise in plan.exercises {
                 let exerciseRow = PlannedExerciseRow(
                     id: exercise.id,
@@ -80,7 +83,8 @@ struct WorkoutPlanRepository {
                     equipmentType: exercise.equipmentType,
                     groupType: exercise.groupType?.rawValue,
                     groupName: exercise.groupName,
-                    parentExerciseId: exercise.parentExerciseId
+                    parentExerciseId: exercise.parentExerciseId,
+                    updatedAt: now
                 )
                 try exerciseRow.insert(db)
 
@@ -99,16 +103,40 @@ struct WorkoutPlanRepository {
                         isDropset: set.isDropset ? 1 : 0,
                         isPerSide: set.isPerSide ? 1 : 0,
                         isAmrap: set.isAmrap ? 1 : 0,
-                        notes: set.notes
+                        notes: set.notes,
+                        updatedAt: now
                     )
                     try setRow.insert(db)
                 }
+            }
+        }
+
+        // Notify sync engine
+        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: plan.id)
+        for exercise in plan.exercises {
+            CKSyncEngineManager.notifySave(recordType: "PlannedExercise", recordID: exercise.id)
+            for set in exercise.sets {
+                CKSyncEngineManager.notifySave(recordType: "PlannedSet", recordID: set.id)
             }
         }
     }
 
     func update(_ plan: WorkoutPlan) throws {
         let dbQueue = try dbManager.database()
+
+        // Collect old exercise/set IDs before deletion for sync notifications
+        let (oldExerciseIds, oldSetIds) = try dbQueue.read { db -> ([String], [String]) in
+            let exRows = try Row.fetchAll(db, sql: "SELECT id FROM template_exercises WHERE workout_template_id = ?", arguments: [plan.id])
+            let exIds = exRows.compactMap { $0["id"] as String? }
+            let setRows = try Row.fetchAll(db, sql: """
+                SELECT ts.id FROM template_sets ts
+                JOIN template_exercises te ON te.id = ts.template_exercise_id
+                WHERE te.workout_template_id = ?
+            """, arguments: [plan.id])
+            let sIds = setRows.compactMap { $0["id"] as String? }
+            return (exIds, sIds)
+        }
+
         try dbQueue.write { db in
             // Delete existing exercises (cascades to sets)
             try db.execute(
@@ -133,6 +161,7 @@ struct WorkoutPlanRepository {
             try planRow.update(db)
 
             // Re-insert exercises and sets
+            let now = planRow.updatedAt
             for exercise in plan.exercises {
                 let exerciseRow = PlannedExerciseRow(
                     id: exercise.id,
@@ -143,7 +172,8 @@ struct WorkoutPlanRepository {
                     equipmentType: exercise.equipmentType,
                     groupType: exercise.groupType?.rawValue,
                     groupName: exercise.groupName,
-                    parentExerciseId: exercise.parentExerciseId
+                    parentExerciseId: exercise.parentExerciseId,
+                    updatedAt: now
                 )
                 try exerciseRow.insert(db)
 
@@ -162,19 +192,54 @@ struct WorkoutPlanRepository {
                         isDropset: set.isDropset ? 1 : 0,
                         isPerSide: set.isPerSide ? 1 : 0,
                         isAmrap: set.isAmrap ? 1 : 0,
-                        notes: set.notes
+                        notes: set.notes,
+                        updatedAt: now
                     )
                     try setRow.insert(db)
                 }
+            }
+        }
+
+        // Notify sync engine: delete old exercises/sets, save new ones
+        for setId in oldSetIds {
+            CKSyncEngineManager.notifyDelete(recordType: "PlannedSet", recordID: setId)
+        }
+        for exId in oldExerciseIds {
+            CKSyncEngineManager.notifyDelete(recordType: "PlannedExercise", recordID: exId)
+        }
+        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: plan.id)
+        for exercise in plan.exercises {
+            CKSyncEngineManager.notifySave(recordType: "PlannedExercise", recordID: exercise.id)
+            for set in exercise.sets {
+                CKSyncEngineManager.notifySave(recordType: "PlannedSet", recordID: set.id)
             }
         }
     }
 
     func delete(_ id: String) throws {
         let dbQueue = try dbManager.database()
+        // Collect child IDs before cascading delete
+        let (exerciseIds, setIds) = try dbQueue.read { db -> ([String], [String]) in
+            let exRows = try Row.fetchAll(db, sql: "SELECT id FROM template_exercises WHERE workout_template_id = ?", arguments: [id])
+            let exIds = exRows.compactMap { $0["id"] as String? }
+            let setRows = try Row.fetchAll(db, sql: """
+                SELECT ts.id FROM template_sets ts
+                JOIN template_exercises te ON te.id = ts.template_exercise_id
+                WHERE te.workout_template_id = ?
+            """, arguments: [id])
+            let sIds = setRows.compactMap { $0["id"] as String? }
+            return (exIds, sIds)
+        }
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM workout_templates WHERE id = ?", arguments: [id])
         }
+        for setId in setIds {
+            CKSyncEngineManager.notifyDelete(recordType: "PlannedSet", recordID: setId)
+        }
+        for exId in exerciseIds {
+            CKSyncEngineManager.notifyDelete(recordType: "PlannedExercise", recordID: exId)
+        }
+        CKSyncEngineManager.notifyDelete(recordType: "WorkoutPlan", recordID: id)
     }
 
     func toggleFavorite(_ id: String) throws {
@@ -185,6 +250,7 @@ struct WorkoutPlanRepository {
                 arguments: [id]
             )
         }
+        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: id)
     }
 
     // MARK: - Assembly

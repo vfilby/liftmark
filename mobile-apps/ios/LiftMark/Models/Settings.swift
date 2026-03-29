@@ -65,6 +65,22 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
+    /// Returns true if any syncable field differs from another settings instance.
+    /// Local-only fields (hasAcceptedDisclaimer, developerModeEnabled, anthropicApiKey/Status) are excluded.
+    func hasSyncableChanges(from other: UserSettings) -> Bool {
+        defaultWeightUnit != other.defaultWeightUnit ||
+        enableWorkoutTimer != other.enableWorkoutTimer ||
+        autoStartRestTimer != other.autoStartRestTimer ||
+        theme != other.theme ||
+        notificationsEnabled != other.notificationsEnabled ||
+        customPromptAddition != other.customPromptAddition ||
+        healthKitEnabled != other.healthKitEnabled ||
+        liveActivitiesEnabled != other.liveActivitiesEnabled ||
+        keepScreenAwake != other.keepScreenAwake ||
+        showOpenInClaudeButton != other.showOpenInClaudeButton ||
+        countdownSoundsEnabled != other.countdownSoundsEnabled ||
+        homeTiles != other.homeTiles
+    }
 }
 
 // MARK: - UserSettingsRow (GRDB Record)

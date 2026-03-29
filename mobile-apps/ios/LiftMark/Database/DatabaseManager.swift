@@ -9,7 +9,7 @@ final class DatabaseManager: @unchecked Sendable {
     private var dbQueue: DatabaseQueue?
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 7
+    private static let currentSchemaVersion = 8
 
     private init() {}
 
@@ -51,6 +51,7 @@ final class DatabaseManager: @unchecked Sendable {
         if let dbQueue = try? database() {
             try? dbQueue.write { db in
                 // Order matters: children first due to foreign keys
+                try db.execute(sql: "DELETE FROM sync_engine_state")
                 try db.execute(sql: "DELETE FROM sync_conflicts")
                 try db.execute(sql: "DELETE FROM sync_queue")
                 try db.execute(sql: "DELETE FROM sync_metadata")
@@ -124,6 +125,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 7 {
                 try migrateToV7(db)
+            }
+
+            if currentVersion < 8 {
+                try migrateToV8(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -347,21 +352,17 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id)")
 
-        // -- Seed default gym
-        let existingGym = try Row.fetchOne(db, sql: "SELECT id FROM gyms LIMIT 1")
-        if existingGym == nil {
+        // -- Migrate orphaned equipment (from pre-gym era)
+        let orphanCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL") ?? 0
+        if orphanCount > 0 {
+            // Create a gym to hold orphaned equipment
             let now = ISO8601DateFormatter().string(from: Date())
-            let defaultGymId = IDGenerator.generate()
+            let orphanGymId = IDGenerator.generate()
             try db.execute(
                 sql: "INSERT INTO gyms (id, name, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                arguments: [defaultGymId, "My Gym", 1, now, now]
+                arguments: [orphanGymId, "My Gym", 1, now, now]
             )
-
-            // Migrate orphaned equipment
-            let orphanCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL") ?? 0
-            if orphanCount > 0 {
-                try db.execute(sql: "UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL", arguments: [defaultGymId])
-            }
+            try db.execute(sql: "UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL", arguments: [orphanGymId])
         }
 
         // -- Seed default user settings
@@ -399,6 +400,58 @@ final class DatabaseManager: @unchecked Sendable {
 
     private func migrateToV7(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN has_accepted_disclaimer INTEGER DEFAULT 0")
+    }
+
+    private func migrateToV8(_ db: Database) throws {
+        // Add updated_at columns for CKSyncEngine migration
+        try db.execute(sql: "ALTER TABLE workout_sessions ADD COLUMN updated_at TEXT")
+        try db.execute(sql: "ALTER TABLE session_exercises ADD COLUMN updated_at TEXT")
+        try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN updated_at TEXT")
+        try db.execute(sql: "ALTER TABLE template_exercises ADD COLUMN updated_at TEXT")
+        try db.execute(sql: "ALTER TABLE template_sets ADD COLUMN updated_at TEXT")
+
+        // Backfill from existing timestamps
+        try db.execute(sql: """
+            UPDATE workout_sessions SET updated_at = COALESCE(end_time, start_time, date || 'T00:00:00Z')
+        """)
+        try db.execute(sql: """
+            UPDATE session_exercises SET updated_at = (
+                SELECT COALESCE(ws.end_time, ws.start_time)
+                FROM workout_sessions ws
+                WHERE ws.id = session_exercises.workout_session_id
+            )
+        """)
+        try db.execute(sql: """
+            UPDATE session_sets SET updated_at = COALESCE(completed_at, (
+                SELECT ws.start_time
+                FROM workout_sessions ws
+                JOIN session_exercises se ON se.workout_session_id = ws.id
+                WHERE se.id = session_sets.session_exercise_id
+            ))
+        """)
+        try db.execute(sql: """
+            UPDATE template_exercises SET updated_at = (
+                SELECT wt.updated_at
+                FROM workout_templates wt
+                WHERE wt.id = template_exercises.workout_template_id
+            )
+        """)
+        try db.execute(sql: """
+            UPDATE template_sets SET updated_at = (
+                SELECT wt.updated_at
+                FROM workout_templates wt
+                JOIN template_exercises te ON te.workout_template_id = wt.id
+                WHERE te.id = template_sets.template_exercise_id
+            )
+        """)
+
+        // Sync engine state table for CKSyncEngine
+        try db.execute(sql: """
+            CREATE TABLE IF NOT EXISTS sync_engine_state (
+                id TEXT PRIMARY KEY DEFAULT 'default',
+                data BLOB NOT NULL
+            )
+        """)
     }
 
     private func migrateToV4(_ db: Database) throws {

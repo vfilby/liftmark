@@ -286,23 +286,22 @@ final class GymStoreTests: XCTestCase {
         super.tearDown()
     }
 
-    func testLoadGymsReturnsSeededGym() {
+    func testLoadGymsStartsEmpty() {
         store.loadGyms()
-        // The DB migration seeds a "My Gym" default gym
-        XCTAssertFalse(store.gyms.isEmpty)
-        XCTAssertTrue(store.gyms.contains { $0.isDefault })
+        // No default gym is seeded — users create gyms as needed
+        XCTAssertTrue(store.gyms.isEmpty)
     }
 
     func testCreateGym() {
         store.loadGyms()
-        let initialCount = store.gyms.count
         store.createGym(name: "Iron Paradise")
-        XCTAssertEqual(store.gyms.count, initialCount + 1)
+        XCTAssertEqual(store.gyms.count, 1)
         XCTAssertTrue(store.gyms.contains { $0.name == "Iron Paradise" })
     }
 
     func testDeleteGym() {
         store.loadGyms()
+        store.createGym(name: "First Gym")
         store.createGym(name: "Temp Gym")
         let tempGym = store.gyms.first { $0.name == "Temp Gym" }!
         let countBefore = store.gyms.count
@@ -313,10 +312,8 @@ final class GymStoreTests: XCTestCase {
 
     func testDeleteGymPreventsLastGymDeletion() {
         store.loadGyms()
-        // Remove all but one gym first
-        while store.gyms.count > 1 {
-            store.deleteGym(id: store.gyms.last!.id)
-        }
+        store.createGym(name: "Only Gym")
+        XCTAssertEqual(store.gyms.count, 1)
         let lastGym = store.gyms[0]
         store.deleteGym(id: lastGym.id)
         XCTAssertEqual(store.gyms.count, 1) // Should not delete last gym
@@ -324,6 +321,7 @@ final class GymStoreTests: XCTestCase {
 
     func testSetDefault() {
         store.loadGyms()
+        store.createGym(name: "First Gym")
         store.createGym(name: "New Gym")
         let newGym = store.gyms.first { $0.name == "New Gym" }!
         XCTAssertFalse(newGym.isDefault)
@@ -337,6 +335,7 @@ final class GymStoreTests: XCTestCase {
 
     func testDeletedGymStaysDeletedAfterReload() {
         store.loadGyms()
+        store.createGym(name: "Keep Gym")
         store.createGym(name: "Temp Gym")
         let tempGym = store.gyms.first { $0.name == "Temp Gym" }!
 
@@ -352,6 +351,7 @@ final class GymStoreTests: XCTestCase {
 
     func testDeletedGymIsSoftDeleted() throws {
         store.loadGyms()
+        store.createGym(name: "Keep Gym")
         store.createGym(name: "Soft Delete Test")
         let gym = store.gyms.first { $0.name == "Soft Delete Test" }!
 
@@ -368,6 +368,7 @@ final class GymStoreTests: XCTestCase {
 
     func testDeleteDefaultGymReassignsDefault() {
         store.loadGyms()
+        store.createGym(name: "First Gym")
         store.createGym(name: "Second Gym")
 
         // Set up: first gym is default
@@ -381,7 +382,7 @@ final class GymStoreTests: XCTestCase {
 
     func testExactlyOneDefaultGymAtAllTimes() {
         store.loadGyms()
-        store.createGym(name: "Gym A")
+        store.createGym(name: "Gym A") // first gym becomes default
         store.createGym(name: "Gym B")
         store.createGym(name: "Gym C")
 
@@ -391,7 +392,7 @@ final class GymStoreTests: XCTestCase {
 
     func testSetDefaultClearsOtherDefaults() {
         store.loadGyms()
-        store.createGym(name: "Gym A")
+        store.createGym(name: "Gym A") // first gym becomes default
         store.createGym(name: "Gym B")
 
         let gymA = store.gyms.first { $0.name == "Gym A" }!
@@ -407,8 +408,9 @@ final class GymStoreTests: XCTestCase {
 
     func testCreateFirstGymIsDefault() {
         // Start with empty DB — deleteDatabase already ran in setUp
-        // The seeded gym counts as the first gym
         store.loadGyms()
+        XCTAssertTrue(store.gyms.isEmpty, "Should start with no gyms")
+        store.createGym(name: "First Gym")
         XCTAssertEqual(store.gyms.filter(\.isDefault).count, 1,
                        "First gym created should be the default")
     }
@@ -425,6 +427,7 @@ final class EquipmentStoreTests: XCTestCase {
         store = EquipmentStore()
         gymStore = GymStore()
         gymStore.loadGyms()
+        gymStore.createGym(name: "Test Gym")
     }
 
     override func tearDown() {

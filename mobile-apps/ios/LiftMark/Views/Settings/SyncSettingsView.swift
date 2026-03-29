@@ -7,7 +7,6 @@ struct SyncSettingsView: View {
     @State private var syncEnabled: Bool = true
     @State private var lastSyncDate: Date?
     @State private var lastSyncStats: LastSyncStats?
-    @State private var syncErrorMessage: String?
 
     var body: some View {
         List {
@@ -34,7 +33,7 @@ struct SyncSettingsView: View {
                 Button {
                     Task {
                         isCheckingStatus = true
-                        accountStatus = await CloudKitService.shared.getAccountStatus()
+                        accountStatus = await CKSyncEngineManager.shared.getAccountStatus()
                         isCheckingStatus = false
                     }
                 } label: {
@@ -59,7 +58,7 @@ struct SyncSettingsView: View {
                         Label("Enable Sync", systemImage: "arrow.triangle.2.circlepath")
                     }
                     .onChange(of: syncEnabled) { _, newValue in
-                        CloudKitService.shared.setSyncEnabled(newValue)
+                        CKSyncEngineManager.shared.setSyncEnabled(newValue)
                     }
                     .accessibilityIdentifier("switch-enable-sync")
 
@@ -103,21 +102,10 @@ struct SyncSettingsView: View {
 
                     Button {
                         isSyncing = true
-                        syncErrorMessage = nil
-                        Task {
-                            let result = await SyncManager.shared.triggerSync()
-                            if let result {
-                                if result.success {
-                                    lastSyncDate = result.timestamp
-                                    lastSyncStats = LastSyncStats(
-                                        uploaded: result.uploaded,
-                                        downloaded: result.downloaded,
-                                        conflicts: result.conflicts
-                                    )
-                                } else {
-                                    syncErrorMessage = result.errors.joined(separator: "\n")
-                                }
-                            }
+                        CKSyncEngineManager.shared.fetchChanges()
+                        // The sync engine works asynchronously; the .syncCompleted
+                        // notification will refresh the UI when it finishes.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                             isSyncing = false
                         }
                     } label: {
@@ -131,12 +119,6 @@ struct SyncSettingsView: View {
                     }
                     .disabled(isSyncing || !syncEnabled)
                     .accessibilityIdentifier("sync-now-button")
-
-                    if let syncErrorMessage {
-                        Text(syncErrorMessage)
-                            .font(.caption)
-                            .foregroundStyle(LiftMarkTheme.destructive)
-                    }
                 }
             }
 
@@ -165,7 +147,7 @@ struct SyncSettingsView: View {
             refreshSyncState()
             Task {
                 isCheckingStatus = true
-                accountStatus = await CloudKitService.shared.getAccountStatus()
+                accountStatus = await CKSyncEngineManager.shared.getAccountStatus()
                 isCheckingStatus = false
             }
         }
@@ -177,9 +159,9 @@ struct SyncSettingsView: View {
     // MARK: - Helpers
 
     private func refreshSyncState() {
-        syncEnabled = CloudKitService.shared.getSyncEnabled()
-        lastSyncDate = CloudKitService.shared.getLastSyncDate()
-        lastSyncStats = CloudKitService.shared.getLastSyncStats()
+        syncEnabled = CKSyncEngineManager.shared.getSyncEnabled()
+        lastSyncDate = CKSyncEngineManager.shared.getLastSyncDate()
+        lastSyncStats = CKSyncEngineManager.shared.getLastSyncStats()
     }
 
     // MARK: - Status Display

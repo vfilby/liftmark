@@ -121,6 +121,7 @@ struct PlannedExerciseRow: Codable, FetchableRecord, PersistableRecord, Hashable
     var groupType: String?
     var groupName: String?
     var parentExerciseId: String?
+    var updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -132,6 +133,7 @@ struct PlannedExerciseRow: Codable, FetchableRecord, PersistableRecord, Hashable
         case groupType = "group_type"
         case groupName = "group_name"
         case parentExerciseId = "parent_exercise_id"
+        case updatedAt = "updated_at"
     }
 }
 
@@ -205,6 +207,7 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var isPerSide: Int // SQLite boolean
     var isAmrap: Int // SQLite boolean
     var notes: String?
+    var updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -221,5 +224,6 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case isPerSide = "is_per_side"
         case isAmrap = "is_amrap"
         case notes
+        case updatedAt = "updated_at"
     }
 }
