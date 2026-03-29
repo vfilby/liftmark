@@ -13,4 +13,4 @@ Swing, hold, then max reps to finish.
 - 60s
 - 45 lbs x 45s
 - 45 lbs for 30s
-- AMRAP
+- 45 lbs x AMRAP

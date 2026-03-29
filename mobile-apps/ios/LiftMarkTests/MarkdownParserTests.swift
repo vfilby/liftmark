@@ -629,7 +629,7 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertNil(result.data?.exercises[0].sets[0].targetWeight)
     }
 
-    func testAMRAPOnly() {
+    func testStandaloneAMRAPRejected() {
         let markdown = """
         # Workout
         ## Push-ups
@@ -637,8 +637,8 @@ final class MarkdownParserTests: XCTestCase {
         """
         let result = MarkdownParser.parseWorkout(markdown)
 
-        XCTAssertTrue(result.success)
-        XCTAssertTrue(result.data?.exercises[0].sets[0].isAmrap ?? false)
+        XCTAssertFalse(result.success)
+        XCTAssertTrue(result.errors.contains(where: { $0.contains("AMRAP") }))
     }
 
     func testWeightedAMRAP() {

@@ -53,7 +53,7 @@
 ### Push-ups
 - 15
 - 12 @dropset
-- AMRAP
+- bw x AMRAP
 
 ## Cool Down
 

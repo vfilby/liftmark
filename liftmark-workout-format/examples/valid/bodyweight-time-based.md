@@ -5,7 +5,7 @@
 - 10 @rest: 120s
 - 8 @rest: 120s
 - 6 @rest: 120s
-- AMRAP
+- bw x AMRAP
 
 ## Dips
 - 12 @rest: 90s

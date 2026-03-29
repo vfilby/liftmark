@@ -714,9 +714,14 @@ function parseMainSetContent(
   const original = content.trim();
   const trimmedLower = original.toLowerCase();
 
-  // Handle AMRAP only
+  // Reject standalone AMRAP — AMRAP must modify a weight (e.g., "135 x AMRAP", "bw x AMRAP")
   if (trimmedLower === 'amrap') {
-    return { set: { isAmrap: true }, trailingText: null };
+    context.errors.push({
+      line: lineNumber,
+      message: 'Standalone "AMRAP" is not valid. AMRAP must be used with a weight (e.g., "135 x AMRAP" or "bw x AMRAP")',
+      code: 'STANDALONE_AMRAP',
+    });
+    return null;
   }
 
   // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")

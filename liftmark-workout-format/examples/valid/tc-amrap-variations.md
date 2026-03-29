@@ -8,7 +8,7 @@
 - x AMRAP
 
 ## Push-ups
-- AMRAP
+- bw x AMRAP
 
 ## Dumbbell Row
 - 50 lbs x amrap

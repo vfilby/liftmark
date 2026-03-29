@@ -126,6 +126,20 @@ without a proper workout`;
     expect(result.success).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });
+
+  it('rejects standalone AMRAP in exercise with other valid sets', () => {
+    const markdown = `# Workout
+@units: lbs
+
+## Push-ups
+- 15
+- 12 @dropset
+- AMRAP`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(false);
+    expect(result.errors.some(e => e.includes('AMRAP'))).toBe(true);
+  });
 });
 
 // MARK: - Tags
@@ -598,14 +612,14 @@ describe('Edge Cases', () => {
     expect(result.data?.exercises[0].sets[0].targetWeight).toBeNull();
   });
 
-  it('parses AMRAP only', () => {
+  it('rejects standalone AMRAP (no weight)', () => {
     const markdown = `# Workout
 ## Push-ups
 - AMRAP`;
     const result = parseWorkout(markdown);
 
-    expect(result.success).toBe(true);
-    expect(result.data?.exercises[0].sets[0].isAmrap).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.errors.some(e => e.includes('AMRAP'))).toBe(true);
   });
 
   it('parses weighted AMRAP', () => {

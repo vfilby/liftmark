@@ -32,4 +32,4 @@
 - 135 lbs x AMRAP
 - bw x AMRAP
 - x AMRAP
-- AMRAP
+- x AMRAP
