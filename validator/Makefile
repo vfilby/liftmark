@@ -35,7 +35,7 @@ diff: bundle
 	cd cdk && npx cdk diff
 
 deploy: bundle
-	cd cdk && npx cdk deploy --require-approval never
+	cd cdk && npx cdk deploy --require-approval any-change
 
 destroy:
 	cd cdk && npx cdk destroy
