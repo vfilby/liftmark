@@ -170,7 +170,7 @@ final class WorkoutHighlightsIntegrationTests: XCTestCase {
             )]
         )
         try planRepo.create(plan)
-        let session = try sessionRepo.createFromPlan(plan)
+        let (session, _) = try sessionRepo.createFromPlan(plan)
 
         for ex in session.exercises {
             for set in ex.sets {
@@ -218,7 +218,7 @@ final class WorkoutHighlightsIntegrationTests: XCTestCase {
         }
         let plan = WorkoutPlan(name: name, exercises: plannedExercises)
         try planRepo.create(plan)
-        let session = try sessionRepo.createFromPlan(plan)
+        let (session, _) = try sessionRepo.createFromPlan(plan)
 
         // Complete all sets
         for exercise in session.exercises {

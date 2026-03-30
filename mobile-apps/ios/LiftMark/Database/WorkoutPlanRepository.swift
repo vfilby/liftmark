@@ -53,7 +53,8 @@ struct WorkoutPlanRepository {
 
     // MARK: - Write
 
-    func create(_ plan: WorkoutPlan) throws {
+    @discardableResult
+    func create(_ plan: WorkoutPlan) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         try dbQueue.write { db in
             let tagsJSON = try JSONEncoder().encode(plan.tags)
@@ -111,17 +112,18 @@ struct WorkoutPlanRepository {
             }
         }
 
-        // Notify sync engine
-        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: plan.id)
+        var changes: [SyncChange] = [.save(recordType: "WorkoutPlan", recordID: plan.id)]
         for exercise in plan.exercises {
-            CKSyncEngineManager.notifySave(recordType: "PlannedExercise", recordID: exercise.id)
+            changes.append(.save(recordType: "PlannedExercise", recordID: exercise.id))
             for set in exercise.sets {
-                CKSyncEngineManager.notifySave(recordType: "PlannedSet", recordID: set.id)
+                changes.append(.save(recordType: "PlannedSet", recordID: set.id))
             }
         }
+        return changes
     }
 
-    func update(_ plan: WorkoutPlan) throws {
+    @discardableResult
+    func update(_ plan: WorkoutPlan) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
 
         // Collect old exercise/set IDs before deletion for sync notifications
@@ -200,23 +202,26 @@ struct WorkoutPlanRepository {
             }
         }
 
-        // Notify sync engine: delete old exercises/sets, save new ones
+        // Build sync changes: delete old exercises/sets, save new ones
+        var changes: [SyncChange] = []
         for setId in oldSetIds {
-            CKSyncEngineManager.notifyDelete(recordType: "PlannedSet", recordID: setId)
+            changes.append(.delete(recordType: "PlannedSet", recordID: setId))
         }
         for exId in oldExerciseIds {
-            CKSyncEngineManager.notifyDelete(recordType: "PlannedExercise", recordID: exId)
+            changes.append(.delete(recordType: "PlannedExercise", recordID: exId))
         }
-        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: plan.id)
+        changes.append(.save(recordType: "WorkoutPlan", recordID: plan.id))
         for exercise in plan.exercises {
-            CKSyncEngineManager.notifySave(recordType: "PlannedExercise", recordID: exercise.id)
+            changes.append(.save(recordType: "PlannedExercise", recordID: exercise.id))
             for set in exercise.sets {
-                CKSyncEngineManager.notifySave(recordType: "PlannedSet", recordID: set.id)
+                changes.append(.save(recordType: "PlannedSet", recordID: set.id))
             }
         }
+        return changes
     }
 
-    func delete(_ id: String) throws {
+    @discardableResult
+    func delete(_ id: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         // Collect child IDs before cascading delete
         let (exerciseIds, setIds) = try dbQueue.read { db -> ([String], [String]) in
@@ -233,16 +238,19 @@ struct WorkoutPlanRepository {
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM workout_templates WHERE id = ?", arguments: [id])
         }
+        var changes: [SyncChange] = []
         for setId in setIds {
-            CKSyncEngineManager.notifyDelete(recordType: "PlannedSet", recordID: setId)
+            changes.append(.delete(recordType: "PlannedSet", recordID: setId))
         }
         for exId in exerciseIds {
-            CKSyncEngineManager.notifyDelete(recordType: "PlannedExercise", recordID: exId)
+            changes.append(.delete(recordType: "PlannedExercise", recordID: exId))
         }
-        CKSyncEngineManager.notifyDelete(recordType: "WorkoutPlan", recordID: id)
+        changes.append(.delete(recordType: "WorkoutPlan", recordID: id))
+        return changes
     }
 
-    func toggleFavorite(_ id: String) throws {
+    @discardableResult
+    func toggleFavorite(_ id: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         try dbQueue.write { db in
             try db.execute(
@@ -250,7 +258,7 @@ struct WorkoutPlanRepository {
                 arguments: [id]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "WorkoutPlan", recordID: id)
+        return [.save(recordType: "WorkoutPlan", recordID: id)]
     }
 
     // MARK: - Assembly

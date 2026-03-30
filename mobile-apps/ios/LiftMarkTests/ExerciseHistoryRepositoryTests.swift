@@ -124,7 +124,7 @@ final class ExerciseHistoryRepositoryTests: XCTestCase {
         }
         let plan = WorkoutPlan(name: "Test", exercises: plannedExercises)
         try planRepo.create(plan)
-        let session = try sessionRepo.createFromPlan(plan)
+        let (session, _) = try sessionRepo.createFromPlan(plan)
 
         // Complete all sets
         for exercise in session.exercises {

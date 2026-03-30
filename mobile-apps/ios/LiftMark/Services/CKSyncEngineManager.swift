@@ -17,14 +17,6 @@ enum CloudKitAccountStatus: String {
     case error
 }
 
-// MARK: - Last Sync Stats
-
-struct LastSyncStats {
-    var uploaded: Int
-    var downloaded: Int
-    var conflicts: Int
-}
-
 // MARK: - CKSyncEngineManager
 
 final class CKSyncEngineManager: @unchecked Sendable {
@@ -37,11 +29,13 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     /// Track record types for pending changes (CKRecord.ID doesn't carry type)
     private var pendingRecordTypes: [String: String] = [:] // recordID.recordName -> recordType
-    /// Records that already exist on the server — skip these in nextRecordZoneChangeBatch
-    private var resolvedConflicts = Set<String>() // recordID.recordName
     private let lock = NSLock()
 
     private var currentSnapshot: SessionSnapshot?
+
+    // Composed helpers
+    private let metadataStore = CKSyncMetadataStore()
+    private lazy var conflictResolver = CKSyncConflictResolver(mapper: mapper)
 
     private init() {}
 
@@ -108,99 +102,12 @@ final class CKSyncEngineManager: @unchecked Sendable {
         }
     }
 
-    // MARK: - Sync Metadata
+    // MARK: - Sync Metadata (delegated)
 
-    func getLastSyncDate() -> Date? {
-        do {
-            let dbQueue = try DatabaseManager.shared.database()
-            return try dbQueue.read { db in
-                let row = try Row.fetchOne(db, sql: "SELECT last_sync_date FROM sync_metadata LIMIT 1")
-                if let row, let dateString: String = row["last_sync_date"] {
-                    return ISO8601DateFormatter().date(from: dateString)
-                }
-                return nil
-            }
-        } catch {
-            Logger.shared.error(.sync, "Failed to read last sync date", error: error)
-            return nil
-        }
-    }
-
-    func getLastSyncStats() -> LastSyncStats? {
-        do {
-            let dbQueue = try DatabaseManager.shared.database()
-            return try dbQueue.read { db in
-                let row = try Row.fetchOne(db, sql: "SELECT last_sync_date, last_uploaded, last_downloaded, last_conflicts FROM sync_metadata LIMIT 1")
-                guard let row, let _: String = row["last_sync_date"] else { return nil }
-                return LastSyncStats(
-                    uploaded: row["last_uploaded"] ?? 0,
-                    downloaded: row["last_downloaded"] ?? 0,
-                    conflicts: row["last_conflicts"] ?? 0
-                )
-            }
-        } catch {
-            Logger.shared.error(.sync, "Failed to read last sync stats", error: error)
-            return nil
-        }
-    }
-
-    func getSyncEnabled() -> Bool {
-        do {
-            let dbQueue = try DatabaseManager.shared.database()
-            return try dbQueue.read { db in
-                let row = try Row.fetchOne(db, sql: "SELECT sync_enabled FROM sync_metadata LIMIT 1")
-                if let row, let value: Int = row["sync_enabled"] {
-                    return value != 0
-                }
-                return true // default on
-            }
-        } catch {
-            return true
-        }
-    }
-
-    func setSyncEnabled(_ enabled: Bool) {
-        do {
-            let dbQueue = try DatabaseManager.shared.database()
-            let now = ISO8601DateFormatter().string(from: Date())
-            try dbQueue.write { db in
-                let existing = try Row.fetchOne(db, sql: "SELECT id FROM sync_metadata LIMIT 1")
-                if existing != nil {
-                    try db.execute(sql: "UPDATE sync_metadata SET sync_enabled = ?, updated_at = ?", arguments: [enabled ? 1 : 0, now])
-                } else {
-                    try db.execute(
-                        sql: "INSERT INTO sync_metadata (id, device_id, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                        arguments: [IDGenerator.generate(), UUID().uuidString, enabled ? 1 : 0, now, now]
-                    )
-                }
-            }
-        } catch {
-            Logger.shared.error(.sync, "Failed to update sync enabled", error: error)
-        }
-    }
-
-    private func updateSyncMetadata() {
-        do {
-            let dbQueue = try DatabaseManager.shared.database()
-            let now = ISO8601DateFormatter().string(from: Date())
-            try dbQueue.write { db in
-                let existing = try Row.fetchOne(db, sql: "SELECT id FROM sync_metadata LIMIT 1")
-                if existing != nil {
-                    try db.execute(
-                        sql: "UPDATE sync_metadata SET last_sync_date = ?, updated_at = ?",
-                        arguments: [now, now]
-                    )
-                } else {
-                    try db.execute(
-                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-                        arguments: [IDGenerator.generate(), UUID().uuidString, now, 1, now, now]
-                    )
-                }
-            }
-        } catch {
-            Logger.shared.error(.sync, "Failed to update sync metadata", error: error)
-        }
-    }
+    func getLastSyncDate() -> Date? { metadataStore.getLastSyncDate() }
+    func getLastSyncStats() -> LastSyncStats? { metadataStore.getLastSyncStats() }
+    func getSyncEnabled() -> Bool { metadataStore.getSyncEnabled() }
+    func setSyncEnabled(_ enabled: Bool) { metadataStore.setSyncEnabled(enabled) }
 
     // MARK: - Manual Fetch
 
@@ -230,19 +137,11 @@ final class CKSyncEngineManager: @unchecked Sendable {
         manager.engine?.state.add(pendingRecordZoneChanges: [.deleteRecord(ckRecordID)])
     }
 
-    private func isConflictResolved(_ recordName: String) -> Bool {
-        lock.lock()
-        let resolved = resolvedConflicts.contains(recordName)
-        lock.unlock()
-        return resolved
-    }
-
     // MARK: - Zone Management
 
     private func createZoneAndScheduleFullUpload() async {
         Logger.shared.info(.sync, "[sync-engine] Creating zone \(zoneID.zoneName)...")
 
-        // Create the custom zone
         let zone = CKRecordZone(zoneID: zoneID)
         do {
             _ = try await container.privateCloudDatabase.save(zone)
@@ -256,7 +155,6 @@ final class CKSyncEngineManager: @unchecked Sendable {
             }
         }
 
-        // Collect all local record IDs and schedule them for upload
         scheduleFullUpload()
     }
 
@@ -332,7 +230,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
         }
     }
 
-    // MARK: - Event Handlers
+    // MARK: - Fetched Changes
 
     /// Dependency order for merging: parents before children.
     private static let mergeOrder = [
@@ -407,68 +305,17 @@ final class CKSyncEngineManager: @unchecked Sendable {
         }
     }
 
+    // MARK: - Sent Changes (delegated)
+
     private func handleSentChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
-        // Clean up successfully saved records
-        for savedRecord in event.savedRecords {
-            let recordName = savedRecord.recordID.recordName
-            lock.lock()
-            pendingRecordTypes.removeValue(forKey: recordName)
-            lock.unlock()
-        }
-
-        // Handle conflicts: merge server record into local DB, then stop retrying.
-        // The server version is now local. Future local changes will be queued via notifySave.
-        for failedSave in event.failedRecordSaves {
-            let recordName = failedSave.record.recordID.recordName
-            let error = failedSave.error
-
-            switch error.code {
-            case .serverRecordChanged:
-                if let serverRecord = error.serverRecord {
-                    do {
-                        _ = try mapper.mergeIncoming(serverRecord)
-                        Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordName)")
-                    } catch {
-                        Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordName)", error: error)
-                    }
-                    // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
-                    lock.lock()
-                    resolvedConflicts.insert(recordName)
-                    lock.unlock()
-                }
-
-            case .networkFailure, .networkUnavailable:
-                Logger.shared.warn(.sync, "[sync-engine] Network unavailable for \(recordName), CKSyncEngine will retry")
-
-            case .quotaExceeded:
-                Logger.shared.error(.sync, "[sync-engine] iCloud storage quota exceeded — user may need to free up iCloud space")
-
-            case .notAuthenticated:
-                Logger.shared.error(.sync, "[sync-engine] Not authenticated — user needs to sign in to iCloud")
-
-            case .unknownItem:
-                Logger.shared.warn(.sync, "[sync-engine] Unknown item \(recordName) (parent likely deleted), removing from pending")
-                let ckRecordID = failedSave.record.recordID
-                engine?.state.remove(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
-                lock.lock()
-                pendingRecordTypes.removeValue(forKey: recordName)
-                lock.unlock()
-
-            case .partialFailure:
-                if let partialErrors = error.partialErrorsByItemID {
-                    for (itemID, itemError) in partialErrors {
-                        Logger.shared.error(.sync, "[sync-engine] Partial failure for \(itemID): \(itemError.localizedDescription)")
-                    }
-                } else {
-                    Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordName): \(error.localizedDescription)")
-                }
-
-            default:
-                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordName): code=\(error.code.rawValue) \(error.localizedDescription)")
-            }
-        }
-
+        conflictResolver.handleSentChanges(event, removePendingType: { recordName in
+            self.lock.lock()
+            self.pendingRecordTypes.removeValue(forKey: recordName)
+            self.lock.unlock()
+        }, engine: engine)
     }
+
+    // MARK: - Account Changes
 
     private func handleAccountChange(_ event: CKSyncEngine.Event.AccountChange) {
         switch event.changeType {
@@ -535,7 +382,7 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
                 SyncSessionGuard.validateAndRestore(snapshot: snapshot)
             }
             currentSnapshot = nil
-            updateSyncMetadata()
+            metadataStore.updateSyncMetadata()
             await MainActor.run {
                 NotificationCenter.default.post(name: .syncCompleted, object: nil)
             }
@@ -576,7 +423,7 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
             let recordName = recordID.recordName
 
             // Skip records that were already resolved via conflict merge
-            if self.isConflictResolved(recordName) {
+            if self.conflictResolver.isConflictResolved(recordName) {
                 return nil
             }
 
@@ -585,4 +432,3 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
         return batch
     }
 }
-

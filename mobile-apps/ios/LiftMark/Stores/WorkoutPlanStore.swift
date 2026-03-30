@@ -22,7 +22,8 @@ final class WorkoutPlanStore {
 
     func createPlan(_ plan: WorkoutPlan) {
         do {
-            try repository.create(plan)
+            let changes = try repository.create(plan)
+            SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
             print("Failed to create plan: \(error)")
@@ -31,7 +32,8 @@ final class WorkoutPlanStore {
 
     func updatePlan(_ plan: WorkoutPlan) {
         do {
-            try repository.update(plan)
+            let changes = try repository.update(plan)
+            SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
             print("Failed to update plan: \(error)")
@@ -40,7 +42,8 @@ final class WorkoutPlanStore {
 
     func deletePlan(id: String) {
         do {
-            try repository.delete(id)
+            let changes = try repository.delete(id)
+            SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
             print("Failed to delete plan: \(error)")
@@ -70,7 +73,8 @@ final class WorkoutPlanStore {
 
     func toggleFavorite(id: String) {
         do {
-            try repository.toggleFavorite(id)
+            let changes = try repository.toggleFavorite(id)
+            SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
             print("Failed to toggle favorite: \(error)")

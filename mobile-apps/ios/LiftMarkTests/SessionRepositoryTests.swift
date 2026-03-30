@@ -29,7 +29,7 @@ final class SessionRepositoryTests: XCTestCase {
         ])
         try planRepo.create(plan)
 
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         XCTAssertEqual(session.name, plan.name)
         XCTAssertEqual(session.status, .inProgress)
         XCTAssertEqual(session.exercises.count, 1)
@@ -44,7 +44,7 @@ final class SessionRepositoryTests: XCTestCase {
         let plan = makePlan()
         try planRepo.create(plan)
 
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         XCTAssertEqual(session.workoutPlanId, plan.id)
     }
 
@@ -65,7 +65,7 @@ final class SessionRepositoryTests: XCTestCase {
             makePlannedExercise(name: "Squat", sets: [makePlannedSet(weight: 315, reps: 3)])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         let fetched = try repo.getById(session.id)
         XCTAssertNotNil(fetched)
@@ -82,7 +82,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testGetActiveSessionReturnsInProgressSession() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         let active = try repo.getActiveSession()
         XCTAssertNotNil(active)
@@ -92,7 +92,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testGetActiveSessionReturnsNilWhenNoActive() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         try repo.complete(session.id)
 
         let active = try repo.getActiveSession()
@@ -104,7 +104,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testCompleteSession() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         try repo.complete(session.id)
 
@@ -116,7 +116,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testCancelSession() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         try repo.cancel(session.id)
 
@@ -127,8 +127,8 @@ final class SessionRepositoryTests: XCTestCase {
     func testCancelAllInProgressCancelsStaleSession() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let s1 = try repo.createFromPlan(plan)
-        let s2 = try repo.createFromPlan(plan)
+        let (s1, _) = try repo.createFromPlan(plan)
+        let (s2, _) = try repo.createFromPlan(plan)
 
         try repo.cancelAllInProgress()
 
@@ -142,7 +142,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testCancelAllInProgressDoesNotAffectCompletedSessions() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let s1 = try repo.createFromPlan(plan)
+        let (s1, _) = try repo.createFromPlan(plan)
         try repo.complete(s1.id)
 
         try repo.cancelAllInProgress()
@@ -156,8 +156,8 @@ final class SessionRepositoryTests: XCTestCase {
     func testGetCompletedReturnsOnlyCompletedSessions() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let s1 = try repo.createFromPlan(plan)
-        let s2 = try repo.createFromPlan(plan)
+        let (s1, _) = try repo.createFromPlan(plan)
+        let (s2, _) = try repo.createFromPlan(plan)
         try repo.complete(s1.id)
         // s2 stays in_progress
 
@@ -171,7 +171,7 @@ final class SessionRepositoryTests: XCTestCase {
     func testDeleteSession() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         try repo.delete(session.id)
         XCTAssertNil(try repo.getById(session.id))
@@ -183,7 +183,7 @@ final class SessionRepositoryTests: XCTestCase {
         let plan = makePlan()
         try planRepo.create(plan)
         for _ in 0..<5 {
-            let s = try repo.createFromPlan(plan)
+            let (s, _) = try repo.createFromPlan(plan)
             try repo.complete(s.id)
         }
 
@@ -198,7 +198,7 @@ final class SessionRepositoryTests: XCTestCase {
             makePlannedExercise(name: "Bench", sets: [makePlannedSet(weight: 225, reps: 5)])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         let setId = session.exercises[0].sets[0].id
 
         try repo.updateSessionSet(
@@ -226,7 +226,7 @@ final class SessionRepositoryTests: XCTestCase {
             makePlannedExercise(name: "Bench", sets: [makePlannedSet(weight: 225, reps: 5)])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         let setId = session.exercises[0].sets[0].id
 
         try repo.updateSessionSetTarget(setId, targetWeight: 235, targetReps: 3, targetTime: nil)
@@ -242,7 +242,7 @@ final class SessionRepositoryTests: XCTestCase {
             makePlannedExercise(name: "Bench", sets: [makePlannedSet(weight: 225, reps: 5)])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         let setId = session.exercises[0].sets[0].id
 
         try repo.skipSet(setId)
@@ -256,9 +256,9 @@ final class SessionRepositoryTests: XCTestCase {
     func testInsertSessionExercise() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
-        let exerciseId = try repo.insertSessionExercise(
+        let (exerciseId, _) = try repo.insertSessionExercise(
             sessionId: session.id,
             exerciseName: "Overhead Press",
             orderIndex: 0,
@@ -275,8 +275,8 @@ final class SessionRepositoryTests: XCTestCase {
     func testInsertSessionSet() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
-        let exerciseId = try repo.insertSessionExercise(
+        let (session, _) = try repo.createFromPlan(plan)
+        let (exerciseId, _) = try repo.insertSessionExercise(
             sessionId: session.id,
             exerciseName: "Curls",
             orderIndex: 0
@@ -302,8 +302,8 @@ final class SessionRepositoryTests: XCTestCase {
     func testUpdateSessionExercise() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
-        let exerciseId = try repo.insertSessionExercise(
+        let (session, _) = try repo.createFromPlan(plan)
+        let (exerciseId, _) = try repo.insertSessionExercise(
             sessionId: session.id,
             exerciseName: "Curls",
             orderIndex: 0
@@ -323,8 +323,8 @@ final class SessionRepositoryTests: XCTestCase {
     func testDeleteSessionExercise() throws {
         let plan = makePlan()
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
-        let exerciseId = try repo.insertSessionExercise(
+        let (session, _) = try repo.createFromPlan(plan)
+        let (exerciseId, _) = try repo.insertSessionExercise(
             sessionId: session.id,
             exerciseName: "Curls",
             orderIndex: 0
@@ -344,7 +344,7 @@ final class SessionRepositoryTests: XCTestCase {
             ])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
         let setToDelete = session.exercises[0].sets[0].id
 
         try repo.deleteSessionSet(setToDelete)
@@ -363,7 +363,7 @@ final class SessionRepositoryTests: XCTestCase {
             ])
         ])
         try planRepo.create(plan)
-        let session = try repo.createFromPlan(plan)
+        let (session, _) = try repo.createFromPlan(plan)
 
         // Complete sets with actual values
         for exerciseSet in session.exercises[0].sets {

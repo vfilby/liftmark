@@ -22,8 +22,10 @@ final class SessionStore {
         do {
             // Cancel any stale in-progress sessions before starting a new one.
             // This prevents discarded or orphaned sessions from reappearing as resume candidates.
-            try repository.cancelAllInProgress()
-            let session = try repository.createFromPlan(plan)
+            let cancelChanges = try repository.cancelAllInProgress()
+            SyncChange.notifyAll(cancelChanges)
+            let (session, createChanges) = try repository.createFromPlan(plan)
+            SyncChange.notifyAll(createChanges)
             activeSession = session
             return session
         } catch {
@@ -35,7 +37,8 @@ final class SessionStore {
     func completeSession() {
         guard let session = activeSession else { return }
         do {
-            try repository.complete(session.id)
+            let changes = try repository.complete(session.id)
+            SyncChange.notifyAll(changes)
             // Reload completed sessions for highlights/PR comparison.
             // Keep activeSession non-nil to avoid disrupting navigation to the summary screen.
             sessions = try repository.getCompleted()
@@ -51,7 +54,8 @@ final class SessionStore {
     func cancelSession() {
         guard let session = activeSession else { return }
         do {
-            try repository.cancel(session.id)
+            let changes = try repository.cancel(session.id)
+            SyncChange.notifyAll(changes)
             activeSession = nil
         } catch {
             print("Failed to cancel session: \(error)")
@@ -60,7 +64,8 @@ final class SessionStore {
 
     func deleteSession(id: String) {
         do {
-            try repository.delete(id)
+            let changes = try repository.delete(id)
+            SyncChange.notifyAll(changes)
             loadSessions()
         } catch {
             print("Failed to delete session: \(error)")
@@ -71,7 +76,8 @@ final class SessionStore {
 
     func completeSet(setId: String, actualWeight: Double?, actualWeightUnit: WeightUnit?, actualReps: Int?, actualTime: Int?, actualRpe: Int?) {
         do {
-            try repository.updateSessionSet(setId, actualWeight: actualWeight, actualWeightUnit: actualWeightUnit, actualReps: actualReps, actualTime: actualTime, actualRpe: actualRpe, status: .completed)
+            let changes = try repository.updateSessionSet(setId, actualWeight: actualWeight, actualWeightUnit: actualWeightUnit, actualReps: actualReps, actualTime: actualTime, actualRpe: actualRpe, status: .completed)
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to complete set: \(error)")
@@ -80,7 +86,8 @@ final class SessionStore {
 
     func skipSet(setId: String) {
         do {
-            try repository.skipSet(setId)
+            let changes = try repository.skipSet(setId)
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to skip set: \(error)")
@@ -89,7 +96,8 @@ final class SessionStore {
 
     func updateSetTarget(setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) {
         do {
-            try repository.updateSessionSetTarget(setId, targetWeight: targetWeight, targetReps: targetReps, targetTime: targetTime)
+            let changes = try repository.updateSessionSetTarget(setId, targetWeight: targetWeight, targetReps: targetReps, targetTime: targetTime)
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to update set target: \(error)")
@@ -99,14 +107,16 @@ final class SessionStore {
     func addExercise(exerciseName: String, sets: [(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?)]) {
         guard let session = activeSession else { return }
         do {
+            var allChanges: [SyncChange] = []
             let orderIndex = session.exercises.count
-            let exerciseId = try repository.insertSessionExercise(
+            let (exerciseId, exerciseChanges) = try repository.insertSessionExercise(
                 sessionId: session.id,
                 exerciseName: exerciseName,
                 orderIndex: orderIndex
             )
+            allChanges.append(contentsOf: exerciseChanges)
             for (i, set) in sets.enumerated() {
-                try repository.insertSessionSet(
+                let setChanges = try repository.insertSessionSet(
                     exerciseId: exerciseId,
                     orderIndex: i,
                     targetWeight: set.weight,
@@ -114,7 +124,9 @@ final class SessionStore {
                     targetReps: set.reps,
                     targetTime: set.time
                 )
+                allChanges.append(contentsOf: setChanges)
             }
+            SyncChange.notifyAll(allChanges)
             reloadActiveSession()
         } catch {
             print("Failed to add exercise: \(error)")
@@ -126,7 +138,7 @@ final class SessionStore {
               let exercise = session.exercises.first(where: { $0.id == exerciseId }) else { return }
         do {
             let orderIndex = exercise.sets.count
-            try repository.insertSessionSet(
+            let changes = try repository.insertSessionSet(
                 exerciseId: exerciseId,
                 orderIndex: orderIndex,
                 targetWeight: targetWeight,
@@ -134,6 +146,7 @@ final class SessionStore {
                 targetReps: targetReps,
                 targetTime: targetTime
             )
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to add set: \(error)")
@@ -142,7 +155,8 @@ final class SessionStore {
 
     func deleteSet(setId: String) {
         do {
-            try repository.deleteSessionSet(setId)
+            let changes = try repository.deleteSessionSet(setId)
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to delete set: \(error)")
@@ -151,7 +165,8 @@ final class SessionStore {
 
     func updateExercise(exerciseId: String, name: String, notes: String?, equipmentType: String?) {
         do {
-            try repository.updateSessionExercise(exerciseId, name: name, notes: notes, equipmentType: equipmentType)
+            let changes = try repository.updateSessionExercise(exerciseId, name: name, notes: notes, equipmentType: equipmentType)
+            SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
             print("Failed to update exercise: \(error)")

@@ -52,7 +52,7 @@ struct SessionRepository {
 
     // MARK: - Write
 
-    func createFromPlan(_ plan: WorkoutPlan) throws -> WorkoutSession {
+    func createFromPlan(_ plan: WorkoutPlan) throws -> (WorkoutSession, [SyncChange]) {
         let dbQueue = try dbManager.database()
         let now = ISO8601DateFormatter().string(from: Date())
         let dateFormatter = DateFormatter()
@@ -190,19 +190,19 @@ struct SessionRepository {
             return try assembleSession(from: sessionRow, in: db)
         }
 
-        // Notify sync engine of all created records
-        CKSyncEngineManager.notifySave(recordType: "WorkoutSession", recordID: session.id)
+        var syncChanges: [SyncChange] = [.save(recordType: "WorkoutSession", recordID: session.id)]
         for exId in createdExerciseIds {
-            CKSyncEngineManager.notifySave(recordType: "SessionExercise", recordID: exId)
+            syncChanges.append(.save(recordType: "SessionExercise", recordID: exId))
         }
         for setId in createdSetIds {
-            CKSyncEngineManager.notifySave(recordType: "SessionSet", recordID: setId)
+            syncChanges.append(.save(recordType: "SessionSet", recordID: setId))
         }
 
-        return result
+        return (result, syncChanges)
     }
 
-    func complete(_ sessionId: String) throws {
+    @discardableResult
+    func complete(_ sessionId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = ISO8601DateFormatter().string(from: Date())
         try dbQueue.write { db in
@@ -217,10 +217,11 @@ struct SessionRepository {
                 arguments: [SessionStatus.completed.rawValue, now, duration, now, sessionId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "WorkoutSession", recordID: sessionId)
+        return [.save(recordType: "WorkoutSession", recordID: sessionId)]
     }
 
-    func cancel(_ sessionId: String) throws {
+    @discardableResult
+    func cancel(_ sessionId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         try dbQueue.write { db in
@@ -229,11 +230,12 @@ struct SessionRepository {
                 arguments: [SessionStatus.canceled.rawValue, now, sessionId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "WorkoutSession", recordID: sessionId)
+        return [.save(recordType: "WorkoutSession", recordID: sessionId)]
     }
 
     /// Cancel all in-progress sessions. Used to clean up stale sessions before starting a new workout.
-    func cancelAllInProgress() throws {
+    @discardableResult
+    func cancelAllInProgress() throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         let canceledIds: [String] = try dbQueue.write { db in
@@ -245,12 +247,11 @@ struct SessionRepository {
             )
             return ids
         }
-        for id in canceledIds {
-            CKSyncEngineManager.notifySave(recordType: "WorkoutSession", recordID: id)
-        }
+        return canceledIds.map { .save(recordType: "WorkoutSession", recordID: $0) }
     }
 
-    func delete(_ id: String) throws {
+    @discardableResult
+    func delete(_ id: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         // Collect child IDs before cascading delete
         let (exerciseIds, setIds) = try dbQueue.read { db -> ([String], [String]) in
@@ -267,13 +268,15 @@ struct SessionRepository {
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM workout_sessions WHERE id = ?", arguments: [id])
         }
+        var changes: [SyncChange] = []
         for setId in setIds {
-            CKSyncEngineManager.notifyDelete(recordType: "SessionSet", recordID: setId)
+            changes.append(.delete(recordType: "SessionSet", recordID: setId))
         }
         for exId in exerciseIds {
-            CKSyncEngineManager.notifyDelete(recordType: "SessionExercise", recordID: exId)
+            changes.append(.delete(recordType: "SessionExercise", recordID: exId))
         }
-        CKSyncEngineManager.notifyDelete(recordType: "WorkoutSession", recordID: id)
+        changes.append(.delete(recordType: "WorkoutSession", recordID: id))
+        return changes
     }
 
     /// Get recent completed sessions, ordered by end_time descending (most recently completed first).
@@ -340,7 +343,8 @@ struct SessionRepository {
 
     // MARK: - Set Mutations
 
-    func updateSessionSet(_ setId: String, actualWeight: Double?, actualWeightUnit: WeightUnit?, actualReps: Int?, actualTime: Int?, actualRpe: Int?, status: SetStatus) throws {
+    @discardableResult
+    func updateSessionSet(_ setId: String, actualWeight: Double?, actualWeightUnit: WeightUnit?, actualReps: Int?, actualTime: Int?, actualRpe: Int?, status: SetStatus) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         let completedAt = status == .completed ? now : nil
@@ -355,10 +359,11 @@ struct SessionRepository {
                 arguments: [actualWeight, actualWeightUnit?.rawValue, actualReps, actualTime, actualRpe, status.rawValue, completedAt, now, setId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionSet", recordID: setId)
+        return [.save(recordType: "SessionSet", recordID: setId)]
     }
 
-    func updateSessionSetTarget(_ setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) throws {
+    @discardableResult
+    func updateSessionSetTarget(_ setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         try dbQueue.write { db in
@@ -367,10 +372,11 @@ struct SessionRepository {
                 arguments: [targetWeight, targetReps, targetTime, now, setId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionSet", recordID: setId)
+        return [.save(recordType: "SessionSet", recordID: setId)]
     }
 
-    func skipSet(_ setId: String) throws {
+    @discardableResult
+    func skipSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         try dbQueue.write { db in
@@ -379,10 +385,10 @@ struct SessionRepository {
                 arguments: [SetStatus.skipped.rawValue, now, setId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionSet", recordID: setId)
+        return [.save(recordType: "SessionSet", recordID: setId)]
     }
 
-    func insertSessionExercise(sessionId: String, exerciseName: String, orderIndex: Int, notes: String? = nil, equipmentType: String? = nil) throws -> String {
+    func insertSessionExercise(sessionId: String, exerciseName: String, orderIndex: Int, notes: String? = nil, equipmentType: String? = nil) throws -> (String, [SyncChange]) {
         let dbQueue = try dbManager.database()
         let exerciseId = IDGenerator.generate()
         let now = self.now
@@ -402,11 +408,11 @@ struct SessionRepository {
             )
             try row.insert(db)
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionExercise", recordID: exerciseId)
-        return exerciseId
+        return (exerciseId, [.save(recordType: "SessionExercise", recordID: exerciseId)])
     }
 
-    func insertSessionSet(exerciseId: String, orderIndex: Int, targetWeight: Double? = nil, targetWeightUnit: WeightUnit? = nil, targetReps: Int? = nil, targetTime: Int? = nil) throws {
+    @discardableResult
+    func insertSessionSet(exerciseId: String, orderIndex: Int, targetWeight: Double? = nil, targetWeightUnit: WeightUnit? = nil, targetReps: Int? = nil, targetTime: Int? = nil) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let setId = IDGenerator.generate()
         let now = self.now
@@ -439,10 +445,11 @@ struct SessionRepository {
             )
             try row.insert(db)
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionSet", recordID: setId)
+        return [.save(recordType: "SessionSet", recordID: setId)]
     }
 
-    func updateSessionExercise(_ exerciseId: String, name: String, notes: String?, equipmentType: String?) throws {
+    @discardableResult
+    func updateSessionExercise(_ exerciseId: String, name: String, notes: String?, equipmentType: String?) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
         try dbQueue.write { db in
@@ -451,10 +458,11 @@ struct SessionRepository {
                 arguments: [name, notes, equipmentType, now, exerciseId]
             )
         }
-        CKSyncEngineManager.notifySave(recordType: "SessionExercise", recordID: exerciseId)
+        return [.save(recordType: "SessionExercise", recordID: exerciseId)]
     }
 
-    func deleteSessionExercise(_ exerciseId: String) throws {
+    @discardableResult
+    func deleteSessionExercise(_ exerciseId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         // Collect child set IDs before deleting
         let childSetIds = try dbQueue.read { db -> [String] in
@@ -464,18 +472,21 @@ struct SessionRepository {
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM session_exercises WHERE id = ?", arguments: [exerciseId])
         }
+        var changes: [SyncChange] = []
         for setId in childSetIds {
-            CKSyncEngineManager.notifyDelete(recordType: "SessionSet", recordID: setId)
+            changes.append(.delete(recordType: "SessionSet", recordID: setId))
         }
-        CKSyncEngineManager.notifyDelete(recordType: "SessionExercise", recordID: exerciseId)
+        changes.append(.delete(recordType: "SessionExercise", recordID: exerciseId))
+        return changes
     }
 
-    func deleteSessionSet(_ setId: String) throws {
+    @discardableResult
+    func deleteSessionSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         try dbQueue.write { db in
             try db.execute(sql: "DELETE FROM session_sets WHERE id = ?", arguments: [setId])
         }
-        CKSyncEngineManager.notifyDelete(recordType: "SessionSet", recordID: setId)
+        return [.delete(recordType: "SessionSet", recordID: setId)]
     }
 
     // MARK: - Assembly

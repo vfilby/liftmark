@@ -91,7 +91,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
             )]
         )
         try planRepo.create(plan)
-        let session = try sessionRepo.createFromPlan(plan)
+        let (session, _) = try sessionRepo.createFromPlan(plan)
 
         // Complete with actual values
         let setId = session.exercises[0].sets[0].id
@@ -489,7 +489,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         }
         let plan = WorkoutPlan(name: name, exercises: plannedExercises)
         try planRepo.create(plan)
-        let session = try sessionRepo.createFromPlan(plan)
+        let (session, _) = try sessionRepo.createFromPlan(plan)
 
         for exercise in session.exercises {
             for set in exercise.sets {
