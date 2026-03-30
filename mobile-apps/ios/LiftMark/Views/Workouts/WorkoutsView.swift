@@ -166,6 +166,7 @@ struct WorkoutsView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
                 .font(.system(size: 14))
+                .accessibilityHidden(true)
             TextField("Search plans...", text: $searchText)
                 .font(.body)
         }
@@ -199,6 +200,8 @@ struct WorkoutsView: View {
         .padding(.horizontal)
         .padding(.bottom, LiftMarkTheme.spacingXS)
         .accessibilityIdentifier("filter-toggle")
+        .accessibilityLabel(showFilters ? "Hide filters" : "Show filters")
+        .accessibilityHint("Toggles filter options for favorites and equipment")
     }
 
     // MARK: - Filter Panel
@@ -298,6 +301,7 @@ struct WorkoutsView: View {
             Image(systemName: "square.grid.3x3")
                 .font(.system(size: 48))
                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                .accessibilityHidden(true)
             Text(emptyStateTitle)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -352,6 +356,7 @@ struct WorkoutsView: View {
                         Image(systemName: "heart.fill")
                             .font(.caption)
                             .foregroundStyle(.pink)
+                            .accessibilityLabel("Favorite")
                     }
                 }
                 HStack(spacing: LiftMarkTheme.spacingSM) {
@@ -373,6 +378,7 @@ struct WorkoutsView: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()

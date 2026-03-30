@@ -34,6 +34,7 @@ struct RestTimerView: View {
                 .fontWeight(.semibold)
                 .monospacedDigit()
                 .foregroundStyle(displayRemaining <= 0 ? LiftMarkTheme.success : LiftMarkTheme.primary)
+                .accessibilityLabel("Rest timer, \(displayRemaining) seconds remaining")
 
             Button {
                 stopTimer()
@@ -51,6 +52,8 @@ struct RestTimerView: View {
                     )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Stop rest timer")
+            .accessibilityHint("Dismisses the rest timer and moves to the next set")
 
             Spacer()
         }
@@ -188,6 +191,7 @@ struct ExerciseTimerView: View {
                 .font(.system(size: 40, weight: .light, design: .monospaced))
                 .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.primary)
                 .tracking(1)
+                .accessibilityLabel("Exercise timer, \(displayElapsed) seconds elapsed")
 
             // Target label
             if let target = targetSeconds {
@@ -222,6 +226,7 @@ struct ExerciseTimerView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("exercise-timer-start-button")
+                .accessibilityLabel(isRunning ? "Pause timer" : (displayElapsed > 0 ? "Resume timer" : "Start timer"))
 
                 // Done button — available once the timer has been started.
                 if isRunning || displayElapsed > 0 {
@@ -240,6 +245,8 @@ struct ExerciseTimerView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("exercise-timer-done-button")
+                    .accessibilityLabel("Done")
+                    .accessibilityHint("Completes the timed set with the current elapsed time")
                 }
             }
         }

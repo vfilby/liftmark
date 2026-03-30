@@ -73,6 +73,7 @@ struct SupersetCard: View {
                         .frame(width: 24, height: 24)
                         .background(Color.purple)
                         .clipShape(Circle())
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: LiftMarkTheme.spacingXS) {
@@ -105,6 +106,8 @@ struct SupersetCard: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isCollapsed ? "Expand superset, \(completedSetCount) of \(totalSetCount) sets done" : "Collapse superset")
+            .accessibilityHint(isCollapsed ? "Shows all interleaved sets" : "Hides sets for this superset")
 
             if !isCollapsed {
                 // Interleaved sets

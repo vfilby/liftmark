@@ -68,6 +68,8 @@ struct ActiveExerciseCard: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(isCollapsed ? "Expand \(exercise.exerciseName), \(completedSetCount) of \(exercise.sets.count) sets done" : "Collapse \(exercise.exerciseName)")
+                .accessibilityHint(isCollapsed ? "Shows all sets for this exercise" : "Hides sets for this exercise")
 
                 // Edit button — separate from collapse toggle for reliable tap handling
                 if !isCollapsed {
@@ -81,6 +83,8 @@ struct ActiveExerciseCard: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("edit-exercise-button-\(exerciseIndex)")
+                    .accessibilityLabel("Edit \(exercise.exerciseName)")
+                    .accessibilityHint("Opens editor for exercise name, notes, and sets")
                 }
             }
 
@@ -142,14 +146,18 @@ struct ActiveExerciseCard: View {
                             Rectangle()
                                 .fill(LiftMarkTheme.tertiaryLabel.opacity(0.3))
                                 .frame(height: 1)
+                                .accessibilityHidden(true)
                             Text("Rest \(rest)s")
                                 .font(.caption2)
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                             Rectangle()
                                 .fill(LiftMarkTheme.tertiaryLabel.opacity(0.3))
                                 .frame(height: 1)
+                                .accessibilityHidden(true)
                         }
                         .padding(.vertical, 2)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Rest \(rest) seconds between sets")
                     }
                 }
 
@@ -160,6 +168,7 @@ struct ActiveExerciseCard: View {
                         HStack(spacing: LiftMarkTheme.spacingSM) {
                             Image(systemName: "play.rectangle")
                                 .font(.caption)
+                                .accessibilityHidden(true)
                             Text("Search \"\(exercise.exerciseName)\" on YouTube")
                                 .font(.caption)
                         }
@@ -167,6 +176,8 @@ struct ActiveExerciseCard: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .accessibilityIdentifier("youtube-link-\(exercise.exerciseName)")
+                    .accessibilityLabel("Search \(exercise.exerciseName) form videos on YouTube")
+                    .accessibilityHint("Opens YouTube in your browser")
                 }
             }
         }

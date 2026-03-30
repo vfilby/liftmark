@@ -102,6 +102,7 @@ struct SetRowView: View {
             }
         }
         .frame(width: 28)
+        .accessibilityLabel("Set \(setNumber), \(set.status == .completed ? "completed" : set.status == .skipped ? "skipped" : set.status == .failed ? "failed" : isCurrent ? "current" : "pending")")
     }
 
     // MARK: - Current Set (Editable)
@@ -114,6 +115,7 @@ struct SetRowView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "scalemass")
                         .font(.caption)
+                        .accessibilityHidden(true)
                     Text(plateMathText)
                         .font(.callout)
                 }
@@ -129,6 +131,8 @@ struct SetRowView: View {
                     alignment: .leading
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 6))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Plate loading: \(plateMathText)")
             }
 
             // Top row: indicator + inputs + skip
@@ -227,6 +231,8 @@ struct SetRowView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("set-skip-button")
+                .accessibilityLabel("Skip set \(setNumber)")
+                .accessibilityHint("Marks this set as skipped")
                 .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
             }
 
@@ -255,6 +261,8 @@ struct SetRowView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("set-complete-button")
+                .accessibilityLabel("Complete set \(setNumber)")
+                .accessibilityHint("Records this set with the entered weight and reps")
             }
         }
     }
@@ -423,6 +431,8 @@ struct SetRowView: View {
                     .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Save changes")
+            .accessibilityHint("Updates this set with the edited values")
             .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
 
             // Cancel button
@@ -439,6 +449,7 @@ struct SetRowView: View {
                     )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Cancel editing")
             .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
         }
     }

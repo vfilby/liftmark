@@ -88,6 +88,7 @@ struct WorkoutSummaryView: View {
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundStyle(.white)
                         }
+                        .accessibilityHidden(true)
 
                         Text("Workout Complete!")
                             .font(.system(size: 26, weight: .bold))
@@ -210,6 +211,8 @@ struct WorkoutSummaryView: View {
                     .background(LiftMarkTheme.secondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
                     .accessibilityIdentifier("workout-summary-completion")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Completion: \(completedSets) completed, \(skippedSets) skipped, \(Int(completionRate * 100)) percent rate")
 
                     // Exercise Summary
                     VStack(alignment: .leading, spacing: 0) {
@@ -276,6 +279,8 @@ struct WorkoutSummaryView: View {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .accessibilityIdentifier("share-session-button")
+                .accessibilityLabel("Share workout")
+                .accessibilityHint("Exports workout data for sharing")
             }
         }
         .sheet(item: $exportFileItem) { item in
@@ -378,6 +383,7 @@ private struct StatCard: View {
             Image(systemName: icon)
                 .font(.caption)
                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                .accessibilityHidden(true)
             Text(value)
                 .font(.title2.bold())
             Text(title)
@@ -388,6 +394,8 @@ private struct StatCard: View {
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 

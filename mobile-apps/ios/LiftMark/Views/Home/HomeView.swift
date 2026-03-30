@@ -58,6 +58,8 @@ struct HomeView: View {
                         }
                     }
                     .accessibilityIdentifier("resume-workout-banner")
+                    .accessibilityLabel("Resume \(activeSession.name), \(setProgressText(for: activeSession))")
+                    .accessibilityHint("Returns to the active workout")
                 }
 
                 // Max Lifts Section
@@ -94,6 +96,7 @@ struct HomeView: View {
                             Image(systemName: "dumbbell")
                                 .font(.largeTitle)
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                                .accessibilityHidden(true)
                             Text("No plans yet")
                                 .font(.headline)
                                 .foregroundStyle(LiftMarkTheme.label)
@@ -376,6 +379,7 @@ private struct MaxLiftTile: View {
             if isRegularWidth && sparklineData.count >= 2 {
                 SparklineView(values: sparklineData)
                     .padding(.top, 4)
+                    .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 80)
@@ -385,6 +389,9 @@ private struct MaxLiftTile: View {
         .onLongPressGesture(minimumDuration: 0.4) {
             onLongPress()
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(maxWeight != nil ? "\(exerciseName), \(formatWeight(maxWeight!)) \(unit.rawValue)" : "\(exerciseName), no data yet")
+        .accessibilityHint("Long press to change exercise")
     }
 
     private func formatWeight(_ w: Double) -> String {
@@ -408,6 +415,7 @@ private struct WorkoutPlanCard: View {
                         Image(systemName: "heart.fill")
                             .font(.caption)
                             .foregroundStyle(.pink)
+                            .accessibilityHidden(true)
                     }
                 }
                 HStack(spacing: LiftMarkTheme.spacingSM) {
@@ -425,10 +433,13 @@ private struct WorkoutPlanCard: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(plan.name)\(plan.isFavorite ? ", favorite" : ""), \(plan.exercises.count) exercises\(!plan.tags.isEmpty ? ", " + plan.tags.prefix(2).joined(separator: ", ") : "")")
     }
 }

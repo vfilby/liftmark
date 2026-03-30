@@ -20,6 +20,8 @@ struct ActiveWorkoutHeader: View {
                 }
             }
             .accessibilityIdentifier("active-workout-pause-button")
+            .accessibilityLabel("Pause workout")
+            .accessibilityHint("Returns to home screen without ending the workout")
 
             Spacer()
 
@@ -35,6 +37,8 @@ struct ActiveWorkoutHeader: View {
                 Image(systemName: "plus")
             }
             .accessibilityIdentifier("active-workout-add-exercise-button")
+            .accessibilityLabel("Add exercise")
+            .accessibilityHint("Opens a sheet to add a new exercise to this workout")
 
             Button {
                 onFinish()
@@ -43,6 +47,8 @@ struct ActiveWorkoutHeader: View {
                     .font(.subheadline.bold())
             }
             .accessibilityIdentifier("active-workout-finish-button")
+            .accessibilityLabel("Finish workout")
+            .accessibilityHint("Completes and saves the workout session")
         }
         .padding()
         .background(LiftMarkTheme.background)
@@ -68,5 +74,8 @@ struct ActiveWorkoutProgressBar: View {
         .padding(.horizontal)
         .padding(.bottom, LiftMarkTheme.spacingSM)
         .accessibilityIdentifier("active-workout-progress")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Workout progress")
+        .accessibilityValue("\(completedSets) of \(totalSets) sets completed")
     }
 }
