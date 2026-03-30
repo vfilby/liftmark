@@ -1321,3 +1321,45 @@ Pull heel to glutes
     expect(set?.notes).toBe('Slow and controlled');
   });
 });
+
+// MARK: - Duplicate Exercise Name Warning
+
+describe('Duplicate Exercise Name Warning', () => {
+  it('warns on duplicate exercise names', () => {
+    const md = `# Workout\n## Bench Press\n- 135 x 10\n## Squats\n- 225 x 5\n## Bench Press\n- 185 x 8`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    const dupWarnings = result.warnings.filter((w) => w.includes('Duplicate exercise name'));
+    expect(dupWarnings.length).toBe(1);
+    expect(dupWarnings[0]).toContain('Bench Press');
+  });
+
+  it('is case-insensitive', () => {
+    const md = `# Workout\n## bench press\n- 135 x 10\n## BENCH PRESS\n- 185 x 8`;
+    const result = parseWorkout(md);
+    const dupWarnings = result.warnings.filter((w) => w.includes('Duplicate exercise name'));
+    expect(dupWarnings.length).toBe(1);
+  });
+
+  it('does not warn for unique exercise names', () => {
+    const md = `# Workout\n## Bench Press\n- 135 x 10\n## Squats\n- 225 x 5`;
+    const result = parseWorkout(md);
+    const dupWarnings = result.warnings.filter((w) => w.includes('Duplicate exercise name'));
+    expect(dupWarnings.length).toBe(0);
+  });
+
+  it('does not warn for section/superset container names', () => {
+    const md = `# Workout\n## Chest Superset\n### Bench Press\n- 135 x 10\n## Chest Superset\n### Incline Press\n- 95 x 12`;
+    const result = parseWorkout(md);
+    // "Chest Superset" appears twice but as group containers with no sets — should not warn
+    const dupWarnings = result.warnings.filter((w) => w.includes('Duplicate exercise name'));
+    expect(dupWarnings.length).toBe(0);
+  });
+
+  it('still parses successfully with duplicates', () => {
+    const md = `# Workout\n## Bench Press\n- 135 x 10\n## Bench Press\n- 185 x 8`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises.length).toBe(2);
+  });
+});

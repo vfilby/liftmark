@@ -1,5 +1,7 @@
 # LiftMark
 
+Public beta: https://testflight.apple.com/join/u8EJFzYu
+
 I have tried many different fitness apps and programs to help me create and track workouts but they tend to be limited in what they allow you to do and they make it difficult to import of export workouts.  I have spent nearly as much time "creating" or "tweaking" workouts as I have actually working out in some cases. I want something that gives me all the benefits of tracking without the tedium.
 
 Liftmark let's you import workouts written in a simple text based format - LiftMark Workout Format (LMWF) - and create a structured workout that you can use to track during the workout and see historical stats as well.
@@ -35,12 +37,14 @@ With GenAI at our finger tips it is incredibly easy to create and import workout
 @units: lbs
 
 ## Bench Press
-- 3x10 @135
-- 3x8 @185
-- @rest: 120s
+- 135 x 10 @rest: 120s
+- 185 x 8 @rest: 120s
+- 225 x 5 @rest: 120s
 
 ## Incline Dumbbell Press
-- 3x12 @60
+- 60 x 12
+- 60 x 12
+- 60 x 12
 ```
 
 3. Tap "Import" to save

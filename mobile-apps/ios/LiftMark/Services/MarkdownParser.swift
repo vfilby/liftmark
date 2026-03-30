@@ -126,6 +126,22 @@ enum MarkdownParser {
             )
         }
 
+        // Check for duplicate exercise names
+        var seenExerciseNames: [String: Int] = [:]
+        for exercise in exercises {
+            let lowerName = exercise.exerciseName.lowercased()
+            if let firstLine = seenExerciseNames[lowerName] {
+                _ = firstLine // first occurrence tracked for reference
+                context.warnings.append(ParseWarning(
+                    line: 0,
+                    message: "Duplicate exercise name: '\(exercise.exerciseName)'. Consider merging or renaming.",
+                    code: "DUPLICATE_EXERCISE_NAME"
+                ))
+            } else {
+                seenExerciseNames[lowerName] = 0
+            }
+        }
+
         let now = ISO8601DateFormatter().string(from: Date())
         let workout = WorkoutPlan(
             id: workoutId,

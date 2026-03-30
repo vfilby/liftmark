@@ -77,6 +77,22 @@ export function parseWorkout(markdown: string): ParseResult {
   }
 
   const now = new Date().toISOString();
+  // Check for duplicate exercise names
+  const seenExerciseNames = new Map<string, number>();
+  for (const exercise of exercises) {
+    if (exercise.sets.length === 0) continue; // Skip group containers (sections/supersets with no sets)
+    const lowerName = exercise.exerciseName.toLowerCase();
+    if (seenExerciseNames.has(lowerName)) {
+      context.warnings.push({
+        line: 0,
+        message: `Duplicate exercise name: '${exercise.exerciseName}'. Consider merging or renaming.`,
+        code: 'DUPLICATE_EXERCISE_NAME',
+      });
+    } else {
+      seenExerciseNames.set(lowerName, 0);
+    }
+  }
+
   const workout: WorkoutPlan = {
     id: workoutId,
     name: section.name,

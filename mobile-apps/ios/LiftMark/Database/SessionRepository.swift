@@ -117,7 +117,7 @@ struct SessionRepository {
 
                 var expandedOrderIndex = 0
                 for set in exercise.sets {
-                    if set.isPerSide && set.targetTime != nil {
+                    if set.isPerSide {
                         // Expand into left and right sets
                         for side in ["left", "right"] {
                             let setId = IDGenerator.generate()

@@ -1440,4 +1440,439 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertNil(set?.targetTime, "Should not interpret 'S' from 'Slow' as seconds")
         XCTAssertEqual(set?.notes, "Slow and controlled")
     }
+
+    // MARK: - Unicode Exercise Names
+
+    func testParsesChineseCharacterExerciseName() {
+        let markdown = """
+        # Workout
+        ## \u{5367}\u{63A8} (Bench Press)
+        - 100 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].exerciseName, "\u{5367}\u{63A8} (Bench Press)")
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 100)
+    }
+
+    func testParsesAccentedLetterExerciseName() {
+        let markdown = """
+        # Entra\u{00EE}nement
+        ## D\u{00E9}velopp\u{00E9} Couch\u{00E9}
+        - 60 kg x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.name, "Entra\u{00EE}nement")
+        XCTAssertEqual(result.data?.exercises[0].exerciseName, "D\u{00E9}velopp\u{00E9} Couch\u{00E9}")
+    }
+
+    func testParsesEmojiExerciseName() {
+        let markdown = """
+        # Workout
+        ## \u{1F4AA} Bicep Curls
+        - 25 x 10
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].exerciseName, "\u{1F4AA} Bicep Curls")
+    }
+
+    // MARK: - Mixed Units (Explicit vs Default)
+
+    func testMixedExplicitAndDefaultUnits() {
+        let markdown = """
+        # Workout
+        @units: lbs
+
+        ## Bench Press
+        - 225 x 5
+        - 100 kg x 5
+        ## Squats
+        - 315 x 3
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        // First set uses default lbs
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 225)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeightUnit, .lbs)
+        // Second set uses explicit kg
+        XCTAssertEqual(result.data?.exercises[0].sets[1].targetWeight, 100)
+        XCTAssertEqual(result.data?.exercises[0].sets[1].targetWeightUnit, .kg)
+        // Third exercise uses default lbs
+        XCTAssertEqual(result.data?.exercises[1].sets[0].targetWeight, 315)
+        XCTAssertEqual(result.data?.exercises[1].sets[0].targetWeightUnit, .lbs)
+    }
+
+    // MARK: - Extreme Values
+
+    func testVeryHighRepCount() {
+        let markdown = """
+        # Workout
+        ## Jump Rope
+        - 999
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 999)
+        // Should produce a warning for high rep count
+        XCTAssertGreaterThan(result.warnings.count, 0)
+    }
+
+    func testVeryLargeWeight() {
+        let markdown = """
+        # Workout
+        ## Leg Press
+        - 9999.5 x 3
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 9999.5)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 3)
+    }
+
+    func testVeryLongExerciseName() {
+        let longName = "Single Arm Dumbbell Overhead Press With Rotation And Pause At The Top For Maximum Time Under Tension"
+        let markdown = """
+        # Workout
+        ## \(longName)
+        - 25 x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].exerciseName, longName)
+    }
+
+    // MARK: - Whitespace Variations
+
+    func testExtraSpacesInSetLine() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+        -   225   x   5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 225)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 5)
+    }
+
+    func testTabsInWorkoutLines() {
+        let markdown = "# Workout\n\t## Bench Press\n\t- 100 x 5"
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        // Tabs before ## may prevent header detection depending on trimming
+        // This documents current behavior
+        if result.success {
+            XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 100)
+        } else {
+            XCTAssertFalse(result.errors.isEmpty, "Should produce errors if tabs break parsing")
+        }
+    }
+
+    func testTrailingWhitespaceInSetLine() {
+        let markdown = "# Workout\n## Press\n- 100 x 5   \n- 200 x 3   "
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets.count, 2)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 100)
+        XCTAssertEqual(result.data?.exercises[0].sets[1].targetWeight, 200)
+    }
+
+    // MARK: - Empty Sections
+
+    func testEmptySectionFollowedByExercises() {
+        let markdown = """
+        # Workout
+
+        ## Warmup
+
+        ## Main Work
+        ### Bench Press
+        - 225 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        // The parser should handle an empty section (Warmup has no exercises)
+        // and still parse the following section correctly
+        if result.success {
+            let exercisesWithSets = result.data?.exercises.filter { !$0.sets.isEmpty } ?? []
+            XCTAssertGreaterThan(exercisesWithSets.count, 0, "Should have at least one exercise with sets")
+        } else {
+            // Document if it fails — this is a finding
+            XCTAssertFalse(result.errors.isEmpty)
+        }
+    }
+
+    // MARK: - Single-Exercise Workout (Minimal Valid)
+
+    func testMinimalSingleExerciseOneSet() {
+        let markdown = """
+        # Workout
+        ## Squats
+        - 135 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.name, "Workout")
+        XCTAssertEqual(result.data?.exercises.count, 1)
+        XCTAssertEqual(result.data?.exercises[0].exerciseName, "Squats")
+        XCTAssertEqual(result.data?.exercises[0].sets.count, 1)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 135)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 5)
+    }
+
+    // MARK: - All Bodyweight Exercises
+
+    func testAllBodyweightWorkout() {
+        let markdown = """
+        # Bodyweight Circuit
+        ## Push-ups
+        - bw x 20
+        - bw x 15
+        ## Pull-ups
+        - bw x 10
+        - bw x 8
+        ## Dips
+        - bw x 12
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises.count, 3)
+        // All sets should have nil weight
+        for exercise in result.data?.exercises ?? [] {
+            for set in exercise.sets {
+                XCTAssertNil(set.targetWeight, "\(exercise.exerciseName) should have nil targetWeight for bodyweight")
+                XCTAssertNotNil(set.targetReps)
+            }
+        }
+    }
+
+    // MARK: - All Time-Based Exercises
+
+    func testAllTimeBasedWorkout() {
+        let markdown = """
+        # Stretching Routine
+        ## Plank
+        - 60s
+        - 45s
+        ## Wall Sit
+        - 2m
+        ## Side Plank
+        - 30s @perside
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises.count, 3)
+
+        // Plank sets
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetTime, 60)
+        XCTAssertEqual(result.data?.exercises[0].sets[1].targetTime, 45)
+        // Wall Sit
+        XCTAssertEqual(result.data?.exercises[1].sets[0].targetTime, 120)
+        // Side Plank
+        XCTAssertEqual(result.data?.exercises[2].sets[0].targetTime, 30)
+        XCTAssertTrue(result.data?.exercises[2].sets[0].isPerSide ?? false)
+
+        // All sets should have nil weight and nil reps
+        for exercise in result.data?.exercises ?? [] {
+            for set in exercise.sets {
+                XCTAssertNil(set.targetWeight)
+                XCTAssertNil(set.targetReps)
+                XCTAssertNotNil(set.targetTime)
+            }
+        }
+    }
+
+    // MARK: - Multiple Modifiers on One Set (Flag + Key-Value)
+
+    func testDropsetWithRPEModifiers() {
+        let markdown = """
+        # Workout
+        ## Curls
+        - 30 x 10 @dropset @rpe: 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertTrue(set?.isDropset ?? false)
+        XCTAssertEqual(set?.targetRpe, 8)
+    }
+
+    func testPerSideWithRestModifiers() {
+        let markdown = """
+        # Workout
+        ## Side Plank
+        - 60s @perside @rest: 30s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertTrue(set?.isPerSide ?? false)
+        XCTAssertEqual(set?.restSeconds, 30)
+        XCTAssertEqual(set?.targetTime, 60)
+    }
+
+    func testDropsetWithRPEAndRestModifiers() {
+        let markdown = """
+        # Workout
+        ## Curls
+        - 30 x 10 @dropset @rpe: 9 @rest: 60s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertTrue(set?.isDropset ?? false)
+        XCTAssertEqual(set?.targetRpe, 9)
+        XCTAssertEqual(set?.restSeconds, 60)
+    }
+
+    // MARK: - Notes with Special Characters
+
+    func testNotesWithMarkdownLikeContent() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+
+        Use **strict** form. Keep *elbows* tucked.
+
+        - 225 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        // Notes should preserve markdown-like content as-is
+        XCTAssertTrue(result.data?.exercises[0].notes?.contains("**strict**") ?? false)
+        XCTAssertTrue(result.data?.exercises[0].notes?.contains("*elbows*") ?? false)
+    }
+
+    func testNotesWithUrlLikeContent() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+
+        See https://example.com/form-guide for reference.
+
+        - 225 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.data?.exercises[0].notes?.contains("https://example.com/form-guide") ?? false)
+    }
+
+    func testSetNotesWithSpecialCharactersAndSymbols() {
+        let markdown = """
+        # Workout
+        ## Squats
+        - 225 x 5 @rpe: 8 Form check: knees > toes? YES! (100%)
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetRpe, 8)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].notes?.contains("Form check") ?? false)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].notes?.contains("(100%)") ?? false)
+    }
+
+    // MARK: - Per-Side Expansion for Rep-Based Sets
+
+    func testPerSideModifierOnRepBasedSets() {
+        let markdown = """
+        # Workout
+        ## Lunges
+        - 12 @perside
+        - 10 @perside
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets.count, 2)
+        XCTAssertTrue(result.data?.exercises[0].sets[0].isPerSide ?? false)
+        XCTAssertTrue(result.data?.exercises[0].sets[1].isPerSide ?? false)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 12)
+        XCTAssertNil(result.data?.exercises[0].sets[0].targetTime)
+    }
+
+    func testPerSideAutoDetectFromNotesOnlyAppliesToTimedSets() {
+        // Auto-detect from exercise notes only flags timed sets, not rep-based
+        let markdown = """
+        # Workout
+        ## Single Leg RDL
+        each leg
+        - 50 lbs x 12
+        - 60s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertFalse(result.data?.exercises[0].sets[0].isPerSide ?? true,
+                       "Rep-based sets should NOT get isPerSide from exercise notes auto-detect")
+        XCTAssertTrue(result.data?.exercises[0].sets[1].isPerSide ?? false,
+                       "Timed sets should get isPerSide from exercise notes auto-detect")
+    }
+
+    // MARK: - Duplicate Exercise Name Warning
+
+    func testDuplicateExerciseNameWarning() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+        - 135 x 10
+        ## Squats
+        - 225 x 5
+        ## Bench Press
+        - 185 x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.warnings.contains(where: { $0.contains("Duplicate exercise name") }),
+                       "Should warn about duplicate exercise name 'Bench Press'")
+    }
+
+    func testDuplicateExerciseNameCaseInsensitive() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+        - 135 x 10
+        ## bench press
+        - 185 x 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.warnings.contains(where: { $0.contains("Duplicate exercise name") }),
+                       "Duplicate detection should be case-insensitive")
+    }
+
+    func testNoDuplicateWarningForUniqueExercises() {
+        let markdown = """
+        # Workout
+        ## Bench Press
+        - 135 x 10
+        ## Squats
+        - 225 x 5
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertFalse(result.warnings.contains(where: { $0.contains("Duplicate exercise name") }),
+                        "Should not warn when all exercise names are unique")
+    }
 }
