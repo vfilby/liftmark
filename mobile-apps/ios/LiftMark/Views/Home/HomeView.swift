@@ -11,6 +11,10 @@ struct HomeView: View {
     @State private var showExercisePicker = false
     @State private var editingTileIndex: Int?
 
+    // Cached max-lift computations to avoid O(n³) work on every body evaluation
+    @State private var cachedMaxWeights: [String: Double] = [:]
+    @State private var cachedSparklines: [String: [Double]] = [:]
+
     private var homeTiles: [String] {
         settingsStore.settings?.homeTiles ?? ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"]
     }
@@ -65,10 +69,10 @@ struct HomeView: View {
                         ForEach(Array(homeTiles.enumerated()), id: \.offset) { index, exerciseName in
                             MaxLiftTile(
                                 exerciseName: exerciseName,
-                                maxWeight: findMaxWeight(for: exerciseName),
+                                maxWeight: cachedMaxWeights[exerciseName],
                                 unit: settingsStore.settings?.defaultWeightUnit ?? .lbs,
                                 isRegularWidth: isRegularWidth,
-                                sparklineData: isRegularWidth ? findMaxWeightsPerSession(for: exerciseName) : [],
+                                sparklineData: isRegularWidth ? (cachedSparklines[exerciseName] ?? []) : [],
                                 onLongPress: {
                                     editingTileIndex = index
                                     showExercisePicker = true
@@ -173,6 +177,26 @@ struct HomeView: View {
                 EmptyView()
             }
         }
+        .onAppear {
+            recomputeMaxLifts()
+        }
+        .onChange(of: sessionStore.sessions) {
+            recomputeMaxLifts()
+        }
+        .onChange(of: homeTiles) {
+            recomputeMaxLifts()
+        }
+    }
+
+    private func recomputeMaxLifts() {
+        var weights: [String: Double] = [:]
+        var sparklines: [String: [Double]] = [:]
+        for exerciseName in homeTiles {
+            weights[exerciseName] = findMaxWeight(for: exerciseName)
+            sparklines[exerciseName] = findMaxWeightsPerSession(for: exerciseName)
+        }
+        cachedMaxWeights = weights
+        cachedSparklines = sparklines
     }
 
     private func findMaxWeight(for exerciseName: String) -> Double? {

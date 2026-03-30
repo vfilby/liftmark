@@ -70,12 +70,15 @@ struct RestTimerView: View {
             if newPhase == .active {
                 recalculate()
                 // Restart tick timer aligned to second boundaries if still running
-                if isRunning && displayRemaining > 0 && timer == nil {
+                if isRunning && displayRemaining > 0 {
+                    timer?.invalidate()
+                    timer = nil
                     let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
                     let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
                     timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
                         recalculate()
-                        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                        self.timer?.invalidate()
+                        self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                             recalculate()
                         }
                     }
@@ -118,7 +121,8 @@ struct RestTimerView: View {
 
         timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
-            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            self.timer?.invalidate()
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                 recalculate()
             }
         }
@@ -251,12 +255,15 @@ struct ExerciseTimerView: View {
             if newPhase == .active {
                 recalculate()
                 // Restart tick timer aligned to second boundaries if still running
-                if isRunning && timer == nil {
+                if isRunning {
+                    timer?.invalidate()
+                    timer = nil
                     let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
                     let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
                     timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
                         recalculate()
-                        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                        self.timer?.invalidate()
+                        self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                             recalculate()
                         }
                     }
@@ -297,7 +304,8 @@ struct ExerciseTimerView: View {
 
         timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
-            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            self.timer?.invalidate()
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                 recalculate()
             }
         }
