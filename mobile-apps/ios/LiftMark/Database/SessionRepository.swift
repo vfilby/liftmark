@@ -94,7 +94,10 @@ struct SessionRepository {
             }
 
             for exercise in plan.exercises {
-                let sessionExerciseId = planToSessionIdMap[exercise.id]!
+                guard let sessionExerciseId = planToSessionIdMap[exercise.id] else {
+                    Logger.shared.error(.app, "Missing session exercise ID mapping for plan exercise \(exercise.id)")
+                    continue
+                }
                 createdExerciseIds.append(sessionExerciseId)
                 let mappedParentId = exercise.parentExerciseId.flatMap { planToSessionIdMap[$0] }
                 let exerciseRow = SessionExerciseRow(
@@ -483,11 +486,16 @@ struct SessionRepository {
             .order(Column("order_index"))
             .fetchAll(db)
 
-        let exercises = try exerciseRows.map { exerciseRow -> SessionExercise in
-            let setRows = try SessionSetRow
-                .filter(Column("session_exercise_id") == exerciseRow.id)
-                .order(Column("order_index"))
-                .fetchAll(db)
+        // Batch-fetch all sets for this session's exercises in one query
+        let exerciseIds = exerciseRows.map(\.id)
+        let allSetRows = try SessionSetRow
+            .filter(exerciseIds.contains(Column("session_exercise_id")))
+            .order(Column("order_index"))
+            .fetchAll(db)
+        let setsByExerciseId = Dictionary(grouping: allSetRows, by: \.sessionExerciseId)
+
+        let exercises = exerciseRows.map { exerciseRow -> SessionExercise in
+            let setRows = setsByExerciseId[exerciseRow.id] ?? []
 
             let sets = setRows.map { setRow in
                 SessionSet(

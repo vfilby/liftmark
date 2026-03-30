@@ -215,9 +215,8 @@ final class CKSyncEngineManager: @unchecked Sendable {
     static func notifySave(recordType: String, recordID: String) {
         let manager = CKSyncEngineManager.shared
         manager.lock.lock()
+        defer { manager.lock.unlock() }
         manager.pendingRecordTypes[recordID] = recordType
-        manager.lock.unlock()
-
         let ckRecordID = CKRecord.ID(recordName: recordID, zoneID: manager.zoneID)
         manager.engine?.state.add(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
     }
@@ -225,9 +224,8 @@ final class CKSyncEngineManager: @unchecked Sendable {
     static func notifyDelete(recordType: String, recordID: String) {
         let manager = CKSyncEngineManager.shared
         manager.lock.lock()
+        defer { manager.lock.unlock() }
         manager.pendingRecordTypes.removeValue(forKey: recordID)
-        manager.lock.unlock()
-
         let ckRecordID = CKRecord.ID(recordName: recordID, zoneID: manager.zoneID)
         manager.engine?.state.add(pendingRecordZoneChanges: [.deleteRecord(ckRecordID)])
     }
@@ -424,20 +422,49 @@ final class CKSyncEngineManager: @unchecked Sendable {
             let recordName = failedSave.record.recordID.recordName
             let error = failedSave.error
 
-            if error.code == .serverRecordChanged,
-               let serverRecord = error.serverRecord {
-                do {
-                    _ = try mapper.mergeIncoming(serverRecord)
-                    Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordName)")
-                } catch {
-                    Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordName)", error: error)
+            switch error.code {
+            case .serverRecordChanged:
+                if let serverRecord = error.serverRecord {
+                    do {
+                        _ = try mapper.mergeIncoming(serverRecord)
+                        Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordName)")
+                    } catch {
+                        Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordName)", error: error)
+                    }
+                    // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
+                    lock.lock()
+                    resolvedConflicts.insert(recordName)
+                    lock.unlock()
                 }
-                // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
+
+            case .networkFailure, .networkUnavailable:
+                Logger.shared.warn(.sync, "[sync-engine] Network unavailable for \(recordName), CKSyncEngine will retry")
+
+            case .quotaExceeded:
+                Logger.shared.error(.sync, "[sync-engine] iCloud storage quota exceeded — user may need to free up iCloud space")
+
+            case .notAuthenticated:
+                Logger.shared.error(.sync, "[sync-engine] Not authenticated — user needs to sign in to iCloud")
+
+            case .unknownItem:
+                Logger.shared.warn(.sync, "[sync-engine] Unknown item \(recordName) (parent likely deleted), removing from pending")
+                let ckRecordID = failedSave.record.recordID
+                engine?.state.remove(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
                 lock.lock()
-                resolvedConflicts.insert(recordName)
+                pendingRecordTypes.removeValue(forKey: recordName)
                 lock.unlock()
-            } else {
-                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordName): \(error.localizedDescription)")
+
+            case .partialFailure:
+                if let partialErrors = error.partialErrorsByItemID {
+                    for (itemID, itemError) in partialErrors {
+                        Logger.shared.error(.sync, "[sync-engine] Partial failure for \(itemID): \(itemError.localizedDescription)")
+                    }
+                } else {
+                    Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordName): \(error.localizedDescription)")
+                }
+
+            default:
+                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordName): code=\(error.code.rawValue) \(error.localizedDescription)")
             }
         }
 
@@ -445,12 +472,24 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     private func handleAccountChange(_ event: CKSyncEngine.Event.AccountChange) {
         switch event.changeType {
-        case .signIn, .switchAccounts:
+        case .switchAccounts:
+            Logger.shared.warn(.sync, "[sync-engine] CloudKit account switched — resetting upload state before syncing to new account")
+            lock.lock()
+            hasScheduledInitialUpload = true
+            lock.unlock()
+            Logger.shared.info(.sync, "[sync-engine] Account changed (\(event.changeType)), creating zone and scheduling full upload")
+            Task {
+                await createZoneAndScheduleFullUpload()
+            }
+        case .signIn:
+            lock.lock()
             guard !hasScheduledInitialUpload else {
+                lock.unlock()
                 Logger.shared.info(.sync, "[sync-engine] Account changed but initial upload already scheduled, skipping")
                 return
             }
             hasScheduledInitialUpload = true
+            lock.unlock()
             Logger.shared.info(.sync, "[sync-engine] Account changed (\(event.changeType)), creating zone and scheduling full upload")
             Task {
                 await createZoneAndScheduleFullUpload()

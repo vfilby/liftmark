@@ -69,6 +69,34 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     return makeResponse(400, { error: 'Missing or empty markdown field' });
   }
 
+  // Input size limits to prevent DoS
+  const MAX_INPUT_BYTES = 1_048_576; // 1MB
+  const MAX_INPUT_LINES = 50_000;
+
+  if (Buffer.byteLength(markdown, 'utf-8') > MAX_INPUT_BYTES) {
+    return {
+      statusCode: 413,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        valid: false,
+        errors: [{ line: 0, message: 'Input exceeds maximum size of 1MB', code: 'INPUT_TOO_LARGE' }],
+        warnings: [],
+      }),
+    };
+  }
+
+  if (markdown.split('\n').length > MAX_INPUT_LINES) {
+    return {
+      statusCode: 413,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        valid: false,
+        errors: [{ line: 0, message: 'Input exceeds maximum of 50,000 lines', code: 'INPUT_TOO_MANY_LINES' }],
+        warnings: [],
+      }),
+    };
+  }
+
   const result = parseWorkout(markdown);
 
   const exercises: ExerciseSummary[] = result.data?.exercises.map((ex) => ({

@@ -261,11 +261,16 @@ struct WorkoutPlanRepository {
             .order(Column("order_index"))
             .fetchAll(db)
 
-        let exercises = try exerciseRows.map { exerciseRow -> PlannedExercise in
-            let setRows = try PlannedSetRow
-                .filter(Column("template_exercise_id") == exerciseRow.id)
-                .order(Column("order_index"))
-                .fetchAll(db)
+        // Batch-fetch all sets for this plan's exercises in one query
+        let exerciseIds = exerciseRows.map(\.id)
+        let allSetRows = try PlannedSetRow
+            .filter(exerciseIds.contains(Column("template_exercise_id")))
+            .order(Column("order_index"))
+            .fetchAll(db)
+        let setsByExerciseId = Dictionary(grouping: allSetRows, by: \.templateExerciseId)
+
+        let exercises = exerciseRows.map { exerciseRow -> PlannedExercise in
+            let setRows = setsByExerciseId[exerciseRow.id] ?? []
 
             let sets = setRows.map { setRow in
                 PlannedSet(

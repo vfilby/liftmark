@@ -317,7 +317,7 @@ final class CKRecordMapperTests: XCTestCase {
         let original = UserSettingsRow(
             id: "settings-1", defaultWeightUnit: "kg", enableWorkoutTimer: 1,
             autoStartRestTimer: 0, theme: "dark", notificationsEnabled: 1,
-            customPromptAddition: "Be concise", anthropicApiKey: "sk-secret",
+            customPromptAddition: "Be concise",
             anthropicApiKeyStatus: "valid", healthkitEnabled: 1,
             liveActivitiesEnabled: 0, keepScreenAwake: 1, showOpenInClaudeButton: 1,
             developerModeEnabled: 1, countdownSoundsEnabled: 0,
@@ -463,14 +463,14 @@ final class CKRecordMapperTests: XCTestCase {
                 INSERT INTO user_settings (
                     id, default_weight_unit, enable_workout_timer, auto_start_rest_timer,
                     theme, notifications_enabled,
-                    anthropic_api_key, anthropic_api_key_status,
+                    anthropic_api_key_status,
                     healthkit_enabled, live_activities_enabled, keep_screen_awake,
                     show_open_in_claude_button, developer_mode_enabled, countdown_sounds_enabled,
                     has_accepted_disclaimer, created_at, updated_at
                 ) VALUES (
                     'settings-lo', 'lbs', 1, 1,
                     'auto', 1,
-                    'sk-my-secret-key', 'valid',
+                    'valid',
                     0, 1, 1,
                     0, 1, 1,
                     1, '\(pastTs)', '\(pastTs)'
@@ -505,7 +505,6 @@ final class CKRecordMapperTests: XCTestCase {
         // Local-only fields must be preserved
         XCTAssertEqual(fetched?.hasAcceptedDisclaimer, 1, "hasAcceptedDisclaimer must never be overwritten")
         XCTAssertEqual(fetched?.developerModeEnabled, 1, "developerModeEnabled must never be overwritten")
-        XCTAssertEqual(fetched?.anthropicApiKey, "sk-my-secret-key", "anthropicApiKey must never be overwritten")
         XCTAssertEqual(fetched?.anthropicApiKeyStatus, "valid", "anthropicApiKeyStatus must never be overwritten")
     }
 
@@ -632,7 +631,6 @@ final class CKRecordMapperTests: XCTestCase {
         // New insert should default local-only fields
         XCTAssertEqual(fetched?.hasAcceptedDisclaimer, 0, "New device must re-accept disclaimer")
         XCTAssertEqual(fetched?.developerModeEnabled, 0)
-        XCTAssertNil(fetched?.anthropicApiKey)
     }
 
     // MARK: - Merge: Unknown Record Type

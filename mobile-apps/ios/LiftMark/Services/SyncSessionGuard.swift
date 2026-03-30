@@ -77,89 +77,76 @@ enum SyncSessionGuard {
         do {
             let dbQueue = try DatabaseManager.shared.database()
 
-            let (missingExercises, missingSets) = try dbQueue.read { db -> ([SessionExerciseRow], [SessionSetRow]) in
+            // Use a single write transaction for both validation and restore
+            // to prevent user writes from interleaving between check and restore.
+            let result: (missing: Bool, exerciseCount: Int, setCount: Int) = try dbQueue.write { db in
                 // Check session still exists
                 let currentSession = try WorkoutSessionRow.fetchOne(db, key: snapshot.sessionRow.id)
                 guard let currentSession else {
-                    return (snapshot.exerciseRows, snapshot.setRows)
+                    // Session gone — restore everything
+                    try snapshot.sessionRow.insert(db)
+                    for exercise in snapshot.exerciseRows {
+                        try exercise.insert(db)
+                    }
+                    for set in snapshot.setRows {
+                        try set.insert(db)
+                    }
+                    return (missing: true, exerciseCount: snapshot.exerciseRows.count, setCount: snapshot.setRows.count)
                 }
 
                 // If the session was canceled since the snapshot was taken,
                 // don't restore anything — the user intentionally discarded it.
                 if currentSession.status == SessionStatus.canceled.rawValue {
-                    Logger.shared.debug(.sync,
-                        "[sync-guard] Session \(snapshot.sessionRow.id) was canceled, skipping restore")
-                    return ([], [])
+                    return (missing: false, exerciseCount: 0, setCount: 0)
                 }
 
                 // Find current exercise IDs
                 let exerciseRows = try Row.fetchAll(db, sql: "SELECT id FROM session_exercises WHERE workout_session_id = ?", arguments: [snapshot.sessionRow.id])
                 let currentExIds = Set(exerciseRows.compactMap { $0["id"] as String? })
-                let missingEx = snapshot.exerciseRows.filter { !currentExIds.contains($0.id) }
+                let missingExercises = snapshot.exerciseRows.filter { !currentExIds.contains($0.id) }
 
                 // Find current set IDs
                 let snapshotExerciseIds = snapshot.exerciseRows.map(\.id)
-                guard !snapshotExerciseIds.isEmpty else {
-                    return (missingEx, [])
+                var missingSets: [SessionSetRow] = []
+                if !snapshotExerciseIds.isEmpty {
+                    let placeholders = snapshotExerciseIds.map { _ in "?" }.joined(separator: ",")
+                    let setRows = try Row.fetchAll(db, sql: "SELECT id FROM session_sets WHERE session_exercise_id IN (\(placeholders))", arguments: StatementArguments(snapshotExerciseIds))
+                    let currentSetIds = Set(setRows.compactMap { $0["id"] as String? })
+                    missingSets = snapshot.setRows.filter { !currentSetIds.contains($0.id) }
                 }
-                let placeholders = snapshotExerciseIds.map { _ in "?" }.joined(separator: ",")
-                let setRows = try Row.fetchAll(db, sql: "SELECT id FROM session_sets WHERE session_exercise_id IN (\(placeholders))", arguments: StatementArguments(snapshotExerciseIds))
-                let currentSetIds = Set(setRows.compactMap { $0["id"] as String? })
-                let missingSt = snapshot.setRows.filter { !currentSetIds.contains($0.id) }
 
-                return (missingEx, missingSt)
+                if missingExercises.isEmpty && missingSets.isEmpty {
+                    return (missing: false, exerciseCount: 0, setCount: 0)
+                }
+
+                // Restore missing rows within this same transaction.
+                // Use snapshot values (pre-sync) which preserves the user's local changes.
+                for exercise in missingExercises {
+                    try exercise.insert(db)
+                }
+                for set in missingSets {
+                    try set.insert(db)
+                }
+
+                return (missing: true, exerciseCount: missingExercises.count, setCount: missingSets.count)
             }
 
-            if missingExercises.isEmpty && missingSets.isEmpty {
-                // Log OUTSIDE db block
+            // Log OUTSIDE db block to avoid reentrancy (Logger writes to the same DB)
+            if result.missing {
+                if result.exerciseCount > 0 || result.setCount > 0 {
+                    Logger.shared.error(.sync,
+                        "[sync-guard] DATA LOSS detected and RESTORED \(result.exerciseCount) exercises, \(result.setCount) sets")
+                }
+                return false
+            } else {
                 Logger.shared.debug(.sync,
                     "[sync-guard] Intact after sync: exercises=\(snapshot.exerciseCount), sets=\(snapshot.setCount)")
                 return true
             }
 
-            // Data loss detected — log OUTSIDE db block
-            let missingExIds = missingExercises.map(\.id)
-            let missingSetIds = missingSets.map(\.id)
-            Logger.shared.error(.sync,
-                "[sync-guard] DATA LOSS: missing \(missingExercises.count) exercises \(missingExIds), \(missingSets.count) sets \(missingSetIds)")
-
-            try restore(missingExercises: missingExercises, missingSets: missingSets,
-                        session: snapshot.sessionRow, dbQueue: dbQueue)
-
-            Logger.shared.error(.sync,
-                "[sync-guard] RESTORED \(missingExercises.count) exercises, \(missingSets.count) sets")
-            return false
-
         } catch {
             Logger.shared.error(.sync, "[sync-guard] RESTORE FAILED: \(error.localizedDescription)")
             return false
-        }
-    }
-
-    // MARK: - Private
-
-    /// Re-inserts missing rows. Exercises before sets (parent before child).
-    private static func restore(
-        missingExercises: [SessionExerciseRow],
-        missingSets: [SessionSetRow],
-        session: WorkoutSessionRow,
-        dbQueue: DatabaseQueue
-    ) throws {
-        try dbQueue.write { db in
-            // Restore session if missing
-            if try WorkoutSessionRow.fetchOne(db, key: session.id) == nil {
-                try session.insert(db)
-            }
-
-            // Exercises first (parent)
-            for exercise in missingExercises {
-                try exercise.insert(db)
-            }
-
-            // Sets second (child)
-            for set in missingSets {
-                try set.insert(db)
-            }
         }
     }
 }

@@ -20,7 +20,7 @@ struct ExerciseHistoryRepository {
                 WHERE ws.status = 'completed'
                 ORDER BY se.exercise_name
             """)
-            return rows.map { $0["exercise_name"] as String }
+            return rows.compactMap { $0["exercise_name"] as? String }
         }
     }
 

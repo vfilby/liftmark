@@ -95,7 +95,6 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var theme: String
     var notificationsEnabled: Int // SQLite boolean
     var customPromptAddition: String?
-    var anthropicApiKey: String?
     var anthropicApiKeyStatus: String?
     var healthkitEnabled: Int // SQLite boolean
     var liveActivitiesEnabled: Int // SQLite boolean
@@ -116,7 +115,6 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case theme
         case notificationsEnabled = "notifications_enabled"
         case customPromptAddition = "custom_prompt_addition"
-        case anthropicApiKey = "anthropic_api_key"
         case anthropicApiKeyStatus = "anthropic_api_key_status"
         case healthkitEnabled = "healthkit_enabled"
         case liveActivitiesEnabled = "live_activities_enabled"

@@ -151,6 +151,7 @@ final class CKRecordMapper {
         if let t = ps.targetTime { record["targetTime"] = Int64(t) as CKRecordValue }
         if let rpe = ps.targetRpe { record["targetRpe"] = Double(rpe) as CKRecordValue }
         if let r = ps.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
+        if let t = ps.tempo { record["tempo"] = t as CKRecordValue }
         if let n = ps.notes { record["notes"] = n as CKRecordValue }
         if let d = parseDate(ps.updatedAt) { record["updatedAt"] = d as CKRecordValue }
         return record
@@ -216,6 +217,7 @@ final class CKRecordMapper {
         if let rpe = ss.actualRpe { record["actualRpe"] = Double(rpe) as CKRecordValue }
         if let d = parseDate(ss.completedAt) { record["completedAt"] = d as CKRecordValue }
         if let n = ss.notes { record["notes"] = n as CKRecordValue }
+        if let t = ss.tempo { record["tempo"] = t as CKRecordValue }
         if let s = ss.side { record["side"] = s as CKRecordValue }
         if let d = parseDate(ss.updatedAt) { record["updatedAt"] = d as CKRecordValue }
         return record
@@ -420,7 +422,7 @@ final class CKRecordMapper {
                 targetTime: self.int64Field(record, "targetTime").map { Int($0) },
                 targetRpe: self.int64Field(record, "targetRpe").map { Int($0) } ?? self.doubleField(record, "targetRpe").map { Int($0) },
                 restSeconds: self.int64Field(record, "restSeconds").map { Int($0) },
-                tempo: nil,
+                tempo: self.stringField(record, "tempo") ?? existing?.tempo,
                 isDropset: attrs.contains("dropset") ? 1 : 0,
                 isPerSide: attrs.contains("perSide") ? 1 : 0,
                 isAmrap: attrs.contains("amrap") ? 1 : 0,
@@ -546,7 +548,7 @@ final class CKRecordMapper {
                 completedAt: self.dateToISO(self.dateField(record, "completedAt")),
                 status: self.stringField(record, "status") ?? existing?.status ?? SetStatus.pending.rawValue,
                 notes: self.stringField(record, "notes"),
-                tempo: nil,
+                tempo: self.stringField(record, "tempo") ?? existing?.tempo,
                 isDropset: attrs.contains("dropset") ? 1 : 0,
                 isPerSide: attrs.contains("perSide") ? 1 : 0,
                 side: self.stringField(record, "side"),
@@ -574,7 +576,6 @@ final class CKRecordMapper {
                     theme: self.stringField(record, "theme") ?? existing.theme,
                     notificationsEnabled: Int(self.int64Field(record, "notificationsEnabled") ?? Int64(existing.notificationsEnabled)),
                     customPromptAddition: self.stringField(record, "customPromptAddition") ?? existing.customPromptAddition,
-                    anthropicApiKey: existing.anthropicApiKey, // Never sync
                     anthropicApiKeyStatus: existing.anthropicApiKeyStatus, // Never sync
                     healthkitEnabled: Int(self.int64Field(record, "healthKitEnabled") ?? Int64(existing.healthkitEnabled)),
                     liveActivitiesEnabled: Int(self.int64Field(record, "liveActivitiesEnabled") ?? Int64(existing.liveActivitiesEnabled)),
@@ -599,7 +600,6 @@ final class CKRecordMapper {
                     theme: self.stringField(record, "theme") ?? "auto",
                     notificationsEnabled: Int(self.int64Field(record, "notificationsEnabled") ?? 1),
                     customPromptAddition: self.stringField(record, "customPromptAddition"),
-                    anthropicApiKey: nil,
                     anthropicApiKeyStatus: "not_set",
                     healthkitEnabled: Int(self.int64Field(record, "healthKitEnabled") ?? 0),
                     liveActivitiesEnabled: Int(self.int64Field(record, "liveActivitiesEnabled") ?? 1),
@@ -628,9 +628,11 @@ final class CKRecordMapper {
             let dbQueue = try dbManager.database()
             return try dbQueue.read { db -> CKRecord? in
                 if let gym = try GymRow.fetchOne(db, key: id) {
+                    if gym.deletedAt != nil { return nil }
                     return self.toCKRecord(gym, zoneID: zoneID)
                 }
                 if let eq = try GymEquipmentRow.fetchOne(db, key: id) {
+                    if eq.deletedAt != nil { return nil }
                     return self.toCKRecord(eq, zoneID: zoneID)
                 }
                 if let plan = try WorkoutPlanRow.fetchOne(db, key: id) {

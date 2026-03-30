@@ -7,9 +7,10 @@ final class DatabaseManager: @unchecked Sendable {
     static let shared = DatabaseManager()
 
     private var dbQueue: DatabaseQueue?
+    private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 8
+    private static let currentSchemaVersion = 9
 
     private init() {}
 
@@ -17,6 +18,9 @@ final class DatabaseManager: @unchecked Sendable {
 
     /// Returns the database queue, creating/migrating if needed.
     func database() throws -> DatabaseQueue {
+        dbLock.lock()
+        defer { dbLock.unlock() }
+
         if let dbQueue { return dbQueue }
 
         let fileManager = FileManager.default
@@ -40,6 +44,8 @@ final class DatabaseManager: @unchecked Sendable {
 
     /// Close the database connection.
     func close() {
+        dbLock.lock()
+        defer { dbLock.unlock() }
         dbQueue = nil
     }
 
@@ -52,8 +58,6 @@ final class DatabaseManager: @unchecked Sendable {
             try? dbQueue.write { db in
                 // Order matters: children first due to foreign keys
                 try db.execute(sql: "DELETE FROM sync_engine_state")
-                try db.execute(sql: "DELETE FROM sync_conflicts")
-                try db.execute(sql: "DELETE FROM sync_queue")
                 try db.execute(sql: "DELETE FROM sync_metadata")
                 try db.execute(sql: "DELETE FROM session_sets")
                 try db.execute(sql: "DELETE FROM session_exercises")
@@ -129,6 +133,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 8 {
                 try migrateToV8(db)
+            }
+
+            if currentVersion < 9 {
+                try migrateToV9(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -452,6 +460,55 @@ final class DatabaseManager: @unchecked Sendable {
                 data BLOB NOT NULL
             )
         """)
+    }
+
+    private func migrateToV9(_ db: Database) throws {
+        // 1. Clear legacy API key data from user_settings (keys now live in Keychain)
+        try db.execute(sql: "UPDATE user_settings SET anthropic_api_key = NULL")
+        // SQLite 3.35.0+ supports DROP COLUMN; safe on iOS 16+
+        try db.execute(sql: "ALTER TABLE user_settings DROP COLUMN anthropic_api_key")
+
+        // 2. Recreate gym_equipment with FOREIGN KEY on gym_id (ON DELETE CASCADE)
+        try db.execute(sql: """
+            CREATE TABLE gym_equipment_new (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                is_available INTEGER DEFAULT 1,
+                last_checked_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                gym_id TEXT,
+                deleted_at TEXT,
+                FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+            )
+        """)
+        try db.execute(sql: """
+            INSERT INTO gym_equipment_new (id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at)
+            SELECT id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at
+            FROM gym_equipment
+        """)
+        try db.execute(sql: "DROP TABLE gym_equipment")
+        try db.execute(sql: "ALTER TABLE gym_equipment_new RENAME TO gym_equipment")
+        // Re-create indexes that were on the old table
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
+
+        // 3. Add index on workout_sessions(date) for query performance
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_sessions_date ON workout_sessions(date DESC)")
+
+        // 4. Ensure updated_at has no NULLs in child tables
+        let now = ISO8601DateFormatter().string(from: Date())
+        try db.execute(sql: "UPDATE session_exercises SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
+        try db.execute(sql: "UPDATE session_sets SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
+        try db.execute(sql: "UPDATE template_exercises SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
+        try db.execute(sql: "UPDATE template_sets SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
+
+        // 5. Fix schema_version: ensure exactly one row
+        try db.execute(sql: "DELETE FROM schema_version WHERE rowid NOT IN (SELECT MIN(rowid) FROM schema_version)")
+
+        // 6. Drop unused sync tables (replaced by CKSyncEngine)
+        try db.execute(sql: "DROP TABLE IF EXISTS sync_queue")
+        try db.execute(sql: "DROP TABLE IF EXISTS sync_conflicts")
     }
 
     private func migrateToV4(_ db: Database) throws {
