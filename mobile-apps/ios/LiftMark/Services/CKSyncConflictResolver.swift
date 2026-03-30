@@ -30,11 +30,15 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     ///   - event: The sent-changes event from CKSyncEngine.
     ///   - removePendingType: Callback to remove a record name from the caller's pending-types map.
     ///   - engine: The sync engine, needed to remove pending changes for unknown-item errors.
+    /// - Returns: The number of successfully uploaded records and the number of conflicts encountered.
+    @discardableResult
     func handleSentChanges(
         _ event: CKSyncEngine.Event.SentRecordZoneChanges,
         removePendingType: (String) -> Void,
         engine: CKSyncEngine?
-    ) {
+    ) -> (uploaded: Int, conflicts: Int) {
+        var conflicts = 0
+
         // Clean up successfully saved records
         for savedRecord in event.savedRecords {
             let recordName = savedRecord.recordID.recordName
@@ -43,61 +47,110 @@ final class CKSyncConflictResolver: @unchecked Sendable {
 
         // Handle failures
         for failedSave in event.failedRecordSaves {
-            let recordName = failedSave.record.recordID.recordName
+            let record = failedSave.record
+            let recordName = record.recordID.recordName
+            let recordType = record.recordType
             let error = failedSave.error
 
             switch error.code {
             case .serverRecordChanged:
-                handleServerRecordChanged(recordName: recordName, error: error)
+                conflicts += 1
+                handleServerRecordChanged(recordName: recordName, recordType: recordType, error: error)
 
             case .networkFailure, .networkUnavailable:
-                Logger.shared.warn(.sync, "[sync-engine] Network unavailable for \(recordName), CKSyncEngine will retry")
+                Logger.shared.warn(.sync, "[sync-engine] Network unavailable for \(recordType)/\(recordName) (CKError \(error.code.rawValue)), CKSyncEngine will retry")
 
             case .quotaExceeded:
-                Logger.shared.error(.sync, "[sync-engine] iCloud storage quota exceeded — user may need to free up iCloud space")
+                Logger.shared.error(.sync, "[sync-engine] iCloud quota exceeded for \(recordType)/\(recordName) (CKError \(error.code.rawValue))")
 
             case .notAuthenticated:
-                Logger.shared.error(.sync, "[sync-engine] Not authenticated — user needs to sign in to iCloud")
+                Logger.shared.error(.sync, "[sync-engine] Not authenticated for \(recordType)/\(recordName) (CKError \(error.code.rawValue))")
 
             case .unknownItem:
-                Logger.shared.warn(.sync, "[sync-engine] Unknown item \(recordName) (parent likely deleted), removing from pending")
-                let ckRecordID = failedSave.record.recordID
+                Logger.shared.warn(.sync, "[sync-engine] Unknown item \(recordType)/\(recordName) (CKError \(error.code.rawValue), parent likely deleted), removing from pending")
+                let ckRecordID = record.recordID
                 engine?.state.remove(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
                 removePendingType(recordName)
 
             case .partialFailure:
-                handlePartialFailure(recordName: recordName, error: error)
+                handlePartialFailure(recordName: recordName, recordType: recordType, error: error)
 
             default:
-                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordName): code=\(error.code.rawValue) \(error.localizedDescription)")
+                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordType)/\(recordName): CKError \(error.code.rawValue) (\(Self.errorCodeName(error.code))) — \(error.localizedDescription)")
             }
         }
+
+        return (uploaded: event.savedRecords.count, conflicts: conflicts)
     }
 
     // MARK: - Private
 
-    private func handleServerRecordChanged(recordName: String, error: CKError) {
+    private func handleServerRecordChanged(recordName: String, recordType: String, error: CKError) {
         if let serverRecord = error.serverRecord {
             do {
                 _ = try mapper.mergeIncoming(serverRecord)
-                Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordName)")
+                Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordType)/\(recordName)")
             } catch {
-                Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordName)", error: error)
+                Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordType)/\(recordName)", error: error)
             }
             // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
             lock.lock()
             resolvedConflicts.insert(recordName)
             lock.unlock()
+        } else {
+            Logger.shared.error(.sync, "[sync-engine] serverRecordChanged for \(recordType)/\(recordName) but no serverRecord provided (CKError \(error.code.rawValue))")
         }
     }
 
-    private func handlePartialFailure(recordName: String, error: CKError) {
+    private func handlePartialFailure(recordName: String, recordType: String, error: CKError) {
         if let partialErrors = error.partialErrorsByItemID {
             for (itemID, itemError) in partialErrors {
-                Logger.shared.error(.sync, "[sync-engine] Partial failure for \(itemID): \(itemError.localizedDescription)")
+                let ckError = itemError as? CKError
+                let codeInfo = ckError.map { "CKError \($0.code.rawValue) (\(Self.errorCodeName($0.code)))" } ?? "non-CK error"
+                let subRecordID = (itemID as? CKRecord.ID)?.recordName ?? "\(itemID)"
+                Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordType)/\(subRecordID): \(codeInfo) — \(itemError.localizedDescription)")
             }
         } else {
-            Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordName): \(error.localizedDescription)")
+            Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordType)/\(recordName): CKError \(error.code.rawValue) — \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Human-readable name for common CKError codes.
+    static func errorCodeName(_ code: CKError.Code) -> String {
+        switch code {
+        case .internalError: return "internalError"
+        case .partialFailure: return "partialFailure"
+        case .networkUnavailable: return "networkUnavailable"
+        case .networkFailure: return "networkFailure"
+        case .badContainer: return "badContainer"
+        case .serviceUnavailable: return "serviceUnavailable"
+        case .requestRateLimited: return "requestRateLimited"
+        case .missingEntitlement: return "missingEntitlement"
+        case .notAuthenticated: return "notAuthenticated"
+        case .permissionFailure: return "permissionFailure"
+        case .unknownItem: return "unknownItem"
+        case .invalidArguments: return "invalidArguments"
+        case .serverRecordChanged: return "serverRecordChanged"
+        case .serverRejectedRequest: return "serverRejectedRequest"
+        case .assetFileNotFound: return "assetFileNotFound"
+        case .assetFileModified: return "assetFileModified"
+        case .incompatibleVersion: return "incompatibleVersion"
+        case .constraintViolation: return "constraintViolation"
+        case .operationCancelled: return "operationCancelled"
+        case .changeTokenExpired: return "changeTokenExpired"
+        case .batchRequestFailed: return "batchRequestFailed"
+        case .zoneBusy: return "zoneBusy"
+        case .badDatabase: return "badDatabase"
+        case .quotaExceeded: return "quotaExceeded"
+        case .zoneNotFound: return "zoneNotFound"
+        case .limitExceeded: return "limitExceeded"
+        case .userDeletedZone: return "userDeletedZone"
+        case .managedAccountRestricted: return "managedAccountRestricted"
+        case .participantMayNeedVerification: return "participantMayNeedVerification"
+        case .accountTemporarilyUnavailable: return "accountTemporarilyUnavailable"
+        @unknown default: return "unknown(\(code.rawValue))"
         }
     }
 }

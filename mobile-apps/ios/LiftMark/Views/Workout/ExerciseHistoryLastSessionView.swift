@@ -103,7 +103,7 @@ struct ExerciseHistoryLastSessionView: View {
         do {
             historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
-            print("Failed to load exercise history: \(error)")
+            Logger.shared.error(.app, "Failed to load exercise history", error: error)
         }
         isLoading = false
     }

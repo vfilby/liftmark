@@ -157,7 +157,7 @@ struct GymDetailView: View {
             }
             gymStore.loadGyms()
         } catch {
-            print("Failed to rename gym: \(error)")
+            Logger.shared.error(.database, "Failed to rename gym", error: error)
         }
         isEditingName = false
     }

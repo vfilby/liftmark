@@ -102,7 +102,7 @@ struct SyncSettingsView: View {
 
                     Button {
                         isSyncing = true
-                        CKSyncEngineManager.shared.fetchChanges()
+                        CKSyncEngineManager.shared.fetchChanges(manual: true)
                         // The sync engine works asynchronously; the .syncCompleted
                         // notification will refresh the UI when it finishes.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {

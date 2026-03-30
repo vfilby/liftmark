@@ -12,7 +12,7 @@ final class WorkoutPlanStore {
         do {
             plans = try repository.getAll()
         } catch {
-            print("Failed to load plans: \(error)")
+            Logger.shared.error(.database, "Failed to load plans", error: error)
         }
     }
 
@@ -26,7 +26,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
-            print("Failed to create plan: \(error)")
+            Logger.shared.error(.database, "Failed to create plan", error: error)
         }
     }
 
@@ -36,7 +36,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
-            print("Failed to update plan: \(error)")
+            Logger.shared.error(.database, "Failed to update plan", error: error)
         }
     }
 
@@ -46,7 +46,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
-            print("Failed to delete plan: \(error)")
+            Logger.shared.error(.database, "Failed to delete plan", error: error)
         }
     }
 
@@ -77,7 +77,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
-            print("Failed to toggle favorite: \(error)")
+            Logger.shared.error(.database, "Failed to toggle favorite", error: error)
         }
     }
 }

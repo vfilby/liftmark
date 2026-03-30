@@ -599,7 +599,7 @@ struct ExerciseHistorySheetView: View {
         do {
             historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
-            print("Failed to load history: \(error)")
+            Logger.shared.error(.app, "Failed to load history", error: error)
         }
         isLoading = false
     }

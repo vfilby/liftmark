@@ -29,7 +29,7 @@ final class EquipmentStore {
                 )
             }
         } catch {
-            print("Failed to load equipment: \(error)")
+            Logger.shared.error(.database, "Failed to load equipment", error: error)
         }
     }
 
@@ -54,7 +54,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: equipmentId)
             loadEquipment(forGym: gymId)
         } catch {
-            print("Failed to add equipment: \(error)")
+            Logger.shared.error(.database, "Failed to add equipment", error: error)
         }
     }
 
@@ -67,7 +67,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifyDelete(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
-            print("Failed to remove equipment: \(error)")
+            Logger.shared.error(.database, "Failed to remove equipment", error: error)
         }
     }
 
@@ -84,7 +84,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
-            print("Failed to toggle equipment: \(error)")
+            Logger.shared.error(.database, "Failed to toggle equipment", error: error)
         }
     }
 }

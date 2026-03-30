@@ -14,7 +14,7 @@ final class SessionStore {
             sessions = try repository.getCompleted()
             activeSession = try repository.getActiveSession()
         } catch {
-            print("Failed to load sessions: \(error)")
+            Logger.shared.error(.database, "Failed to load sessions", error: error)
         }
     }
 
@@ -29,7 +29,7 @@ final class SessionStore {
             activeSession = session
             return session
         } catch {
-            print("Failed to start session: \(error)")
+            Logger.shared.error(.database, "Failed to start session", error: error)
             return nil
         }
     }
@@ -43,7 +43,7 @@ final class SessionStore {
             // Keep activeSession non-nil to avoid disrupting navigation to the summary screen.
             sessions = try repository.getCompleted()
         } catch {
-            print("Failed to complete session: \(error)")
+            Logger.shared.error(.database, "Failed to complete session", error: error)
         }
     }
 
@@ -58,7 +58,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             activeSession = nil
         } catch {
-            print("Failed to cancel session: \(error)")
+            Logger.shared.error(.database, "Failed to cancel session", error: error)
         }
     }
 
@@ -68,7 +68,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             loadSessions()
         } catch {
-            print("Failed to delete session: \(error)")
+            Logger.shared.error(.database, "Failed to delete session", error: error)
         }
     }
 
@@ -80,7 +80,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to complete set: \(error)")
+            Logger.shared.error(.database, "Failed to complete set", error: error)
         }
     }
 
@@ -90,7 +90,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to skip set: \(error)")
+            Logger.shared.error(.database, "Failed to skip set", error: error)
         }
     }
 
@@ -100,7 +100,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to update set target: \(error)")
+            Logger.shared.error(.database, "Failed to update set target", error: error)
         }
     }
 
@@ -129,7 +129,7 @@ final class SessionStore {
             SyncChange.notifyAll(allChanges)
             reloadActiveSession()
         } catch {
-            print("Failed to add exercise: \(error)")
+            Logger.shared.error(.database, "Failed to add exercise", error: error)
         }
     }
 
@@ -149,7 +149,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to add set: \(error)")
+            Logger.shared.error(.database, "Failed to add set", error: error)
         }
     }
 
@@ -159,7 +159,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to delete set: \(error)")
+            Logger.shared.error(.database, "Failed to delete set", error: error)
         }
     }
 
@@ -169,7 +169,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
-            print("Failed to update exercise: \(error)")
+            Logger.shared.error(.database, "Failed to update exercise", error: error)
         }
     }
 
@@ -177,7 +177,7 @@ final class SessionStore {
         do {
             activeSession = try repository.getActiveSession()
         } catch {
-            print("Failed to reload active session: \(error)")
+            Logger.shared.error(.database, "Failed to reload active session", error: error)
         }
     }
 }

@@ -87,7 +87,7 @@ final class CKSyncMetadataStore: @unchecked Sendable {
         }
     }
 
-    func updateSyncMetadata() {
+    func updateSyncMetadata(stats: LastSyncStats = LastSyncStats(uploaded: 0, downloaded: 0, conflicts: 0)) {
         do {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
@@ -95,13 +95,13 @@ final class CKSyncMetadataStore: @unchecked Sendable {
                 let existing = try Row.fetchOne(db, sql: "SELECT id FROM sync_metadata LIMIT 1")
                 if existing != nil {
                     try db.execute(
-                        sql: "UPDATE sync_metadata SET last_sync_date = ?, updated_at = ?",
-                        arguments: [now, now]
+                        sql: "UPDATE sync_metadata SET last_sync_date = ?, last_uploaded = ?, last_downloaded = ?, last_conflicts = ?, updated_at = ?",
+                        arguments: [now, stats.uploaded, stats.downloaded, stats.conflicts, now]
                     )
                 } else {
                     try db.execute(
-                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-                        arguments: [IDGenerator.generate(), UUID().uuidString, now, 1, now, now]
+                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, last_uploaded, last_downloaded, last_conflicts, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        arguments: [IDGenerator.generate(), UUID().uuidString, now, stats.uploaded, stats.downloaded, stats.conflicts, 1, now, now]
                     )
                 }
             }

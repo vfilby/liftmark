@@ -204,7 +204,7 @@ struct DebugLogsView: View {
             shareURL = tempURL
             showShareSheet = true
         } catch {
-            print("Failed to write log file: \(error)")
+            Logger.shared.error(.app, "Failed to write log file", error: error)
         }
     }
 

@@ -29,7 +29,14 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
 
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: |
+          brew install xcodegen
+          INSTALLED=$(xcodegen --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          EXPECTED="2.44.1"
+          if [ "$INSTALLED" != "$EXPECTED" ]; then
+            echo "::error::XcodeGen version mismatch: expected $EXPECTED, got $INSTALLED"
+            exit 1
+          fi
 
       - name: Generate Xcode project
         run: xcodegen generate

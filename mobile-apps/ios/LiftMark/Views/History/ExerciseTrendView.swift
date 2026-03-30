@@ -110,7 +110,7 @@ struct ExerciseTrendView: View {
         do {
             historyPoints = try repo.getHistoryNormalized(forExercise: exerciseName)
         } catch {
-            print("Failed to load trend data: \(error)")
+            Logger.shared.error(.app, "Failed to load trend data", error: error)
         }
         isLoading = false
     }

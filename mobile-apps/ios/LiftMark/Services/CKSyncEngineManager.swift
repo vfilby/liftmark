@@ -33,6 +33,15 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     private var currentSnapshot: SessionSnapshot?
 
+    // Sync stats accumulated during a fetch/send cycle
+    private var syncDownloaded = 0
+    private var syncUploaded = 0
+    private var syncConflicts = 0
+
+    // Rate limiting for automatic fetches
+    private static let minimumFetchInterval: TimeInterval = 30
+    private var lastSyncTime: Date?
+
     // Composed helpers
     private let metadataStore = CKSyncMetadataStore()
     private lazy var conflictResolver = CKSyncConflictResolver(mapper: mapper)
@@ -109,9 +118,15 @@ final class CKSyncEngineManager: @unchecked Sendable {
     func getSyncEnabled() -> Bool { metadataStore.getSyncEnabled() }
     func setSyncEnabled(_ enabled: Bool) { metadataStore.setSyncEnabled(enabled) }
 
-    // MARK: - Manual Fetch
+    // MARK: - Fetch
 
-    func fetchChanges() {
+    /// Fetch remote changes. Automatic calls are rate-limited; pass `manual: true` to bypass.
+    func fetchChanges(manual: Bool = false) {
+        if !manual, let lastSync = lastSyncTime,
+           Date().timeIntervalSince(lastSync) < Self.minimumFetchInterval {
+            Logger.shared.debug(.sync, "[sync-engine] Skipping automatic fetch — last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (minimum \(Int(Self.minimumFetchInterval))s)")
+            return
+        }
         Task {
             try? await engine?.fetchChanges()
         }
@@ -240,6 +255,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     private func handleFetchedChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {
         let protectedIds = mapper.getActiveSessionProtectedIds()
+        var downloaded = 0
 
         // Sort modifications by dependency order (parents before children)
         let sortedModifications = event.modifications.sorted { a, b in
@@ -249,8 +265,8 @@ final class CKSyncEngineManager: @unchecked Sendable {
         }
 
         // Two-pass merge: first pass inserts what it can, second pass retries
-        // failures (e.g., superset children that depend on parent exercises).
-        var failedRecords: [CKRecord] = []
+        // records that returned false (FK missing) or threw on the first attempt.
+        var retryRecords: [CKRecord] = []
 
         for modification in sortedModifications {
             let record = modification.record
@@ -265,24 +281,33 @@ final class CKSyncEngineManager: @unchecked Sendable {
             do {
                 let merged = try mapper.mergeIncoming(record)
                 if merged {
+                    downloaded += 1
                     Logger.shared.debug(.sync, "[sync-engine] Merged \(recordType)/\(recordId)")
+                } else {
+                    retryRecords.append(record)
                 }
             } catch {
-                failedRecords.append(record)
+                retryRecords.append(record)
             }
         }
 
-        // Retry failed records (parents should exist now)
-        for record in failedRecords {
+        // Second pass: retry records that returned false or threw (parents should exist now)
+        if !retryRecords.isEmpty {
+            Logger.shared.debug(.sync, "[sync-engine] Retrying \(retryRecords.count) records from first pass")
+        }
+        for record in retryRecords {
             let recordId = record.recordID.recordName
             let recordType = record.recordType
             do {
                 let merged = try mapper.mergeIncoming(record)
                 if merged {
+                    downloaded += 1
                     Logger.shared.debug(.sync, "[sync-engine] Merged (retry) \(recordType)/\(recordId)")
+                } else {
+                    Logger.shared.warn(.sync, "[sync-engine] Record not merged after retry: \(recordType)/\(recordId)")
                 }
             } catch {
-                Logger.shared.error(.sync, "[sync-engine] Failed to merge \(recordType)/\(recordId)", error: error)
+                Logger.shared.error(.sync, "[sync-engine] Failed to merge \(recordType)/\(recordId) after retry", error: error)
             }
         }
 
@@ -298,21 +323,31 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
             do {
                 try mapper.deleteLocalRecord(id: recordId)
+                downloaded += 1
                 Logger.shared.debug(.sync, "[sync-engine] Deleted \(recordType)/\(recordId)")
             } catch {
                 Logger.shared.error(.sync, "[sync-engine] Failed to delete \(recordType)/\(recordId)", error: error)
             }
         }
+
+        lock.lock()
+        syncDownloaded += downloaded
+        lock.unlock()
     }
 
     // MARK: - Sent Changes (delegated)
 
     private func handleSentChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
-        conflictResolver.handleSentChanges(event, removePendingType: { recordName in
+        let result = conflictResolver.handleSentChanges(event, removePendingType: { recordName in
             self.lock.lock()
             self.pendingRecordTypes.removeValue(forKey: recordName)
             self.lock.unlock()
         }, engine: engine)
+
+        lock.lock()
+        syncUploaded += result.uploaded
+        syncConflicts += result.conflicts
+        lock.unlock()
     }
 
     // MARK: - Account Changes
@@ -355,6 +390,24 @@ final class CKSyncEngineManager: @unchecked Sendable {
             Logger.shared.warn(.sync, "[sync-engine] Unknown account change type")
         }
     }
+
+    // MARK: - Sync Stats Helpers (synchronous, safe to call from async context)
+
+    private func resetSyncStats() {
+        lock.lock()
+        syncDownloaded = 0
+        syncUploaded = 0
+        syncConflicts = 0
+        lock.unlock()
+    }
+
+    private func collectSyncStats() -> LastSyncStats {
+        lock.lock()
+        let stats = LastSyncStats(uploaded: syncUploaded, downloaded: syncDownloaded, conflicts: syncConflicts)
+        lastSyncTime = Date()
+        lock.unlock()
+        return stats
+    }
 }
 
 // MARK: - CKSyncEngineDelegate
@@ -376,13 +429,15 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
 
         case .willFetchChanges:
             currentSnapshot = SyncSessionGuard.takeSnapshot()
+            resetSyncStats()
 
         case .didFetchChanges:
             if let snapshot = currentSnapshot {
                 SyncSessionGuard.validateAndRestore(snapshot: snapshot)
             }
             currentSnapshot = nil
-            metadataStore.updateSyncMetadata()
+            let stats = collectSyncStats()
+            metadataStore.updateSyncMetadata(stats: stats)
             await MainActor.run {
                 NotificationCenter.default.post(name: .syncCompleted, object: nil)
             }

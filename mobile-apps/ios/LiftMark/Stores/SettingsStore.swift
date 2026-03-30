@@ -39,7 +39,7 @@ final class SettingsStore {
                 updatedAt: row.updatedAt
             )
         } catch {
-            print("Failed to load settings: \(error)")
+            Logger.shared.error(.database, "Failed to load settings", error: error)
         }
     }
 
@@ -95,7 +95,7 @@ final class SettingsStore {
                 CKSyncEngineManager.notifySave(recordType: "UserSettings", recordID: settings.id)
             }
         } catch {
-            print("Failed to update settings: \(error)")
+            Logger.shared.error(.database, "Failed to update settings", error: error)
         }
     }
 }

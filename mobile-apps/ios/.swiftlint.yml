@@ -1,0 +1,65 @@
+included:
+  - LiftMark
+  - LiftMarkTests
+
+excluded:
+  - LiftMark.xcodeproj
+  - build
+  - DerivedData
+  - .build
+  - Packages
+
+disabled_rules:
+  - trailing_comma
+  - multiple_closures_with_trailing_closure
+  - opening_brace
+
+opt_in_rules:
+  - empty_count
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - first_where
+  - modifier_order
+  - toggle_bool
+  - unused_declaration
+
+line_length:
+  warning: 120
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 60
+    error: 80
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+    - db
+
+large_tuple:
+  warning: 3
+  error: 4
+
+nesting:
+  type_level: 3
+  function_level: 3

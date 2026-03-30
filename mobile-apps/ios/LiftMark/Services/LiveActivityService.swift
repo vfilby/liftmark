@@ -261,7 +261,7 @@ final class LiveActivityService: @unchecked Sendable {
     #endif
 
     /// Find the next exercise after the current one that has pending sets.
-    private func findNextExercise(after current: SessionExercise, in session: WorkoutSession) -> SessionExercise? {
+    func findNextExercise(after current: SessionExercise, in session: WorkoutSession) -> SessionExercise? {
         guard let currentIndex = session.exercises.firstIndex(where: { $0.id == current.id }) else { return nil }
         // Look for exercises after the current one with pending sets
         for i in (currentIndex + 1)..<session.exercises.count {
@@ -274,19 +274,19 @@ final class LiveActivityService: @unchecked Sendable {
     }
 
     /// Format the first pending set of an exercise as "weight × reps".
-    private func nextExerciseSetDetail(_ exercise: SessionExercise) -> String? {
+    func nextExerciseSetDetail(_ exercise: SessionExercise) -> String? {
         guard let set = exercise.sets.first(where: { $0.status == .pending }) else { return nil }
         let weight = formatWeight(set.targetWeight, unit: set.targetWeightUnit)
         let reps = formatReps(set)
         return "\(weight) \u{00D7} \(reps)"
     }
 
-    private func formatWeight(_ weight: Double?, unit: WeightUnit?) -> String {
+    func formatWeight(_ weight: Double?, unit: WeightUnit?) -> String {
         guard let weight, weight > 0 else { return "BW" }
         return "\(Int(weight)) \(unit?.rawValue ?? "lbs")"
     }
 
-    private func formatReps(_ set: SessionSet?) -> String {
+    func formatReps(_ set: SessionSet?) -> String {
         guard let set else { return "?" }
         if let reps = set.targetReps {
             return String(reps)

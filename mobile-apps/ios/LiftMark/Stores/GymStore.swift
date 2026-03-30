@@ -31,7 +31,7 @@ final class GymStore {
             // Safety net: ensure exactly one default gym
             ensureSingleDefault()
         } catch {
-            print("Failed to load gyms: \(error)")
+            Logger.shared.error(.database, "Failed to load gyms", error: error)
         }
     }
 
@@ -59,7 +59,7 @@ final class GymStore {
             CKSyncEngineManager.notifySave(recordType: "Gym", recordID: gymId)
             loadGyms()
         } catch {
-            print("Failed to create gym: \(error)")
+            Logger.shared.error(.database, "Failed to create gym", error: error)
         }
     }
 
@@ -117,7 +117,7 @@ final class GymStore {
             }
             loadGyms()
         } catch {
-            print("Failed to delete gym: \(error)")
+            Logger.shared.error(.database, "Failed to delete gym", error: error)
         }
     }
 
@@ -146,7 +146,7 @@ final class GymStore {
             }
             loadGyms()
         } catch {
-            print("Failed to set default gym: \(error)")
+            Logger.shared.error(.database, "Failed to set default gym", error: error)
         }
     }
 
@@ -196,7 +196,7 @@ final class GymStore {
                 )
             }
         } catch {
-            print("Failed to ensure single default gym: \(error)")
+            Logger.shared.error(.database, "Failed to ensure single default gym", error: error)
         }
     }
 }
