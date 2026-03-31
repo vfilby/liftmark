@@ -52,6 +52,48 @@ describe('RPE Modifiers', () => {
     expect(result.data?.exercises[0].sets[0].targetWeight).toBe(225);
     expect(result.data?.exercises[0].sets[0].targetReps).toBe(5);
     expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+    expect(result.warnings.some((w) => w.includes('@rpe is deprecated'))).toBe(true);
+  });
+});
+
+// MARK: - Deprecated Modifier Warnings
+
+describe('Deprecated Modifier Warnings', () => {
+  it('emits deprecation warning for @rpe', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+    const rpeWarnings = result.warnings.filter((w) => w.includes('@rpe is deprecated'));
+    expect(rpeWarnings).toHaveLength(1);
+    expect(rpeWarnings[0]).toContain('use freeform notes instead');
+  });
+
+  it('emits deprecation warning for @tempo', () => {
+    const markdown = `# Workout
+## Pause Squats
+- 225 x 5 @tempo: 3-2-1-0`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].tempo).toBe('3-2-1-0');
+    const tempoWarnings = result.warnings.filter((w) => w.includes('@tempo is deprecated'));
+    expect(tempoWarnings).toHaveLength(1);
+    expect(tempoWarnings[0]).toContain('use freeform notes instead');
+  });
+
+  it('emits deprecation warnings for both @rpe and @tempo on same line', () => {
+    const markdown = `# Workout
+## Bench
+- 225 x 5 @rpe: 8 @tempo: 3-0-1-0`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('@rpe is deprecated'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('@tempo is deprecated'))).toBe(true);
   });
 });
 
@@ -176,6 +218,43 @@ describe('Supersets', () => {
     expect(result.success).toBe(true);
     // Should have parent superset + 2 child exercises
     expect((result.data?.exercises.length ?? 0)).toBeGreaterThanOrEqual(2);
+  });
+
+  it('treats "superset" header with only sets (no child headers) as regular exercise', () => {
+    const markdown = `# Workout
+
+## Superset: Arms
+- 20 x 10
+- 30 x 8`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const exercises = result.data?.exercises ?? [];
+
+    // Should be treated as a regular exercise, not a superset group
+    expect(exercises.length).toBe(1);
+    expect(exercises[0].exerciseName).toBe('Superset: Arms');
+    expect(exercises[0].groupType).toBeNull();
+    expect(exercises[0].parentExerciseId).toBeNull();
+    expect(exercises[0].sets.length).toBe(2);
+  });
+
+  it('treats "superset" header with no content as error (NO_SETS)', () => {
+    const markdown = `# Workout
+
+## Superset: Arms
+
+## Bench Press
+- 135 x 10`;
+    const result = parseWorkout(markdown);
+
+    // "Superset: Arms" has no child headers and no sets — treated as regular exercise
+    // which triggers a NO_SETS error, causing the parse to fail
+    expect(result.success).toBe(false);
+    expect(result.errors.some(e => e.includes('Superset: Arms') && e.includes('no sets'))).toBe(true);
+
+    // data is null when success is false
+    expect(result.data).toBeNull();
   });
 });
 

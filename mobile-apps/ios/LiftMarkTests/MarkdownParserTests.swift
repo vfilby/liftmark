@@ -55,6 +55,52 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertEqual(result.data?.exercises[0].sets[0].targetWeight, 225)
         XCTAssertEqual(result.data?.exercises[0].sets[0].targetReps, 5)
         XCTAssertEqual(result.data?.exercises[0].sets[0].targetRpe, 8)
+        XCTAssertTrue(result.warnings.contains(where: { $0.contains("@rpe is deprecated") }))
+    }
+
+    // MARK: - Deprecated Modifier Warnings
+
+    func testRpeDeprecationWarning() {
+        let markdown = """
+        # Workout
+        ## Squats
+        - 225 x 5 @rpe: 8
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetRpe, 8)
+        let rpeWarnings = result.warnings.filter { $0.contains("@rpe is deprecated") }
+        XCTAssertEqual(rpeWarnings.count, 1)
+        XCTAssertTrue(rpeWarnings[0].contains("use freeform notes instead"))
+    }
+
+    func testTempoDeprecationWarning() {
+        let markdown = """
+        # Workout
+        ## Pause Squats
+        - 225 x 5 @tempo: 3-2-1-0
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.data?.exercises[0].sets[0].tempo, "3-2-1-0")
+        let tempoWarnings = result.warnings.filter { $0.contains("@tempo is deprecated") }
+        XCTAssertEqual(tempoWarnings.count, 1)
+        XCTAssertTrue(tempoWarnings[0].contains("use freeform notes instead"))
+    }
+
+    func testBothRpeAndTempoDeprecationWarnings() {
+        let markdown = """
+        # Workout
+        ## Bench
+        - 225 x 5 @rpe: 8 @tempo: 3-0-1-0
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        XCTAssertTrue(result.warnings.contains(where: { $0.contains("@rpe is deprecated") }))
+        XCTAssertTrue(result.warnings.contains(where: { $0.contains("@tempo is deprecated") }))
     }
 
     // MARK: - Bodyweight Exercises

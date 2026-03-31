@@ -1039,6 +1039,7 @@ enum MarkdownParser {
                     } else {
                         modifiers.rpe = rpe
                         if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
+                        context.warnings.append(ParseWarning(line: lineNumber, message: "@rpe is deprecated — use freeform notes instead", code: "DEPRECATED_RPE"))
                     }
                 } else {
                     context.errors.append(ParseError(line: lineNumber, message: "Invalid RPE format: \(value)", code: "INVALID_RPE"))
@@ -1076,6 +1077,7 @@ enum MarkdownParser {
                     modifiers.tempo = tempoStr
                     let remaining = substring(of: value, range: tempoMatch.range(at: 2))?.trimmingCharacters(in: .whitespaces)
                     if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
+                    context.warnings.append(ParseWarning(line: lineNumber, message: "@tempo is deprecated — use freeform notes instead", code: "DEPRECATED_TEMPO"))
                 } else {
                     context.errors.append(ParseError(line: lineNumber, message: "Invalid tempo format: \(value). Expected format: \"X-X-X-X\" (e.g., \"3-0-1-0\")", code: "INVALID_TEMPO"))
                 }

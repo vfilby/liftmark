@@ -525,28 +525,24 @@ Adding weight on last two sets.
 
 ```markdown
 # Workout: EMOM 20
-@date: 2026-01-15
 @tags: crossfit, conditioning, EMOM
-@notes: Every minute on the minute for 20 minutes
+
+Every minute on the minute for 20 minutes
 
 ## Kettlebell Swing
 @type: other
-@circuit: A
 - 53 lbs x 15 reps
 
 ## Box Jump
 @type: bodyweight
-@circuit: A
 - 24 inches x 10 reps
 
 ## Burpee
 @type: bodyweight
-@circuit: A
 - 10
 
 ## Row
 @type: machine
-@circuit: A
 - 200m
 ```
 
@@ -554,7 +550,6 @@ Adding weight on last two sets.
 
 ```markdown
 # Workout: Snatch Technique
-@date: 2026-01-15
 @tags: weightlifting, snatch, technique
 
 ## Snatch
@@ -796,13 +791,16 @@ Some notes but no exercises.
 **Case 6: Markdown formatting in notes**
 ```markdown
 # Workout: Test
-@notes: This is **bold** and *italic*
+
+This is **bold** and *italic*
 
 ## Squat
-@notes: Focus on *depth* and **power**
+
+Focus on *depth* and **power**
+
 - 225 x 5
 ```
-**Interpretation:** Valid - preserve markdown in notes for display
+**Interpretation:** Valid - preserve markdown in freeform notes for display
 
 **Case 7: Special characters in names**
 ```markdown
@@ -1638,15 +1636,12 @@ Today is the big one. Eat well, sleep well, lift well.
 ```markdown
 # Forward Compatible Workout
 @tags: test
-@date: 2026-03-22
-@notes: These unknown keys should be silently ignored
 @program: 5/3/1
 @week: 3
 @foo: bar
 
 ## Bench Press
 @type: barbell
-@circuit: A
 @video: https://example.com/bench
 @difficulty: intermediate
 - 225 lbs x 5

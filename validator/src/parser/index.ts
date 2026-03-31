@@ -991,6 +991,11 @@ function parseModifiersAndTrailingText(
           } else {
             modifiers.rpe = rpe;
             if (remaining && remaining.length > 0) trailingTextParts.push(remaining);
+            context.warnings.push({
+              line: lineNumber,
+              message: `@rpe is deprecated — use freeform notes instead`,
+              code: 'DEPRECATED_RPE',
+            });
           }
         } else {
           context.errors.push({
@@ -1050,6 +1055,11 @@ function parseModifiersAndTrailingText(
           modifiers.tempo = tempoMatch[1];
           const remaining = tempoMatch[2]?.trim() || null;
           if (remaining && remaining.length > 0) trailingTextParts.push(remaining);
+          context.warnings.push({
+            line: lineNumber,
+            message: `@tempo is deprecated — use freeform notes instead`,
+            code: 'DEPRECATED_TEMPO',
+          });
         } else {
           context.errors.push({
             line: lineNumber,
