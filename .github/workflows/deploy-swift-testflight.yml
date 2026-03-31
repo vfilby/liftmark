@@ -145,7 +145,6 @@ jobs:
             -project $PROJECT \
             -archivePath $ARCHIVE_PATH \
             -destination 'generic/platform=iOS' \
-            -skipPackagePluginValidation \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             MARKETING_VERSION="$APP_VERSION" \
             CURRENT_PROJECT_VERSION="$APP_BUILD"

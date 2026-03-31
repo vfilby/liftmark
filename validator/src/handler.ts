@@ -37,7 +37,13 @@ function makeResponse(statusCode: number, body: ValidateResponse | { error: stri
   };
 }
 
+function log(entry: Record<string, unknown>): void {
+  console.log(JSON.stringify(entry));
+}
+
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+  const startTime = Date.now();
+  const requestId = event.requestContext?.requestId ?? 'unknown';
   let markdown: string | undefined;
 
   const contentType = event.headers?.['content-type'] ?? event.headers?.['Content-Type'] ?? '';
@@ -55,22 +61,31 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
         : event.body;
 
       if (!bodyStr) {
+        log({ level: 'warn', requestId, event: 'request_error', status: 400, error: 'Missing request body', durationMs: Date.now() - startTime });
         return makeResponse(400, { error: 'Missing request body' });
       }
 
       const parsed = JSON.parse(bodyStr) as ValidateRequest;
       if (typeof parsed.markdown !== 'string') {
+        log({ level: 'warn', requestId, event: 'request_error', status: 400, error: 'markdown field must be a string', durationMs: Date.now() - startTime });
         return makeResponse(400, { error: 'markdown field must be a string' });
       }
       markdown = parsed.markdown;
     } catch {
+      log({ level: 'warn', requestId, event: 'request_error', status: 400, error: 'Invalid JSON body', durationMs: Date.now() - startTime });
       return makeResponse(400, { error: 'Invalid JSON body' });
     }
   }
 
   if (!markdown || markdown.trim().length === 0) {
+    log({ level: 'warn', requestId, event: 'request_error', status: 400, error: 'Missing or empty markdown field', durationMs: Date.now() - startTime });
     return makeResponse(400, { error: 'Missing or empty markdown field' });
   }
+
+  const inputBytes = Buffer.byteLength(markdown, 'utf-8');
+  const lineCount = markdown.split('\n').length;
+
+  log({ level: 'info', requestId, event: 'request_received', method: event.requestContext?.http?.method ?? 'unknown', contentType, inputBytes, lineCount });
 
   // Input size limits to prevent DoS
   const MAX_INPUT_BYTES = 1_048_576; // 1MB
@@ -78,7 +93,8 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   const MAX_EXERCISES = 500;
   const MAX_TOTAL_SETS = 10_000;
 
-  if (Buffer.byteLength(markdown, 'utf-8') > MAX_INPUT_BYTES) {
+  if (inputBytes > MAX_INPUT_BYTES) {
+    log({ level: 'warn', requestId, event: 'request_error', status: 413, error: 'Input exceeds maximum size of 1MB', inputBytes, durationMs: Date.now() - startTime });
     return makeResponse(413, {
       success: false,
       summary: null,
@@ -87,7 +103,8 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     });
   }
 
-  if (markdown.split('\n').length > MAX_INPUT_LINES) {
+  if (lineCount > MAX_INPUT_LINES) {
+    log({ level: 'warn', requestId, event: 'request_error', status: 413, error: 'Input exceeds maximum of 50,000 lines', lineCount, durationMs: Date.now() - startTime });
     return makeResponse(413, {
       success: false,
       summary: null,
@@ -103,6 +120,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     const setCount = result.data.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
 
     if (exerciseCount > MAX_EXERCISES) {
+      log({ level: 'warn', requestId, event: 'request_error', status: 413, error: `Workout exceeds maximum of ${MAX_EXERCISES} exercises`, exerciseCount, durationMs: Date.now() - startTime });
       return makeResponse(413, {
         success: false,
         summary: null,
@@ -112,6 +130,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     }
 
     if (setCount > MAX_TOTAL_SETS) {
+      log({ level: 'warn', requestId, event: 'request_error', status: 413, error: `Workout exceeds maximum of ${MAX_TOTAL_SETS} total sets`, setCount, durationMs: Date.now() - startTime });
       return makeResponse(413, {
         success: false,
         summary: null,
@@ -146,6 +165,19 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     errors: result.errors,
     warnings: result.warnings,
   };
+
+  log({
+    level: 'info',
+    requestId,
+    event: 'request_complete',
+    status: 200,
+    success: result.success,
+    exerciseCount: exercises.length,
+    totalSetCount,
+    errorCount: result.errors.length,
+    warningCount: result.warnings.length,
+    durationMs: Date.now() - startTime,
+  });
 
   return makeResponse(200, response);
 }

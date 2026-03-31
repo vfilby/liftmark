@@ -16,8 +16,9 @@ export class LmwfValidatorStack extends cdk.Stack {
 
     // ── Domain setup ──
     const domainName = 'validate.liftmark.app';
+    const hostedZoneId = this.node.tryGetContext('hostedZoneId') ?? 'Z082094022DMVFBOHDGOE';
     const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'LiftMarkZone', {
-      hostedZoneId: 'Z082094022DMVFBOHDGOE',
+      hostedZoneId,
       zoneName: 'liftmark.app',
     });
 

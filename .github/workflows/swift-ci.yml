@@ -57,7 +57,6 @@ jobs:
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
-            -skipPackagePluginValidation \
             | xcpretty
 
       - name: Run unit tests
@@ -68,7 +67,6 @@ jobs:
             -only-testing:LiftMarkTests \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
             -resultBundlePath TestResults.xcresult \
-            -skipPackagePluginValidation \
             | xcpretty
 
       - name: Upload test results
