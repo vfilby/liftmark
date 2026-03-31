@@ -66,8 +66,8 @@ export class LmwfValidatorStack extends cdk.Stack {
     const cfnStage = httpApi.defaultStage?.node.defaultChild as apigw.CfnStage;
     if (cfnStage) {
       cfnStage.defaultRouteSettings = {
-        throttlingBurstLimit: 100,
-        throttlingRateLimit: 50,
+        throttlingBurstLimit: 10,
+        throttlingRateLimit: 5,
       };
     }
 
