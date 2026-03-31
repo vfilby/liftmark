@@ -102,6 +102,17 @@
       "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/LmwfValidatorStack-*"
     },
     {
+      "Sid": "CloudWatchAlarms",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:TagResource"
+      ],
+      "Resource": "arn:aws:cloudwatch:*:*:alarm:LmwfValidatorStack-*"
+    },
+    {
       "Sid": "S3CDKAssets",
       "Effect": "Allow",
       "Action": [

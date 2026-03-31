@@ -8,7 +8,7 @@ struct LiftMarkApp: App {
     @State private var settingsStore = SettingsStore()
     @State private var gymStore = GymStore()
     @State private var equipmentStore = EquipmentStore()
-    @State private var pendingImportContent: String?
+    @State private var pendingImportContent: String? = Self.importContentFromLaunchArgs()
 
     init() {
         // Reset data before any views load (for test isolation)
@@ -20,6 +20,18 @@ struct LiftMarkApp: App {
                 UserDefaults.standard.removePersistentDomain(forName: bundleId)
             }
         }
+    }
+
+    /// Parse --import-content launch argument at init time so the @State
+    /// initial value is non-nil before any views appear. This ensures the
+    /// import sheet presents immediately rather than relying on onChange.
+    private static func importContentFromLaunchArgs() -> String? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let idx = args.firstIndex(of: "--import-content"),
+              idx + 1 < args.count else { return nil }
+        let base64 = args[idx + 1]
+        guard let data = Data(base64Encoded: base64) else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 
     var body: some Scene {
@@ -71,6 +83,10 @@ struct LiftMarkApp: App {
 
     private func handleLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
+
+        // --import-content is handled at init time via importContentFromLaunchArgs()
+        // to ensure the @State initial value is set before views appear.
+        if args.contains("--import-content") { return }
 
         if let urlIndex = args.firstIndex(of: "-url"),
            urlIndex + 1 < args.count {

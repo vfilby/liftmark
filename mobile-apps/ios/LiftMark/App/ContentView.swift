@@ -68,6 +68,15 @@ struct ContentView: View {
         .onAppear {
             updateOnboardingState()
         }
+        .task {
+            // Check for pending import content set during launch (e.g., via
+            // --import-content argument). Using task instead of onAppear
+            // ensures the view hierarchy is fully set up before presenting
+            // the sheet. onChange won't fire for the initial @State value.
+            if pendingImportContent != nil {
+                showPendingImport = true
+            }
+        }
         .onChange(of: settingsStore.settings?.hasAcceptedDisclaimer) {
             updateOnboardingState()
         }

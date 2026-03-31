@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigatewayv2';
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
@@ -88,6 +89,42 @@ export class LmwfValidatorStack extends cdk.Stack {
           customDomain.regionalHostedZoneId,
         ),
       ),
+    });
+
+    // ── CloudWatch Alarms ──
+    // To receive notifications, add an SNS topic and wire it to these alarms
+    new cloudwatch.Alarm(this, 'LambdaErrorAlarm', {
+      metric: validatorFn.metricErrors({ period: cdk.Duration.minutes(5) }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      alarmDescription: 'Lambda error count > 5 in 5 minutes',
+    });
+
+    new cloudwatch.Alarm(this, 'LambdaDurationAlarm', {
+      metric: validatorFn.metricDuration({ period: cdk.Duration.minutes(5), statistic: 'p99' }),
+      threshold: 5000,
+      evaluationPeriods: 1,
+      alarmDescription: 'Lambda p99 latency > 5s (timeout is 10s)',
+    });
+
+    new cloudwatch.Alarm(this, 'LambdaThrottleAlarm', {
+      metric: validatorFn.metricThrottles({ period: cdk.Duration.minutes(5) }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      alarmDescription: 'Lambda throttles detected',
+    });
+
+    new cloudwatch.Alarm(this, 'ApiGateway5xxAlarm', {
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/ApiGateway',
+        metricName: '5xx',
+        dimensionsMap: { ApiId: httpApi.httpApiId },
+        period: cdk.Duration.minutes(5),
+        statistic: 'Sum',
+      }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      alarmDescription: 'API Gateway 5xx count > 5 in 5 minutes',
     });
 
     // ── Outputs ──

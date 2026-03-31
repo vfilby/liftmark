@@ -13,6 +13,8 @@ class ActionAdapter {
 
     /// Internal state for cross-action communication (e.g., execScript → openURL).
     var sharedFilePath: String?
+    /// Content from the last writeSharedFile, used to pass directly as a launch argument.
+    var sharedFileContent: String?
 
     /// Track if first launch has happened (for data reset isolation).
     private var isFirstLaunch = true
@@ -530,10 +532,19 @@ class ActionAdapter {
             url = url.replacingOccurrences(of: "{sharedFilePath}", with: sharedPath)
         }
 
-        // Open URL via Safari or by launching with URL argument
-        // XCUITest doesn't have a direct openURL like Detox, so we pass it as a launch argument
+        // When we have shared file content, pass it directly as a base64-encoded
+        // launch argument instead of a file URL. This avoids cross-process file
+        // path issues where the test runner's temp directory differs from the
+        // app's sandboxed container (which causes validateDeepLinkPath to reject
+        // the path).
         app.terminate()
-        app.launchArguments = ["-url", url]
+        if let content = sharedFileContent,
+           url.contains("liftmark://") {
+            let base64 = Data(content.utf8).base64EncodedString()
+            app.launchArguments = ["--import-content", base64]
+        } else {
+            app.launchArguments = ["-url", url]
+        }
         app.launch()
 
         // Auto-dismiss onboarding if it appears after URL launch
@@ -775,8 +786,11 @@ class ActionAdapter {
 
         let filename = args["filename"]?.stringValue ?? "test.md"
 
-        // Write to a temporary location that the app can access.
-        // In XCUITest, we write to a temp directory and store the path for openURL.
+        // Store content so executeOpenURL can pass it directly as a launch
+        // argument, bypassing cross-process file path sandbox issues.
+        sharedFileContent = content
+
+        // Also write to a temporary location for backward compatibility.
         let tempDir = NSTemporaryDirectory()
         let inboxDir = (tempDir as NSString).appendingPathComponent("TestInbox")
         try FileManager.default.createDirectory(atPath: inboxDir, withIntermediateDirectories: true)
