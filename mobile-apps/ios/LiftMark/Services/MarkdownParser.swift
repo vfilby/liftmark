@@ -74,6 +74,43 @@ private struct WorkoutSection {
 
 enum MarkdownParser {
 
+    // MARK: - Static Regex Patterns (compiled once at first use)
+
+    // Line preprocessing patterns
+    private static let headerRegex = try! NSRegularExpression(pattern: #"^(#{1,6})\s+(.+)$"#)
+    private static let listRegex = try! NSRegularExpression(pattern: #"^-\s+(.+)$"#)
+    private static let metadataRegex = try! NSRegularExpression(pattern: #"^@(\w+):\s*(.+)$"#)
+
+    // Set parsing patterns
+    // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
+    private static let setPattern1 = try! NSRegularExpression(
+        pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
+        options: .caseInsensitive
+    )
+    // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
+    private static let setPattern2 = try! NSRegularExpression(
+        pattern: #"^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
+        options: .caseInsensitive
+    )
+    // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
+    private static let setPattern3 = try! NSRegularExpression(
+        pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
+        options: .caseInsensitive
+    )
+
+    // Modifier parsing patterns
+    private static let modifierPattern = try! NSRegularExpression(pattern: #"^(\w+):\s*(.+)$"#)
+    private static let rpePattern = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(.*)$"#)
+    private static let restPattern = try! NSRegularExpression(
+        pattern: #"^(\d+)\s*(s|sec|m|min)?\s*(.*)$"#,
+        options: .caseInsensitive
+    )
+    private static let tempoPattern = try! NSRegularExpression(pattern: #"^(\d-\d-\d-\d)\s*(.*)$"#)
+    private static let restTimePattern = try! NSRegularExpression(
+        pattern: #"^(\d+)\s*(s|sec|m|min)?$"#,
+        options: .caseInsensitive
+    )
+
     // MARK: - Public API
 
     /// Parse markdown text into a WorkoutPlan
@@ -178,9 +215,9 @@ enum MarkdownParser {
             .replacingOccurrences(of: "\r", with: "\n")
         let rawLines = normalized.components(separatedBy: "\n")
 
-        let headerRegex = try! NSRegularExpression(pattern: #"^(#{1,6})\s+(.+)$"#)
-        let listRegex = try! NSRegularExpression(pattern: #"^-\s+(.+)$"#)
-        let metadataRegex = try! NSRegularExpression(pattern: #"^@(\w+):\s*(.+)$"#)
+        let headerRegex = Self.headerRegex
+        let listRegex = Self.listRegex
+        let metadataRegex = Self.metadataRegex
 
         return rawLines.enumerated().map { index, raw in
             let trimmed = raw.trimmingCharacters(in: .whitespaces)
@@ -758,14 +795,9 @@ enum MarkdownParser {
             return nil
         }
 
-        // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
-        let pattern1 = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
-
-        // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
-        let pattern2 = try! NSRegularExpression(pattern: #"^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
-
-        // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
-        let pattern3 = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#, options: .caseInsensitive)
+        let pattern1 = Self.setPattern1
+        let pattern2 = Self.setPattern2
+        let pattern3 = Self.setPattern3
 
         let range = NSRange(original.startIndex..., in: original)
 
@@ -981,7 +1013,7 @@ enum MarkdownParser {
             }
 
             // Try to parse as key: value modifier
-            let modifierPattern = try! NSRegularExpression(pattern: #"^(\w+):\s*(.+)$"#)
+            let modifierPattern = Self.modifierPattern
             let nsRange = NSRange(trimmed.startIndex..., in: trimmed)
             guard let match = modifierPattern.firstMatch(in: trimmed, range: nsRange),
                   let keyStr = substring(of: trimmed, range: match.range(at: 1)),
@@ -996,7 +1028,7 @@ enum MarkdownParser {
 
             switch key {
             case "rpe":
-                let rpePattern = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(.*)$"#)
+                let rpePattern = Self.rpePattern
                 let rpeRange = NSRange(value.startIndex..., in: value)
                 if let rpeMatch = rpePattern.firstMatch(in: value, range: rpeRange),
                    let rpeStr = substring(of: value, range: rpeMatch.range(at: 1)),
@@ -1013,7 +1045,7 @@ enum MarkdownParser {
                 }
 
             case "rest":
-                let restPattern = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?\s*(.*)$"#, options: .caseInsensitive)
+                let restPattern = Self.restPattern
                 let restRange = NSRange(value.startIndex..., in: value)
                 if let restMatch = restPattern.firstMatch(in: value, range: restRange),
                    let numStr = substring(of: value, range: restMatch.range(at: 1)) {
@@ -1037,7 +1069,7 @@ enum MarkdownParser {
                 }
 
             case "tempo":
-                let tempoPattern = try! NSRegularExpression(pattern: #"^(\d-\d-\d-\d)\s*(.*)$"#)
+                let tempoPattern = Self.tempoPattern
                 let tempoRange = NSRange(value.startIndex..., in: value)
                 if let tempoMatch = tempoPattern.firstMatch(in: value, range: tempoRange),
                    let tempoStr = substring(of: value, range: tempoMatch.range(at: 1)) {
@@ -1060,7 +1092,7 @@ enum MarkdownParser {
 
     /// Parse rest time to seconds
     private static func parseRestTime(_ value: String) -> Int? {
-        let pattern = try! NSRegularExpression(pattern: #"^(\d+)\s*(s|sec|m|min)?$"#, options: .caseInsensitive)
+        let pattern = Self.restTimePattern
         let range = NSRange(value.startIndex..., in: value)
         guard let match = pattern.firstMatch(in: value, range: range),
               let numStr = substring(of: value, range: match.range(at: 1)),

@@ -108,6 +108,61 @@ final class FileImportServiceTests: XCTestCase {
         XCTAssertTrue(result.markdown?.contains("Workout") ?? false)
     }
 
+    // MARK: - validateDeepLinkPath
+
+    func testValidateDeepLinkPathAllowsTempDirectory() {
+        let tempDir = NSTemporaryDirectory()
+        let path = (tempDir as NSString).appendingPathComponent("workout.md")
+        XCTAssertNotNil(FileImportService.validateDeepLinkPath(path))
+    }
+
+    func testValidateDeepLinkPathAllowsDocumentsDirectory() {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let path = docs.appendingPathComponent("workout.md").path
+        XCTAssertNotNil(FileImportService.validateDeepLinkPath(path))
+    }
+
+    func testValidateDeepLinkPathAllowsInboxDirectory() {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let path = docs.appendingPathComponent("Inbox/workout.txt").path
+        XCTAssertNotNil(FileImportService.validateDeepLinkPath(path))
+    }
+
+    func testValidateDeepLinkPathAllowsMarkdownExtension() {
+        let tempDir = NSTemporaryDirectory()
+        XCTAssertNotNil(FileImportService.validateDeepLinkPath(
+            (tempDir as NSString).appendingPathComponent("file.markdown")))
+    }
+
+    func testValidateDeepLinkPathRejectsTraversalAttack() {
+        let tempDir = NSTemporaryDirectory()
+        let malicious = (tempDir as NSString).appendingPathComponent("../../etc/passwd")
+        XCTAssertNil(FileImportService.validateDeepLinkPath(malicious))
+    }
+
+    func testValidateDeepLinkPathRejectsArbitraryPath() {
+        XCTAssertNil(FileImportService.validateDeepLinkPath("/etc/passwd"))
+    }
+
+    func testValidateDeepLinkPathRejectsDisallowedExtension() {
+        let tempDir = NSTemporaryDirectory()
+        let path = (tempDir as NSString).appendingPathComponent("secrets.json")
+        XCTAssertNil(FileImportService.validateDeepLinkPath(path))
+    }
+
+    func testValidateDeepLinkPathRejectsNoExtension() {
+        let tempDir = NSTemporaryDirectory()
+        let path = (tempDir as NSString).appendingPathComponent("workout")
+        XCTAssertNil(FileImportService.validateDeepLinkPath(path))
+    }
+
+    func testValidateDeepLinkPathRejectsTraversalOutOfTmpViaDotDot() {
+        // Construct a path that starts in tmp but traverses out
+        let tempDir = (NSTemporaryDirectory() as NSString).standardizingPath
+        let malicious = tempDir + "/subdir/../../etc/passwd"
+        XCTAssertNil(FileImportService.validateDeepLinkPath(malicious))
+    }
+
     // MARK: - Helpers
 
     private func createTempFile(content: String, extension ext: String) throws -> URL {

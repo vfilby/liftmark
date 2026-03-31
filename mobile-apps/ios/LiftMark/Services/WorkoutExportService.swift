@@ -159,7 +159,9 @@ struct WorkoutExportService {
 
     private func writeExportFile(_ data: [String: Any], fileName: String) throws -> URL {
         let jsonData = try JSONSerialization.data(withJSONObject: data, options: [.prettyPrinted, .sortedKeys])
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        guard let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            throw ExportError.fileWriteFailed("Cache directory is unavailable")
+        }
         let fileURL = cacheDir.appendingPathComponent(fileName)
         try jsonData.write(to: fileURL)
         return fileURL

@@ -112,10 +112,10 @@ struct ExerciseHistoryChartView: View {
     @ViewBuilder
     private var statsRow: some View {
         let data = sortedPoints
-        if data.count >= 2 {
-            let current = metricValue(for: data.last!)
+        if data.count >= 2, let firstPoint = data.first, let lastPoint = data.last {
+            let current = metricValue(for: lastPoint)
             let best = data.map { metricValue(for: $0) }.max() ?? current
-            let first = metricValue(for: data.first!)
+            let first = metricValue(for: firstPoint)
             let change = first > 0 ? ((current - first) / first) * 100 : 0
 
             HStack(spacing: LiftMarkTheme.spacingMD) {

@@ -48,7 +48,9 @@ enum DatabaseBackupService {
             .replacingOccurrences(of: "Z", with: "")
         let exportFileName = "liftmark_backup_\(timestamp).db"
 
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        guard let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            throw BackupError.cacheDirectoryUnavailable
+        }
         let exportURL = cacheDir.appendingPathComponent(exportFileName)
 
         // Remove existing file if present
@@ -117,7 +119,9 @@ enum DatabaseBackupService {
         let fileManager = FileManager.default
 
         // Create safety backup
-        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        guard let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            throw BackupError.cacheDirectoryUnavailable
+        }
         let backupURL = cacheDir.appendingPathComponent("backup_before_import.db")
 
         if fileManager.fileExists(atPath: dbPath.path) {
@@ -165,12 +169,15 @@ enum DatabaseBackupService {
 
 enum BackupError: LocalizedError {
     case databaseNotFound
+    case cacheDirectoryUnavailable
     case importFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .databaseNotFound:
             return "Database file not found. Please restart the app."
+        case .cacheDirectoryUnavailable:
+            return "Cache directory is unavailable. Please restart the app."
         case .importFailed(let reason):
             return "Import failed: \(reason). Your original data is intact."
         }

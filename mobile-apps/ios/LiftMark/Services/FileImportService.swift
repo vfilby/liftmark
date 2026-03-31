@@ -81,6 +81,42 @@ enum FileImportService {
         }
     }
 
+    // MARK: - Path Safety
+
+    /// Validate that a file path is safe for the liftmark:// deep link handler.
+    /// Returns the standardized path if valid, nil otherwise.
+    /// Only allows files within the app's Documents, tmp, or Inbox directories
+    /// with supported extensions (.txt, .md, .markdown).
+    static func validateDeepLinkPath(_ filePath: String) -> String? {
+        // Resolve symlinks and eliminate ".." traversal
+        let resolved = (filePath as NSString).standardizingPath
+
+        // Allowed root directories
+        let allowedRoots: [String] = {
+            var roots: [String] = []
+            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                roots.append(docs.path)
+            }
+            roots.append(NSTemporaryDirectory())
+            // The system Inbox directory lives inside Documents
+            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                roots.append(docs.appendingPathComponent("Inbox").path)
+            }
+            return roots.map { ($0 as NSString).standardizingPath }
+        }()
+
+        let inAllowedDir = allowedRoots.contains { root in
+            resolved == root || resolved.hasPrefix(root + "/")
+        }
+        guard inAllowedDir else { return nil }
+
+        // Validate extension
+        let ext = (resolved as NSString).pathExtension.lowercased()
+        guard validExtensions.contains(ext) else { return nil }
+
+        return resolved
+    }
+
     // MARK: - URL Conversion
 
     /// Convert a URL string to a file URL.

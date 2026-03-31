@@ -92,8 +92,13 @@ struct LiftMarkApp: App {
                 filePath = url.path
             }
 
-            if FileManager.default.fileExists(atPath: filePath),
-               let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
+            // Validate the path is within allowed directories and has a valid extension
+            guard let safePath = FileImportService.validateDeepLinkPath(filePath) else {
+                return
+            }
+
+            if FileManager.default.fileExists(atPath: safePath),
+               let content = try? String(contentsOfFile: safePath, encoding: .utf8) {
                 pendingImportContent = content
             }
         } else if url.isFileURL {
