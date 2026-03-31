@@ -41,7 +41,7 @@ jobs:
         run: |
           brew install xcodegen
           INSTALLED=$(xcodegen --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
-          EXPECTED="2.44.1"
+          EXPECTED="2.45.3"
           if [ "$INSTALLED" != "$EXPECTED" ]; then
             echo "::error::XcodeGen version mismatch: expected $EXPECTED, got $INSTALLED"
             exit 1
