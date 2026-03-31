@@ -1,6 +1,7 @@
 import XCTest
 @testable import LiftMark
 
+@MainActor
 final class WorkoutPlanStoreTests: XCTestCase {
 
     private var store: WorkoutPlanStore!
@@ -60,6 +61,7 @@ final class WorkoutPlanStoreTests: XCTestCase {
     }
 }
 
+@MainActor
 final class SessionStoreTests: XCTestCase {
 
     private var store: SessionStore!
@@ -271,6 +273,7 @@ final class SessionStoreTests: XCTestCase {
     }
 }
 
+@MainActor
 final class GymStoreTests: XCTestCase {
 
     private var store: GymStore!
@@ -416,6 +419,7 @@ final class GymStoreTests: XCTestCase {
     }
 }
 
+@MainActor
 final class EquipmentStoreTests: XCTestCase {
 
     private var store: EquipmentStore!
@@ -475,6 +479,7 @@ final class EquipmentStoreTests: XCTestCase {
     }
 }
 
+@MainActor
 final class SettingsStoreTests: XCTestCase {
 
     private var store: SettingsStore!

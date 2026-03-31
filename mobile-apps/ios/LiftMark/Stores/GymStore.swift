@@ -1,10 +1,16 @@
 import Foundation
 import GRDB
 
+@MainActor
 @Observable
 final class GymStore {
     private(set) var gyms: [Gym] = []
     private(set) var isLoading = false
+    private(set) var lastError: Error?
+
+    func clearError() {
+        lastError = nil
+    }
 
     func loadGyms() {
         isLoading = true
@@ -30,7 +36,9 @@ final class GymStore {
 
             // Safety net: ensure exactly one default gym
             ensureSingleDefault()
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to load gyms", error: error)
         }
     }
@@ -59,6 +67,7 @@ final class GymStore {
             CKSyncEngineManager.notifySave(recordType: "Gym", recordID: gymId)
             loadGyms()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to create gym", error: error)
         }
     }
@@ -117,6 +126,7 @@ final class GymStore {
             }
             loadGyms()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to delete gym", error: error)
         }
     }
@@ -146,6 +156,7 @@ final class GymStore {
             }
             loadGyms()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to set default gym", error: error)
         }
     }
@@ -196,6 +207,7 @@ final class GymStore {
                 )
             }
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to ensure single default gym", error: error)
         }
     }

@@ -1,10 +1,16 @@
 import Foundation
 import GRDB
 
+@MainActor
 @Observable
 final class SettingsStore {
     private(set) var settings: UserSettings?
     private(set) var isLoading = false
+    private(set) var lastError: Error?
+
+    func clearError() {
+        lastError = nil
+    }
 
     func loadSettings() {
         isLoading = true
@@ -38,7 +44,9 @@ final class SettingsStore {
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt
             )
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to load settings", error: error)
         }
     }
@@ -90,11 +98,13 @@ final class SettingsStore {
             }
             let previousSettings = self.settings
             self.settings = settings
+            lastError = nil
             // Only sync if a syncable field changed (not local-only fields like hasAcceptedDisclaimer)
             if previousSettings == nil || settings.hasSyncableChanges(from: previousSettings!) {
                 CKSyncEngineManager.notifySave(recordType: "UserSettings", recordID: settings.id)
             }
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to update settings", error: error)
         }
     }

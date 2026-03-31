@@ -1,11 +1,17 @@
 import Foundation
 
+@MainActor
 @Observable
 final class SessionStore {
     private(set) var sessions: [WorkoutSession] = []
     private(set) var activeSession: WorkoutSession?
     private(set) var isLoading = false
+    private(set) var lastError: Error?
     private let repository = SessionRepository()
+
+    func clearError() {
+        lastError = nil
+    }
 
     func loadSessions() {
         isLoading = true
@@ -13,7 +19,9 @@ final class SessionStore {
         do {
             sessions = try repository.getCompleted()
             activeSession = try repository.getActiveSession()
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to load sessions", error: error)
         }
     }
@@ -27,8 +35,10 @@ final class SessionStore {
             let (session, createChanges) = try repository.createFromPlan(plan)
             SyncChange.notifyAll(createChanges)
             activeSession = session
+            lastError = nil
             return session
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to start session", error: error)
             return nil
         }
@@ -42,7 +52,9 @@ final class SessionStore {
             // Reload completed sessions for highlights/PR comparison.
             // Keep activeSession non-nil to avoid disrupting navigation to the summary screen.
             sessions = try repository.getCompleted()
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to complete session", error: error)
         }
     }
@@ -57,7 +69,9 @@ final class SessionStore {
             let changes = try repository.cancel(session.id)
             SyncChange.notifyAll(changes)
             activeSession = nil
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to cancel session", error: error)
         }
     }
@@ -68,6 +82,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             loadSessions()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to delete session", error: error)
         }
     }
@@ -80,6 +95,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to complete set", error: error)
         }
     }
@@ -90,6 +106,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to skip set", error: error)
         }
     }
@@ -100,6 +117,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to update set target", error: error)
         }
     }
@@ -129,6 +147,7 @@ final class SessionStore {
             SyncChange.notifyAll(allChanges)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to add exercise", error: error)
         }
     }
@@ -149,6 +168,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to add set", error: error)
         }
     }
@@ -159,6 +179,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to delete set", error: error)
         }
     }
@@ -169,6 +190,7 @@ final class SessionStore {
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to update exercise", error: error)
         }
     }
@@ -176,7 +198,9 @@ final class SessionStore {
     private func reloadActiveSession() {
         do {
             activeSession = try repository.getActiveSession()
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to reload active session", error: error)
         }
     }

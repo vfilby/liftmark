@@ -59,6 +59,9 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
       }
 
       const parsed = JSON.parse(bodyStr) as ValidateRequest;
+      if (typeof parsed.markdown !== 'string') {
+        return makeResponse(400, { error: 'markdown field must be a string' });
+      }
       markdown = parsed.markdown;
     } catch {
       return makeResponse(400, { error: 'Invalid JSON body' });
@@ -72,32 +75,51 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   // Input size limits to prevent DoS
   const MAX_INPUT_BYTES = 1_048_576; // 1MB
   const MAX_INPUT_LINES = 50_000;
+  const MAX_EXERCISES = 500;
+  const MAX_TOTAL_SETS = 10_000;
 
   if (Buffer.byteLength(markdown, 'utf-8') > MAX_INPUT_BYTES) {
-    return {
-      statusCode: 413,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        valid: false,
-        errors: [{ line: 0, message: 'Input exceeds maximum size of 1MB', code: 'INPUT_TOO_LARGE' }],
-        warnings: [],
-      }),
-    };
+    return makeResponse(413, {
+      success: false,
+      summary: null,
+      errors: ['Input exceeds maximum size of 1MB'],
+      warnings: [],
+    });
   }
 
   if (markdown.split('\n').length > MAX_INPUT_LINES) {
-    return {
-      statusCode: 413,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        valid: false,
-        errors: [{ line: 0, message: 'Input exceeds maximum of 50,000 lines', code: 'INPUT_TOO_MANY_LINES' }],
-        warnings: [],
-      }),
-    };
+    return makeResponse(413, {
+      success: false,
+      summary: null,
+      errors: ['Input exceeds maximum of 50,000 lines'],
+      warnings: [],
+    });
   }
 
   const result = parseWorkout(markdown);
+
+  if (result.data) {
+    const exerciseCount = result.data.exercises.length;
+    const setCount = result.data.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+
+    if (exerciseCount > MAX_EXERCISES) {
+      return makeResponse(413, {
+        success: false,
+        summary: null,
+        errors: [`Workout exceeds maximum of ${MAX_EXERCISES} exercises (found ${exerciseCount})`],
+        warnings: [],
+      });
+    }
+
+    if (setCount > MAX_TOTAL_SETS) {
+      return makeResponse(413, {
+        success: false,
+        summary: null,
+        errors: [`Workout exceeds maximum of ${MAX_TOTAL_SETS} total sets (found ${setCount})`],
+        warnings: [],
+      });
+    }
+  }
 
   const exercises: ExerciseSummary[] = result.data?.exercises.map((ex) => ({
     name: ex.exerciseName,

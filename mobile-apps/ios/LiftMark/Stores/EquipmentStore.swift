@@ -1,10 +1,16 @@
 import Foundation
 import GRDB
 
+@MainActor
 @Observable
 final class EquipmentStore {
     private(set) var equipment: [GymEquipment] = []
     private(set) var isLoading = false
+    private(set) var lastError: Error?
+
+    func clearError() {
+        lastError = nil
+    }
 
     func loadEquipment(forGym gymId: String) {
         isLoading = true
@@ -28,7 +34,9 @@ final class EquipmentStore {
                     updatedAt: $0.updatedAt
                 )
             }
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to load equipment", error: error)
         }
     }
@@ -54,6 +62,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: equipmentId)
             loadEquipment(forGym: gymId)
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to add equipment", error: error)
         }
     }
@@ -67,6 +76,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifyDelete(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to remove equipment", error: error)
         }
     }
@@ -84,6 +94,7 @@ final class EquipmentStore {
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: id)
             loadEquipment(forGym: gymId)
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to toggle equipment", error: error)
         }
     }

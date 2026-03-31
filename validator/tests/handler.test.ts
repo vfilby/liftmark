@@ -162,4 +162,50 @@ describe('Lambda Handler', () => {
     expect(body.summary.exercises[0].groupType).toBe('superset');
     expect(body.summary.exercises[0].setCount).toBe(0);
   });
+
+  it('returns 400 when markdown field is not a string', async () => {
+    const event = makeEvent({ body: JSON.stringify({ markdown: 42 }) });
+    const result = await handler(event);
+    expect(result).toHaveProperty('statusCode', 400);
+    const body = parseBody(result as { body: string });
+    expect(body.error).toBe('markdown field must be a string');
+  });
+
+  it('returns 413 with consistent response format for oversized input', async () => {
+    // Create a string larger than 1MB
+    const markdown = '# Workout\n## Exercise\n- 100 x 5\n' + 'x'.repeat(1_048_577);
+    const event = makeEvent({ body: JSON.stringify({ markdown }) });
+    const result = await handler(event);
+
+    expect(result).toHaveProperty('statusCode', 413);
+    const body = parseBody(result as { body: string });
+    // Verify it uses the same ValidateResponse shape as normal responses
+    expect(body).toHaveProperty('success', false);
+    expect(body).toHaveProperty('summary', null);
+    expect(body).toHaveProperty('errors');
+    expect(body).toHaveProperty('warnings');
+    expect(body.errors).toEqual(['Input exceeds maximum size of 1MB']);
+    expect(body.warnings).toEqual([]);
+    // Ensure old format fields are NOT present
+    expect(body).not.toHaveProperty('valid');
+  });
+
+  it('returns 413 when exercise count exceeds limit', async () => {
+    // Generate a workout with 501 exercises
+    const lines = ['# Workout'];
+    for (let i = 0; i < 501; i++) {
+      lines.push(`## Exercise ${i}`);
+      lines.push('- 100 x 5');
+    }
+    const markdown = lines.join('\n');
+    const event = makeEvent({ body: JSON.stringify({ markdown }) });
+    const result = await handler(event);
+
+    expect(result).toHaveProperty('statusCode', 413);
+    const body = parseBody(result as { body: string });
+    expect(body.success).toBe(false);
+    expect(body.summary).toBeNull();
+    expect(body.errors[0]).toMatch(/exceeds maximum of 500 exercises/);
+    expect(body.warnings).toEqual([]);
+  });
 });

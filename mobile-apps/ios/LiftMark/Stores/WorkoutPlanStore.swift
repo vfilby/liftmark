@@ -1,17 +1,25 @@
 import Foundation
 
+@MainActor
 @Observable
 final class WorkoutPlanStore {
     private(set) var plans: [WorkoutPlan] = []
     private(set) var isLoading = false
+    private(set) var lastError: Error?
     private let repository = WorkoutPlanRepository()
+
+    func clearError() {
+        lastError = nil
+    }
 
     func loadPlans() {
         isLoading = true
         defer { isLoading = false }
         do {
             plans = try repository.getAll()
+            lastError = nil
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to load plans", error: error)
         }
     }
@@ -26,6 +34,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to create plan", error: error)
         }
     }
@@ -36,6 +45,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to update plan", error: error)
         }
     }
@@ -46,6 +56,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to delete plan", error: error)
         }
     }
@@ -77,6 +88,7 @@ final class WorkoutPlanStore {
             SyncChange.notifyAll(changes)
             loadPlans()
         } catch {
+            lastError = error
             Logger.shared.error(.database, "Failed to toggle favorite", error: error)
         }
     }

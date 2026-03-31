@@ -54,7 +54,11 @@ final class CKSyncEngineManager: @unchecked Sendable {
     private var hasScheduledInitialUpload = false
 
     func start() {
-        guard engine == nil else { return }
+        lock.lock()
+        guard engine == nil else {
+            lock.unlock()
+            return
+        }
 
         let serialization = loadPersistedState()
         let isFirstStart = serialization == nil
@@ -65,6 +69,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
             delegate: self
         )
         engine = CKSyncEngine(config)
+        lock.unlock()
 
         Logger.shared.info(.sync, "CKSyncEngine started (firstStart=\(isFirstStart))")
 
@@ -73,7 +78,9 @@ final class CKSyncEngineManager: @unchecked Sendable {
     }
 
     func stop() {
+        lock.lock()
         engine = nil
+        lock.unlock()
         Logger.shared.info(.sync, "CKSyncEngine stopped")
     }
 
@@ -122,13 +129,21 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
     /// Fetch remote changes. Automatic calls are rate-limited; pass `manual: true` to bypass.
     func fetchChanges(manual: Bool = false) {
-        if !manual, let lastSync = lastSyncTime,
-           Date().timeIntervalSince(lastSync) < Self.minimumFetchInterval {
-            Logger.shared.debug(.sync, "[sync-engine] Skipping automatic fetch — last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (minimum \(Int(Self.minimumFetchInterval))s)")
-            return
+        if !manual {
+            lock.lock()
+            let lastSync = lastSyncTime
+            lock.unlock()
+            if let lastSync,
+               Date().timeIntervalSince(lastSync) < Self.minimumFetchInterval {
+                Logger.shared.debug(.sync, "[sync-engine] Skipping automatic fetch — last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (minimum \(Int(Self.minimumFetchInterval))s)")
+                return
+            }
         }
+        lock.lock()
+        let currentEngine = engine
+        lock.unlock()
         Task {
-            try? await engine?.fetchChanges()
+            try? await currentEngine?.fetchChanges()
         }
     }
 
@@ -137,19 +152,21 @@ final class CKSyncEngineManager: @unchecked Sendable {
     static func notifySave(recordType: String, recordID: String) {
         let manager = CKSyncEngineManager.shared
         manager.lock.lock()
-        defer { manager.lock.unlock() }
         manager.pendingRecordTypes[recordID] = recordType
+        let engine = manager.engine
+        manager.lock.unlock()
         let ckRecordID = CKRecord.ID(recordName: recordID, zoneID: manager.zoneID)
-        manager.engine?.state.add(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
+        engine?.state.add(pendingRecordZoneChanges: [.saveRecord(ckRecordID)])
     }
 
     static func notifyDelete(recordType: String, recordID: String) {
         let manager = CKSyncEngineManager.shared
         manager.lock.lock()
-        defer { manager.lock.unlock() }
         manager.pendingRecordTypes.removeValue(forKey: recordID)
+        let engine = manager.engine
+        manager.lock.unlock()
         let ckRecordID = CKRecord.ID(recordName: recordID, zoneID: manager.zoneID)
-        manager.engine?.state.add(pendingRecordZoneChanges: [.deleteRecord(ckRecordID)])
+        engine?.state.add(pendingRecordZoneChanges: [.deleteRecord(ckRecordID)])
     }
 
     // MARK: - Zone Management
@@ -205,7 +222,10 @@ final class CKSyncEngineManager: @unchecked Sendable {
                 }
 
                 if !pendingChanges.isEmpty {
-                    engine?.state.add(pendingRecordZoneChanges: pendingChanges)
+                    lock.lock()
+                    let currentEngine = engine
+                    lock.unlock()
+                    currentEngine?.state.add(pendingRecordZoneChanges: pendingChanges)
                     Logger.shared.info(.sync, "Scheduled full upload: \(pendingChanges.count) records")
                 }
             }
