@@ -56,6 +56,54 @@ describe('RPE Modifiers', () => {
   });
 });
 
+// MARK: - RPE Rounding
+
+describe('RPE Rounding', () => {
+  it('stores RPE 8.5 as 8.5 with no rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8.5`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
+    expect(result.warnings.some((w) => w.includes('RPE rounded'))).toBe(false);
+  });
+
+  it('rounds RPE 8.7 to 8.5 with rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8.7`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
+    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest 0.5 (8.7 → 8.5)'))).toBe(true);
+  });
+
+  it('stores RPE 8 as 8 with no rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+    expect(result.warnings.some((w) => w.includes('RPE rounded'))).toBe(false);
+  });
+
+  it('rounds RPE 8.3 to 8.5 with rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8.3`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
+    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest 0.5 (8.3 → 8.5)'))).toBe(true);
+  });
+});
+
 // MARK: - Deprecated Modifier Warnings
 
 describe('Deprecated Modifier Warnings', () => {
@@ -460,8 +508,8 @@ describe('Trailing Text', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    // RPE 8.5 is truncated to Int (8)
-    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+    // RPE 8.5 is already a valid 0.5 increment, stored as-is
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
     expect(result.data?.exercises[0].sets[0].notes).toBe('Back felt good, no issues');
   });
 

@@ -354,6 +354,12 @@ Pull heel to glutes, keep knees together
 - bw x AMRAP
 ```
 
+### Deprecated Modifiers
+
+The `@rpe` and `@tempo` modifiers are still parsed for backward compatibility but are deprecated in favor of freeform notes. A deprecation warning is emitted when they are used.
+
+**RPE rounding behavior:** `@rpe` values are rounded to the nearest 0.5 increment and clamped to the 1–10 range. If the value is adjusted, a warning is emitted (e.g., `RPE rounded to nearest 0.5 (8.3 → 8.5)`). Valid 0.5 increments (e.g., 7, 7.5, 8) are stored without a rounding warning.
+
 ### Descriptive Information (Use Freeform Notes)
 
 For tempo, RPE, and other descriptive data, use freeform notes:
@@ -1666,6 +1672,23 @@ Today is the big one. Eat well, sleep well, lift well.
 - 95 lbs x 8 @rpe: 6 @tempo: 2-0-1-0
 - 115 lbs x 6 @rpe: 8 @tempo: 2-0-1-0
 ```
+
+**TC-V29b: RPE rounding to nearest 0.5**
+```markdown
+# RPE Rounding Test
+
+## Squat
+- 225 x 5 @rpe: 8
+- 225 x 5 @rpe: 8.5
+- 225 x 5 @rpe: 8.3
+- 225 x 5 @rpe: 8.7
+```
+✅ Parses successfully
+- Set 1: targetRpe = 8 (no rounding warning)
+- Set 2: targetRpe = 8.5 (no rounding warning)
+- Set 3: targetRpe = 8.5 (⚠️ RPE rounded to nearest 0.5 (8.3 → 8.5))
+- Set 4: targetRpe = 8.5 (⚠️ RPE rounded to nearest 0.5 (8.7 → 8.5))
+⚠️ @rpe is deprecated — use freeform notes instead (on all 4 sets)
 
 **TC-V30: Every valid set format**
 ```markdown

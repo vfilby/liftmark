@@ -424,8 +424,8 @@ final class MarkdownParserTests: XCTestCase {
         let result = MarkdownParser.parseWorkout(markdown)
 
         XCTAssertTrue(result.success)
-        // RPE 8.5 is truncated to Int (8) in existing model
-        XCTAssertEqual(result.data?.exercises[0].sets[0].targetRpe, 8)
+        // RPE 8.5 rounds to nearest Int (9) in existing model
+        XCTAssertEqual(result.data?.exercises[0].sets[0].targetRpe, 9)
         XCTAssertEqual(result.data?.exercises[0].sets[0].notes, "Back felt good, no issues")
     }
 

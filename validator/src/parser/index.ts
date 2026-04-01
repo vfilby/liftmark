@@ -646,7 +646,7 @@ function parseSets(context: ParseContext, exerciseHeaderLevel: number, exerciseI
           targetWeightUnit: parsedSet.weightUnit ?? null,
           targetReps: parsedSet.reps ?? null,
           targetTime: parsedSet.time ?? null,
-          targetRpe: parsedSet.rpe != null ? Math.floor(parsedSet.rpe) : null,
+          targetRpe: parsedSet.rpe != null ? roundRpe(parsedSet.rpe, context, line.lineNumber) : null,
           restSeconds: parsedSet.rest ?? null,
           tempo: parsedSet.tempo ?? null,
           isDropset: parsedSet.isDropset ?? false,
@@ -663,6 +663,19 @@ function parseSets(context: ParseContext, exerciseHeaderLevel: number, exerciseI
   }
 
   return sets;
+}
+
+function roundRpe(value: number, context: ParseContext, lineNumber: number): number {
+  const rounded = Math.round(value * 2) / 2;
+  const clamped = Math.max(1, Math.min(10, rounded));
+  if (clamped !== value) {
+    context.warnings.push({
+      line: lineNumber,
+      message: `RPE rounded to nearest 0.5 (${value} → ${clamped})`,
+      code: 'RPE_ROUNDED',
+    });
+  }
+  return clamped;
 }
 
 function parseSetLine(content: string, context: ParseContext, lineNumber: number): ParsedSet | null {

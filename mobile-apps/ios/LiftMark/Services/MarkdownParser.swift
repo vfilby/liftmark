@@ -709,7 +709,7 @@ enum MarkdownParser {
                         targetWeightUnit: parsedSet.weightUnit,
                         targetReps: parsedSet.reps,
                         targetTime: parsedSet.time,
-                        targetRpe: parsedSet.rpe.map { Int($0) },
+                        targetRpe: parsedSet.rpe.map { Int($0.rounded()) },
                         restSeconds: parsedSet.rest,
                         tempo: parsedSet.tempo,
                         isDropset: parsedSet.isDropset ?? false,
@@ -1037,7 +1037,12 @@ enum MarkdownParser {
                     if rpe < 1 || rpe > 10 {
                         context.errors.append(ParseError(line: lineNumber, message: "RPE must be between 1-10, got: \(rpeStr)", code: "INVALID_RPE"))
                     } else {
-                        modifiers.rpe = rpe
+                        let rounded = (rpe * 2).rounded() / 2
+                        let clamped = max(1, min(10, rounded))
+                        if clamped != rpe {
+                            context.warnings.append(ParseWarning(line: lineNumber, message: "RPE rounded to nearest 0.5 (\(rpeStr) → \(clamped.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", clamped) : String(clamped)))", code: "RPE_ROUNDED"))
+                        }
+                        modifiers.rpe = clamped
                         if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
                         context.warnings.append(ParseWarning(line: lineNumber, message: "@rpe is deprecated — use freeform notes instead", code: "DEPRECATED_RPE"))
                     }
