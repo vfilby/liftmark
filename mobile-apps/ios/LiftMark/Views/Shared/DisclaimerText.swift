@@ -5,12 +5,17 @@ struct DisclaimerText: View {
         VStack(alignment: .leading, spacing: 16) {
             disclaimerSection(
                 title: "Tracking Only",
-                body: "LiftMark is a workout tracking tool. It does not provide exercise instruction, form guidance, coaching, or medical advice. You are solely responsible for knowing how to safely perform any exercises you track."
+                body: "LiftMark is a workout tracking tool. It does not provide exercise instruction, "
+                    + "form guidance, coaching, or medical advice. You are solely responsible for "
+                    + "knowing how to safely perform any exercises you track."
             )
 
             disclaimerSection(
                 title: "Assumption of Risk",
-                body: "Strength training and physical exercise carry inherent risks including injury, disability, and in rare cases death. By using this app, you acknowledge these risks and accept full responsibility for your physical safety during workouts."
+                body: "Strength training and physical exercise carry inherent risks including "
+                    + "injury, disability, and in rare cases death. By using this app, you "
+                    + "acknowledge these risks and accept full responsibility for your "
+                    + "physical safety during workouts."
             )
 
             disclaimerSection(

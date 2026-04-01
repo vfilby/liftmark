@@ -159,7 +159,10 @@ struct JsonImportService {
                 if let sets = exerciseData["sets"] as? [[String: Any]] {
                     for setData in sets {
                         try db.execute(sql: """
-                            INSERT INTO template_sets (id, template_exercise_id, order_index, target_weight, target_weight_unit, target_reps, target_time, target_rpe, rest_seconds, tempo, is_dropset, is_per_side, is_amrap, notes)
+                            INSERT INTO template_sets (id, template_exercise_id, order_index,
+                                target_weight, target_weight_unit, target_reps, target_time,
+                                target_rpe, rest_seconds, tempo, is_dropset, is_per_side,
+                                is_amrap, notes)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """, arguments: [
                                 UUID().uuidString,
@@ -237,7 +240,12 @@ struct JsonImportService {
                 if let sets = exerciseData["sets"] as? [[String: Any]] {
                     for setData in sets {
                         try db.execute(sql: """
-                            INSERT INTO session_sets (id, session_exercise_id, order_index, parent_set_id, drop_sequence, target_weight, target_weight_unit, target_reps, target_time, target_rpe, rest_seconds, actual_weight, actual_weight_unit, actual_reps, actual_time, actual_rpe, completed_at, status, notes, tempo, is_dropset, is_per_side)
+                            INSERT INTO session_sets (id, session_exercise_id, order_index,
+                                parent_set_id, drop_sequence, target_weight,
+                                target_weight_unit, target_reps, target_time, target_rpe,
+                                rest_seconds, actual_weight, actual_weight_unit, actual_reps,
+                                actual_time, actual_rpe, completed_at, status, notes, tempo,
+                                is_dropset, is_per_side)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """, arguments: [
                                 UUID().uuidString,

@@ -170,7 +170,7 @@ struct WorkoutExportService {
     private func stripPlan(_ plan: WorkoutPlan) -> [String: Any] {
         var dict: [String: Any] = [
             "name": plan.name,
-            "exercises": plan.exercises.filter { $0.sets.count > 0 || $0.groupType != nil }.map { stripPlannedExercise($0) }
+            "exercises": plan.exercises.filter { !$0.sets.isEmpty || $0.groupType != nil }.map { stripPlannedExercise($0) }
         ]
         if let desc = plan.description { dict["description"] = desc }
         if !plan.tags.isEmpty { dict["tags"] = plan.tags }

@@ -115,83 +115,13 @@ struct SessionRepository {
                 )
                 try exerciseRow.insert(db)
 
-                var expandedOrderIndex = 0
-                for set in exercise.sets {
-                    if set.isPerSide {
-                        // Expand into left and right sets
-                        for side in ["left", "right"] {
-                            let setId = IDGenerator.generate()
-                            createdSetIds.append(setId)
-                            let setRow = SessionSetRow(
-                                id: setId,
-                                sessionExerciseId: sessionExerciseId,
-                                orderIndex: expandedOrderIndex,
-                                parentSetId: nil,
-                                dropSequence: nil,
-                                targetWeight: set.targetWeight,
-                                targetWeightUnit: set.targetWeightUnit?.rawValue,
-                                targetReps: set.targetReps,
-                                targetTime: set.targetTime,
-                                targetDistance: set.targetDistance,
-                                targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                                targetRpe: set.targetRpe,
-                                restSeconds: side == "right" ? set.restSeconds : nil,
-                                actualWeight: nil,
-                                actualWeightUnit: nil,
-                                actualReps: nil,
-                                actualTime: nil,
-                                actualDistance: nil,
-                                actualDistanceUnit: nil,
-                                actualRpe: nil,
-                                completedAt: nil,
-                                status: SetStatus.pending.rawValue,
-                                notes: nil,
-                                tempo: set.tempo,
-                                isDropset: set.isDropset ? 1 : 0,
-                                isPerSide: 1,
-                                side: side,
-                                updatedAt: now
-                            )
-                            try setRow.insert(db)
-                            expandedOrderIndex += 1
-                        }
-                    } else {
-                        let setId = IDGenerator.generate()
-                        createdSetIds.append(setId)
-                        let setRow = SessionSetRow(
-                            id: setId,
-                            sessionExerciseId: sessionExerciseId,
-                            orderIndex: expandedOrderIndex,
-                            parentSetId: nil,
-                            dropSequence: nil,
-                            targetWeight: set.targetWeight,
-                            targetWeightUnit: set.targetWeightUnit?.rawValue,
-                            targetReps: set.targetReps,
-                            targetTime: set.targetTime,
-                            targetDistance: set.targetDistance,
-                            targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                            targetRpe: set.targetRpe,
-                            restSeconds: set.restSeconds,
-                            actualWeight: nil,
-                            actualWeightUnit: nil,
-                            actualReps: nil,
-                            actualTime: nil,
-                            actualDistance: nil,
-                            actualDistanceUnit: nil,
-                            actualRpe: nil,
-                            completedAt: nil,
-                            status: SetStatus.pending.rawValue,
-                            notes: nil,
-                            tempo: set.tempo,
-                            isDropset: set.isDropset ? 1 : 0,
-                            isPerSide: set.isPerSide ? 1 : 0,
-                            side: nil,
-                            updatedAt: now
-                        )
-                        try setRow.insert(db)
-                        expandedOrderIndex += 1
-                    }
-                }
+                let setIds = try insertSessionSets(
+                    from: exercise.sets,
+                    sessionExerciseId: sessionExerciseId,
+                    now: now,
+                    in: db
+                )
+                createdSetIds.append(contentsOf: setIds)
             }
 
             // Re-assemble the full session with exercises and sets from DB
@@ -207,6 +137,96 @@ struct SessionRepository {
         }
 
         return (result, syncChanges)
+    }
+
+    /// Insert session sets from planned sets, expanding per-side sets into left/right pairs.
+    /// Returns the IDs of all created session sets.
+    private func insertSessionSets(
+        from plannedSets: [PlannedSet],
+        sessionExerciseId: String,
+        now: String,
+        in db: Database
+    ) throws -> [String] {
+        var createdSetIds: [String] = []
+        var expandedOrderIndex = 0
+
+        for set in plannedSets {
+            if set.isPerSide {
+                for side in ["left", "right"] {
+                    let setId = IDGenerator.generate()
+                    createdSetIds.append(setId)
+                    let setRow = SessionSetRow(
+                        id: setId,
+                        sessionExerciseId: sessionExerciseId,
+                        orderIndex: expandedOrderIndex,
+                        parentSetId: nil,
+                        dropSequence: nil,
+                        targetWeight: set.targetWeight,
+                        targetWeightUnit: set.targetWeightUnit?.rawValue,
+                        targetReps: set.targetReps,
+                        targetTime: set.targetTime,
+                        targetDistance: set.targetDistance,
+                        targetDistanceUnit: set.targetDistanceUnit?.rawValue,
+                        targetRpe: set.targetRpe,
+                        restSeconds: side == "right" ? set.restSeconds : nil,
+                        actualWeight: nil,
+                        actualWeightUnit: nil,
+                        actualReps: nil,
+                        actualTime: nil,
+                        actualDistance: nil,
+                        actualDistanceUnit: nil,
+                        actualRpe: nil,
+                        completedAt: nil,
+                        status: SetStatus.pending.rawValue,
+                        notes: nil,
+                        tempo: set.tempo,
+                        isDropset: set.isDropset ? 1 : 0,
+                        isPerSide: 1,
+                        side: side,
+                        updatedAt: now
+                    )
+                    try setRow.insert(db)
+                    expandedOrderIndex += 1
+                }
+            } else {
+                let setId = IDGenerator.generate()
+                createdSetIds.append(setId)
+                let setRow = SessionSetRow(
+                    id: setId,
+                    sessionExerciseId: sessionExerciseId,
+                    orderIndex: expandedOrderIndex,
+                    parentSetId: nil,
+                    dropSequence: nil,
+                    targetWeight: set.targetWeight,
+                    targetWeightUnit: set.targetWeightUnit?.rawValue,
+                    targetReps: set.targetReps,
+                    targetTime: set.targetTime,
+                    targetDistance: set.targetDistance,
+                    targetDistanceUnit: set.targetDistanceUnit?.rawValue,
+                    targetRpe: set.targetRpe,
+                    restSeconds: set.restSeconds,
+                    actualWeight: nil,
+                    actualWeightUnit: nil,
+                    actualReps: nil,
+                    actualTime: nil,
+                    actualDistance: nil,
+                    actualDistanceUnit: nil,
+                    actualRpe: nil,
+                    completedAt: nil,
+                    status: SetStatus.pending.rawValue,
+                    notes: nil,
+                    tempo: set.tempo,
+                    isDropset: set.isDropset ? 1 : 0,
+                    isPerSide: set.isPerSide ? 1 : 0,
+                    side: nil,
+                    updatedAt: now
+                )
+                try setRow.insert(db)
+                expandedOrderIndex += 1
+            }
+        }
+
+        return createdSetIds
     }
 
     @discardableResult
@@ -420,7 +440,11 @@ struct SessionRepository {
     }
 
     @discardableResult
-    func insertSessionSet(exerciseId: String, orderIndex: Int, targetWeight: Double? = nil, targetWeightUnit: WeightUnit? = nil, targetReps: Int? = nil, targetTime: Int? = nil) throws -> [SyncChange] {
+    func insertSessionSet(
+        exerciseId: String, orderIndex: Int,
+        targetWeight: Double? = nil, targetWeightUnit: WeightUnit? = nil,
+        targetReps: Int? = nil, targetTime: Int? = nil
+    ) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let setId = IDGenerator.generate()
         let now = self.now

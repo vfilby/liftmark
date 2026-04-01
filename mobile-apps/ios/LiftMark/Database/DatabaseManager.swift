@@ -152,7 +152,17 @@ final class DatabaseManager: @unchecked Sendable {
     }
 
     private func migrateToV1(_ db: Database) throws {
-        // -- Workout Templates
+        try createTemplateTables(db)
+        try createUserSettingsTable(db)
+        try createGymTables(db)
+        try createSessionTables(db)
+        try createSyncTables(db)
+        try createV1Indexes(db)
+        try migrateOrphanedEquipment(db)
+        try seedDefaultUserSettings(db)
+    }
+
+    private func createTemplateTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS workout_templates (
                 id TEXT PRIMARY KEY,
@@ -167,7 +177,6 @@ final class DatabaseManager: @unchecked Sendable {
             )
         """)
 
-        // -- Template Exercises
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS template_exercises (
                 id TEXT PRIMARY KEY,
@@ -184,7 +193,6 @@ final class DatabaseManager: @unchecked Sendable {
             )
         """)
 
-        // -- Template Sets
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS template_sets (
                 id TEXT PRIMARY KEY,
@@ -204,8 +212,9 @@ final class DatabaseManager: @unchecked Sendable {
                 FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
             )
         """)
+    }
 
-        // -- User Settings
+    private func createUserSettingsTable(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS user_settings (
                 id TEXT PRIMARY KEY,
@@ -226,8 +235,9 @@ final class DatabaseManager: @unchecked Sendable {
                 updated_at TEXT NOT NULL
             )
         """)
+    }
 
-        // -- Gyms
+    private func createGymTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS gyms (
                 id TEXT PRIMARY KEY,
@@ -238,7 +248,6 @@ final class DatabaseManager: @unchecked Sendable {
             )
         """)
 
-        // -- Gym Equipment
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS gym_equipment (
                 id TEXT PRIMARY KEY,
@@ -250,8 +259,9 @@ final class DatabaseManager: @unchecked Sendable {
                 gym_id TEXT
             )
         """)
+    }
 
-        // -- Workout Sessions
+    private func createSessionTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS workout_sessions (
                 id TEXT PRIMARY KEY,
@@ -267,7 +277,6 @@ final class DatabaseManager: @unchecked Sendable {
             )
         """)
 
-        // -- Session Exercises
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS session_exercises (
                 id TEXT PRIMARY KEY,
@@ -285,7 +294,6 @@ final class DatabaseManager: @unchecked Sendable {
             )
         """)
 
-        // -- Session Sets
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS session_sets (
                 id TEXT PRIMARY KEY,
@@ -314,8 +322,9 @@ final class DatabaseManager: @unchecked Sendable {
                 FOREIGN KEY (parent_set_id) REFERENCES session_sets(id) ON DELETE CASCADE
             )
         """)
+    }
 
-        // -- Sync tables (stubs)
+    private func createSyncTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS sync_metadata (
                 id TEXT PRIMARY KEY,
@@ -353,8 +362,9 @@ final class DatabaseManager: @unchecked Sendable {
                 created_at TEXT NOT NULL
             )
         """)
+    }
 
-        // -- Indexes
+    private func createV1Indexes(_ db: Database) throws {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_workout ON template_exercises(workout_template_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_sets_exercise ON template_sets(template_exercise_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)")
@@ -367,11 +377,11 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gyms_default ON gyms(is_default)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id)")
+    }
 
-        // -- Migrate orphaned equipment (from pre-gym era)
+    private func migrateOrphanedEquipment(_ db: Database) throws {
         let orphanCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL") ?? 0
         if orphanCount > 0 {
-            // Create a gym to hold orphaned equipment
             let now = ISO8601DateFormatter().string(from: Date())
             let orphanGymId = IDGenerator.generate()
             try db.execute(
@@ -380,8 +390,9 @@ final class DatabaseManager: @unchecked Sendable {
             )
             try db.execute(sql: "UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL", arguments: [orphanGymId])
         }
+    }
 
-        // -- Seed default user settings
+    private func seedDefaultUserSettings(_ db: Database) throws {
         let existingSettings = try Row.fetchOne(db, sql: "SELECT id FROM user_settings LIMIT 1")
         if existingSettings == nil {
             let now = ISO8601DateFormatter().string(from: Date())

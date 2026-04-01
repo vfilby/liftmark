@@ -1,122 +1,32 @@
 import Foundation
 
-// MARK: - Parse Result Types
-
-struct LMWFParseResult {
-    let success: Bool
-    let data: WorkoutPlan?
-    let errors: [String]
-    let warnings: [String]
-}
-
-private struct ParseError {
-    let line: Int
-    let message: String
-    let code: String
-}
-
-private struct ParseWarning {
-    let line: Int
-    let message: String
-    let code: String
-}
-
-// MARK: - Internal Parse Types
-
-private struct ParsedLine {
-    let lineNumber: Int
-    let raw: String
-    let trimmed: String
-    var headerLevel: Int?
-    var headerText: String?
-    var isList: Bool = false
-    var listContent: String?
-    var isMetadata: Bool = false
-    var metadataKey: String?
-    var metadataValue: String?
-}
-
-private class ParseContext {
-    var lines: [ParsedLine]
-    var currentIndex: Int = 0
-    var workoutHeaderLevel: Int?
-    var exerciseHeaderLevel: Int?
-    var errors: [ParseError] = []
-    var warnings: [ParseWarning] = []
-
-    init(lines: [ParsedLine]) {
-        self.lines = lines
-    }
-}
-
-private struct ParsedSet {
-    var weight: Double?
-    var weightUnit: WeightUnit?
-    var reps: Int?
-    var time: Int? // seconds
-    var distance: Double?
-    var distanceUnit: DistanceUnit?
-    var isAmrap: Bool?
-    var rpe: Double?
-    var rest: Int? // seconds
-    var tempo: String?
-    var isDropset: Bool?
-    var isPerSide: Bool?
-    var notes: String?
-}
-
-private struct WorkoutSection {
-    let name: String
-    let tags: [String]
-    let defaultWeightUnit: WeightUnit?
-    let notes: String?
-}
-
 // MARK: - MarkdownParser
 
 enum MarkdownParser {
 
-    // MARK: - Static Regex Patterns (compiled once at first use)
+    // MARK: - Static Regex Patterns (Swift Regex literals, compile-time checked)
 
     // Line preprocessing patterns
-    private static let headerRegex = try! NSRegularExpression(pattern: #"^(#{1,6})\s+(.+)$"#)
-    private static let listRegex = try! NSRegularExpression(pattern: #"^-\s+(.+)$"#)
-    private static let metadataRegex = try! NSRegularExpression(pattern: #"^@(\w+):\s*(.+)$"#)
+    nonisolated(unsafe) private static let headerRegex = /^(#{1,6})\s+(.+)$/
+    nonisolated(unsafe) private static let listRegex = /^-\s+(.+)$/
+    nonisolated(unsafe) private static let metadataRegex = /^@(\w+):\s*(.+)$/
 
     // Set parsing patterns
     // Pattern 1: weight unit x reps/time (e.g., "225 lbs x 5", "45 lbs x 60s")
-    private static let setPattern1 = try! NSRegularExpression(
-        pattern: #"^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
-        options: .caseInsensitive
-    )
+    nonisolated(unsafe) static let setPattern1 = /(?i)^(\d+(?:\.\d+)?)\s*(lbs?|kgs?|kg|bw)?\s*(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/
     // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
-    private static let setPattern2 = try! NSRegularExpression(
-        pattern: #"^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
-        options: .caseInsensitive
-    )
+    nonisolated(unsafe) static let setPattern2 = /(?i)^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/
     // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
-    private static let setPattern3 = try! NSRegularExpression(
-        pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
-        options: .caseInsensitive
-    )
+    nonisolated(unsafe) static let setPattern3 = /(?i)^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$/
     // Pattern 4: distance (e.g., "200 meters", "0.5 km", "1 mile", "3.1 mi")
-    private static let distancePattern = try! NSRegularExpression(
-        pattern: #"^(\d+(?:\.\d+)?)\s*(meters|km|miles?|mi|feet|ft|yards?|yd)(?=\s|$)\s*(.*)$"#,
-        options: .caseInsensitive
-    )
+    nonisolated(unsafe) static let distancePattern = /(?i)^(\d+(?:\.\d+)?)\s*(meters|km|miles?|mi|feet|ft|yards?|yd)(?=\s|$)\s*(.*)$/
 
     // Modifier parsing patterns
-    private static let modifierPattern = try! NSRegularExpression(pattern: #"^(\w+):\s*(.+)$"#)
-    private static let rpePattern = try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*(.*)$"#)
-    private static let restPattern = try! NSRegularExpression(
-        pattern: #"^(\d+)\s*(s|sec|m|min)?\s*(.*)$"#,
-        options: .caseInsensitive
-    )
-    private static let tempoPattern = try! NSRegularExpression(pattern: #"^(\d-\d-\d-\d)\s*(.*)$"#)
-    private static let restTimePattern = try! NSRegularExpression(
-        pattern: #"^(\d+)\s*(s|sec|m|min)?$"#,
-        options: .caseInsensitive
-    )
+    nonisolated(unsafe) static let modifierPattern = /^(\w+):\s*(.+)$/
+    nonisolated(unsafe) static let rpePattern = /^(\d+(?:\.\d+)?)\s*(.*)$/
+    nonisolated(unsafe) static let restPattern = /(?i)^(\d+)\s*(s|sec|m|min)?\s*(.*)$/
+    nonisolated(unsafe) static let tempoPattern = /^(\d-\d-\d-\d)\s*(.*)$/
+    nonisolated(unsafe) static let restTimePattern = /(?i)^(\d+)\s*(s|sec|m|min)?$/
 
     // MARK: - Public API
 
@@ -222,51 +132,41 @@ enum MarkdownParser {
             .replacingOccurrences(of: "\r", with: "\n")
         let rawLines = normalized.components(separatedBy: "\n")
 
-        let headerRegex = Self.headerRegex
-        let listRegex = Self.listRegex
-        let metadataRegex = Self.metadataRegex
-
         return rawLines.enumerated().map { index, raw in
             let trimmed = raw.trimmingCharacters(in: .whitespaces)
             let lineNumber = index + 1
-            let nsRange = NSRange(trimmed.startIndex..., in: trimmed)
 
             // Parse header (# Header Text)
-            if let match = headerRegex.firstMatch(in: trimmed, range: nsRange),
-               let hashRange = Range(match.range(at: 1), in: trimmed),
-               let textRange = Range(match.range(at: 2), in: trimmed) {
+            if let match = trimmed.wholeMatch(of: Self.headerRegex) {
                 return ParsedLine(
                     lineNumber: lineNumber,
                     raw: raw,
                     trimmed: trimmed,
-                    headerLevel: trimmed[hashRange].count,
-                    headerText: String(trimmed[textRange]).trimmingCharacters(in: .whitespaces)
+                    headerLevel: match.1.count,
+                    headerText: String(match.2).trimmingCharacters(in: .whitespaces)
                 )
             }
 
             // Parse list item (- Content)
-            if let match = listRegex.firstMatch(in: trimmed, range: nsRange),
-               let contentRange = Range(match.range(at: 1), in: trimmed) {
+            if let match = trimmed.wholeMatch(of: Self.listRegex) {
                 return ParsedLine(
                     lineNumber: lineNumber,
                     raw: raw,
                     trimmed: trimmed,
                     isList: true,
-                    listContent: String(trimmed[contentRange]).trimmingCharacters(in: .whitespaces)
+                    listContent: String(match.1).trimmingCharacters(in: .whitespaces)
                 )
             }
 
             // Parse metadata (@key: value)
-            if let match = metadataRegex.firstMatch(in: trimmed, range: nsRange),
-               let keyRange = Range(match.range(at: 1), in: trimmed),
-               let valueRange = Range(match.range(at: 2), in: trimmed) {
+            if let match = trimmed.wholeMatch(of: Self.metadataRegex) {
                 return ParsedLine(
                     lineNumber: lineNumber,
                     raw: raw,
                     trimmed: trimmed,
                     isMetadata: true,
-                    metadataKey: String(trimmed[keyRange]).lowercased(),
-                    metadataValue: String(trimmed[valueRange]).trimmingCharacters(in: .whitespaces)
+                    metadataKey: String(match.1).lowercased(),
+                    metadataValue: String(match.2).trimmingCharacters(in: .whitespaces)
                 )
             }
 
@@ -503,7 +403,7 @@ enum MarkdownParser {
         // Parse sets
         var sets = parseSets(context, exerciseHeaderLevel: headerLevel, exerciseId: exerciseId)
 
-        // Auto-detect per-side keywords in exercise notes → flag timed sets as isPerSide
+        // Auto-detect per-side keywords in exercise notes flag timed sets as isPerSide
         let perSideKeywords = ["per side", "per leg", "per arm", "each side", "each leg", "each arm", "each"]
         if let notes = notes, perSideKeywords.contains(where: { notes.range(of: $0, options: .caseInsensitive) != nil }) {
             sets = sets.map { set in
@@ -794,7 +694,7 @@ enum MarkdownParser {
         let original = content.trimmingCharacters(in: .whitespaces)
         let trimmedLower = original.lowercased()
 
-        // Reject standalone AMRAP — AMRAP must modify a weight (e.g., "135 x AMRAP", "bw x AMRAP")
+        // Reject standalone AMRAP
         if trimmedLower == "amrap" {
             context.errors.append(ParseError(
                 line: lineNumber,
@@ -804,173 +704,18 @@ enum MarkdownParser {
             return nil
         }
 
-        let pattern1 = Self.setPattern1
-        let pattern2 = Self.setPattern2
-        let pattern3 = Self.setPattern3
-        let distPattern = Self.distancePattern
-
-        let range = NSRange(original.startIndex..., in: original)
-
-        // Try distance pattern first (e.g., "200 meters", "0.5 km", "1 mile")
-        if let match = distPattern.firstMatch(in: original, range: range) {
-            let valueStr = substring(of: original, range: match.range(at: 1))!
-            let unitStr = substring(of: original, range: match.range(at: 2))!
-            let trailing = substring(of: original, range: match.range(at: 3))?.trimmingCharacters(in: .whitespaces)
-
-            let value = Double(valueStr)!
-            if value <= 0 {
-                context.errors.append(ParseError(line: lineNumber, message: "Distance must be positive", code: "INVALID_DISTANCE"))
-                return nil
-            }
-
-            let unit = normalizeDistanceUnit(unitStr)
-            return (
-                ParsedSet(distance: value, distanceUnit: unit),
-                trailing?.isEmpty == true ? nil : trailing
-            )
+        // Try each pattern in priority order
+        if let result = parseDistanceSet(original, context: context, lineNumber: lineNumber) {
+            return result
         }
-
-        // Try pattern 1
-        if let match = pattern1.firstMatch(in: original, range: range) {
-            let weightStr = substring(of: original, range: match.range(at: 1))!
-            let unitStr = substring(of: original, range: match.range(at: 2))
-            let repsOrTimeStr = substring(of: original, range: match.range(at: 3))!.lowercased()
-            let repsUnitStr = substring(of: original, range: match.range(at: 4))
-            let trailing = substring(of: original, range: match.range(at: 5))?.trimmingCharacters(in: .whitespaces)
-
-            let weight = Double(weightStr)!
-            let weightUnit = normalizeWeightUnit(unitStr)
-
-            if weight < 0 {
-                context.errors.append(ParseError(line: lineNumber, message: "Weight cannot be negative", code: "NEGATIVE_WEIGHT"))
-                return nil
-            }
-
-            // Check if it's AMRAP
-            if repsOrTimeStr == "amrap" {
-                let isBW = unitStr?.lowercased() == "bw"
-                return (
-                    ParsedSet(
-                        weight: isBW ? nil : weight,
-                        weightUnit: isBW ? nil : weightUnit,
-                        isAmrap: true
-                    ),
-                    trailing?.isEmpty == true ? nil : trailing
-                )
-            }
-
-            let value = Int(repsOrTimeStr)!
-            if value <= 0 {
-                context.errors.append(ParseError(line: lineNumber, message: "Reps/time must be positive", code: "INVALID_REPS_TIME"))
-                return nil
-            }
-
-            let isTime = repsUnitStr.map { $0.lowercased().hasPrefix("s") || $0.lowercased().hasPrefix("m") } ?? false
-
-            let isBW = unitStr?.lowercased() == "bw"
-
-            if isTime {
-                let seconds = normalizeTimeToSeconds(value, unit: repsUnitStr)
-                return (
-                    ParsedSet(
-                        weight: isBW ? nil : weight,
-                        weightUnit: isBW ? nil : (weightUnit ?? nil),
-                        time: seconds
-                    ),
-                    trailing?.isEmpty == true ? nil : trailing
-                )
-            } else {
-                if value > 100 {
-                    context.warnings.append(ParseWarning(
-                        line: lineNumber,
-                        message: "Very high rep count (\(value)). Double-check for typos.",
-                        code: "HIGH_REPS"
-                    ))
-                }
-                return (
-                    ParsedSet(
-                        weight: isBW ? nil : weight,
-                        weightUnit: isBW ? nil : (weightUnit ?? nil),
-                        reps: value
-                    ),
-                    trailing?.isEmpty == true ? nil : trailing
-                )
-            }
+        if let result = parseWeightAndRepsSet(original, context: context, lineNumber: lineNumber) {
+            return result
         }
-
-        // Try pattern 2
-        if let match = pattern2.firstMatch(in: original, range: range) {
-            let repsOrTimeStr = substring(of: original, range: match.range(at: 2))!.lowercased()
-            let repsUnitStr = substring(of: original, range: match.range(at: 3))
-            let trailing = substring(of: original, range: match.range(at: 4))?.trimmingCharacters(in: .whitespaces)
-
-            if repsOrTimeStr == "amrap" {
-                return (ParsedSet(isAmrap: true), trailing?.isEmpty == true ? nil : trailing)
-            }
-
-            let value = Int(repsOrTimeStr)!
-            if value <= 0 {
-                context.errors.append(ParseError(line: lineNumber, message: "Reps/time must be positive", code: "INVALID_REPS_TIME"))
-                return nil
-            }
-
-            let isTime = repsUnitStr.map { $0.lowercased().hasPrefix("s") || $0.lowercased().hasPrefix("m") } ?? false
-
-            if isTime {
-                let seconds = normalizeTimeToSeconds(value, unit: repsUnitStr)
-                return (ParsedSet(time: seconds), trailing?.isEmpty == true ? nil : trailing)
-            } else {
-                if value > 100 {
-                    context.warnings.append(ParseWarning(
-                        line: lineNumber,
-                        message: "Very high rep count (\(value)). Double-check for typos.",
-                        code: "HIGH_REPS"
-                    ))
-                }
-                return (ParsedSet(reps: value), trailing?.isEmpty == true ? nil : trailing)
-            }
+        if let result = parseBodyweightSet(original, context: context, lineNumber: lineNumber) {
+            return result
         }
-
-        // Try pattern 3
-        if let match = pattern3.firstMatch(in: original, range: range) {
-            let valueStr = substring(of: original, range: match.range(at: 1))!
-            let unitStr = substring(of: original, range: match.range(at: 2))
-            let trailing = substring(of: original, range: match.range(at: 3))?.trimmingCharacters(in: .whitespaces)
-
-            // Reject "135 lbs" or "100 kg" — weight unit without reps/time is incomplete
-            if unitStr == nil, let trailing = trailing, !trailing.isEmpty {
-                let trailingLower = trailing.lowercased()
-                if trailingLower.hasPrefix("lb") || trailingLower.hasPrefix("kg") {
-                    context.errors.append(ParseError(
-                        line: lineNumber,
-                        message: "Incomplete set: \"\(content)\". Weight with unit requires reps (x 5) or time (x 60s)",
-                        code: "INCOMPLETE_SET"
-                    ))
-                    return nil
-                }
-            }
-
-            let value = Int(valueStr)!
-            if value <= 0 {
-                context.errors.append(ParseError(line: lineNumber, message: "Reps/time must be positive", code: "INVALID_REPS_TIME"))
-                return nil
-            }
-
-            let isTime = unitStr.map { $0.lowercased().hasPrefix("s") || $0.lowercased().hasPrefix("m") } ?? false
-
-            if isTime {
-                let seconds = normalizeTimeToSeconds(value, unit: unitStr)
-                return (ParsedSet(time: seconds), trailing?.isEmpty == true ? nil : trailing)
-            } else {
-                if value > 100 {
-                    context.warnings.append(ParseWarning(
-                        line: lineNumber,
-                        message: "Very high rep count (\(value)). Double-check for typos.",
-                        code: "HIGH_REPS"
-                    ))
-                }
-                return (ParsedSet(reps: value), trailing?.isEmpty == true ? nil : trailing)
-            }
+        if let result = parseBareValueSet(original, content: content, context: context, lineNumber: lineNumber) {
+            return result
         }
 
         // Failed to parse
@@ -984,173 +729,10 @@ enum MarkdownParser {
 
     // MARK: - Helpers
 
-    /// Extract a substring from an NSRange, returning nil for NSNotFound
-    private static func substring(of string: String, range: NSRange) -> String? {
-        guard range.location != NSNotFound, let swiftRange = Range(range, in: string) else { return nil }
-        let result = String(string[swiftRange])
-        return result.isEmpty ? nil : result
-    }
-
-    /// Normalize distance unit to standard format
-    private static func normalizeDistanceUnit(_ unit: String) -> DistanceUnit {
-        let normalized = unit.lowercased().trimmingCharacters(in: .whitespaces)
-        switch normalized {
-        case "meters": return .meters
-        case "km": return .km
-        case "mile", "miles", "mi": return .miles
-        case "foot", "feet", "ft": return .feet
-        case "yard", "yards", "yd": return .yards
-        default: return .meters
-        }
-    }
-
-    /// Normalize weight unit to standard format
-    private static func normalizeWeightUnit(_ unit: String?) -> WeightUnit? {
-        guard let unit = unit else { return nil }
-        let normalized = unit.lowercased().trimmingCharacters(in: .whitespaces)
-        switch normalized {
-        case "lb", "lbs": return .lbs
-        case "kg", "kgs": return .kg
-        case "bw": return nil // bodyweight — caller handles this
-        default: return nil
-        }
-    }
-
-    /// Normalize time value to seconds
-    private static func normalizeTimeToSeconds(_ value: Int, unit: String?) -> Int {
-        guard let unit = unit else { return value }
-        if unit.lowercased().hasPrefix("m") {
-            return value * 60
-        }
-        return value
-    }
-
-    /// Parse modifiers and extract trailing text from @ parts
-    private static func parseModifiersAndTrailingText(
-        _ parts: [String],
-        context: ParseContext,
-        lineNumber: Int
-    ) -> (modifiers: ParsedSet, trailingText: String?) {
-        var modifiers = ParsedSet()
-        var trailingTextParts: [String] = []
-
-        for part in parts {
-            let trimmed = part.trimmingCharacters(in: .whitespaces)
-            if trimmed.isEmpty { continue }
-
-            let lowerTrimmed = trimmed.lowercased()
-
-            // Check flag modifiers
-            if lowerTrimmed.hasPrefix("dropset") {
-                modifiers.isDropset = true
-                let trailing = String(trimmed.dropFirst("dropset".count)).trimmingCharacters(in: .whitespaces)
-                if !trailing.isEmpty { trailingTextParts.append(trailing) }
-                continue
-            }
-            if lowerTrimmed.hasPrefix("perside") {
-                modifiers.isPerSide = true
-                let trailing = String(trimmed.dropFirst("perside".count)).trimmingCharacters(in: .whitespaces)
-                if !trailing.isEmpty { trailingTextParts.append(trailing) }
-                continue
-            }
-
-            // Try to parse as key: value modifier
-            let modifierPattern = Self.modifierPattern
-            let nsRange = NSRange(trimmed.startIndex..., in: trimmed)
-            guard let match = modifierPattern.firstMatch(in: trimmed, range: nsRange),
-                  let keyStr = substring(of: trimmed, range: match.range(at: 1)),
-                  let valueStr = substring(of: trimmed, range: match.range(at: 2)) else {
-                // Not a valid modifier, treat as trailing text
-                trailingTextParts.append(trimmed)
-                continue
-            }
-
-            let key = keyStr.lowercased()
-            let value = valueStr.trimmingCharacters(in: .whitespaces)
-
-            switch key {
-            case "rpe":
-                let rpePattern = Self.rpePattern
-                let rpeRange = NSRange(value.startIndex..., in: value)
-                if let rpeMatch = rpePattern.firstMatch(in: value, range: rpeRange),
-                   let rpeStr = substring(of: value, range: rpeMatch.range(at: 1)),
-                   let rpe = Double(rpeStr) {
-                    let remaining = substring(of: value, range: rpeMatch.range(at: 2))?.trimmingCharacters(in: .whitespaces)
-                    if rpe < 1 || rpe > 10 {
-                        context.errors.append(ParseError(line: lineNumber, message: "RPE must be between 1-10, got: \(rpeStr)", code: "INVALID_RPE"))
-                    } else {
-                        let rounded = rpe.rounded()
-                        let clamped = max(1, min(10, rounded))
-                        if clamped != rpe {
-                            context.warnings.append(ParseWarning(line: lineNumber, message: "RPE rounded to nearest integer (\(rpeStr) → \(Int(clamped)))", code: "RPE_ROUNDED"))
-                        }
-                        modifiers.rpe = clamped
-                        if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
-                        context.warnings.append(ParseWarning(line: lineNumber, message: "@rpe is deprecated — use freeform notes instead", code: "DEPRECATED_RPE"))
-                    }
-                } else {
-                    context.errors.append(ParseError(line: lineNumber, message: "Invalid RPE format: \(value)", code: "INVALID_RPE"))
-                }
-
-            case "rest":
-                let restPattern = Self.restPattern
-                let restRange = NSRange(value.startIndex..., in: value)
-                if let restMatch = restPattern.firstMatch(in: value, range: restRange),
-                   let numStr = substring(of: value, range: restMatch.range(at: 1)) {
-                    let unitStr = substring(of: value, range: restMatch.range(at: 2))
-                    let remaining = substring(of: value, range: restMatch.range(at: 3))?.trimmingCharacters(in: .whitespaces)
-                    let restValue = "\(numStr)\(unitStr ?? "")"
-                    if let rest = parseRestTime(restValue) {
-                        if rest < 10 {
-                            context.warnings.append(ParseWarning(line: lineNumber, message: "Very short rest period (\(rest)s). Double-check for typos.", code: "SHORT_REST"))
-                        }
-                        if rest > 600 {
-                            context.warnings.append(ParseWarning(line: lineNumber, message: "Very long rest period (\(rest)s). Double-check for typos.", code: "LONG_REST"))
-                        }
-                        modifiers.rest = rest
-                        if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
-                    } else {
-                        context.errors.append(ParseError(line: lineNumber, message: "Invalid rest time format: \(restValue). Expected format: \"180s\" or \"3m\"", code: "INVALID_REST"))
-                    }
-                } else {
-                    context.errors.append(ParseError(line: lineNumber, message: "Invalid rest time format: \(value). Expected format: \"180s\" or \"3m\"", code: "INVALID_REST"))
-                }
-
-            case "tempo":
-                let tempoPattern = Self.tempoPattern
-                let tempoRange = NSRange(value.startIndex..., in: value)
-                if let tempoMatch = tempoPattern.firstMatch(in: value, range: tempoRange),
-                   let tempoStr = substring(of: value, range: tempoMatch.range(at: 1)) {
-                    modifiers.tempo = tempoStr
-                    let remaining = substring(of: value, range: tempoMatch.range(at: 2))?.trimmingCharacters(in: .whitespaces)
-                    if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }
-                    context.warnings.append(ParseWarning(line: lineNumber, message: "@tempo is deprecated — use freeform notes instead", code: "DEPRECATED_TEMPO"))
-                } else {
-                    context.errors.append(ParseError(line: lineNumber, message: "Invalid tempo format: \(value). Expected format: \"X-X-X-X\" (e.g., \"3-0-1-0\")", code: "INVALID_TEMPO"))
-                }
-
-            default:
-                // Unknown modifier
-                context.warnings.append(ParseWarning(line: lineNumber, message: "Unknown modifier: @\(key)", code: "UNKNOWN_MODIFIER"))
-                trailingTextParts.append(trimmed)
-            }
-        }
-
-        return (modifiers, trailingTextParts.isEmpty ? nil : trailingTextParts.joined(separator: " "))
-    }
-
-    /// Parse rest time to seconds
-    private static func parseRestTime(_ value: String) -> Int? {
-        let pattern = Self.restTimePattern
-        let range = NSRange(value.startIndex..., in: value)
-        guard let match = pattern.firstMatch(in: value, range: range),
-              let numStr = substring(of: value, range: match.range(at: 1)),
-              let num = Int(numStr) else { return nil }
-
-        let unit = substring(of: value, range: match.range(at: 2))?.lowercased() ?? "s"
-        if unit.hasPrefix("m") {
-            return num * 60
-        }
-        return num
+    /// Convert an optional Substring to String, returning nil for nil or empty values
+    static func nonEmpty(_ sub: Substring?) -> String? {
+        guard let sub = sub else { return nil }
+        let str = String(sub)
+        return str.isEmpty ? nil : str
     }
 }

@@ -33,15 +33,15 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         XCTAssertNotNil(json["exportedAt"])
         XCTAssertNotNil(json["appVersion"])
 
-        let sessionJson = json["session"] as! [String: Any]
+        let sessionJson = try XCTUnwrap(json["session"] as? [String: Any])
         XCTAssertEqual(sessionJson["name"] as? String, "Push Day")
         XCTAssertEqual(sessionJson["status"] as? String, "completed")
 
-        let exercises = sessionJson["exercises"] as! [[String: Any]]
+        let exercises = try XCTUnwrap(sessionJson["exercises"] as? [[String: Any]])
         XCTAssertEqual(exercises.count, 1)
         XCTAssertEqual(exercises[0]["exerciseName"] as? String, "Bench Press")
     }
@@ -56,10 +56,10 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let sessionJson = json["session"] as! [String: Any]
-        let exercises = sessionJson["exercises"] as! [[String: Any]]
-        let sets = exercises[0]["sets"] as! [[String: Any]]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let sessionJson = try XCTUnwrap(json["session"] as? [String: Any])
+        let exercises = try XCTUnwrap(sessionJson["exercises"] as? [[String: Any]])
+        let sets = try XCTUnwrap(exercises[0]["sets"] as? [[String: Any]])
 
         // Sets should have stripped data (no internal IDs)
         XCTAssertEqual(sets.count, 1)
@@ -111,18 +111,18 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let sessionJson = json["session"] as! [String: Any]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let sessionJson = try XCTUnwrap(json["session"] as? [String: Any])
 
         XCTAssertNotNil(sessionJson["startTime"])
         XCTAssertNotNil(sessionJson["endTime"])
         XCTAssertNotNil(sessionJson["duration"])
 
-        let exercises = sessionJson["exercises"] as! [[String: Any]]
+        let exercises = try XCTUnwrap(sessionJson["exercises"] as? [[String: Any]])
         XCTAssertEqual(exercises[0]["notes"] as? String, "Heavy day")
         XCTAssertEqual(exercises[0]["equipmentType"] as? String, "barbell")
 
-        let sets = exercises[0]["sets"] as! [[String: Any]]
+        let sets = try XCTUnwrap(exercises[0]["sets"] as? [[String: Any]])
         XCTAssertEqual(sets[0]["actualWeight"] as? Double, 230)
         XCTAssertEqual(sets[0]["actualReps"] as? Int, 4)
         XCTAssertEqual(sets[0]["actualRpe"] as? Int, 9)
@@ -147,8 +147,8 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let sessions = json["sessions"] as! [[String: Any]]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let sessions = try XCTUnwrap(json["sessions"] as? [[String: Any]])
         XCTAssertEqual(sessions.count, 2)
     }
 
@@ -187,7 +187,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
 
         // Parse and validate structure
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         // Top-level fields
         XCTAssertEqual(json["formatVersion"] as? String, "1.0")
@@ -195,7 +195,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         XCTAssertNotNil(json["appVersion"])
 
         // Plans
-        let plans = json["plans"] as! [[String: Any]]
+        let plans = try XCTUnwrap(json["plans"] as? [[String: Any]])
         XCTAssertGreaterThanOrEqual(plans.count, 1)
         let exportedPlan = plans.first { ($0["name"] as? String) == "Integration Test Plan" }
         XCTAssertNotNil(exportedPlan)
@@ -217,7 +217,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         XCTAssertEqual(planSets?[0]["targetWeight"] as? Double, 135)
 
         // Sessions
-        let sessions = json["sessions"] as! [[String: Any]]
+        let sessions = try XCTUnwrap(json["sessions"] as? [[String: Any]])
         XCTAssertGreaterThanOrEqual(sessions.count, 1)
 
         // Gyms
@@ -248,7 +248,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         }
 
         let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         // Inline validation of required fields and types
         XCTAssertEqual(json["formatVersion"] as? String, "1.0")

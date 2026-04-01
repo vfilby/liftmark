@@ -76,7 +76,13 @@ final class CKSyncConflictResolver: @unchecked Sendable {
                 handlePartialFailure(recordName: recordName, recordType: recordType, error: error)
 
             default:
-                Logger.shared.error(.sync, "[sync-engine] Failed to save \(recordType)/\(recordName): CKError \(error.code.rawValue) (\(Self.errorCodeName(error.code))) — \(error.localizedDescription)")
+                Logger.shared.error(
+                    .sync,
+                    "[sync-engine] Failed to save \(recordType)/\(recordName): "
+                        + "CKError \(error.code.rawValue) "
+                        + "(\(Self.errorCodeName(error.code))) "
+                        + "— \(error.localizedDescription)"
+                )
             }
         }
 
@@ -125,39 +131,40 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     // MARK: - Helpers
 
     /// Human-readable name for common CKError codes.
+    private static let errorCodeNames: [CKError.Code: String] = [
+        .internalError: "internalError",
+        .partialFailure: "partialFailure",
+        .networkUnavailable: "networkUnavailable",
+        .networkFailure: "networkFailure",
+        .badContainer: "badContainer",
+        .serviceUnavailable: "serviceUnavailable",
+        .requestRateLimited: "requestRateLimited",
+        .missingEntitlement: "missingEntitlement",
+        .notAuthenticated: "notAuthenticated",
+        .permissionFailure: "permissionFailure",
+        .unknownItem: "unknownItem",
+        .invalidArguments: "invalidArguments",
+        .serverRecordChanged: "serverRecordChanged",
+        .serverRejectedRequest: "serverRejectedRequest",
+        .assetFileNotFound: "assetFileNotFound",
+        .assetFileModified: "assetFileModified",
+        .incompatibleVersion: "incompatibleVersion",
+        .constraintViolation: "constraintViolation",
+        .operationCancelled: "operationCancelled",
+        .changeTokenExpired: "changeTokenExpired",
+        .batchRequestFailed: "batchRequestFailed",
+        .zoneBusy: "zoneBusy",
+        .badDatabase: "badDatabase",
+        .quotaExceeded: "quotaExceeded",
+        .zoneNotFound: "zoneNotFound",
+        .limitExceeded: "limitExceeded",
+        .userDeletedZone: "userDeletedZone",
+        .managedAccountRestricted: "managedAccountRestricted",
+        .participantMayNeedVerification: "participantMayNeedVerification",
+        .accountTemporarilyUnavailable: "accountTemporarilyUnavailable",
+    ]
+
     static func errorCodeName(_ code: CKError.Code) -> String {
-        switch code {
-        case .internalError: return "internalError"
-        case .partialFailure: return "partialFailure"
-        case .networkUnavailable: return "networkUnavailable"
-        case .networkFailure: return "networkFailure"
-        case .badContainer: return "badContainer"
-        case .serviceUnavailable: return "serviceUnavailable"
-        case .requestRateLimited: return "requestRateLimited"
-        case .missingEntitlement: return "missingEntitlement"
-        case .notAuthenticated: return "notAuthenticated"
-        case .permissionFailure: return "permissionFailure"
-        case .unknownItem: return "unknownItem"
-        case .invalidArguments: return "invalidArguments"
-        case .serverRecordChanged: return "serverRecordChanged"
-        case .serverRejectedRequest: return "serverRejectedRequest"
-        case .assetFileNotFound: return "assetFileNotFound"
-        case .assetFileModified: return "assetFileModified"
-        case .incompatibleVersion: return "incompatibleVersion"
-        case .constraintViolation: return "constraintViolation"
-        case .operationCancelled: return "operationCancelled"
-        case .changeTokenExpired: return "changeTokenExpired"
-        case .batchRequestFailed: return "batchRequestFailed"
-        case .zoneBusy: return "zoneBusy"
-        case .badDatabase: return "badDatabase"
-        case .quotaExceeded: return "quotaExceeded"
-        case .zoneNotFound: return "zoneNotFound"
-        case .limitExceeded: return "limitExceeded"
-        case .userDeletedZone: return "userDeletedZone"
-        case .managedAccountRestricted: return "managedAccountRestricted"
-        case .participantMayNeedVerification: return "participantMayNeedVerification"
-        case .accountTemporarilyUnavailable: return "accountTemporarilyUnavailable"
-        @unknown default: return "unknown(\(code.rawValue))"
-        }
+        errorCodeNames[code] ?? "unknown(\(code.rawValue))"
     }
 }

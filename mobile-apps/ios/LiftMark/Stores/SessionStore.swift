@@ -101,7 +101,10 @@ final class SessionStore {
 
     func completeSet(setId: String, actualWeight: Double?, actualWeightUnit: WeightUnit?, actualReps: Int?, actualTime: Int?, actualRpe: Int?) {
         do {
-            let changes = try repository.updateSessionSet(setId, actualWeight: actualWeight, actualWeightUnit: actualWeightUnit, actualReps: actualReps, actualTime: actualTime, actualRpe: actualRpe, status: .completed)
+            let changes = try repository.updateSessionSet(
+                setId, actualWeight: actualWeight, actualWeightUnit: actualWeightUnit,
+                actualReps: actualReps, actualTime: actualTime,
+                actualRpe: actualRpe, status: .completed)
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {

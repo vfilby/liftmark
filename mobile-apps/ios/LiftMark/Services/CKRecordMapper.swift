@@ -243,35 +243,67 @@ final class CKRecordMapper {
         record["sessionExerciseId"] = makeReference(recordName: ss.sessionExerciseId, zoneID: zoneID) as CKRecordValue
         record["orderIndex"] = Int64(ss.orderIndex) as CKRecordValue
         record["status"] = ss.status as CKRecordValue
+        setSessionSetAttributes(on: record, ss: ss)
+        setSessionSetParent(on: record, ss: ss, zoneID: zoneID)
+        setSessionSetTargetFields(on: record, ss: ss)
+        setSessionSetActualFields(on: record, ss: ss)
+        setOptionalString(on: record, key: "notes", value: ss.notes)
+        setOptionalString(on: record, key: "tempo", value: ss.tempo)
+        setOptionalString(on: record, key: "side", value: ss.side)
+        setOptionalDate(on: record, key: "completedAt", isoString: ss.completedAt)
+        setOptionalDate(on: record, key: "updatedAt", isoString: ss.updatedAt)
+        return record
+    }
+
+    private func setSessionSetAttributes(on record: CKRecord, ss: SessionSetRow) {
         var attrs: [String] = []
         if ss.isDropset != 0 { attrs.append("dropset") }
         if ss.isPerSide != 0 { attrs.append("perSide") }
         if !attrs.isEmpty { record["attributes"] = attrs as CKRecordValue }
+    }
+
+    private func setSessionSetParent(on record: CKRecord, ss: SessionSetRow, zoneID: CKRecordZone.ID) {
         if let p = ss.parentSetId {
             record["parentSetId"] = makeReference(recordName: p, zoneID: zoneID) as CKRecordValue
         }
         if let d = ss.dropSequence { record["dropSequence"] = Int64(d) as CKRecordValue }
-        if let w = ss.targetWeight { record["targetWeight"] = w as CKRecordValue }
-        if let u = ss.targetWeightUnit { record["targetWeightUnit"] = u as CKRecordValue }
-        if let r = ss.targetReps { record["targetReps"] = Int64(r) as CKRecordValue }
-        if let t = ss.targetTime { record["targetTime"] = Int64(t) as CKRecordValue }
-        if let d = ss.targetDistance { record["targetDistance"] = d as CKRecordValue }
-        if let u = ss.targetDistanceUnit { record["targetDistanceUnit"] = u as CKRecordValue }
+    }
+
+    private func setSessionSetTargetFields(on record: CKRecord, ss: SessionSetRow) {
+        setOptionalDouble(on: record, key: "targetWeight", value: ss.targetWeight)
+        setOptionalString(on: record, key: "targetWeightUnit", value: ss.targetWeightUnit)
+        setOptionalInt(on: record, key: "targetReps", value: ss.targetReps)
+        setOptionalInt(on: record, key: "targetTime", value: ss.targetTime)
+        setOptionalDouble(on: record, key: "targetDistance", value: ss.targetDistance)
+        setOptionalString(on: record, key: "targetDistanceUnit", value: ss.targetDistanceUnit)
         if let rpe = ss.targetRpe { record["targetRpe"] = Double(rpe) as CKRecordValue }
-        if let r = ss.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
-        if let w = ss.actualWeight { record["actualWeight"] = w as CKRecordValue }
-        if let u = ss.actualWeightUnit { record["actualWeightUnit"] = u as CKRecordValue }
-        if let r = ss.actualReps { record["actualReps"] = Int64(r) as CKRecordValue }
-        if let t = ss.actualTime { record["actualTime"] = Int64(t) as CKRecordValue }
-        if let d = ss.actualDistance { record["actualDistance"] = d as CKRecordValue }
-        if let u = ss.actualDistanceUnit { record["actualDistanceUnit"] = u as CKRecordValue }
+        setOptionalInt(on: record, key: "restSeconds", value: ss.restSeconds)
+    }
+
+    private func setSessionSetActualFields(on record: CKRecord, ss: SessionSetRow) {
+        setOptionalDouble(on: record, key: "actualWeight", value: ss.actualWeight)
+        setOptionalString(on: record, key: "actualWeightUnit", value: ss.actualWeightUnit)
+        setOptionalInt(on: record, key: "actualReps", value: ss.actualReps)
+        setOptionalInt(on: record, key: "actualTime", value: ss.actualTime)
+        setOptionalDouble(on: record, key: "actualDistance", value: ss.actualDistance)
+        setOptionalString(on: record, key: "actualDistanceUnit", value: ss.actualDistanceUnit)
         if let rpe = ss.actualRpe { record["actualRpe"] = Double(rpe) as CKRecordValue }
-        if let d = parseDate(ss.completedAt) { record["completedAt"] = d as CKRecordValue }
-        if let n = ss.notes { record["notes"] = n as CKRecordValue }
-        if let t = ss.tempo { record["tempo"] = t as CKRecordValue }
-        if let s = ss.side { record["side"] = s as CKRecordValue }
-        if let d = parseDate(ss.updatedAt) { record["updatedAt"] = d as CKRecordValue }
-        return record
+    }
+
+    private func setOptionalString(on record: CKRecord, key: String, value: String?) {
+        if let v = value { record[key] = v as CKRecordValue }
+    }
+
+    private func setOptionalInt(on record: CKRecord, key: String, value: Int?) {
+        if let v = value { record[key] = Int64(v) as CKRecordValue }
+    }
+
+    private func setOptionalDouble(on record: CKRecord, key: String, value: Double?) {
+        if let v = value { record[key] = v as CKRecordValue }
+    }
+
+    private func setOptionalDate(on record: CKRecord, key: String, isoString: String?) {
+        if let d = parseDate(isoString) { record[key] = d as CKRecordValue }
     }
 
     func toCKRecord(_ s: UserSettingsRow, zoneID: CKRecordZone.ID) -> CKRecord {
@@ -801,7 +833,12 @@ final class CKRecordMapper {
 
                     if !plannedExerciseIds.isEmpty {
                         let pePlaceholders = plannedExerciseIds.map { _ in "?" }.joined(separator: ",")
-                        let psRows = try Row.fetchAll(db, sql: "SELECT id FROM template_sets WHERE template_exercise_id IN (\(pePlaceholders))", arguments: StatementArguments(Array(plannedExerciseIds)))
+                        let psRows = try Row.fetchAll(
+                            db,
+                            sql: "SELECT id FROM template_sets "
+                                + "WHERE template_exercise_id IN (\(pePlaceholders))",
+                            arguments: StatementArguments(Array(plannedExerciseIds))
+                        )
                         plannedSetIds = Set(psRows.compactMap { $0["id"] as String? })
                     }
                 }

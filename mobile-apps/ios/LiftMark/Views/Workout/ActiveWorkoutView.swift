@@ -180,7 +180,11 @@ struct ActiveWorkoutView: View {
                         ForEach(displayItems) { item in
                             switch item {
                             case .single(let exercise, let exerciseIndex, let displayNumber):
-                                let collapsed = ActiveWorkoutViewModel.isExerciseCollapsed(exercise, expandedExercises: expandedExercises, collapsedExercises: collapsedExercises, lastInteractedExerciseId: lastInteractedExerciseId, allExercises: session?.exercises)
+                                let collapsed = ActiveWorkoutViewModel.isExerciseCollapsed(
+                                    exercise, expandedExercises: expandedExercises,
+                                    collapsedExercises: collapsedExercises,
+                                    lastInteractedExerciseId: lastInteractedExerciseId,
+                                    allExercises: session?.exercises)
                                 let isActiveExercise = exercise.sets.contains { $0.status == .pending }
                                 ActiveExerciseCard(
                                     exercise: exercise,
@@ -215,7 +219,12 @@ struct ActiveWorkoutView: View {
                                 sectionHeader(name: name)
 
                             case .superset(let parentExercise, let children):
-                                let collapsed = ActiveWorkoutViewModel.isSupersetCollapsed(parentExercise, children: children, expandedExercises: expandedExercises, collapsedExercises: collapsedExercises, lastInteractedExerciseId: lastInteractedExerciseId, allExercises: session?.exercises)
+                                let collapsed = ActiveWorkoutViewModel.isSupersetCollapsed(
+                                    parentExercise, children: children,
+                                    expandedExercises: expandedExercises,
+                                    collapsedExercises: collapsedExercises,
+                                    lastInteractedExerciseId: lastInteractedExerciseId,
+                                    allExercises: session?.exercises)
                                 let isActive = children.contains { $0.exercise.sets.contains { $0.status == .pending } }
                                 SupersetCard(
                                     parentExercise: parentExercise,

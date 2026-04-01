@@ -100,8 +100,17 @@ final class CKSyncMetadataStore: @unchecked Sendable {
                     )
                 } else {
                     try db.execute(
-                        sql: "INSERT INTO sync_metadata (id, device_id, last_sync_date, last_uploaded, last_downloaded, last_conflicts, sync_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        arguments: [IDGenerator.generate(), UUID().uuidString, now, stats.uploaded, stats.downloaded, stats.conflicts, 1, now, now]
+                        sql: """
+                            INSERT INTO sync_metadata (id, device_id, last_sync_date,
+                                last_uploaded, last_downloaded, last_conflicts,
+                                sync_enabled, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                        arguments: [
+                            IDGenerator.generate(), UUID().uuidString, now,
+                            stats.uploaded, stats.downloaded, stats.conflicts,
+                            1, now, now
+                        ]
                     )
                 }
             }
