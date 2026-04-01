@@ -97,6 +97,8 @@ struct SessionSet: Identifiable, Codable, Hashable {
     var targetWeightUnit: WeightUnit?
     var targetReps: Int?
     var targetTime: Int?
+    var targetDistance: Double?
+    var targetDistanceUnit: DistanceUnit?
     var targetRpe: Int?
     var restSeconds: Int?
 
@@ -105,6 +107,8 @@ struct SessionSet: Identifiable, Codable, Hashable {
     var actualWeightUnit: WeightUnit?
     var actualReps: Int?
     var actualTime: Int?
+    var actualDistance: Double?
+    var actualDistanceUnit: DistanceUnit?
     var actualRpe: Int?
 
     // Metadata
@@ -126,12 +130,16 @@ struct SessionSet: Identifiable, Codable, Hashable {
         targetWeightUnit: WeightUnit? = nil,
         targetReps: Int? = nil,
         targetTime: Int? = nil,
+        targetDistance: Double? = nil,
+        targetDistanceUnit: DistanceUnit? = nil,
         targetRpe: Int? = nil,
         restSeconds: Int? = nil,
         actualWeight: Double? = nil,
         actualWeightUnit: WeightUnit? = nil,
         actualReps: Int? = nil,
         actualTime: Int? = nil,
+        actualDistance: Double? = nil,
+        actualDistanceUnit: DistanceUnit? = nil,
         actualRpe: Int? = nil,
         completedAt: String? = nil,
         status: SetStatus = .pending,
@@ -150,12 +158,16 @@ struct SessionSet: Identifiable, Codable, Hashable {
         self.targetWeightUnit = targetWeightUnit
         self.targetReps = targetReps
         self.targetTime = targetTime
+        self.targetDistance = targetDistance
+        self.targetDistanceUnit = targetDistanceUnit
         self.targetRpe = targetRpe
         self.restSeconds = restSeconds
         self.actualWeight = actualWeight
         self.actualWeightUnit = actualWeightUnit
         self.actualReps = actualReps
         self.actualTime = actualTime
+        self.actualDistance = actualDistance
+        self.actualDistanceUnit = actualDistanceUnit
         self.actualRpe = actualRpe
         self.completedAt = completedAt
         self.status = status

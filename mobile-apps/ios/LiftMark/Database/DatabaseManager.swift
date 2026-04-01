@@ -10,7 +10,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 9
+    private static let currentSchemaVersion = 10
 
     private init() {}
 
@@ -137,6 +137,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 9 {
                 try migrateToV9(db)
+            }
+
+            if currentVersion < 10 {
+                try migrateToV10(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -532,5 +536,17 @@ final class DatabaseManager: @unchecked Sendable {
                 try db.execute(sql: "UPDATE gyms SET is_default = 1 WHERE id = ?", arguments: [id])
             }
         }
+    }
+
+    private func migrateToV10(_ db: Database) throws {
+        // Add distance columns to template_sets
+        try db.execute(sql: "ALTER TABLE template_sets ADD COLUMN target_distance REAL")
+        try db.execute(sql: "ALTER TABLE template_sets ADD COLUMN target_distance_unit TEXT")
+
+        // Add distance columns to session_sets
+        try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN target_distance REAL")
+        try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN target_distance_unit TEXT")
+        try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN actual_distance REAL")
+        try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN actual_distance_unit TEXT")
     }
 }

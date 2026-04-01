@@ -54,6 +54,8 @@ private struct ParsedSet {
     var weightUnit: WeightUnit?
     var reps: Int?
     var time: Int? // seconds
+    var distance: Double?
+    var distanceUnit: DistanceUnit?
     var isAmrap: Bool?
     var rpe: Double?
     var rest: Int? // seconds
@@ -95,6 +97,11 @@ enum MarkdownParser {
     // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
     private static let setPattern3 = try! NSRegularExpression(
         pattern: #"^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$"#,
+        options: .caseInsensitive
+    )
+    // Pattern 4: distance (e.g., "200 meters", "0.5 km", "1 mile", "3.1 mi")
+    private static let distancePattern = try! NSRegularExpression(
+        pattern: #"^(\d+(?:\.\d+)?)\s*(meters|km|miles?|mi|feet|ft|yards?|yd)(?=\s|$)\s*(.*)$"#,
         options: .caseInsensitive
     )
 
@@ -709,6 +716,8 @@ enum MarkdownParser {
                         targetWeightUnit: parsedSet.weightUnit,
                         targetReps: parsedSet.reps,
                         targetTime: parsedSet.time,
+                        targetDistance: parsedSet.distance,
+                        targetDistanceUnit: parsedSet.distanceUnit,
                         targetRpe: parsedSet.rpe.map { Int($0.rounded()) },
                         restSeconds: parsedSet.rest,
                         tempo: parsedSet.tempo,
@@ -798,8 +807,28 @@ enum MarkdownParser {
         let pattern1 = Self.setPattern1
         let pattern2 = Self.setPattern2
         let pattern3 = Self.setPattern3
+        let distPattern = Self.distancePattern
 
         let range = NSRange(original.startIndex..., in: original)
+
+        // Try distance pattern first (e.g., "200 meters", "0.5 km", "1 mile")
+        if let match = distPattern.firstMatch(in: original, range: range) {
+            let valueStr = substring(of: original, range: match.range(at: 1))!
+            let unitStr = substring(of: original, range: match.range(at: 2))!
+            let trailing = substring(of: original, range: match.range(at: 3))?.trimmingCharacters(in: .whitespaces)
+
+            let value = Double(valueStr)!
+            if value <= 0 {
+                context.errors.append(ParseError(line: lineNumber, message: "Distance must be positive", code: "INVALID_DISTANCE"))
+                return nil
+            }
+
+            let unit = normalizeDistanceUnit(unitStr)
+            return (
+                ParsedSet(distance: value, distanceUnit: unit),
+                trailing?.isEmpty == true ? nil : trailing
+            )
+        }
 
         // Try pattern 1
         if let match = pattern1.firstMatch(in: original, range: range) {
@@ -962,6 +991,19 @@ enum MarkdownParser {
         return result.isEmpty ? nil : result
     }
 
+    /// Normalize distance unit to standard format
+    private static func normalizeDistanceUnit(_ unit: String) -> DistanceUnit {
+        let normalized = unit.lowercased().trimmingCharacters(in: .whitespaces)
+        switch normalized {
+        case "meters": return .meters
+        case "km": return .km
+        case "mile", "miles", "mi": return .miles
+        case "foot", "feet", "ft": return .feet
+        case "yard", "yards", "yd": return .yards
+        default: return .meters
+        }
+    }
+
     /// Normalize weight unit to standard format
     private static func normalizeWeightUnit(_ unit: String?) -> WeightUnit? {
         guard let unit = unit else { return nil }
@@ -1037,10 +1079,10 @@ enum MarkdownParser {
                     if rpe < 1 || rpe > 10 {
                         context.errors.append(ParseError(line: lineNumber, message: "RPE must be between 1-10, got: \(rpeStr)", code: "INVALID_RPE"))
                     } else {
-                        let rounded = (rpe * 2).rounded() / 2
+                        let rounded = rpe.rounded()
                         let clamped = max(1, min(10, rounded))
                         if clamped != rpe {
-                            context.warnings.append(ParseWarning(line: lineNumber, message: "RPE rounded to nearest 0.5 (\(rpeStr) → \(clamped.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", clamped) : String(clamped)))", code: "RPE_ROUNDED"))
+                            context.warnings.append(ParseWarning(line: lineNumber, message: "RPE rounded to nearest integer (\(rpeStr) → \(Int(clamped)))", code: "RPE_ROUNDED"))
                         }
                         modifiers.rpe = clamped
                         if let remaining = remaining, !remaining.isEmpty { trailingTextParts.append(remaining) }

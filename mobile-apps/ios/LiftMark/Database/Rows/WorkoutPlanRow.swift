@@ -71,6 +71,8 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var targetWeightUnit: String?
     var targetReps: Int?
     var targetTime: Int?
+    var targetDistance: Double?
+    var targetDistanceUnit: String?
     var targetRpe: Int?
     var restSeconds: Int?
     var tempo: String?
@@ -88,6 +90,8 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case targetWeightUnit = "target_weight_unit"
         case targetReps = "target_reps"
         case targetTime = "target_time"
+        case targetDistance = "target_distance"
+        case targetDistanceUnit = "target_distance_unit"
         case targetRpe = "target_rpe"
         case restSeconds = "rest_seconds"
         case tempo

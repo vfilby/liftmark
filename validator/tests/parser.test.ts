@@ -59,28 +59,6 @@ describe('RPE Modifiers', () => {
 // MARK: - RPE Rounding
 
 describe('RPE Rounding', () => {
-  it('stores RPE 8.5 as 8.5 with no rounding warning', () => {
-    const markdown = `# Workout
-## Squats
-- 225 x 5 @rpe: 8.5`;
-    const result = parseWorkout(markdown);
-
-    expect(result.success).toBe(true);
-    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
-    expect(result.warnings.some((w) => w.includes('RPE rounded'))).toBe(false);
-  });
-
-  it('rounds RPE 8.7 to 8.5 with rounding warning', () => {
-    const markdown = `# Workout
-## Squats
-- 225 x 5 @rpe: 8.7`;
-    const result = parseWorkout(markdown);
-
-    expect(result.success).toBe(true);
-    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
-    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest 0.5 (8.7 → 8.5)'))).toBe(true);
-  });
-
   it('stores RPE 8 as 8 with no rounding warning', () => {
     const markdown = `# Workout
 ## Squats
@@ -92,15 +70,37 @@ describe('RPE Rounding', () => {
     expect(result.warnings.some((w) => w.includes('RPE rounded'))).toBe(false);
   });
 
-  it('rounds RPE 8.3 to 8.5 with rounding warning', () => {
+  it('rounds RPE 8.5 to 9 with rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8.5`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(9);
+    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest integer (8.5 → 9)'))).toBe(true);
+  });
+
+  it('rounds RPE 8.3 to 8 with rounding warning', () => {
     const markdown = `# Workout
 ## Squats
 - 225 x 5 @rpe: 8.3`;
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
-    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest 0.5 (8.3 → 8.5)'))).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8);
+    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest integer (8.3 → 8)'))).toBe(true);
+  });
+
+  it('rounds RPE 8.7 to 9 with rounding warning', () => {
+    const markdown = `# Workout
+## Squats
+- 225 x 5 @rpe: 8.7`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(9);
+    expect(result.warnings.some((w) => w.includes('RPE rounded to nearest integer (8.7 → 9)'))).toBe(true);
   });
 });
 
@@ -508,8 +508,8 @@ describe('Trailing Text', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    // RPE 8.5 is already a valid 0.5 increment, stored as-is
-    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(8.5);
+    // RPE 8.5 rounds to 9 (nearest integer)
+    expect(result.data?.exercises[0].sets[0].targetRpe).toBe(9);
     expect(result.data?.exercises[0].sets[0].notes).toBe('Back felt good, no issues');
   });
 
@@ -1446,6 +1446,217 @@ Pull heel to glutes
     expect(set?.targetReps).toBe(25);
     expect(set?.targetTime).toBeNull();
     expect(set?.notes).toBe('Slow and controlled');
+  });
+});
+
+// MARK: - Distance Sets
+
+describe('Distance Sets', () => {
+  it('parses meters distance', () => {
+    const markdown = `# Workout
+## Running
+- 200 meters`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(200);
+    expect(set?.targetDistanceUnit).toBe('meters');
+    expect(set?.targetWeight).toBeNull();
+    expect(set?.targetReps).toBeNull();
+    expect(set?.targetTime).toBeNull();
+  });
+
+  it('parses km distance', () => {
+    const markdown = `# Workout
+## Running
+- 5 km`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(5);
+    expect(set?.targetDistanceUnit).toBe('km');
+  });
+
+  it('parses miles distance (full word)', () => {
+    const markdown = `# Workout
+## Running
+- 1 mile`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(1);
+    expect(set?.targetDistanceUnit).toBe('miles');
+  });
+
+  it('parses miles distance (plural)', () => {
+    const markdown = `# Workout
+## Running
+- 3 miles`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(3);
+    expect(set?.targetDistanceUnit).toBe('miles');
+  });
+
+  it('parses mi abbreviation as miles', () => {
+    const markdown = `# Workout
+## Running
+- 2 mi`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(2);
+    expect(set?.targetDistanceUnit).toBe('miles');
+  });
+
+  it('parses feet distance (full word)', () => {
+    const markdown = `# Workout
+## Farmer Walk
+- 100 feet`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(100);
+    expect(set?.targetDistanceUnit).toBe('feet');
+  });
+
+  it('parses ft abbreviation as feet', () => {
+    const markdown = `# Workout
+## Farmer Walk
+- 50 ft`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(50);
+    expect(set?.targetDistanceUnit).toBe('feet');
+  });
+
+  it('parses yards distance (full word)', () => {
+    const markdown = `# Workout
+## Sprints
+- 100 yards`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(100);
+    expect(set?.targetDistanceUnit).toBe('yards');
+  });
+
+  it('parses yd abbreviation as yards', () => {
+    const markdown = `# Workout
+## Sprints
+- 400 yd`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(400);
+    expect(set?.targetDistanceUnit).toBe('yards');
+  });
+
+  it('parses decimal distances', () => {
+    const markdown = `# Workout
+## Running
+- 0.5 km
+- 1.5 miles`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const sets = result.data?.exercises[0].sets;
+    expect(sets?.[0].targetDistance).toBe(0.5);
+    expect(sets?.[0].targetDistanceUnit).toBe('km');
+    expect(sets?.[1].targetDistance).toBe(1.5);
+    expect(sets?.[1].targetDistanceUnit).toBe('miles');
+  });
+
+  it('parses distance with trailing text as notes', () => {
+    const markdown = `# Workout
+## Running
+- 400 meters sprint pace`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(400);
+    expect(set?.targetDistanceUnit).toBe('meters');
+    expect(set?.notes).toBe('sprint pace');
+  });
+
+  it('"m" still parses as minutes (not meters)', () => {
+    const markdown = `# Workout
+## Plank
+- 2m`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetTime).toBe(120);
+    expect(set?.targetDistance).toBeNull();
+  });
+
+  it('"5 min" still parses as time', () => {
+    const markdown = `# Workout
+## Plank
+- 5 min`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetTime).toBe(300);
+    expect(set?.targetDistance).toBeNull();
+  });
+
+  it('distance set has no weight or reps', () => {
+    const markdown = `# Workout
+## Sled Push
+- 50 meters
+- 100 ft`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const sets = result.data?.exercises[0].sets;
+    expect(sets?.[0].targetWeight).toBeNull();
+    expect(sets?.[0].targetReps).toBeNull();
+    expect(sets?.[0].targetTime).toBeNull();
+    expect(sets?.[0].targetDistance).toBe(50);
+    expect(sets?.[1].targetWeight).toBeNull();
+    expect(sets?.[1].targetReps).toBeNull();
+    expect(sets?.[1].targetTime).toBeNull();
+    expect(sets?.[1].targetDistance).toBe(100);
+  });
+
+  it('parses singular meter', () => {
+    const markdown = `# Workout
+## Sprint
+- 1 meter`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(1);
+    expect(set?.targetDistanceUnit).toBe('meters');
+  });
+
+  it('distance with modifiers', () => {
+    const markdown = `# Workout
+## Sprints
+- 200 meters @rest: 60s`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const set = result.data?.exercises[0].sets[0];
+    expect(set?.targetDistance).toBe(200);
+    expect(set?.targetDistanceUnit).toBe('meters');
+    expect(set?.restSeconds).toBe(60);
   });
 });
 

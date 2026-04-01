@@ -1,6 +1,7 @@
 // MARK: - Enums
 
 export type WeightUnit = 'lbs' | 'kg';
+export type DistanceUnit = 'meters' | 'km' | 'miles' | 'feet' | 'yards';
 export type GroupType = 'superset' | 'section';
 
 // MARK: - Parse Result Types
@@ -60,6 +61,8 @@ export interface PlannedSet {
   targetWeightUnit: WeightUnit | null;
   targetReps: number | null;
   targetTime: number | null;
+  targetDistance: number | null;
+  targetDistanceUnit: DistanceUnit | null;
   targetRpe: number | null;
   restSeconds: number | null;
   tempo: string | null;
@@ -98,6 +101,8 @@ export interface ParsedSet {
   weightUnit?: WeightUnit | null;
   reps?: number | null;
   time?: number | null;
+  distance?: number | null;
+  distanceUnit?: DistanceUnit | null;
   isAmrap?: boolean | null;
   rpe?: number | null;
   rest?: number | null;

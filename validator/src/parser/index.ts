@@ -11,11 +11,12 @@ import type {
   PlannedExercise,
   PlannedSet,
   WeightUnit,
+  DistanceUnit,
   GroupType,
   ExerciseBlockResult,
 } from './types.js';
 
-export type { ParseResult, WorkoutPlan, PlannedExercise, PlannedSet, WeightUnit, GroupType } from './types.js';
+export type { ParseResult, WorkoutPlan, PlannedExercise, PlannedSet, WeightUnit, DistanceUnit, GroupType } from './types.js';
 
 // MARK: - Public API
 
@@ -646,6 +647,8 @@ function parseSets(context: ParseContext, exerciseHeaderLevel: number, exerciseI
           targetWeightUnit: parsedSet.weightUnit ?? null,
           targetReps: parsedSet.reps ?? null,
           targetTime: parsedSet.time ?? null,
+          targetDistance: parsedSet.distance ?? null,
+          targetDistanceUnit: parsedSet.distanceUnit ?? null,
           targetRpe: parsedSet.rpe != null ? roundRpe(parsedSet.rpe, context, line.lineNumber) : null,
           restSeconds: parsedSet.rest ?? null,
           tempo: parsedSet.tempo ?? null,
@@ -666,12 +669,12 @@ function parseSets(context: ParseContext, exerciseHeaderLevel: number, exerciseI
 }
 
 function roundRpe(value: number, context: ParseContext, lineNumber: number): number {
-  const rounded = Math.round(value * 2) / 2;
+  const rounded = Math.round(value);
   const clamped = Math.max(1, Math.min(10, rounded));
   if (clamped !== value) {
     context.warnings.push({
       line: lineNumber,
-      message: `RPE rounded to nearest 0.5 (${value} → ${clamped})`,
+      message: `RPE rounded to nearest integer (${value} → ${clamped})`,
       code: 'RPE_ROUNDED',
     });
   }
@@ -758,6 +761,28 @@ function parseMainSetContent(
 
   // Pattern 2: bodyweight x|for reps/time (e.g., "x 10", "bw x 12", "bw for 60s")
   const pattern2 = /^(?:(bw|x)\s*)?(?:x|for)\s*(\d+|amrap)\s*(reps?|s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
+
+  // Pattern D: distance (e.g., "200 meters", "0.5 km", "1 mile", "400 yd")
+  const distancePattern = /^(\d+(?:\.\d+)?)\s*(meters?|km|miles?|mi|feet|foot|ft|yards?|yd)(?=\s|$)\s*(.*)$/i;
+  const distanceMatch = original.match(distancePattern);
+  if (distanceMatch) {
+    const distance = parseFloat(distanceMatch[1]);
+    const unitStr = distanceMatch[2];
+    const trailing = distanceMatch[3]?.trim() || null;
+
+    if (distance <= 0) {
+      context.errors.push({ line: lineNumber, message: 'Distance must be positive', code: 'INVALID_DISTANCE' });
+      return null;
+    }
+
+    return {
+      set: {
+        distance,
+        distanceUnit: normalizeDistanceUnit(unitStr),
+      },
+      trailingText: trailing && trailing.length > 0 ? trailing : null,
+    };
+  }
 
   // Pattern 3: single number (e.g., "10" = bodyweight reps, "60s" = time)
   const pattern3 = /^(\d+)\s*(s|sec|m|min)?(?=\s|$)\s*(.*)$/i;
@@ -939,6 +964,31 @@ function normalizeWeightUnit(unit: string | null): WeightUnit | null {
       return null; // bodyweight
     default:
       return null;
+  }
+}
+
+function normalizeDistanceUnit(unit: string): DistanceUnit {
+  const lower = unit.toLowerCase();
+  switch (lower) {
+    case 'meters':
+    case 'meter':
+      return 'meters';
+    case 'km':
+      return 'km';
+    case 'miles':
+    case 'mile':
+    case 'mi':
+      return 'miles';
+    case 'feet':
+    case 'foot':
+    case 'ft':
+      return 'feet';
+    case 'yards':
+    case 'yard':
+    case 'yd':
+      return 'yards';
+    default:
+      return 'meters';
   }
 }
 

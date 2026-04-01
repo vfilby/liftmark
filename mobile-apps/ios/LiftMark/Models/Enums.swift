@@ -7,6 +7,16 @@ enum WeightUnit: String, Codable, Hashable, CaseIterable {
     case kg
 }
 
+// MARK: - Distance Unit
+
+enum DistanceUnit: String, Codable, Hashable, CaseIterable {
+    case meters
+    case km
+    case miles
+    case feet
+    case yards
+}
+
 // MARK: - Set Status (SessionSet lifecycle)
 
 enum SetStatus: String, Codable, Hashable, CaseIterable {

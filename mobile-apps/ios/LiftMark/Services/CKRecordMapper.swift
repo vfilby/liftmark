@@ -149,6 +149,8 @@ final class CKRecordMapper {
         if let u = ps.targetWeightUnit { record["targetWeightUnit"] = u as CKRecordValue }
         if let r = ps.targetReps { record["targetReps"] = Int64(r) as CKRecordValue }
         if let t = ps.targetTime { record["targetTime"] = Int64(t) as CKRecordValue }
+        if let d = ps.targetDistance { record["targetDistance"] = d as CKRecordValue }
+        if let u = ps.targetDistanceUnit { record["targetDistanceUnit"] = u as CKRecordValue }
         if let rpe = ps.targetRpe { record["targetRpe"] = Double(rpe) as CKRecordValue }
         if let r = ps.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
         if let t = ps.tempo { record["tempo"] = t as CKRecordValue }
@@ -208,12 +210,16 @@ final class CKRecordMapper {
         if let u = ss.targetWeightUnit { record["targetWeightUnit"] = u as CKRecordValue }
         if let r = ss.targetReps { record["targetReps"] = Int64(r) as CKRecordValue }
         if let t = ss.targetTime { record["targetTime"] = Int64(t) as CKRecordValue }
+        if let d = ss.targetDistance { record["targetDistance"] = d as CKRecordValue }
+        if let u = ss.targetDistanceUnit { record["targetDistanceUnit"] = u as CKRecordValue }
         if let rpe = ss.targetRpe { record["targetRpe"] = Double(rpe) as CKRecordValue }
         if let r = ss.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
         if let w = ss.actualWeight { record["actualWeight"] = w as CKRecordValue }
         if let u = ss.actualWeightUnit { record["actualWeightUnit"] = u as CKRecordValue }
         if let r = ss.actualReps { record["actualReps"] = Int64(r) as CKRecordValue }
         if let t = ss.actualTime { record["actualTime"] = Int64(t) as CKRecordValue }
+        if let d = ss.actualDistance { record["actualDistance"] = d as CKRecordValue }
+        if let u = ss.actualDistanceUnit { record["actualDistanceUnit"] = u as CKRecordValue }
         if let rpe = ss.actualRpe { record["actualRpe"] = Double(rpe) as CKRecordValue }
         if let d = parseDate(ss.completedAt) { record["completedAt"] = d as CKRecordValue }
         if let n = ss.notes { record["notes"] = n as CKRecordValue }
@@ -420,6 +426,8 @@ final class CKRecordMapper {
                 targetWeightUnit: self.stringField(record, "targetWeightUnit"),
                 targetReps: self.int64Field(record, "targetReps").map { Int($0) },
                 targetTime: self.int64Field(record, "targetTime").map { Int($0) },
+                targetDistance: self.doubleField(record, "targetDistance"),
+                targetDistanceUnit: self.stringField(record, "targetDistanceUnit"),
                 targetRpe: self.int64Field(record, "targetRpe").map { Int($0) } ?? self.doubleField(record, "targetRpe").map { Int($0) },
                 restSeconds: self.int64Field(record, "restSeconds").map { Int($0) },
                 tempo: self.stringField(record, "tempo") ?? existing?.tempo,
@@ -538,12 +546,16 @@ final class CKRecordMapper {
                 targetWeightUnit: self.stringField(record, "targetWeightUnit"),
                 targetReps: self.int64Field(record, "targetReps").map { Int($0) },
                 targetTime: self.int64Field(record, "targetTime").map { Int($0) },
+                targetDistance: self.doubleField(record, "targetDistance"),
+                targetDistanceUnit: self.stringField(record, "targetDistanceUnit"),
                 targetRpe: self.int64Field(record, "targetRpe").map { Int($0) } ?? self.doubleField(record, "targetRpe").map { Int($0) },
                 restSeconds: self.int64Field(record, "restSeconds").map { Int($0) },
                 actualWeight: self.doubleField(record, "actualWeight"),
                 actualWeightUnit: self.stringField(record, "actualWeightUnit"),
                 actualReps: self.int64Field(record, "actualReps").map { Int($0) },
                 actualTime: self.int64Field(record, "actualTime").map { Int($0) },
+                actualDistance: self.doubleField(record, "actualDistance"),
+                actualDistanceUnit: self.stringField(record, "actualDistanceUnit"),
                 actualRpe: self.int64Field(record, "actualRpe").map { Int($0) } ?? self.doubleField(record, "actualRpe").map { Int($0) },
                 completedAt: self.dateToISO(self.dateField(record, "completedAt")),
                 status: self.stringField(record, "status") ?? existing?.status ?? SetStatus.pending.rawValue,

@@ -235,6 +235,7 @@ Focus on driving through the floor.
 
 ```
 - [weight] [unit] x [reps] [reps_unit] [@modifiers]
+- [distance] [distance_unit] [@modifiers]
 ```
 
 ### Components
@@ -248,15 +249,36 @@ Focus on driving through the floor.
    - `kg` - Kilograms
    - `bw` - Bodyweight (can be omitted if no weight specified)
 
-3. **Reps** (optional for time-based):
+3. **Reps** (optional for time-based and distance-based):
    - Number (integer)
    - `AMRAP` - As Many Reps As Possible
-   - Can be omitted for time-based exercises
+   - Can be omitted for time-based and distance-based exercises
 
 4. **Time/Rep Unit** (optional):
    - `reps` - Repetitions (default, can be omitted)
    - `s` or `sec` - Seconds (for time-based exercises)
    - `m` or `min` - Minutes (for time-based exercises)
+
+5. **Distance** (optional):
+   - Number (integer or decimal) followed by a distance unit
+   - `meters` - Meters (note: "m" is reserved for minutes, not meters)
+   - `km` - Kilometers
+   - `miles` or `mi` - Miles
+   - `feet` or `ft` - Feet
+   - `yards` or `yd` - Yards
+
+### Set Types
+
+There are four distinct set types. A single set is exactly one of these:
+
+| Set Type | Description | Examples |
+|----------|-------------|---------|
+| **Weight + Reps** | Resistance exercise with rep count | `225 lbs x 5`, `100 kg x 8` |
+| **Time-based** | Duration exercise, optionally weighted | `60s`, `45 lbs x 60s` |
+| **Distance-based** | Distance target for cardio/conditioning | `200 meters`, `1 mile` |
+| **Bodyweight Reps** | Reps with no external load | `10`, `bw x 12`, `AMRAP` |
+
+Distance sets cannot be combined with weight or reps. Weight and distance in the same set (e.g., weighted carries with a distance) is not supported; use weight+time or separate distance sets instead.
 
 ### Flexible Formats
 
@@ -287,6 +309,15 @@ All of these are valid:
 - 100 kg x 30s  # Weighted holds
 - 25 lbs for 45s # Alternative "for" syntax
 - bw for 60s    # Bodyweight "for" syntax
+
+# Distance-based (cardio, rowing, running)
+- 200 meters     # Sprint distance
+- 0.5 km         # Half kilometer
+- 1 mile         # One mile run
+- 400 yards      # Yard distance
+- 100 ft         # Short distance
+- 1.5 mi         # Mile abbreviation
+- 800 meters     # Middle distance
 
 # AMRAP
 - 135 x AMRAP
@@ -358,7 +389,7 @@ Pull heel to glutes, keep knees together
 
 The `@rpe` and `@tempo` modifiers are still parsed for backward compatibility but are deprecated in favor of freeform notes. A deprecation warning is emitted when they are used.
 
-**RPE rounding behavior:** `@rpe` values are rounded to the nearest 0.5 increment and clamped to the 1–10 range. If the value is adjusted, a warning is emitted (e.g., `RPE rounded to nearest 0.5 (8.3 → 8.5)`). Valid 0.5 increments (e.g., 7, 7.5, 8) are stored without a rounding warning.
+**RPE rounding behavior:** `@rpe` values are rounded to the nearest integer and clamped to the 1–10 range. If the value is adjusted, a warning is emitted (e.g., `RPE rounded to nearest integer (8.3 → 8)`). Integer values (e.g., 7, 8, 9) are stored without a rounding warning.
 
 ### Descriptive Information (Use Freeform Notes)
 
@@ -549,7 +580,7 @@ Every minute on the minute for 20 minutes
 
 ## Row
 @type: machine
-- 200m
+- 200 meters
 ```
 
 ### Example 6: Olympic Lifting
@@ -664,6 +695,40 @@ Eyes closed on last set.
 - 20 lbs x 15 reps @rest: 45s
 ```
 
+### Example 9: Distance-Based Conditioning
+
+```markdown
+# Rowing and Running
+@tags: cardio, conditioning
+
+## Rowing
+- 500 meters @rest: 90s
+- 500 meters @rest: 90s
+- 500 meters @rest: 90s
+
+## Sprint Intervals
+
+Short sprints with full recovery.
+
+- 200 meters @rest: 120s
+- 200 meters @rest: 120s
+- 200 meters @rest: 120s
+- 200 meters @rest: 120s
+
+## Easy Run
+- 1.5 miles
+
+## Sled Push
+- 100 ft @rest: 60s
+- 100 ft @rest: 60s
+- 100 ft @rest: 60s
+
+## Shuttle Run
+- 50 yards @rest: 45s
+- 50 yards @rest: 45s
+- 50 yards @rest: 45s
+```
+
 ---
 
 ## Validation Rules
@@ -682,6 +747,7 @@ Eyes closed on last set.
 9. ✅ Time must be positive number with valid unit (s/sec/m/min) (if provided)
 10. ✅ Rest time must be positive number with valid unit (s/sec/m/min) (if provided)
 11. ✅ Default units must be "lbs" or "kg" (if provided)
+12. ✅ Distance must be positive number with valid unit (meters/km/miles/mi/feet/ft/yards/yd) (if provided)
 
 ### Warnings (non-blocking)
 - ⚠️ Duplicate exercise names (suggests merge or rename)
@@ -720,7 +786,7 @@ Some notes but no exercises.
 ## Squat
 - -135 x 5
 ```
-❌ Line 3: Invalid set format: "-135 x 5". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Invalid set format: "-135 x 5". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 2: Exercise "Squat" has no sets
 
 **Invalid - Invalid rest time:**
@@ -1002,7 +1068,8 @@ Format requirements:
 - Freeform notes go after the header
 - Each exercise is one header level below: ## [Exercise Name]
 - Exercise notes are freeform text after exercise header
-- Sets format: - [weight] [unit] x [reps] or - [weight] [unit] for [time]
+- Sets format: - [weight] [unit] x [reps] or - [weight] [unit] for [time] or - [distance] [distance_unit]
+- Distance units: meters, km, miles, mi, feet, ft, yards, yd (note: "m" means minutes, NOT meters)
 - If @units is set, weight units can be omitted: - [weight] x [reps]
 - Functional modifiers: @rest (triggers timer), @dropset (UI behavior), @perside (per-side timer)
 - Descriptive data (tempo, RPE, etc.) goes in freeform notes
@@ -1673,7 +1740,7 @@ Today is the big one. Eat well, sleep well, lift well.
 - 115 lbs x 6 @rpe: 8 @tempo: 2-0-1-0
 ```
 
-**TC-V29b: RPE rounding to nearest 0.5**
+**TC-V29b: RPE rounding to nearest integer**
 ```markdown
 # RPE Rounding Test
 
@@ -1685,9 +1752,9 @@ Today is the big one. Eat well, sleep well, lift well.
 ```
 ✅ Parses successfully
 - Set 1: targetRpe = 8 (no rounding warning)
-- Set 2: targetRpe = 8.5 (no rounding warning)
-- Set 3: targetRpe = 8.5 (⚠️ RPE rounded to nearest 0.5 (8.3 → 8.5))
-- Set 4: targetRpe = 8.5 (⚠️ RPE rounded to nearest 0.5 (8.7 → 8.5))
+- Set 2: targetRpe = 9 (⚠️ RPE rounded to nearest integer (8.5 → 9))
+- Set 3: targetRpe = 8 (⚠️ RPE rounded to nearest integer (8.3 → 8))
+- Set 4: targetRpe = 9 (⚠️ RPE rounded to nearest integer (8.7 → 9))
 ⚠️ @rpe is deprecated — use freeform notes instead (on all 4 sets)
 
 **TC-V30: Every valid set format**
@@ -1721,12 +1788,92 @@ Today is the big one. Eat well, sleep well, lift well.
 - bw for 60s
 - bw x 30s
 
+## Distance Variations
+- 200 meters
+- 0.5 km
+- 1 mile
+- 1.5 mi
+- 100 feet
+- 100 ft
+- 400 yards
+- 50 yd
+
 ## AMRAP Variations
 - 135 x AMRAP
 - 135 lbs x AMRAP
 - bw x AMRAP
 - x AMRAP
 - AMRAP
+```
+
+### Valid Test Cases — Distance
+
+**TC-V31: Distance sets — all units**
+```markdown
+# Distance Workout
+
+## Sprint
+- 200 meters
+
+## Long Run
+- 5 km
+
+## Mile Repeats
+- 1 mile
+- 1 mi
+
+## Short Sprints
+- 100 feet
+- 100 ft
+
+## Shuttle Runs
+- 50 yards
+- 50 yd
+```
+
+**TC-V32: Distance sets with decimal values**
+```markdown
+# Decimal Distances
+
+## Morning Run
+- 1.5 miles
+- 2.5 km
+
+## Track Work
+- 0.5 km
+- 1.25 miles
+```
+
+**TC-V33: Distance sets with rest modifiers**
+```markdown
+# Interval Training
+
+## Rowing Intervals
+- 500 meters @rest: 90s
+- 500 meters @rest: 90s
+- 500 meters @rest: 90s
+
+## Sprint Intervals
+- 200 meters @rest: 120s
+- 200 meters @rest: 120s
+- 200 meters @rest: 120s
+```
+
+**TC-V34: Mixed distance and other set types**
+```markdown
+# CrossFit WOD
+
+## Rowing
+- 500 meters
+
+## Bench Press
+- 135 lbs x 10
+
+## Running
+- 400 meters
+
+## Plank
+- 60s
 ```
 
 ### Invalid Test Cases — Structure Errors
@@ -1844,8 +1991,8 @@ Forgot to add sets here.
 - -135 x 5
 - -225 x 3
 ```
-❌ Line 3: Invalid set format: "-135 x 5". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 4: Invalid set format: "-225 x 3". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Invalid set format: "-135 x 5". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 4: Invalid set format: "-225 x 3". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 2: Exercise "Squat" has no sets
 
 **TC-E12: Negative decimal weight**
@@ -1855,8 +2002,8 @@ Forgot to add sets here.
 - -0.5 lbs x 10
 - -2.5 kg x 8
 ```
-❌ Line 3: Invalid set format: "-0.5 lbs x 10". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 4: Invalid set format: "-2.5 kg x 8". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Invalid set format: "-0.5 lbs x 10". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 4: Invalid set format: "-2.5 kg x 8". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 2: Exercise "Dumbbell Curl" has no sets
 
 **TC-E13: Unparseable set text**
@@ -1867,9 +2014,9 @@ Forgot to add sets here.
 - really pushed hard
 - best session ever
 ```
-❌ Line 3: Invalid set format: "felt great today". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 4: Invalid set format: "really pushed hard". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 5: Invalid set format: "best session ever". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Invalid set format: "felt great today". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 4: Invalid set format: "really pushed hard". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 5: Invalid set format: "best session ever". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 2: Exercise "Bench Press" has no sets
 
 **TC-E14: Weight with unit but no reps/time**
@@ -1880,9 +2027,9 @@ Forgot to add sets here.
 - 225 lbs
 - 100 kg
 ```
-❌ Line 3: Incomplete set: "135 lbs". Weight with unit requires reps (x 5) or time (x 60s)
-❌ Line 4: Incomplete set: "225 lbs". Weight with unit requires reps (x 5) or time (x 60s)
-❌ Line 5: Incomplete set: "100 kg". Weight with unit requires reps (x 5) or time (x 60s)
+❌ Line 3: Incomplete set: "135 lbs". Weight with unit requires reps (x 5) or time (x 60s). For distance, omit the weight (e.g., "200 meters")
+❌ Line 4: Incomplete set: "225 lbs". Weight with unit requires reps (x 5) or time (x 60s). For distance, omit the weight (e.g., "200 meters")
+❌ Line 5: Incomplete set: "100 kg". Weight with unit requires reps (x 5) or time (x 60s). For distance, omit the weight (e.g., "200 meters")
 ❌ Line 2: Exercise "Squat" has no sets
 
 **TC-E15: Zero reps**
@@ -1987,6 +2134,44 @@ Forgot to add sets here.
 ❌ Line 3: Invalid rest time format: minutes. Expected format: "180s" or "3m"
 ❌ Line 4: Invalid rest time format: forever. Expected format: "180s" or "3m"
 
+### Invalid Test Cases — Distance Errors
+
+**TC-E31: Zero distance**
+```markdown
+# Zero Distance
+## Sprint
+- 0 meters
+- 0 km
+```
+❌ Line 3: Distance must be positive
+❌ Line 4: Distance must be positive
+❌ Line 2: Exercise "Sprint" has no sets
+
+**TC-E32: Negative distance**
+```markdown
+# Negative Distance
+## Sprint
+- -100 meters
+```
+❌ Line 3: Invalid set format: "-100 meters". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 2: Exercise "Sprint" has no sets
+
+**TC-E33: Distance with reps (invalid combination)**
+```markdown
+# Distance With Reps
+## Sprint
+- 200 meters x 5
+```
+❌ Line 3: Invalid set format: "200 meters x 5". Distance sets cannot have reps. Write separate sets or use freeform notes for programming.
+
+**TC-E34: Weight with distance (unsupported combination)**
+```markdown
+# Weighted Distance
+## Farmer Carry
+- 70 lbs x 100 meters
+```
+❌ Line 3: Invalid set format: "70 lbs x 100 meters". Combined weight and distance is not supported.
+
 ### Invalid Test Cases — Combined/Edge Errors
 
 **TC-E25: Valid workout with one bad set**
@@ -1998,7 +2183,7 @@ Forgot to add sets here.
 - this set was amazing
 - 225 x 3
 ```
-❌ Line 5: Invalid set format: "this set was amazing". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 5: Invalid set format: "this set was amazing". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 
 **TC-E26: All sets unparseable**
 ```markdown
@@ -2008,9 +2193,9 @@ Forgot to add sets here.
 - felt strong
 - crushed it
 ```
-❌ Line 3: Invalid set format: "went heavy". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 4: Invalid set format: "felt strong". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 5: Invalid set format: "crushed it". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 3: Invalid set format: "went heavy". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 4: Invalid set format: "felt strong". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 5: Invalid set format: "crushed it". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 2: Exercise "Bench Press" has no sets
 
 **TC-E27: Multiple error types at once**
@@ -2028,8 +2213,8 @@ Forgot to add sets here.
 - 225 x 0
 ```
 ❌ Line 2: Invalid @units value "stones". Must be "lbs" or "kg"
-❌ Line 5: Invalid set format: "great set". Expected format: "weight unit x reps" or "time" or "AMRAP"
-❌ Line 6: Invalid set format: "-100 x 5". Expected format: "weight unit x reps" or "time" or "AMRAP"
+❌ Line 5: Invalid set format: "great set". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
+❌ Line 6: Invalid set format: "-100 x 5". Expected format: "weight unit x reps" or "time" or "distance" or "AMRAP"
 ❌ Line 4: Exercise "Bench Press" has no sets
 ❌ Line 8: Exercise "Overhead Press" has no sets
 ❌ Line 11: Reps/time must be positive
@@ -2071,6 +2256,14 @@ No actual child exercises here, just notes.
 
 ## Changelog
 
+### Version 1.2 (2026-03-30)
+- **Added distance-based sets** — new set type for cardio/conditioning exercises
+- Supported distance units: `meters`, `km`, `miles`/`mi`, `feet`/`ft`, `yards`/`yd`
+- Note: `m` remains reserved for minutes — use `meters` for metric distance
+- Distance sets are standalone targets (no combined weight+distance or distance+reps)
+- Added Example 9 (distance-based conditioning workout)
+- Added test cases TC-V31 through TC-V34 (valid) and TC-E31 through TC-E34 (invalid)
+
 ### Version 1.1 (2026-01-16)
 - **Simplified to one workout per file** - removed multi-workout support for cleaner mental model
 - **Simplified modifiers** to only functional ones: `@rest`, `@dropset`, `@perside`
@@ -2110,8 +2303,13 @@ Based on user feedback, the following design decisions were implemented:
    - Deprecated `@rpe` and `@tempo` — still parsed for compatibility, but freeform notes are preferred
    - `@dropset` and `@perside` are flags, not `@dropset: true`
    - AMRAP implies failure, no separate flag needed
+9. ✅ **Distance-Based Sets**: Standalone set type for cardio/conditioning (e.g., `200 meters`, `1 mile`)
+   - `m` stays as minutes — use `meters` for metric distance (avoids ambiguity)
+   - No combined weight+distance (e.g., weighted carries use either weight+time or distance, not both)
+   - No distance+reps combination — repeat as separate sets instead
+   - No unit conversion between distance units
 
 ---
 
-**Document Version:** 1.1
-**Last Updated:** 2026-01-16
+**Document Version:** 1.2
+**Last Updated:** 2026-03-30

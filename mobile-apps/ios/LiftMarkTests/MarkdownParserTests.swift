@@ -1921,4 +1921,194 @@ final class MarkdownParserTests: XCTestCase {
         XCTAssertFalse(result.warnings.contains(where: { $0.contains("Duplicate exercise name") }),
                         "Should not warn when all exercise names are unique")
     }
+
+    // MARK: - Distance Sets
+
+    func testParsesDistanceInMeters() {
+        let markdown = """
+        # Cardio Workout
+        ## Running
+        - 200 meters
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 200)
+        XCTAssertEqual(set?.targetDistanceUnit, .meters)
+        XCTAssertNil(set?.targetReps)
+        XCTAssertNil(set?.targetTime)
+        XCTAssertNil(set?.targetWeight)
+    }
+
+    func testParsesDistanceInKm() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 5 km
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 5)
+        XCTAssertEqual(set?.targetDistanceUnit, .km)
+    }
+
+    func testParsesDistanceInMiles() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 1 mile
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 1)
+        XCTAssertEqual(set?.targetDistanceUnit, .miles)
+    }
+
+    func testParsesDistanceInMilesPlural() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 3 miles
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 3)
+        XCTAssertEqual(set?.targetDistanceUnit, .miles)
+    }
+
+    func testParsesDistanceMiAbbreviation() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 3.1 mi
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 3.1)
+        XCTAssertEqual(set?.targetDistanceUnit, .miles)
+    }
+
+    func testParsesDistanceInFeet() {
+        let markdown = """
+        # Cardio
+        ## Sled Push
+        - 100 feet
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 100)
+        XCTAssertEqual(set?.targetDistanceUnit, .feet)
+    }
+
+    func testParsesDistanceFtAbbreviation() {
+        let markdown = """
+        # Cardio
+        ## Sled Push
+        - 50 ft
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 50)
+        XCTAssertEqual(set?.targetDistanceUnit, .feet)
+    }
+
+    func testParsesDistanceInYards() {
+        let markdown = """
+        # Cardio
+        ## Sprints
+        - 100 yards
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 100)
+        XCTAssertEqual(set?.targetDistanceUnit, .yards)
+    }
+
+    func testParsesDistanceYdAbbreviation() {
+        let markdown = """
+        # Cardio
+        ## Sprints
+        - 40 yd
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 40)
+        XCTAssertEqual(set?.targetDistanceUnit, .yards)
+    }
+
+    func testParsesDecimalDistance() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 0.5 km
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 0.5)
+        XCTAssertEqual(set?.targetDistanceUnit, .km)
+    }
+
+    func testMStillParsesAsMinutes() {
+        let markdown = """
+        # Workout
+        ## Plank
+        - 2m
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetTime, 120)
+        XCTAssertNil(set?.targetDistance)
+        XCTAssertNil(set?.targetDistanceUnit)
+    }
+
+    func testDistanceWithTrailingNotes() {
+        let markdown = """
+        # Cardio
+        ## Running
+        - 400 meters easy pace
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 400)
+        XCTAssertEqual(set?.targetDistanceUnit, .meters)
+        XCTAssertEqual(set?.notes, "easy pace")
+    }
+
+    func testDistanceWithModifiers() {
+        let markdown = """
+        # Cardio
+        ## Sprints
+        - 200 meters @rest: 60s
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+
+        XCTAssertTrue(result.success)
+        let set = result.data?.exercises[0].sets[0]
+        XCTAssertEqual(set?.targetDistance, 200)
+        XCTAssertEqual(set?.targetDistanceUnit, .meters)
+        XCTAssertEqual(set?.restSeconds, 60)
+    }
 }

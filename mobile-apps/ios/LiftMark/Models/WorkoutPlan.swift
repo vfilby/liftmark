@@ -88,6 +88,8 @@ struct PlannedSet: Identifiable, Codable, Hashable {
     var targetWeightUnit: WeightUnit?
     var targetReps: Int?
     var targetTime: Int?
+    var targetDistance: Double?
+    var targetDistanceUnit: DistanceUnit?
     var targetRpe: Int?
     var restSeconds: Int?
     var tempo: String?
@@ -104,6 +106,8 @@ struct PlannedSet: Identifiable, Codable, Hashable {
         targetWeightUnit: WeightUnit? = nil,
         targetReps: Int? = nil,
         targetTime: Int? = nil,
+        targetDistance: Double? = nil,
+        targetDistanceUnit: DistanceUnit? = nil,
         targetRpe: Int? = nil,
         restSeconds: Int? = nil,
         tempo: String? = nil,
@@ -119,6 +123,8 @@ struct PlannedSet: Identifiable, Codable, Hashable {
         self.targetWeightUnit = targetWeightUnit
         self.targetReps = targetReps
         self.targetTime = targetTime
+        self.targetDistance = targetDistance
+        self.targetDistanceUnit = targetDistanceUnit
         self.targetRpe = targetRpe
         self.restSeconds = restSeconds
         self.tempo = tempo

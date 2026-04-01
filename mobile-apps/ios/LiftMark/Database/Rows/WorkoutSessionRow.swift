@@ -78,6 +78,8 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var targetWeightUnit: String?
     var targetReps: Int?
     var targetTime: Int?
+    var targetDistance: Double?
+    var targetDistanceUnit: String?
     var targetRpe: Int?
     var restSeconds: Int?
     // Actual values
@@ -85,6 +87,8 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var actualWeightUnit: String?
     var actualReps: Int?
     var actualTime: Int?
+    var actualDistance: Double?
+    var actualDistanceUnit: String?
     var actualRpe: Int?
     // Metadata
     var completedAt: String?
@@ -106,12 +110,16 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case targetWeightUnit = "target_weight_unit"
         case targetReps = "target_reps"
         case targetTime = "target_time"
+        case targetDistance = "target_distance"
+        case targetDistanceUnit = "target_distance_unit"
         case targetRpe = "target_rpe"
         case restSeconds = "rest_seconds"
         case actualWeight = "actual_weight"
         case actualWeightUnit = "actual_weight_unit"
         case actualReps = "actual_reps"
         case actualTime = "actual_time"
+        case actualDistance = "actual_distance"
+        case actualDistanceUnit = "actual_distance_unit"
         case actualRpe = "actual_rpe"
         case completedAt = "completed_at"
         case status
