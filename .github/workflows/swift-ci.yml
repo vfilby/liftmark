@@ -25,9 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # SwiftLint: warning-only until existing violations are cleaned up
       - name: SwiftLint
-        continue-on-error: true
         run: |
           brew install swiftlint
           swiftlint lint --reporter github-actions-logging
@@ -68,6 +66,9 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
             -resultBundlePath TestResults.xcresult \
             | xcpretty
+
+      # Note: UI tests (LiftMarkUITests) are not run in CI — they require
+      # a booted simulator and are slow. Run them manually or in a dedicated workflow.
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

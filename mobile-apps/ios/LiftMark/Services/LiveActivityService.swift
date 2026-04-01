@@ -16,6 +16,9 @@ final class LiveActivityService: @unchecked Sendable {
     private var currentActivity: Activity<WorkoutActivityAttributes>?
     #endif
 
+    private var lastUpdateTime: Date?
+    private static let updateThrottleInterval: TimeInterval = 1.0
+
     private init() {}
 
     // MARK: - Availability
@@ -97,6 +100,12 @@ final class LiveActivityService: @unchecked Sendable {
 
         if #available(iOS 16.2, *) {
             guard let activity = currentActivity else { return }
+
+            // Throttle updates to avoid excessive Live Activity refreshes
+            if let lastUpdate = lastUpdateTime, Date().timeIntervalSince(lastUpdate) < Self.updateThrottleInterval {
+                return
+            }
+            lastUpdateTime = Date()
 
             let state: WorkoutActivityAttributes.ContentState
 

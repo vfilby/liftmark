@@ -32,7 +32,8 @@ final class WorkoutPlanStore {
         do {
             let changes = try repository.create(plan)
             SyncChange.notifyAll(changes)
-            loadPlans()
+            plans.insert(plan, at: 0)
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to create plan", error: error)
@@ -43,7 +44,10 @@ final class WorkoutPlanStore {
         do {
             let changes = try repository.update(plan)
             SyncChange.notifyAll(changes)
-            loadPlans()
+            if let index = plans.firstIndex(where: { $0.id == plan.id }) {
+                plans[index] = plan
+            }
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to update plan", error: error)
@@ -54,7 +58,8 @@ final class WorkoutPlanStore {
         do {
             let changes = try repository.delete(id)
             SyncChange.notifyAll(changes)
-            loadPlans()
+            plans.removeAll { $0.id == id }
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to delete plan", error: error)
@@ -86,7 +91,10 @@ final class WorkoutPlanStore {
         do {
             let changes = try repository.toggleFavorite(id)
             SyncChange.notifyAll(changes)
-            loadPlans()
+            if let index = plans.firstIndex(where: { $0.id == id }) {
+                plans[index].isFavorite.toggle()
+            }
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to toggle favorite", error: error)

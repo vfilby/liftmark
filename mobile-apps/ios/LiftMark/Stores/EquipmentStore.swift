@@ -60,7 +60,9 @@ final class EquipmentStore {
                 try row.insert(db)
             }
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: equipmentId)
-            loadEquipment(forGym: gymId)
+            let newEquipment = GymEquipment(id: equipmentId, gymId: gymId, name: name, isAvailable: true, lastCheckedAt: nil, createdAt: now, updatedAt: now)
+            equipment.append(newEquipment)
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to add equipment", error: error)
@@ -74,7 +76,8 @@ final class EquipmentStore {
                 try db.execute(sql: "DELETE FROM gym_equipment WHERE id = ?", arguments: [id])
             }
             CKSyncEngineManager.notifyDelete(recordType: "GymEquipment", recordID: id)
-            loadEquipment(forGym: gymId)
+            equipment.removeAll { $0.id == id }
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to remove equipment", error: error)
@@ -92,7 +95,10 @@ final class EquipmentStore {
                 )
             }
             CKSyncEngineManager.notifySave(recordType: "GymEquipment", recordID: id)
-            loadEquipment(forGym: gymId)
+            if let index = equipment.firstIndex(where: { $0.id == id }) {
+                equipment[index].isAvailable.toggle()
+            }
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to toggle equipment", error: error)

@@ -64,6 +64,51 @@ final class CKRecordMapper {
         return record[key] as? String
     }
 
+    /// Returns true if the given CKRecord's updatedAt is newer than the local record's updatedAt.
+    /// Used by conflict resolution to decide whether server or local wins.
+    /// Returns true if remote is newer or timestamps are equal (server wins tiebreaker).
+    func serverRecordIsNewer(_ record: CKRecord) -> Bool {
+        do {
+            let dbQueue = try dbManager.database()
+            return try dbQueue.read { db in
+                let recordName = record.recordID.recordName
+                let remoteDate = self.dateField(record, "updatedAt")
+
+                // Look up the local updatedAt based on record type
+                let localUpdatedAt: String? = try {
+                    switch record.recordType {
+                    case "Gym":
+                        return try GymRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "GymEquipment":
+                        return try GymEquipmentRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "WorkoutPlan":
+                        return try WorkoutPlanRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "PlannedExercise":
+                        return try PlannedExerciseRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "PlannedSet":
+                        return try PlannedSetRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "WorkoutSession":
+                        return try WorkoutSessionRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "SessionExercise":
+                        return try SessionExerciseRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "SessionSet":
+                        return try SessionSetRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "UserSettings":
+                        return try UserSettingsRow.fetchOne(db, key: recordName)?.updatedAt
+                    default:
+                        return nil
+                    }
+                }()
+
+                return self.remoteIsNewer(remoteDate: remoteDate, localUpdatedAt: localUpdatedAt)
+            }
+        } catch {
+            // If we can't read the local DB, default to server wins
+            Logger.shared.error(.sync, "Failed to read local record for conflict check: \(error.localizedDescription)")
+            return true
+        }
+    }
+
     /// Returns true if remote updatedAt is newer than local updatedAt.
     private func remoteIsNewer(remoteDate: Date?, localUpdatedAt: String?) -> Bool {
         guard let remoteDate else { return false }

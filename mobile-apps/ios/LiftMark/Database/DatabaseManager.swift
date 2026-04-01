@@ -10,7 +10,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 10
+    private static let currentSchemaVersion = 11
 
     private init() {}
 
@@ -141,6 +141,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 10 {
                 try migrateToV10(db)
+            }
+
+            if currentVersion < 11 {
+                try migrateToV11(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -548,5 +552,38 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN target_distance_unit TEXT")
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN actual_distance REAL")
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN actual_distance_unit TEXT")
+    }
+
+    private func migrateToV11(_ db: Database) throws {
+        // 1. Add missing indexes on self-referential FK columns used for supersets/dropsets
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_parent ON session_exercises(parent_exercise_id)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_sets_parent ON session_sets(parent_set_id)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_parent ON template_exercises(parent_exercise_id)")
+
+        // 2. Change gym_equipment UNIQUE constraint from global name to composite (gym_id, name)
+        try db.execute(sql: """
+            CREATE TABLE gym_equipment_new (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                is_available INTEGER DEFAULT 1,
+                last_checked_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                gym_id TEXT,
+                deleted_at TEXT,
+                FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE,
+                UNIQUE (gym_id, name)
+            )
+        """)
+        try db.execute(sql: """
+            INSERT INTO gym_equipment_new (id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at)
+            SELECT id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at
+            FROM gym_equipment
+        """)
+        try db.execute(sql: "DROP TABLE gym_equipment")
+        try db.execute(sql: "ALTER TABLE gym_equipment_new RENAME TO gym_equipment")
+        // Re-create indexes that were on the old table
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
     }
 }

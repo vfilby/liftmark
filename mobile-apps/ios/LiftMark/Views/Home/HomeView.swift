@@ -193,30 +193,19 @@ struct HomeView: View {
 
     private func recomputeMaxLifts() {
         var weights: [String: Double] = [:]
-        var sparklines: [String: [Double]] = [:]
         for exerciseName in homeTiles {
-            weights[exerciseName] = findMaxWeight(for: exerciseName)
-            sparklines[exerciseName] = findMaxWeightsPerSession(for: exerciseName)
-        }
-        cachedMaxWeights = weights
-        cachedSparklines = sparklines
-    }
-
-    private func findMaxWeight(for exerciseName: String) -> Double? {
-        // Search all completed sessions for global max weight on this exercise
-        var globalMax: Double?
-        for session in sessionStore.sessions {
-            for exercise in session.exercises where ExerciseDictionary.isSameExercise(exercise.exerciseName, exerciseName) {
-                let maxW = exercise.sets
-                    .filter { $0.status == .completed }
-                    .compactMap { $0.actualWeight }
-                    .max()
-                if let maxW {
-                    globalMax = max(globalMax ?? 0, maxW)
-                }
+            let canonical = ExerciseDictionary.getCanonicalName(exerciseName)
+            if let best = sessionStore.bestWeights[canonical] {
+                weights[exerciseName] = best.weight
             }
         }
-        return globalMax
+        cachedMaxWeights = weights
+        // Sparklines still need per-session data, keep existing logic
+        var sparklines: [String: [Double]] = [:]
+        for exerciseName in homeTiles {
+            sparklines[exerciseName] = findMaxWeightsPerSession(for: exerciseName)
+        }
+        cachedSparklines = sparklines
     }
 
     private func findMaxWeightsPerSession(for exerciseName: String) -> [Double] {

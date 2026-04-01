@@ -16,7 +16,7 @@ final class CKSyncConflictResolver: @unchecked Sendable {
         self.mapper = mapper
     }
 
-    /// Returns true if the given recordName was already resolved via server-wins merge.
+    /// Returns true if the given recordName was already resolved (server was newer and merged).
     func isConflictResolved(_ recordName: String) -> Bool {
         lock.lock()
         let resolved = resolvedConflicts.contains(recordName)
@@ -87,16 +87,23 @@ final class CKSyncConflictResolver: @unchecked Sendable {
 
     private func handleServerRecordChanged(recordName: String, recordType: String, error: CKError) {
         if let serverRecord = error.serverRecord {
-            do {
-                _ = try mapper.mergeIncoming(serverRecord)
-                Logger.shared.info(.sync, "[sync-engine] Merged server version for \(recordType)/\(recordName)")
-            } catch {
-                Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordType)/\(recordName)", error: error)
+            if mapper.serverRecordIsNewer(serverRecord) {
+                // Server record is newer (or equal) — merge it and mark resolved
+                do {
+                    _ = try mapper.mergeIncoming(serverRecord)
+                    Logger.shared.info(.sync, "[sync-engine] Conflict: server is newer for \(recordType)/\(recordName), merged server version")
+                } catch {
+                    Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordType)/\(recordName)", error: error)
+                }
+                // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
+                lock.lock()
+                resolvedConflicts.insert(recordName)
+                lock.unlock()
+            } else {
+                // Local record is newer — don't merge, don't mark resolved.
+                // The record stays pending so CKSyncEngine will re-upload the local version.
+                Logger.shared.info(.sync, "[sync-engine] Conflict: local is newer for \(recordType)/\(recordName), will re-upload local version")
             }
-            // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
-            lock.lock()
-            resolvedConflicts.insert(recordName)
-            lock.unlock()
         } else {
             Logger.shared.error(.sync, "[sync-engine] serverRecordChanged for \(recordType)/\(recordName) but no serverRecord provided (CKError \(error.code.rawValue))")
         }

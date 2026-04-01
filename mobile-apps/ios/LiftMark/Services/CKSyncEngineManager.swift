@@ -37,6 +37,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
     private var syncDownloaded = 0
     private var syncUploaded = 0
     private var syncConflicts = 0
+    private var syncChangedRecordTypes: Set<String> = []
 
     // Rate limiting for automatic fetches
     private static let minimumFetchInterval: TimeInterval = 30
@@ -284,9 +285,10 @@ final class CKSyncEngineManager: @unchecked Sendable {
             return aIndex < bIndex
         }
 
-        // Two-pass merge: first pass inserts what it can, second pass retries
-        // records that returned false (FK missing) or threw on the first attempt.
-        var retryRecords: [CKRecord] = []
+        // Multi-pass merge: retry until all records are merged or no progress is made.
+        // This handles arbitrarily deep FK hierarchies (e.g., Plan → Exercise → Set).
+        var pendingRecords: [CKRecord] = []
+        var changedTypes: Set<String> = []
 
         for modification in sortedModifications {
             let record = modification.record
@@ -297,37 +299,45 @@ final class CKSyncEngineManager: @unchecked Sendable {
                 Logger.shared.debug(.sync, "[sync-engine] Skipping protected record: \(recordType)/\(recordId)")
                 continue
             }
+            pendingRecords.append(record)
+        }
 
-            do {
-                let merged = try mapper.mergeIncoming(record)
-                if merged {
-                    downloaded += 1
-                    Logger.shared.debug(.sync, "[sync-engine] Merged \(recordType)/\(recordId)")
-                } else {
-                    retryRecords.append(record)
+        let maxPasses = Self.mergeOrder.count
+        for pass in 0..<maxPasses {
+            guard !pendingRecords.isEmpty else { break }
+
+            var failedRecords: [CKRecord] = []
+            var mergedThisPass = 0
+
+            for record in pendingRecords {
+                let recordId = record.recordID.recordName
+                let recordType = record.recordType
+                do {
+                    let merged = try mapper.mergeIncoming(record)
+                    if merged {
+                        downloaded += 1
+                        mergedThisPass += 1
+                        changedTypes.insert(recordType)
+                        Logger.shared.debug(.sync, "[sync-engine] Merged \(recordType)/\(recordId)\(pass > 0 ? " (pass \(pass + 1))" : "")")
+                    } else {
+                        failedRecords.append(record)
+                    }
+                } catch {
+                    failedRecords.append(record)
                 }
-            } catch {
-                retryRecords.append(record)
             }
-        }
 
-        // Second pass: retry records that returned false or threw (parents should exist now)
-        if !retryRecords.isEmpty {
-            Logger.shared.debug(.sync, "[sync-engine] Retrying \(retryRecords.count) records from first pass")
-        }
-        for record in retryRecords {
-            let recordId = record.recordID.recordName
-            let recordType = record.recordType
-            do {
-                let merged = try mapper.mergeIncoming(record)
-                if merged {
-                    downloaded += 1
-                    Logger.shared.debug(.sync, "[sync-engine] Merged (retry) \(recordType)/\(recordId)")
-                } else {
-                    Logger.shared.warn(.sync, "[sync-engine] Record not merged after retry: \(recordType)/\(recordId)")
+            pendingRecords = failedRecords
+
+            if mergedThisPass == 0 {
+                for record in pendingRecords {
+                    Logger.shared.error(.sync, "[sync-engine] Failed to merge \(record.recordType)/\(record.recordID.recordName) after \(pass + 1) passes")
                 }
-            } catch {
-                Logger.shared.error(.sync, "[sync-engine] Failed to merge \(recordType)/\(recordId) after retry", error: error)
+                break
+            }
+
+            if !pendingRecords.isEmpty {
+                Logger.shared.debug(.sync, "[sync-engine] Pass \(pass + 1) merged \(mergedThisPass), retrying \(pendingRecords.count) remaining")
             }
         }
 
@@ -344,6 +354,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
             do {
                 try mapper.deleteLocalRecord(id: recordId)
                 downloaded += 1
+                changedTypes.insert(recordType)
                 Logger.shared.debug(.sync, "[sync-engine] Deleted \(recordType)/\(recordId)")
             } catch {
                 Logger.shared.error(.sync, "[sync-engine] Failed to delete \(recordType)/\(recordId)", error: error)
@@ -352,6 +363,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
         lock.lock()
         syncDownloaded += downloaded
+        syncChangedRecordTypes.formUnion(changedTypes)
         lock.unlock()
     }
 
@@ -418,15 +430,17 @@ final class CKSyncEngineManager: @unchecked Sendable {
         syncDownloaded = 0
         syncUploaded = 0
         syncConflicts = 0
+        syncChangedRecordTypes = []
         lock.unlock()
     }
 
-    private func collectSyncStats() -> LastSyncStats {
+    private func collectSyncStats() -> (stats: LastSyncStats, changedRecordTypes: Set<String>) {
         lock.lock()
         let stats = LastSyncStats(uploaded: syncUploaded, downloaded: syncDownloaded, conflicts: syncConflicts)
+        let changed = syncChangedRecordTypes
         lastSyncTime = Date()
         lock.unlock()
-        return stats
+        return (stats, changed)
     }
 }
 
@@ -456,10 +470,14 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
                 SyncSessionGuard.validateAndRestore(snapshot: snapshot)
             }
             currentSnapshot = nil
-            let stats = collectSyncStats()
+            let (stats, changedRecordTypes) = collectSyncStats()
             metadataStore.updateSyncMetadata(stats: stats)
             await MainActor.run {
-                NotificationCenter.default.post(name: .syncCompleted, object: nil)
+                NotificationCenter.default.post(
+                    name: .syncCompleted,
+                    object: nil,
+                    userInfo: ["changedRecordTypes": changedRecordTypes]
+                )
             }
 
         case .willSendChanges, .didSendChanges:

@@ -48,16 +48,12 @@ final class GymStore {
             let dbQueue = try DatabaseManager.shared.database()
             let now = ISO8601DateFormatter().string(from: Date())
             let gymId = IDGenerator.generate()
+            let isDefault = gyms.filter({ !$0.isDeleted }).isEmpty
             try dbQueue.write { db in
-                // If no active gyms exist, make this the default
-                let activeCount = try Int.fetchOne(
-                    db,
-                    sql: "SELECT COUNT(*) FROM gyms WHERE deleted_at IS NULL"
-                ) ?? 0
                 let row = GymRow(
                     id: gymId,
                     name: name,
-                    isDefault: activeCount == 0 ? 1 : 0,
+                    isDefault: isDefault ? 1 : 0,
                     deletedAt: nil,
                     createdAt: now,
                     updatedAt: now
@@ -65,7 +61,9 @@ final class GymStore {
                 try row.insert(db)
             }
             CKSyncEngineManager.notifySave(recordType: "Gym", recordID: gymId)
-            loadGyms()
+            let newGym = Gym(id: gymId, name: name, isDefault: isDefault, deletedAt: nil, createdAt: now, updatedAt: now)
+            gyms.append(newGym)
+            lastError = nil
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to create gym", error: error)

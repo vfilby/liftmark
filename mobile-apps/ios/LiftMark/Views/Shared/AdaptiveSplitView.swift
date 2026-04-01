@@ -21,9 +21,14 @@ struct AdaptiveSplitView<Sidebar: View, Detail: View, Compact: View>: View {
         self.compact = compact()
     }
 
+    /// Minimum width required to show the split layout.
+    /// Below this threshold, the compact layout is used even on iPad
+    /// (e.g., iPad split-screen at 1/3 width, iPad mini portrait).
+    private static var splitMinWidth: CGFloat { 500 }
+
     var body: some View {
-        if horizontalSizeClass == .regular {
-            GeometryReader { geometry in
+        GeometryReader { geometry in
+            if horizontalSizeClass == .regular && geometry.size.width >= Self.splitMinWidth {
                 HStack(spacing: 0) {
                     sidebar
                         .frame(width: geometry.size.width * 0.4)
@@ -31,9 +36,9 @@ struct AdaptiveSplitView<Sidebar: View, Detail: View, Compact: View>: View {
                     detail
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            } else {
+                compact
             }
-        } else {
-            compact
         }
     }
 }

@@ -7,6 +7,7 @@ final class SessionStore {
     private(set) var activeSession: WorkoutSession?
     private(set) var isLoading = false
     private(set) var lastError: Error?
+    private(set) var bestWeights: [String: (weight: Double, reps: Int, unit: String)] = [:]
     private let repository = SessionRepository()
 
     func clearError() {
@@ -20,9 +21,18 @@ final class SessionStore {
             sessions = try repository.getCompleted()
             activeSession = try repository.getActiveSession()
             lastError = nil
+            loadBestWeights()
         } catch {
             lastError = error
             Logger.shared.error(.database, "Failed to load sessions", error: error)
+        }
+    }
+
+    func loadBestWeights() {
+        do {
+            bestWeights = try repository.getExerciseBestWeightsNormalized()
+        } catch {
+            Logger.shared.error(.database, "Failed to load best weights", error: error)
         }
     }
 

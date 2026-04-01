@@ -67,11 +67,21 @@ struct LiftMarkApp: App {
                         break
                     }
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .syncCompleted)) { _ in
-                    planStore.loadPlans()
-                    sessionStore.loadSessions()
-                    settingsStore.loadSettings()
-                    gymStore.loadGyms()
+                .onReceive(NotificationCenter.default.publisher(for: .syncCompleted)) { notification in
+                    let changed = notification.userInfo?["changedRecordTypes"] as? Set<String> ?? []
+                    // Only reload stores affected by the sync
+                    if changed.isEmpty || !changed.isDisjoint(with: ["WorkoutPlan", "PlannedExercise", "PlannedSet"]) {
+                        planStore.loadPlans()
+                    }
+                    if changed.isEmpty || !changed.isDisjoint(with: ["WorkoutSession", "SessionExercise", "SessionSet"]) {
+                        sessionStore.loadSessions()
+                    }
+                    if changed.isEmpty || changed.contains("UserSettings") {
+                        settingsStore.loadSettings()
+                    }
+                    if changed.isEmpty || !changed.isDisjoint(with: ["Gym", "GymEquipment"]) {
+                        gymStore.loadGyms()
+                    }
                 }
                 .onOpenURL { url in
                     handleIncomingURL(url)
