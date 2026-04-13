@@ -210,6 +210,7 @@ struct ActiveWorkoutView: View {
                                     },
                                     onDismissRest: {
                                         activeRestTimer = nil
+                                        ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
                                     },
                                     restTimerGeneration: restTimerGeneration
                                 )
@@ -246,6 +247,7 @@ struct ActiveWorkoutView: View {
                                     },
                                     onDismissRest: {
                                         activeRestTimer = nil
+                                        ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
                                     },
                                     restTimerGeneration: restTimerGeneration
                                 )
@@ -336,7 +338,8 @@ struct ActiveWorkoutView: View {
            settingsStore.settings?.autoStartRestTimer == true {
             activeRestTimer = RestTimerState(seconds: rest)
             restTimerGeneration += 1
-            let nextExercise = session.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
+            let updatedSession = sessionStore.activeSession
+            let nextExercise = updatedSession?.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
             ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings, restTimer: (remainingSeconds: rest, nextExercise: nextExercise))
         } else {
             ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)

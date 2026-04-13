@@ -108,8 +108,9 @@ struct RestTimerView: View {
             }
         }
 
-        if displayRemaining <= 0 {
+        if displayRemaining <= 0 && isRunning {
             stopTimer()
+            onSkip()
         }
     }
 
