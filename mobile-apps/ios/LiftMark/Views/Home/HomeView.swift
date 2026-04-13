@@ -129,24 +129,26 @@ struct HomeView: View {
                     }
                 }
                 .accessibilityIdentifier("recent-plans")
-
-                // Create Plan Button (inside ScrollView, above tab bar)
-                Button {
-                    showImport = true
-                } label: {
-                    Label("Create Plan", systemImage: "plus")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(LiftMarkTheme.primary)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                }
-                .accessibilityIdentifier("button-import-workout")
             }
             .padding()
             .frame(maxWidth: isRegularWidth ? 800 : .infinity)
             .frame(maxWidth: .infinity)
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                showImport = true
+            } label: {
+                Label("Create Plan", systemImage: "plus")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(LiftMarkTheme.primary)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+            }
+            .accessibilityIdentifier("button-import-workout")
+            .padding(.horizontal)
+            .padding(.bottom, LiftMarkTheme.spacingSM)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-screen")

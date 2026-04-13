@@ -217,6 +217,7 @@ class ActionAdapter {
     private func executeTap(_ action: TestAction) throws {
         if let target = action.target {
             if let el = waitForAnyElement(byId: target, timeout: 5) {
+                scrollToHittable(el)
                 el.tap()
                 return
             }
@@ -224,9 +225,21 @@ class ActionAdapter {
         } else if let text = action.text {
             let el = element(byText: text)
             XCTAssertTrue(el.waitForExistence(timeout: 5), "Text '\(text)' not found for tap")
+            scrollToHittable(el)
             el.tap()
         } else {
             throw ActionError.missingSelector(action.action)
+        }
+    }
+
+    /// Scrolls the nearest scroll view until the element becomes hittable.
+    private func scrollToHittable(_ element: XCUIElement, maxAttempts: Int = 5) {
+        guard !element.isHittable else { return }
+        let scrollView = app.scrollViews.firstMatch
+        guard scrollView.exists else { return }
+        for _ in 0..<maxAttempts {
+            scrollView.swipeUp()
+            if element.isHittable { return }
         }
     }
 
@@ -423,6 +436,7 @@ class ActionAdapter {
                     XCTFail("Expected '\(desc)' to be visible")
                     return
                 }
+                scrollToHittable(el)
                 XCTAssertTrue(el.isHittable, "Expected '\(desc)' to be visible (hittable)")
             } else {
                 let el = try resolveElement(action)
@@ -431,6 +445,7 @@ class ActionAdapter {
                     XCTFail("Expected '\(desc)' to be visible but not found")
                     return
                 }
+                scrollToHittable(el)
                 XCTAssertTrue(el.isHittable, "Expected '\(desc)' to be visible (hittable)")
             }
 
@@ -723,6 +738,7 @@ class ActionAdapter {
             XCTFail("button-import-workout not found for runFixture")
             return
         }
+        scrollToHittable(importButton)
         importButton.tap()
 
         guard let inputMarkdown = waitForAnyElement(byId: "input-markdown", timeout: 10) else {
