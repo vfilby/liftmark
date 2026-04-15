@@ -1701,3 +1701,120 @@ describe('Duplicate Exercise Name Warning', () => {
     expect(result.data?.exercises.length).toBe(2);
   });
 });
+
+// MARK: - DESCRIPTION_CONTAINS_LIST warning
+
+describe('DESCRIPTION_CONTAINS_LIST warning', () => {
+  it('emits warning when description has comma-separated list (4+ items)', () => {
+    const md = `# Upper Push
+Warmup: spin, jumping jacks, banded pull-a-parts, push ups
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(true);
+  });
+
+  it('emits warning when description has bullet points', () => {
+    const md = `# Upper Push
+- spin for 5 min
+- jumping jacks
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(true);
+  });
+
+  it('emits warning when description has numbered list', () => {
+    const md = `# Upper Push
+1. spin for 5 minutes warming up
+2. jumping jacks for a minute
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(true);
+  });
+
+  it('does not emit warning when description is short prose', () => {
+    const md = `# Upper Push
+Focus on form today.
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(false);
+  });
+
+  it('does not emit warning when description is prose with only 2 commas', () => {
+    const md = `# Upper Push
+Today we focus on form, tempo, and breathing throughout the workout.
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(false);
+  });
+
+  it('does not emit warning when there is no description', () => {
+    const md = `# Upper Push
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(false);
+  });
+
+  it('does not emit warning when description is shorter than 20 chars', () => {
+    const md = `# Upper Push
+a, b, c, d
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('list-shaped content'))).toBe(false);
+  });
+
+  it('includes description preview in warning message', () => {
+    const md = `# Upper Push
+Warmup: spin, jumping jacks, banded pull-a-parts, push ups
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    const warning = result.warnings.find((w) => w.includes('list-shaped content'));
+    expect(warning).toBeDefined();
+    expect(warning).toContain('Warmup: spin, jumping jacks');
+  });
+
+  it('truncates long previews with ellipsis', () => {
+    const longList = Array.from({ length: 20 }, (_, i) => `item${i}`).join(', ');
+    const md = `# Upper Push
+${longList}
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    const warning = result.warnings.find((w) => w.includes('list-shaped content'));
+    expect(warning).toBeDefined();
+    expect(warning).toContain('...');
+  });
+
+  it('preserves description in parsed output even when warning fires', () => {
+    const md = `# Upper Push
+Warmup: spin, jumping jacks, banded pull-a-parts, push ups
+
+## Bench Press
+- 135 x 5`;
+    const result = parseWorkout(md);
+    expect(result.success).toBe(true);
+    expect(result.data?.description).toContain('spin, jumping jacks');
+  });
+});

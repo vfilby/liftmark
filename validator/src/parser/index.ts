@@ -311,12 +311,43 @@ function parseWorkoutSection(context: ParseContext, headerLine: ParsedLine): Wor
     context.currentIndex += 1;
   }
 
+  const notes = noteLines.length === 0 ? null : noteLines.join('\n');
+
+  // Detect list-shaped content in the workout description.
+  // Triggers on: bullet-prefixed lines (- or *), numbered lists (1., 1)), or
+  // lines with 3+ commas (4+ comma-separated items). Neutral warning — the
+  // agent decides whether the list is intentional prose or misplaced structure.
+  if (notes && notes.length >= 20) {
+    const listLine = findListShapedLine(noteLines);
+    if (listLine) {
+      const preview = listLine.length > 80 ? `${listLine.slice(0, 77)}...` : listLine;
+      context.warnings.push({
+        line: headerLine.lineNumber,
+        message: `Workout description contains list-shaped content ("${preview}"). Only structured exercises are tracked — freeform description text is not.`,
+        code: 'DESCRIPTION_CONTAINS_LIST',
+      });
+    }
+  }
+
   return {
     name,
     tags,
     defaultWeightUnit,
-    notes: noteLines.length === 0 ? null : noteLines.join('\n'),
+    notes,
   };
+}
+
+/// Returns the first line that looks list-shaped, or null if none.
+function findListShapedLine(lines: string[]): string | null {
+  for (const line of lines) {
+    // Bullet list: starts with `- ` or `* `
+    if (/^[-*]\s+/.test(line)) return line;
+    // Numbered list: `1.` or `1)` followed by space
+    if (/^\d+[.)]\s+/.test(line)) return line;
+    // 3+ commas (4+ items) on a single line
+    if ((line.match(/,/g) || []).length >= 3) return line;
+  }
+  return null;
 }
 
 function parseTagsMetadata(value: string): string[] {
