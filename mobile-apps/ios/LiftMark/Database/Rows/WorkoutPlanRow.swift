@@ -67,15 +67,7 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var id: String
     var templateExerciseId: String
     var orderIndex: Int
-    var targetWeight: Double?
-    var targetWeightUnit: String?
-    var targetReps: Int?
-    var targetTime: Int?
-    var targetDistance: Double?
-    var targetDistanceUnit: String?
-    var targetRpe: Int?
     var restSeconds: Int?
-    var tempo: String?
     var isDropset: Int // SQLite boolean
     var isPerSide: Int // SQLite boolean
     var isAmrap: Int // SQLite boolean
@@ -86,15 +78,7 @@ struct PlannedSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case id
         case templateExerciseId = "template_exercise_id"
         case orderIndex = "order_index"
-        case targetWeight = "target_weight"
-        case targetWeightUnit = "target_weight_unit"
-        case targetReps = "target_reps"
-        case targetTime = "target_time"
-        case targetDistance = "target_distance"
-        case targetDistanceUnit = "target_distance_unit"
-        case targetRpe = "target_rpe"
         case restSeconds = "rest_seconds"
-        case tempo
         case isDropset = "is_dropset"
         case isPerSide = "is_per_side"
         case isAmrap = "is_amrap"

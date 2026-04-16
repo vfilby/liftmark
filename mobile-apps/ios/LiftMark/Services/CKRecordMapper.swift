@@ -198,7 +198,7 @@ final class CKRecordMapper {
         if let u = ps.targetDistanceUnit { record["targetDistanceUnit"] = u as CKRecordValue }
         if let rpe = ps.targetRpe { record["targetRpe"] = Double(rpe) as CKRecordValue }
         if let r = ps.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
-        if let t = ps.tempo { record["tempo"] = t as CKRecordValue }
+        // tempo is deprecated in LMWF and not synced to CloudKit — kept locally only
         if let n = ps.notes { record["notes"] = n as CKRecordValue }
         if let d = parseDate(ps.updatedAt) { record["updatedAt"] = d as CKRecordValue }
         return record
@@ -248,7 +248,7 @@ final class CKRecordMapper {
         setSessionSetTargetFields(on: record, ss: ss)
         setSessionSetActualFields(on: record, ss: ss)
         setOptionalString(on: record, key: "notes", value: ss.notes)
-        setOptionalString(on: record, key: "tempo", value: ss.tempo)
+        // tempo is deprecated in LMWF and not synced to CloudKit — kept locally only
         setOptionalString(on: record, key: "side", value: ss.side)
         setOptionalDate(on: record, key: "completedAt", isoString: ss.completedAt)
         setOptionalDate(on: record, key: "updatedAt", isoString: ss.updatedAt)

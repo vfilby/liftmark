@@ -10,7 +10,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 11
+    private static let currentSchemaVersion = 12
 
     private init() {}
 
@@ -145,6 +145,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 11 {
                 try migrateToV11(db)
+            }
+
+            if currentVersion < 12 {
+                try migrateToV12(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -596,5 +600,155 @@ final class DatabaseManager: @unchecked Sendable {
         // Re-create indexes that were on the old table
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
+    }
+
+    // MARK: - V12: SetMeasurement — decouple metrics from set rows
+
+    private func migrateToV12(_ db: Database) throws {
+        // 1. Create set_measurements table
+        try db.execute(sql: """
+            CREATE TABLE set_measurements (
+                id TEXT PRIMARY KEY,
+                set_id TEXT NOT NULL,
+                parent_type TEXT NOT NULL,
+                role TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                value REAL NOT NULL,
+                unit TEXT,
+                group_index INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT
+            )
+        """)
+        try db.execute(sql: "CREATE INDEX idx_set_measurements_set ON set_measurements(set_id, parent_type)")
+        try db.execute(sql: "CREATE INDEX idx_set_measurements_group ON set_measurements(set_id, group_index)")
+
+        // 2. Migrate session_sets target/actual columns → set_measurements
+        let sessionSets = try Row.fetchAll(db, sql: "SELECT * FROM session_sets")
+        for row in sessionSets {
+            guard let setId: String = row["id"] else { continue }
+            let updatedAt: String? = row["updated_at"]
+
+            // Target measurements
+            if let w: Double = row["target_weight"] {
+                let unit: String? = row["target_weight_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
+            }
+            if let r: Int = row["target_reps"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
+            }
+            if let t: Int = row["target_time"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
+            }
+            if let d: Double = row["target_distance"] {
+                let unit: String? = row["target_distance_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
+            }
+            if let rpe: Int = row["target_rpe"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
+            }
+
+            // Actual measurements
+            if let w: Double = row["actual_weight"] {
+                let unit: String? = row["actual_weight_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
+            }
+            if let r: Int = row["actual_reps"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
+            }
+            if let t: Int = row["actual_time"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
+            }
+            if let d: Double = row["actual_distance"] {
+                let unit: String? = row["actual_distance_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
+            }
+            if let rpe: Int = row["actual_rpe"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
+            }
+        }
+
+        // 3. Migrate template_sets target columns → set_measurements
+        let templateSets = try Row.fetchAll(db, sql: "SELECT * FROM template_sets")
+        for row in templateSets {
+            guard let setId: String = row["id"] else { continue }
+            let updatedAt: String? = row["updated_at"]
+
+            if let w: Double = row["target_weight"] {
+                let unit: String? = row["target_weight_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
+            }
+            if let r: Int = row["target_reps"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
+            }
+            if let t: Int = row["target_time"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
+            }
+            if let d: Double = row["target_distance"] {
+                let unit: String? = row["target_distance_unit"]
+                try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
+            }
+            if let rpe: Int = row["target_rpe"] {
+                try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
+            }
+        }
+
+        // 4. Rebuild session_sets without target/actual/drop columns
+        try db.execute(sql: """
+            CREATE TABLE session_sets_new (
+                id TEXT PRIMARY KEY,
+                session_exercise_id TEXT NOT NULL,
+                order_index INTEGER NOT NULL,
+                rest_seconds INTEGER,
+                completed_at TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                notes TEXT,
+                is_dropset INTEGER DEFAULT 0,
+                is_per_side INTEGER DEFAULT 0,
+                is_amrap INTEGER DEFAULT 0,
+                side TEXT,
+                updated_at TEXT,
+                FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE
+            )
+        """)
+        try db.execute(sql: """
+            INSERT INTO session_sets_new (id, session_exercise_id, order_index, rest_seconds, completed_at, status, notes, is_dropset, is_per_side, is_amrap, side, updated_at)
+            SELECT id, session_exercise_id, order_index, rest_seconds, completed_at, status, notes, is_dropset, is_per_side, 0, side, updated_at
+            FROM session_sets
+        """)
+        try db.execute(sql: "DROP TABLE session_sets")
+        try db.execute(sql: "ALTER TABLE session_sets_new RENAME TO session_sets")
+        try db.execute(sql: "CREATE INDEX idx_session_sets_exercise ON session_sets(session_exercise_id)")
+
+        // 5. Rebuild template_sets without target columns
+        try db.execute(sql: """
+            CREATE TABLE template_sets_new (
+                id TEXT PRIMARY KEY,
+                template_exercise_id TEXT NOT NULL,
+                order_index INTEGER NOT NULL,
+                rest_seconds INTEGER,
+                is_dropset INTEGER DEFAULT 0,
+                is_per_side INTEGER DEFAULT 0,
+                is_amrap INTEGER DEFAULT 0,
+                notes TEXT,
+                updated_at TEXT,
+                FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
+            )
+        """)
+        try db.execute(sql: """
+            INSERT INTO template_sets_new (id, template_exercise_id, order_index, rest_seconds, is_dropset, is_per_side, is_amrap, notes, updated_at)
+            SELECT id, template_exercise_id, order_index, rest_seconds, is_dropset, is_per_side, is_amrap, notes, updated_at
+            FROM template_sets
+        """)
+        try db.execute(sql: "DROP TABLE template_sets")
+        try db.execute(sql: "ALTER TABLE template_sets_new RENAME TO template_sets")
+        try db.execute(sql: "CREATE INDEX idx_template_sets_exercise ON template_sets(template_exercise_id)")
+    }
+
+    private func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {
+        let id = UUID().uuidString
+        try db.execute(
+            sql: "INSERT INTO set_measurements (id, set_id, parent_type, role, kind, value, unit, group_index, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+            arguments: [id, setId, parentType, role, kind, value, unit, updatedAt]
+        )
     }
 }

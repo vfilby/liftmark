@@ -71,32 +71,13 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var id: String
     var sessionExerciseId: String
     var orderIndex: Int
-    var parentSetId: String?
-    var dropSequence: Int?
-    // Target values
-    var targetWeight: Double?
-    var targetWeightUnit: String?
-    var targetReps: Int?
-    var targetTime: Int?
-    var targetDistance: Double?
-    var targetDistanceUnit: String?
-    var targetRpe: Int?
     var restSeconds: Int?
-    // Actual values
-    var actualWeight: Double?
-    var actualWeightUnit: String?
-    var actualReps: Int?
-    var actualTime: Int?
-    var actualDistance: Double?
-    var actualDistanceUnit: String?
-    var actualRpe: Int?
-    // Metadata
     var completedAt: String?
     var status: String
     var notes: String?
-    var tempo: String?
     var isDropset: Int // SQLite boolean
     var isPerSide: Int // SQLite boolean
+    var isAmrap: Int // SQLite boolean
     var side: String?
     var updatedAt: String?
 
@@ -104,30 +85,42 @@ struct SessionSetRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case id
         case sessionExerciseId = "session_exercise_id"
         case orderIndex = "order_index"
-        case parentSetId = "parent_set_id"
-        case dropSequence = "drop_sequence"
-        case targetWeight = "target_weight"
-        case targetWeightUnit = "target_weight_unit"
-        case targetReps = "target_reps"
-        case targetTime = "target_time"
-        case targetDistance = "target_distance"
-        case targetDistanceUnit = "target_distance_unit"
-        case targetRpe = "target_rpe"
         case restSeconds = "rest_seconds"
-        case actualWeight = "actual_weight"
-        case actualWeightUnit = "actual_weight_unit"
-        case actualReps = "actual_reps"
-        case actualTime = "actual_time"
-        case actualDistance = "actual_distance"
-        case actualDistanceUnit = "actual_distance_unit"
-        case actualRpe = "actual_rpe"
         case completedAt = "completed_at"
         case status
         case notes
-        case tempo
         case isDropset = "is_dropset"
         case isPerSide = "is_per_side"
+        case isAmrap = "is_amrap"
         case side
+        case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - SetMeasurementRow (GRDB Record)
+
+struct SetMeasurementRow: Codable, FetchableRecord, PersistableRecord, Hashable {
+    static let databaseTableName = "set_measurements"
+
+    var id: String
+    var setId: String
+    var parentType: String // "session" or "planned"
+    var role: String       // "target" or "actual"
+    var kind: String       // "weight", "reps", "time", "distance", "rpe"
+    var value: Double
+    var unit: String?      // "lbs", "kg", "m", "km", "mi", "ft", "yd", "s" — nil for dimensionless
+    var groupIndex: Int
+    var updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case setId = "set_id"
+        case parentType = "parent_type"
+        case role
+        case kind
+        case value
+        case unit
+        case groupIndex = "group_index"
         case updatedAt = "updated_at"
     }
 }
