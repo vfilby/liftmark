@@ -94,15 +94,7 @@ struct WorkoutPlanRepository {
                         id: set.id,
                         templateExerciseId: exercise.id,
                         orderIndex: set.orderIndex,
-                        targetWeight: set.targetWeight,
-                        targetWeightUnit: set.targetWeightUnit?.rawValue,
-                        targetReps: set.targetReps,
-                        targetTime: set.targetTime,
-                        targetDistance: set.targetDistance,
-                        targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                        targetRpe: set.targetRpe,
                         restSeconds: set.restSeconds,
-                        tempo: set.tempo,
                         isDropset: set.isDropset ? 1 : 0,
                         isPerSide: set.isPerSide ? 1 : 0,
                         isAmrap: set.isAmrap ? 1 : 0,
@@ -110,6 +102,15 @@ struct WorkoutPlanRepository {
                         updatedAt: now
                     )
                     try setRow.insert(db)
+
+                    // Insert measurements
+                    for entry in set.entries {
+                        if let target = entry.target {
+                            for mRow in target.toMeasurementRows(setId: set.id, parentType: "planned", role: "target", groupIndex: entry.groupIndex, now: now) {
+                                try mRow.insert(db)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -142,6 +143,11 @@ struct WorkoutPlanRepository {
         }
 
         try dbQueue.write { db in
+            // Delete measurements for old sets (no CASCADE)
+            for setId in oldSetIds {
+                try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
+            }
+
             // Delete existing exercises (cascades to sets)
             try db.execute(
                 sql: "DELETE FROM template_exercises WHERE workout_template_id = ?",
@@ -164,7 +170,7 @@ struct WorkoutPlanRepository {
             )
             try planRow.update(db)
 
-            // Re-insert exercises and sets
+            // Re-insert exercises, sets, and measurements
             let now = planRow.updatedAt
             for exercise in plan.exercises {
                 let exerciseRow = PlannedExerciseRow(
@@ -186,15 +192,7 @@ struct WorkoutPlanRepository {
                         id: set.id,
                         templateExerciseId: exercise.id,
                         orderIndex: set.orderIndex,
-                        targetWeight: set.targetWeight,
-                        targetWeightUnit: set.targetWeightUnit?.rawValue,
-                        targetReps: set.targetReps,
-                        targetTime: set.targetTime,
-                        targetDistance: set.targetDistance,
-                        targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                        targetRpe: set.targetRpe,
                         restSeconds: set.restSeconds,
-                        tempo: set.tempo,
                         isDropset: set.isDropset ? 1 : 0,
                         isPerSide: set.isPerSide ? 1 : 0,
                         isAmrap: set.isAmrap ? 1 : 0,
@@ -202,6 +200,14 @@ struct WorkoutPlanRepository {
                         updatedAt: now
                     )
                     try setRow.insert(db)
+
+                    for entry in set.entries {
+                        if let target = entry.target {
+                            for mRow in target.toMeasurementRows(setId: set.id, parentType: "planned", role: "target", groupIndex: entry.groupIndex, now: now) {
+                                try mRow.insert(db)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -240,6 +246,10 @@ struct WorkoutPlanRepository {
             return (exIds, sIds)
         }
         try dbQueue.write { db in
+            // Delete measurements for sets (no CASCADE)
+            for setId in setIds {
+                try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
+            }
             try db.execute(sql: "DELETE FROM workout_templates WHERE id = ?", arguments: [id])
         }
         var changes: [SyncChange] = []
@@ -281,23 +291,32 @@ struct WorkoutPlanRepository {
             .fetchAll(db)
         let setsByExerciseId = Dictionary(grouping: allSetRows, by: \.templateExerciseId)
 
+        // Batch-fetch all measurements for these sets
+        let setIds = allSetRows.map(\.id)
+        let allMeasurements: [SetMeasurementRow]
+        if !setIds.isEmpty {
+            allMeasurements = try SetMeasurementRow
+                .filter(setIds.contains(Column("set_id")))
+                .filter(Column("parent_type") == "planned")
+                .order(Column("group_index"), Column("role"), Column("kind"))
+                .fetchAll(db)
+        } else {
+            allMeasurements = []
+        }
+        let measurementsBySetId = Dictionary(grouping: allMeasurements, by: \.setId)
+
         let exercises = exerciseRows.map { exerciseRow -> PlannedExercise in
             let setRows = setsByExerciseId[exerciseRow.id] ?? []
 
-            let sets = setRows.map { setRow in
-                PlannedSet(
+            let sets = setRows.map { setRow -> PlannedSet in
+                let measurements = measurementsBySetId[setRow.id] ?? []
+                let entries = SetEntry.buildEntries(from: measurements)
+                return PlannedSet(
                     id: setRow.id,
                     plannedExerciseId: setRow.templateExerciseId,
                     orderIndex: setRow.orderIndex,
-                    targetWeight: setRow.targetWeight,
-                    targetWeightUnit: setRow.targetWeightUnit.flatMap { WeightUnit(rawValue: $0) },
-                    targetReps: setRow.targetReps,
-                    targetTime: setRow.targetTime,
-                    targetDistance: setRow.targetDistance,
-                    targetDistanceUnit: setRow.targetDistanceUnit.flatMap { DistanceUnit(rawValue: $0) },
-                    targetRpe: setRow.targetRpe,
+                    entries: entries,
                     restSeconds: setRow.restSeconds,
-                    tempo: setRow.tempo,
                     isDropset: setRow.isDropset != 0,
                     isPerSide: setRow.isPerSide != 0,
                     isAmrap: setRow.isAmrap != 0,

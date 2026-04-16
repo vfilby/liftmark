@@ -80,7 +80,7 @@ final class DatabaseManagerTests: XCTestCase {
         let version = try db.read { db in
             try Int.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
         }
-        XCTAssertEqual(version, 11, "Schema version should be 11 after all migrations")
+        XCTAssertEqual(version, 12, "Schema version should be 11 after all migrations")
     }
 
     func testSchemaVersionHasExactlyOneRow() throws {
@@ -224,7 +224,7 @@ final class DatabaseManagerTests: XCTestCase {
         let version = try db.read { db in
             try Int.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
         }
-        XCTAssertEqual(version, 11)
+        XCTAssertEqual(version, 12)
     }
 
     // MARK: - Close

@@ -170,13 +170,21 @@ final class CKRecordMapperTests: XCTestCase {
 
         let original = PlannedSetRow(
             id: "ps-1", templateExerciseId: "pe-ps", orderIndex: 0,
-            targetWeight: 225.0, targetWeightUnit: "lbs", targetReps: 5,
-            targetTime: nil, targetRpe: 8, restSeconds: 180,
-            isDropset: 1, isPerSide: 0, isAmrap: 1, notes: "Go heavy", updatedAt: ts
+            restSeconds: 180, isDropset: 1, isPerSide: 0, isAmrap: 1,
+            notes: "Go heavy", updatedAt: ts
         )
-        try db.write { try original.insert($0) }
+        // Insert measurements alongside the set row
+        let measurements = [
+            SetMeasurementRow(id: "m-ps-w", setId: "ps-1", parentType: "planned", role: "target", kind: "weight", value: 225.0, unit: "lbs", groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ps-r", setId: "ps-1", parentType: "planned", role: "target", kind: "reps", value: 5, unit: nil, groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ps-rpe", setId: "ps-1", parentType: "planned", role: "target", kind: "rpe", value: 8, unit: nil, groupIndex: 0, updatedAt: ts),
+        ]
+        try db.write { db in
+            try original.insert(db)
+            for m in measurements { try m.insert(db) }
+        }
 
-        let record = mapper.toCKRecord(original, zoneID: zoneID)
+        let record = mapper.toCKRecord(original, measurements: measurements, zoneID: zoneID)
         XCTAssertEqual(record["targetWeight"] as? Double, 225.0)
         XCTAssertEqual(record["targetReps"] as? Int64, 5)
         let attrs = record["attributes"] as? [String] ?? []
@@ -184,18 +192,25 @@ final class CKRecordMapperTests: XCTestCase {
         XCTAssertTrue(attrs.contains("amrap"))
         XCTAssertFalse(attrs.contains("perSide"))
 
-        try db.write { try original.delete($0) }
+        try db.write { db in
+            try original.delete(db)
+            try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = 'ps-1'")
+        }
         let merged = try mapper.mergeIncoming(record)
         XCTAssertTrue(merged)
 
         let fetched = try db.read { try PlannedSetRow.fetchOne($0, key: "ps-1") }
         XCTAssertNotNil(fetched)
-        XCTAssertEqual(fetched?.targetWeight, 225.0)
-        XCTAssertEqual(fetched?.targetReps, 5)
         XCTAssertEqual(fetched?.isDropset, 1)
         XCTAssertEqual(fetched?.isAmrap, 1)
         XCTAssertEqual(fetched?.isPerSide, 0)
         XCTAssertEqual(fetched?.restSeconds, 180)
+        // Verify measurements were recreated
+        let fetchedMeasurements = try db.read {
+            try SetMeasurementRow.filter(Column("set_id") == "ps-1").fetchAll($0)
+        }
+        XCTAssertTrue(fetchedMeasurements.contains { $0.kind == "weight" && $0.value == 225.0 })
+        XCTAssertTrue(fetchedMeasurements.contains { $0.kind == "reps" && $0.value == 5.0 })
     }
 
     // MARK: - Roundtrip: WorkoutSession
@@ -273,17 +288,24 @@ final class CKRecordMapperTests: XCTestCase {
 
         let original = SessionSetRow(
             id: "ss-1", sessionExerciseId: "se-ss", orderIndex: 0,
-            parentSetId: nil, dropSequence: nil,
-            targetWeight: 135.0, targetWeightUnit: "lbs", targetReps: 10,
-            targetTime: nil, targetRpe: 7, restSeconds: 90,
-            actualWeight: 140.0, actualWeightUnit: "lbs", actualReps: 9,
-            actualTime: nil, actualRpe: 8,
-            completedAt: ts, status: "completed", notes: "Easy",
-            tempo: nil, isDropset: 0, isPerSide: 1, side: "left", updatedAt: ts
+            restSeconds: 90, completedAt: ts, status: "completed",
+            notes: "Easy", isDropset: 0, isPerSide: 1, isAmrap: 0,
+            side: "left", updatedAt: ts
         )
-        try db.write { try original.insert($0) }
+        let measurements = [
+            SetMeasurementRow(id: "m-ss-tw", setId: "ss-1", parentType: "session", role: "target", kind: "weight", value: 135.0, unit: "lbs", groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ss-tr", setId: "ss-1", parentType: "session", role: "target", kind: "reps", value: 10, unit: nil, groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ss-trpe", setId: "ss-1", parentType: "session", role: "target", kind: "rpe", value: 7, unit: nil, groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ss-aw", setId: "ss-1", parentType: "session", role: "actual", kind: "weight", value: 140.0, unit: "lbs", groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ss-ar", setId: "ss-1", parentType: "session", role: "actual", kind: "reps", value: 9, unit: nil, groupIndex: 0, updatedAt: ts),
+            SetMeasurementRow(id: "m-ss-arpe", setId: "ss-1", parentType: "session", role: "actual", kind: "rpe", value: 8, unit: nil, groupIndex: 0, updatedAt: ts),
+        ]
+        try db.write { db in
+            try original.insert(db)
+            for m in measurements { try m.insert(db) }
+        }
 
-        let record = mapper.toCKRecord(original, zoneID: zoneID)
+        let record = mapper.toCKRecord(original, measurements: measurements, zoneID: zoneID)
         XCTAssertEqual(record["targetWeight"] as? Double, 135.0)
         XCTAssertEqual(record["actualWeight"] as? Double, 140.0)
         XCTAssertEqual(record["actualReps"] as? Int64, 9)
@@ -292,19 +314,26 @@ final class CKRecordMapperTests: XCTestCase {
         XCTAssertTrue(attrs.contains("perSide"))
         XCTAssertFalse(attrs.contains("dropset"))
 
-        try db.write { try original.delete($0) }
+        try db.write { db in
+            try original.delete(db)
+            try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = 'ss-1'")
+        }
         let merged = try mapper.mergeIncoming(record)
         XCTAssertTrue(merged)
 
         let fetched = try db.read { try SessionSetRow.fetchOne($0, key: "ss-1") }
         XCTAssertNotNil(fetched)
-        XCTAssertEqual(fetched?.targetWeight, 135.0)
-        XCTAssertEqual(fetched?.actualWeight, 140.0)
-        XCTAssertEqual(fetched?.actualReps, 9)
         XCTAssertEqual(fetched?.isPerSide, 1)
         XCTAssertEqual(fetched?.isDropset, 0)
         XCTAssertEqual(fetched?.side, "left")
         XCTAssertEqual(fetched?.status, "completed")
+        // Verify measurements were recreated from CK record
+        let fetchedMeasurements = try db.read {
+            try SetMeasurementRow.filter(Column("set_id") == "ss-1").fetchAll($0)
+        }
+        XCTAssertTrue(fetchedMeasurements.contains { $0.kind == "weight" && $0.role == "target" && $0.value == 135.0 })
+        XCTAssertTrue(fetchedMeasurements.contains { $0.kind == "weight" && $0.role == "actual" && $0.value == 140.0 })
+        XCTAssertTrue(fetchedMeasurements.contains { $0.kind == "reps" && $0.role == "actual" && $0.value == 9.0 })
     }
 
     // MARK: - Roundtrip: UserSettings
@@ -691,7 +720,7 @@ final class CKRecordMapperTests: XCTestCase {
 
             try WorkoutSessionRow(id: sessionId, workoutTemplateId: planId, name: "Active Plan", date: "2026-03-28", status: "in_progress").insert(db)
             try SessionExerciseRow(id: seId, workoutSessionId: sessionId, exerciseName: "Squat", orderIndex: 0, status: "pending").insert(db)
-            try SessionSetRow(id: ssId, sessionExerciseId: seId, orderIndex: 0, status: "pending", isDropset: 0, isPerSide: 0).insert(db)
+            try SessionSetRow(id: ssId, sessionExerciseId: seId, orderIndex: 0, status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0).insert(db)
         }
 
         let protected = mapper.getActiveSessionProtectedIds()

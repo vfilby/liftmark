@@ -158,28 +158,29 @@ struct JsonImportService {
                 // Import sets
                 if let sets = exerciseData["sets"] as? [[String: Any]] {
                     for setData in sets {
+                        let setId = UUID().uuidString
                         try db.execute(sql: """
                             INSERT INTO template_sets (id, template_exercise_id, order_index,
-                                target_weight, target_weight_unit, target_reps, target_time,
-                                target_rpe, rest_seconds, tempo, is_dropset, is_per_side,
-                                is_amrap, notes)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                rest_seconds, is_dropset, is_per_side, is_amrap, notes, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """, arguments: [
-                                UUID().uuidString,
+                                setId,
                                 exerciseId,
                                 setData["orderIndex"] as? Int ?? 0,
-                                setData["targetWeight"] as? Double,
-                                setData["targetWeightUnit"] as? String,
-                                setData["targetReps"] as? Int,
-                                setData["targetTime"] as? Int,
-                                setData["targetRpe"] as? Int,
                                 setData["restSeconds"] as? Int,
-                                setData["tempo"] as? String,
                                 (setData["isDropset"] as? Bool) == true ? 1 : 0,
                                 (setData["isPerSide"] as? Bool) == true ? 1 : 0,
                                 (setData["isAmrap"] as? Bool) == true ? 1 : 0,
-                                setData["notes"] as? String
+                                setData["notes"] as? String,
+                                now
                             ])
+
+                        // Insert target measurements into set_measurements
+                        try insertMeasurementsFromJson(
+                            setData, into: db, setId: setId, parentType: "planned", role: "target",
+                            weightKey: "targetWeight", weightUnitKey: "targetWeightUnit",
+                            repsKey: "targetReps", timeKey: "targetTime", rpeKey: "targetRpe"
+                        )
                     }
                 }
             }
@@ -239,38 +240,40 @@ struct JsonImportService {
                 // Import sets
                 if let sets = exerciseData["sets"] as? [[String: Any]] {
                     for setData in sets {
+                        let setId = UUID().uuidString
                         try db.execute(sql: """
                             INSERT INTO session_sets (id, session_exercise_id, order_index,
-                                parent_set_id, drop_sequence, target_weight,
-                                target_weight_unit, target_reps, target_time, target_rpe,
-                                rest_seconds, actual_weight, actual_weight_unit, actual_reps,
-                                actual_time, actual_rpe, completed_at, status, notes, tempo,
-                                is_dropset, is_per_side)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                rest_seconds, completed_at, status, notes, is_dropset, is_per_side,
+                                is_amrap, side, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """, arguments: [
-                                UUID().uuidString,
+                                setId,
                                 exerciseId,
                                 setData["orderIndex"] as? Int ?? 0,
-                                nil as String?, // parent_set_id
-                                nil as Int?,    // drop_sequence
-                                setData["targetWeight"] as? Double,
-                                setData["targetWeightUnit"] as? String,
-                                setData["targetReps"] as? Int,
-                                setData["targetTime"] as? Int,
-                                setData["targetRpe"] as? Int,
                                 setData["restSeconds"] as? Int,
-                                setData["actualWeight"] as? Double,
-                                setData["actualWeightUnit"] as? String,
-                                setData["actualReps"] as? Int,
-                                setData["actualTime"] as? Int,
-                                setData["actualRpe"] as? Int,
                                 setData["completedAt"] as? String,
                                 setData["status"] as? String ?? "completed",
                                 setData["notes"] as? String,
-                                setData["tempo"] as? String,
                                 (setData["isDropset"] as? Bool) == true ? 1 : 0,
-                                (setData["isPerSide"] as? Bool) == true ? 1 : 0
+                                (setData["isPerSide"] as? Bool) == true ? 1 : 0,
+                                (setData["isAmrap"] as? Bool) == true ? 1 : 0,
+                                setData["side"] as? String,
+                                ISO8601DateFormatter().string(from: Date())
                             ])
+
+                        // Insert target measurements into set_measurements
+                        try insertMeasurementsFromJson(
+                            setData, into: db, setId: setId, parentType: "session", role: "target",
+                            weightKey: "targetWeight", weightUnitKey: "targetWeightUnit",
+                            repsKey: "targetReps", timeKey: "targetTime", rpeKey: "targetRpe"
+                        )
+
+                        // Insert actual measurements into set_measurements
+                        try insertMeasurementsFromJson(
+                            setData, into: db, setId: setId, parentType: "session", role: "actual",
+                            weightKey: "actualWeight", weightUnitKey: "actualWeightUnit",
+                            repsKey: "actualReps", timeKey: "actualTime", rpeKey: "actualRpe"
+                        )
                     }
                 }
             }
@@ -302,5 +305,57 @@ struct JsonImportService {
             ])
 
         result.gymsImported += 1
+    }
+
+    /// Insert measurement rows from JSON set data into set_measurements.
+    /// Each non-nil measurement value (weight, reps, time, rpe) gets its own row.
+    private func insertMeasurementsFromJson(
+        _ setData: [String: Any],
+        into db: Database,
+        setId: String,
+        parentType: String,
+        role: String,
+        weightKey: String,
+        weightUnitKey: String,
+        repsKey: String,
+        timeKey: String,
+        rpeKey: String
+    ) throws {
+        if let weight = setData[weightKey] as? Double {
+            let unit = setData[weightUnitKey] as? String
+            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
+                                  kind: "weight", value: weight, unit: unit)
+        }
+        if let reps = setData[repsKey] as? Int {
+            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
+                                  kind: "reps", value: Double(reps), unit: nil)
+        }
+        if let time = setData[timeKey] as? Int {
+            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
+                                  kind: "time", value: Double(time), unit: "s")
+        }
+        if let rpe = setData[rpeKey] as? Int {
+            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
+                                  kind: "rpe", value: Double(rpe), unit: nil)
+        }
+    }
+
+    private func insertMeasurement(
+        into db: Database,
+        setId: String,
+        parentType: String,
+        role: String,
+        kind: String,
+        value: Double,
+        unit: String?
+    ) throws {
+        try db.execute(
+            sql: """
+                INSERT INTO set_measurements (id, set_id, parent_type, role, kind, value, unit, group_index, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+                """,
+            arguments: [UUID().uuidString, setId, parentType, role, kind, value, unit,
+                        ISO8601DateFormatter().string(from: Date())]
+        )
     }
 }

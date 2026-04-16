@@ -48,17 +48,17 @@ final class CloudKitSyncProtectionTests: XCTestCase {
 
             try SessionSetRow(
                 id: setId1, sessionExerciseId: exerciseId1, orderIndex: 0,
-                status: "pending", isDropset: 0, isPerSide: 0
+                status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
             ).insert(db)
 
             try SessionSetRow(
                 id: setId2, sessionExerciseId: exerciseId1, orderIndex: 1,
-                status: "pending", isDropset: 0, isPerSide: 0
+                status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
             ).insert(db)
 
             try SessionSetRow(
                 id: setId3, sessionExerciseId: exerciseId2, orderIndex: 0,
-                status: "pending", isDropset: 0, isPerSide: 0
+                status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
             ).insert(db)
         }
 
@@ -161,7 +161,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
             try SessionSetRow(
                 id: activeSetId, sessionExerciseId: activeExerciseId, orderIndex: 0,
-                status: "pending", isDropset: 0, isPerSide: 0
+                status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
             ).insert(db)
 
             // Completed session (should be eligible for deletion)
@@ -175,7 +175,7 @@ final class CloudKitSyncProtectionTests: XCTestCase {
             ).insert(db)
             try SessionSetRow(
                 id: completedSetId, sessionExerciseId: completedExerciseId, orderIndex: 0,
-                status: "completed", isDropset: 0, isPerSide: 0
+                status: "completed", isDropset: 0, isPerSide: 0, isAmrap: 0
             ).insert(db)
         }
 

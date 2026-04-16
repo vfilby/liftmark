@@ -230,7 +230,7 @@ final class WorkoutPlanRepositoryTests: XCTestCase {
         XCTAssertEqual(fetchedSet?.targetReps, 5)
         XCTAssertEqual(fetchedSet?.targetRpe, 8)
         XCTAssertEqual(fetchedSet?.restSeconds, 180)
-        XCTAssertEqual(fetchedSet?.tempo, "3-1-1-0")
+        XCTAssertNil(fetchedSet?.tempo) // tempo is deprecated
         XCTAssertTrue(fetchedSet?.isDropset ?? false)
         XCTAssertTrue(fetchedSet?.isPerSide ?? false)
         XCTAssertTrue(fetchedSet?.isAmrap ?? false)

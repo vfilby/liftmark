@@ -159,33 +159,21 @@ struct SessionRepository {
                         id: setId,
                         sessionExerciseId: sessionExerciseId,
                         orderIndex: expandedOrderIndex,
-                        parentSetId: nil,
-                        dropSequence: nil,
-                        targetWeight: set.targetWeight,
-                        targetWeightUnit: set.targetWeightUnit?.rawValue,
-                        targetReps: set.targetReps,
-                        targetTime: set.targetTime,
-                        targetDistance: set.targetDistance,
-                        targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                        targetRpe: set.targetRpe,
                         restSeconds: side == "right" ? set.restSeconds : nil,
-                        actualWeight: nil,
-                        actualWeightUnit: nil,
-                        actualReps: nil,
-                        actualTime: nil,
-                        actualDistance: nil,
-                        actualDistanceUnit: nil,
-                        actualRpe: nil,
                         completedAt: nil,
                         status: SetStatus.pending.rawValue,
                         notes: nil,
-                        tempo: set.tempo,
                         isDropset: set.isDropset ? 1 : 0,
                         isPerSide: 1,
+                        isAmrap: set.isAmrap ? 1 : 0,
                         side: side,
                         updatedAt: now
                     )
                     try setRow.insert(db)
+
+                    // Copy target measurements from planned set
+                    try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+
                     expandedOrderIndex += 1
                 }
             } else {
@@ -195,38 +183,45 @@ struct SessionRepository {
                     id: setId,
                     sessionExerciseId: sessionExerciseId,
                     orderIndex: expandedOrderIndex,
-                    parentSetId: nil,
-                    dropSequence: nil,
-                    targetWeight: set.targetWeight,
-                    targetWeightUnit: set.targetWeightUnit?.rawValue,
-                    targetReps: set.targetReps,
-                    targetTime: set.targetTime,
-                    targetDistance: set.targetDistance,
-                    targetDistanceUnit: set.targetDistanceUnit?.rawValue,
-                    targetRpe: set.targetRpe,
                     restSeconds: set.restSeconds,
-                    actualWeight: nil,
-                    actualWeightUnit: nil,
-                    actualReps: nil,
-                    actualTime: nil,
-                    actualDistance: nil,
-                    actualDistanceUnit: nil,
-                    actualRpe: nil,
                     completedAt: nil,
                     status: SetStatus.pending.rawValue,
                     notes: nil,
-                    tempo: set.tempo,
                     isDropset: set.isDropset ? 1 : 0,
                     isPerSide: set.isPerSide ? 1 : 0,
+                    isAmrap: set.isAmrap ? 1 : 0,
                     side: nil,
                     updatedAt: now
                 )
                 try setRow.insert(db)
+
+                // Copy target measurements from planned set
+                try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+
                 expandedOrderIndex += 1
             }
         }
 
         return createdSetIds
+    }
+
+    /// Copy target measurements from a planned set into session measurements.
+    private func insertMeasurementsFromPlannedSet(
+        _ plannedSet: PlannedSet,
+        sessionSetId: String,
+        now: String,
+        in db: Database
+    ) throws {
+        for entry in plannedSet.entries {
+            if let target = entry.target {
+                for mRow in target.toMeasurementRows(
+                    setId: sessionSetId, parentType: "session",
+                    role: "target", groupIndex: entry.groupIndex, now: now
+                ) {
+                    try mRow.insert(db)
+                }
+            }
+        }
     }
 
     @discardableResult
@@ -294,6 +289,10 @@ struct SessionRepository {
             return (exIds, sIds)
         }
         try dbQueue.write { db in
+            // Delete measurements for sets (no CASCADE)
+            for setId in setIds {
+                try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
+            }
             try db.execute(sql: "DELETE FROM workout_sessions WHERE id = ?", arguments: [id])
         }
         var changes: [SyncChange] = []
@@ -327,12 +326,20 @@ struct SessionRepository {
             let rows = try Row.fetchAll(db, sql: """
                 SELECT
                     se.exercise_name,
-                    MAX(COALESCE(ss.actual_weight, ss.target_weight, 0)) as max_weight,
-                    COALESCE(ss.actual_reps, ss.target_reps, 0) as reps,
-                    COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+                    MAX(COALESCE(mw_actual.value, mw_target.value, 0)) as max_weight,
+                    COALESCE(mr_actual.value, mr_target.value, 0) as reps,
+                    COALESCE(mw_actual.unit, mw_target.unit, 'lbs') as unit
                 FROM session_exercises se
                 JOIN workout_sessions ws ON ws.id = se.workout_session_id
                 JOIN session_sets ss ON ss.session_exercise_id = se.id
+                LEFT JOIN set_measurements mw_actual ON mw_actual.set_id = ss.id
+                    AND mw_actual.parent_type = 'session' AND mw_actual.kind = 'weight' AND mw_actual.role = 'actual'
+                LEFT JOIN set_measurements mw_target ON mw_target.set_id = ss.id
+                    AND mw_target.parent_type = 'session' AND mw_target.kind = 'weight' AND mw_target.role = 'target'
+                LEFT JOIN set_measurements mr_actual ON mr_actual.set_id = ss.id
+                    AND mr_actual.parent_type = 'session' AND mr_actual.kind = 'reps' AND mr_actual.role = 'actual'
+                LEFT JOIN set_measurements mr_target ON mr_target.set_id = ss.id
+                    AND mr_target.parent_type = 'session' AND mr_target.kind = 'reps' AND mr_target.role = 'target'
                 WHERE ws.status = 'completed' AND ss.status = 'completed'
                 GROUP BY se.exercise_name
                 HAVING max_weight > 0
@@ -377,15 +384,29 @@ struct SessionRepository {
         let now = self.now
         let completedAt = status == .completed ? now : nil
         try dbQueue.write { db in
+            // Update set status
             try db.execute(
-                sql: """
-                    UPDATE session_sets
-                    SET actual_weight = ?, actual_weight_unit = ?, actual_reps = ?, actual_time = ?, actual_rpe = ?,
-                        status = ?, completed_at = ?, updated_at = ?
-                    WHERE id = ?
-                """,
-                arguments: [actualWeight, actualWeightUnit?.rawValue, actualReps, actualTime, actualRpe, status.rawValue, completedAt, now, setId]
+                sql: "UPDATE session_sets SET status = ?, completed_at = ?, updated_at = ? WHERE id = ?",
+                arguments: [status.rawValue, completedAt, now, setId]
             )
+
+            // Replace actual measurements
+            try db.execute(
+                sql: "DELETE FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'",
+                arguments: [setId]
+            )
+            let actual = EntryValues(
+                weight: actualWeight.map { MeasuredWeight(value: $0, unit: actualWeightUnit ?? .lbs) },
+                reps: actualReps,
+                time: actualTime,
+                distance: nil,
+                rpe: actualRpe
+            )
+            if !actual.isEmpty {
+                for mRow in actual.toMeasurementRows(setId: setId, parentType: "session", role: "actual", groupIndex: 0, now: now) {
+                    try mRow.insert(db)
+                }
+            }
         }
         return [.save(recordType: "SessionSet", recordID: setId)]
     }
@@ -395,10 +416,29 @@ struct SessionRepository {
         let dbQueue = try dbManager.database()
         let now = self.now
         try dbQueue.write { db in
+            // Update set timestamp
             try db.execute(
-                sql: "UPDATE session_sets SET target_weight = ?, target_reps = ?, target_time = ?, updated_at = ? WHERE id = ?",
-                arguments: [targetWeight, targetReps, targetTime, now, setId]
+                sql: "UPDATE session_sets SET updated_at = ? WHERE id = ?",
+                arguments: [now, setId]
             )
+
+            // Replace target measurements
+            try db.execute(
+                sql: "DELETE FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'target'",
+                arguments: [setId]
+            )
+            let target = EntryValues(
+                weight: targetWeight.map { MeasuredWeight(value: $0, unit: .lbs) },
+                reps: targetReps,
+                time: targetTime,
+                distance: nil,
+                rpe: nil
+            )
+            if !target.isEmpty {
+                for mRow in target.toMeasurementRows(setId: setId, parentType: "session", role: "target", groupIndex: 0, now: now) {
+                    try mRow.insert(db)
+                }
+            }
         }
         return [.save(recordType: "SessionSet", recordID: setId)]
     }
@@ -453,33 +493,31 @@ struct SessionRepository {
                 id: setId,
                 sessionExerciseId: exerciseId,
                 orderIndex: orderIndex,
-                parentSetId: nil,
-                dropSequence: nil,
-                targetWeight: targetWeight,
-                targetWeightUnit: targetWeightUnit?.rawValue,
-                targetReps: targetReps,
-                targetTime: targetTime,
-                targetDistance: nil,
-                targetDistanceUnit: nil,
-                targetRpe: nil,
                 restSeconds: nil,
-                actualWeight: nil,
-                actualWeightUnit: nil,
-                actualReps: nil,
-                actualTime: nil,
-                actualDistance: nil,
-                actualDistanceUnit: nil,
-                actualRpe: nil,
                 completedAt: nil,
                 status: SetStatus.pending.rawValue,
                 notes: nil,
-                tempo: nil,
                 isDropset: 0,
                 isPerSide: 0,
+                isAmrap: 0,
                 side: nil,
                 updatedAt: now
             )
             try row.insert(db)
+
+            // Insert target measurements
+            let target = EntryValues(
+                weight: targetWeight.map { MeasuredWeight(value: $0, unit: targetWeightUnit ?? .lbs) },
+                reps: targetReps,
+                time: targetTime,
+                distance: nil,
+                rpe: nil
+            )
+            if !target.isEmpty {
+                for mRow in target.toMeasurementRows(setId: setId, parentType: "session", role: "target", groupIndex: 0, now: now) {
+                    try mRow.insert(db)
+                }
+            }
         }
         return [.save(recordType: "SessionSet", recordID: setId)]
     }
@@ -506,6 +544,10 @@ struct SessionRepository {
             return rows.compactMap { $0["id"] as String? }
         }
         try dbQueue.write { db in
+            // Delete measurements for sets (no CASCADE)
+            for setId in childSetIds {
+                try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
+            }
             try db.execute(sql: "DELETE FROM session_exercises WHERE id = ?", arguments: [exerciseId])
         }
         var changes: [SyncChange] = []
@@ -520,6 +562,8 @@ struct SessionRepository {
     func deleteSessionSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         try dbQueue.write { db in
+            // Delete measurements first (no CASCADE)
+            try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
             try db.execute(sql: "DELETE FROM session_sets WHERE id = ?", arguments: [setId])
         }
         return [.delete(recordType: "SessionSet", recordID: setId)]
@@ -541,37 +585,38 @@ struct SessionRepository {
             .fetchAll(db)
         let setsByExerciseId = Dictionary(grouping: allSetRows, by: \.sessionExerciseId)
 
+        // Batch-fetch all measurements for these sets
+        let setIds = allSetRows.map(\.id)
+        let allMeasurements: [SetMeasurementRow]
+        if !setIds.isEmpty {
+            allMeasurements = try SetMeasurementRow
+                .filter(setIds.contains(Column("set_id")))
+                .filter(Column("parent_type") == "session")
+                .order(Column("group_index"), Column("role"), Column("kind"))
+                .fetchAll(db)
+        } else {
+            allMeasurements = []
+        }
+        let measurementsBySetId = Dictionary(grouping: allMeasurements, by: \.setId)
+
         let exercises = exerciseRows.map { exerciseRow -> SessionExercise in
             let setRows = setsByExerciseId[exerciseRow.id] ?? []
 
-            let sets = setRows.map { setRow in
-                SessionSet(
+            let sets = setRows.map { setRow -> SessionSet in
+                let measurements = measurementsBySetId[setRow.id] ?? []
+                let entries = SetEntry.buildEntries(from: measurements)
+                return SessionSet(
                     id: setRow.id,
                     sessionExerciseId: setRow.sessionExerciseId,
                     orderIndex: setRow.orderIndex,
-                    parentSetId: setRow.parentSetId,
-                    dropSequence: setRow.dropSequence,
-                    targetWeight: setRow.targetWeight,
-                    targetWeightUnit: setRow.targetWeightUnit.flatMap { WeightUnit(rawValue: $0) },
-                    targetReps: setRow.targetReps,
-                    targetTime: setRow.targetTime,
-                    targetDistance: setRow.targetDistance,
-                    targetDistanceUnit: setRow.targetDistanceUnit.flatMap { DistanceUnit(rawValue: $0) },
-                    targetRpe: setRow.targetRpe,
+                    entries: entries,
                     restSeconds: setRow.restSeconds,
-                    actualWeight: setRow.actualWeight,
-                    actualWeightUnit: setRow.actualWeightUnit.flatMap { WeightUnit(rawValue: $0) },
-                    actualReps: setRow.actualReps,
-                    actualTime: setRow.actualTime,
-                    actualDistance: setRow.actualDistance,
-                    actualDistanceUnit: setRow.actualDistanceUnit.flatMap { DistanceUnit(rawValue: $0) },
-                    actualRpe: setRow.actualRpe,
                     completedAt: setRow.completedAt,
                     status: SetStatus(rawValue: setRow.status) ?? .pending,
                     notes: setRow.notes,
-                    tempo: setRow.tempo,
                     isDropset: setRow.isDropset != 0,
                     isPerSide: setRow.isPerSide != 0,
+                    isAmrap: setRow.isAmrap != 0,
                     side: setRow.side
                 )
             }

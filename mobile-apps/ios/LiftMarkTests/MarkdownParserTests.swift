@@ -84,7 +84,8 @@ final class MarkdownParserTests: XCTestCase {
         let result = MarkdownParser.parseWorkout(markdown)
 
         XCTAssertTrue(result.success)
-        XCTAssertEqual(result.data?.exercises[0].sets[0].tempo, "3-2-1-0")
+        // tempo is deprecated and no longer stored on PlannedSet
+        XCTAssertNil(result.data?.exercises[0].sets[0].tempo)
         let tempoWarnings = result.warnings.filter { $0.contains("@tempo is deprecated") }
         XCTAssertEqual(tempoWarnings.count, 1)
         XCTAssertTrue(tempoWarnings[0].contains("use freeform notes instead"))
@@ -410,7 +411,7 @@ final class MarkdownParserTests: XCTestCase {
         let result = MarkdownParser.parseWorkout(markdown)
 
         XCTAssertTrue(result.success)
-        XCTAssertEqual(result.data?.exercises[0].sets[0].tempo, "3-2-1-0")
+        XCTAssertNil(result.data?.exercises[0].sets[0].tempo) // tempo is deprecated
         XCTAssertEqual(result.data?.exercises[0].sets[0].restSeconds, 120)
         XCTAssertEqual(result.data?.exercises[0].sets[0].notes, "Really focused on the pause")
     }

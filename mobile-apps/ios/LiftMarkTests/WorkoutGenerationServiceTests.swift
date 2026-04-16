@@ -226,21 +226,22 @@ final class WorkoutGenerationServiceTests: XCTestCase {
         XCTAssertTrue(result.warnings.contains { $0.contains("Very high volume") })
     }
 
-    func testValidateWeightWithoutUnitWarns() {
+    func testValidateWeightWithUnitIsClean() {
+        // With SetMeasurement, weight always has a unit (defaults to .lbs)
+        // so the "without unit" warning can no longer trigger through normal code paths
         let workout = makeWorkoutPlan(name: "Workout", exercises: [
             makePlannedExercise(name: "Bench", sets: [
                 PlannedSet(
                     plannedExerciseId: "ex-1",
                     orderIndex: 0,
                     targetWeight: 225,
-                    targetWeightUnit: nil,
                     targetReps: 5
                 )
             ])
         ])
         let result = WorkoutGenerationService.validateGeneratedWorkout(workout)
         XCTAssertTrue(result.valid)
-        XCTAssertTrue(result.warnings.contains { $0.contains("without unit") })
+        XCTAssertFalse(result.warnings.contains { $0.contains("without unit") })
     }
 
     // MARK: - parseAIWorkoutResponse

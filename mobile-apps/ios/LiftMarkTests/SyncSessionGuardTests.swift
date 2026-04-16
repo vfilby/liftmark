@@ -179,7 +179,7 @@ final class SyncSessionGuardTests: XCTestCase {
     private func makeSet(id: String, exerciseId: String, orderIndex: Int = 0) -> SessionSetRow {
         SessionSetRow(
             id: id, sessionExerciseId: exerciseId, orderIndex: orderIndex,
-            status: "pending", isDropset: 0, isPerSide: 0
+            status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
         )
     }
 }

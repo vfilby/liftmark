@@ -436,7 +436,7 @@ final class MarkdownParserEdgeCaseTests: XCTestCase {
         let set = result.data?.exercises[0].sets[0]
         XCTAssertEqual(set?.targetRpe, 8)
         XCTAssertEqual(set?.restSeconds, 180)
-        XCTAssertEqual(set?.tempo, "3-0-1-0")
+        XCTAssertNil(set?.tempo) // tempo is deprecated
     }
 
     func testDropsetWithMultipleSets() {

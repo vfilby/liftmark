@@ -87,38 +87,49 @@ struct SessionSet: Identifiable, Codable, Hashable {
     var id: String
     var sessionExerciseId: String
     var orderIndex: Int
-
-    // Drop Set Support
-    var parentSetId: String?
-    var dropSequence: Int?
-
-    // Target/Planned values
-    var targetWeight: Double?
-    var targetWeightUnit: WeightUnit?
-    var targetReps: Int?
-    var targetTime: Int?
-    var targetDistance: Double?
-    var targetDistanceUnit: DistanceUnit?
-    var targetRpe: Int?
-    var restSeconds: Int?
-
-    // Actual Performance
-    var actualWeight: Double?
-    var actualWeightUnit: WeightUnit?
-    var actualReps: Int?
-    var actualTime: Int?
-    var actualDistance: Double?
-    var actualDistanceUnit: DistanceUnit?
-    var actualRpe: Int?
+    var entries: [SetEntry]
 
     // Metadata
+    var restSeconds: Int?
     var completedAt: String?
     var status: SetStatus
     var notes: String?
-    var tempo: String?
     var isDropset: Bool
     var isPerSide: Bool
+    var isAmrap: Bool
     var side: String?
+
+    // MARK: - Entries-native init
+
+    init(
+        id: String = UUID().uuidString,
+        sessionExerciseId: String,
+        orderIndex: Int,
+        entries: [SetEntry] = [],
+        restSeconds: Int? = nil,
+        completedAt: String? = nil,
+        status: SetStatus = .pending,
+        notes: String? = nil,
+        isDropset: Bool = false,
+        isPerSide: Bool = false,
+        isAmrap: Bool = false,
+        side: String? = nil
+    ) {
+        self.id = id
+        self.sessionExerciseId = sessionExerciseId
+        self.orderIndex = orderIndex
+        self.entries = entries
+        self.restSeconds = restSeconds
+        self.completedAt = completedAt
+        self.status = status
+        self.notes = notes
+        self.isDropset = isDropset
+        self.isPerSide = isPerSide
+        self.isAmrap = isAmrap
+        self.side = side
+    }
+
+    // MARK: - Backward-compatible init (builds entries from flat fields)
 
     init(
         id: String = UUID().uuidString,
@@ -147,35 +158,194 @@ struct SessionSet: Identifiable, Codable, Hashable {
         tempo: String? = nil,
         isDropset: Bool = false,
         isPerSide: Bool = false,
+        isAmrap: Bool = false,
         side: String? = nil
     ) {
         self.id = id
         self.sessionExerciseId = sessionExerciseId
         self.orderIndex = orderIndex
-        self.parentSetId = parentSetId
-        self.dropSequence = dropSequence
-        self.targetWeight = targetWeight
-        self.targetWeightUnit = targetWeightUnit
-        self.targetReps = targetReps
-        self.targetTime = targetTime
-        self.targetDistance = targetDistance
-        self.targetDistanceUnit = targetDistanceUnit
-        self.targetRpe = targetRpe
         self.restSeconds = restSeconds
-        self.actualWeight = actualWeight
-        self.actualWeightUnit = actualWeightUnit
-        self.actualReps = actualReps
-        self.actualTime = actualTime
-        self.actualDistance = actualDistance
-        self.actualDistanceUnit = actualDistanceUnit
-        self.actualRpe = actualRpe
         self.completedAt = completedAt
         self.status = status
         self.notes = notes
-        self.tempo = tempo
         self.isDropset = isDropset
         self.isPerSide = isPerSide
+        self.isAmrap = isAmrap
         self.side = side
+
+        let target = EntryValues(
+            weight: targetWeight.map { MeasuredWeight(value: $0, unit: targetWeightUnit ?? .lbs) },
+            reps: targetReps,
+            time: targetTime,
+            distance: targetDistance.map { MeasuredDistance(value: $0, unit: targetDistanceUnit ?? .meters) },
+            rpe: targetRpe
+        )
+        let actual = EntryValues(
+            weight: actualWeight.map { MeasuredWeight(value: $0, unit: actualWeightUnit ?? .lbs) },
+            reps: actualReps,
+            time: actualTime,
+            distance: actualDistance.map { MeasuredDistance(value: $0, unit: actualDistanceUnit ?? .meters) },
+            rpe: actualRpe
+        )
+        let hasTarget = !target.isEmpty
+        let hasActual = !actual.isEmpty
+
+        if hasTarget || hasActual {
+            self.entries = [SetEntry(
+                groupIndex: 0,
+                target: hasTarget ? target : nil,
+                actual: hasActual ? actual : nil
+            )]
+        } else {
+            self.entries = []
+        }
+    }
+
+    // MARK: - Backward-compatible computed properties
+
+    // Deprecated fields (always nil)
+    var parentSetId: String? { nil }
+    var dropSequence: Int? { nil }
+    var tempo: String? { nil }
+
+    // Target accessors
+    var targetWeight: Double? {
+        get { entries.first?.target?.weight?.value }
+        set {
+            ensureTarget()
+            if let nv = newValue {
+                let unit = entries[0].target?.weight?.unit ?? .lbs
+                entries[0].target?.weight = MeasuredWeight(value: nv, unit: unit)
+            } else {
+                entries[0].target?.weight = nil
+            }
+        }
+    }
+
+    var targetWeightUnit: WeightUnit? {
+        get { entries.first?.target?.weight?.unit }
+        set {
+            guard var w = entries.first?.target?.weight else { return }
+            w.unit = newValue ?? .lbs
+            entries[0].target?.weight = w
+        }
+    }
+
+    var targetReps: Int? {
+        get { entries.first?.target?.reps }
+        set { ensureTarget(); entries[0].target?.reps = newValue }
+    }
+
+    var targetTime: Int? {
+        get { entries.first?.target?.time }
+        set { ensureTarget(); entries[0].target?.time = newValue }
+    }
+
+    var targetDistance: Double? {
+        get { entries.first?.target?.distance?.value }
+        set {
+            ensureTarget()
+            if let nv = newValue {
+                let unit = entries[0].target?.distance?.unit ?? .meters
+                entries[0].target?.distance = MeasuredDistance(value: nv, unit: unit)
+            } else {
+                entries[0].target?.distance = nil
+            }
+        }
+    }
+
+    var targetDistanceUnit: DistanceUnit? {
+        get { entries.first?.target?.distance?.unit }
+        set {
+            guard var d = entries.first?.target?.distance else { return }
+            d.unit = newValue ?? .meters
+            entries[0].target?.distance = d
+        }
+    }
+
+    var targetRpe: Int? {
+        get { entries.first?.target?.rpe }
+        set { ensureTarget(); entries[0].target?.rpe = newValue }
+    }
+
+    // Actual accessors
+    var actualWeight: Double? {
+        get { entries.first?.actual?.weight?.value }
+        set {
+            ensureActual()
+            if let nv = newValue {
+                let unit = entries[0].actual?.weight?.unit ?? .lbs
+                entries[0].actual?.weight = MeasuredWeight(value: nv, unit: unit)
+            } else {
+                entries[0].actual?.weight = nil
+            }
+        }
+    }
+
+    var actualWeightUnit: WeightUnit? {
+        get { entries.first?.actual?.weight?.unit }
+        set {
+            guard var w = entries.first?.actual?.weight else { return }
+            w.unit = newValue ?? .lbs
+            entries[0].actual?.weight = w
+        }
+    }
+
+    var actualReps: Int? {
+        get { entries.first?.actual?.reps }
+        set { ensureActual(); entries[0].actual?.reps = newValue }
+    }
+
+    var actualTime: Int? {
+        get { entries.first?.actual?.time }
+        set { ensureActual(); entries[0].actual?.time = newValue }
+    }
+
+    var actualDistance: Double? {
+        get { entries.first?.actual?.distance?.value }
+        set {
+            ensureActual()
+            if let nv = newValue {
+                let unit = entries[0].actual?.distance?.unit ?? .meters
+                entries[0].actual?.distance = MeasuredDistance(value: nv, unit: unit)
+            } else {
+                entries[0].actual?.distance = nil
+            }
+        }
+    }
+
+    var actualDistanceUnit: DistanceUnit? {
+        get { entries.first?.actual?.distance?.unit }
+        set {
+            guard var d = entries.first?.actual?.distance else { return }
+            d.unit = newValue ?? .meters
+            entries[0].actual?.distance = d
+        }
+    }
+
+    var actualRpe: Int? {
+        get { entries.first?.actual?.rpe }
+        set { ensureActual(); entries[0].actual?.rpe = newValue }
+    }
+
+    // MARK: - Private helpers
+
+    private mutating func ensureTarget() {
+        if entries.isEmpty {
+            entries = [SetEntry(groupIndex: 0, target: EntryValues(), actual: nil)]
+        }
+        if entries[0].target == nil {
+            entries[0].target = EntryValues()
+        }
+    }
+
+    private mutating func ensureActual() {
+        if entries.isEmpty {
+            entries = [SetEntry(groupIndex: 0, target: nil, actual: EntryValues())]
+        }
+        if entries[0].actual == nil {
+            entries[0].actual = EntryValues()
+        }
     }
 }
 

@@ -33,16 +33,29 @@ struct ExerciseHistoryRepository {
                     ws.date,
                     ws.start_time,
                     ws.name as workout_name,
-                    MAX(COALESCE(ss.actual_weight, ss.target_weight, 0)) as max_weight,
-                    AVG(COALESCE(ss.actual_reps, ss.target_reps, 0)) as avg_reps,
-                    SUM(COALESCE(ss.actual_weight, ss.target_weight, 0) * COALESCE(ss.actual_reps, ss.target_reps, 0)) as total_volume,
+                    MAX(COALESCE(mw_a.value, mw_t.value, 0)) as max_weight,
+                    AVG(COALESCE(mr_a.value, mr_t.value, 0)) as avg_reps,
+                    SUM(
+                        COALESCE(mw_a.value, mw_t.value, 0) *
+                        COALESCE(mr_a.value, mr_t.value, 0)
+                    ) as total_volume,
                     COUNT(ss.id) as sets_count,
-                    AVG(COALESCE(ss.actual_time, 0)) as avg_time,
-                    MAX(COALESCE(ss.actual_time, 0)) as max_time,
-                    COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+                    AVG(COALESCE(mt_a.value, 0)) as avg_time,
+                    MAX(COALESCE(mt_a.value, 0)) as max_time,
+                    COALESCE(mw_a.unit, mw_t.unit, 'lbs') as unit
                 FROM session_exercises se
                 JOIN workout_sessions ws ON ws.id = se.workout_session_id
                 JOIN session_sets ss ON ss.session_exercise_id = se.id
+                LEFT JOIN set_measurements mw_a ON mw_a.set_id = ss.id
+                    AND mw_a.parent_type = 'session' AND mw_a.kind = 'weight' AND mw_a.role = 'actual'
+                LEFT JOIN set_measurements mw_t ON mw_t.set_id = ss.id
+                    AND mw_t.parent_type = 'session' AND mw_t.kind = 'weight' AND mw_t.role = 'target'
+                LEFT JOIN set_measurements mr_a ON mr_a.set_id = ss.id
+                    AND mr_a.parent_type = 'session' AND mr_a.kind = 'reps' AND mr_a.role = 'actual'
+                LEFT JOIN set_measurements mr_t ON mr_t.set_id = ss.id
+                    AND mr_t.parent_type = 'session' AND mr_t.kind = 'reps' AND mr_t.role = 'target'
+                LEFT JOIN set_measurements mt_a ON mt_a.set_id = ss.id
+                    AND mt_a.parent_type = 'session' AND mt_a.kind = 'time' AND mt_a.role = 'actual'
                 WHERE se.exercise_name = ? AND ws.status = 'completed' AND ss.status = 'completed'
                 GROUP BY ws.id
                 ORDER BY ws.date DESC
@@ -78,16 +91,29 @@ struct ExerciseHistoryRepository {
                     ws.date,
                     ws.start_time,
                     ws.name as workout_name,
-                    MAX(COALESCE(ss.actual_weight, ss.target_weight, 0)) as max_weight,
-                    AVG(COALESCE(ss.actual_reps, ss.target_reps, 0)) as avg_reps,
-                    SUM(COALESCE(ss.actual_weight, ss.target_weight, 0) * COALESCE(ss.actual_reps, ss.target_reps, 0)) as total_volume,
+                    MAX(COALESCE(mw_a.value, mw_t.value, 0)) as max_weight,
+                    AVG(COALESCE(mr_a.value, mr_t.value, 0)) as avg_reps,
+                    SUM(
+                        COALESCE(mw_a.value, mw_t.value, 0) *
+                        COALESCE(mr_a.value, mr_t.value, 0)
+                    ) as total_volume,
                     COUNT(ss.id) as sets_count,
-                    AVG(COALESCE(ss.actual_time, 0)) as avg_time,
-                    MAX(COALESCE(ss.actual_time, 0)) as max_time,
-                    COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+                    AVG(COALESCE(mt_a.value, 0)) as avg_time,
+                    MAX(COALESCE(mt_a.value, 0)) as max_time,
+                    COALESCE(mw_a.unit, mw_t.unit, 'lbs') as unit
                 FROM session_exercises se
                 JOIN workout_sessions ws ON ws.id = se.workout_session_id
                 JOIN session_sets ss ON ss.session_exercise_id = se.id
+                LEFT JOIN set_measurements mw_a ON mw_a.set_id = ss.id
+                    AND mw_a.parent_type = 'session' AND mw_a.kind = 'weight' AND mw_a.role = 'actual'
+                LEFT JOIN set_measurements mw_t ON mw_t.set_id = ss.id
+                    AND mw_t.parent_type = 'session' AND mw_t.kind = 'weight' AND mw_t.role = 'target'
+                LEFT JOIN set_measurements mr_a ON mr_a.set_id = ss.id
+                    AND mr_a.parent_type = 'session' AND mr_a.kind = 'reps' AND mr_a.role = 'actual'
+                LEFT JOIN set_measurements mr_t ON mr_t.set_id = ss.id
+                    AND mr_t.parent_type = 'session' AND mr_t.kind = 'reps' AND mr_t.role = 'target'
+                LEFT JOIN set_measurements mt_a ON mt_a.set_id = ss.id
+                    AND mt_a.parent_type = 'session' AND mt_a.kind = 'time' AND mt_a.role = 'actual'
                 WHERE LOWER(se.exercise_name) IN (\(placeholders)) AND ws.status = 'completed' AND ss.status = 'completed'
                 GROUP BY ws.id
                 ORDER BY ws.date DESC
@@ -132,11 +158,15 @@ struct ExerciseHistoryRepository {
         return try dbQueue.read { db in
             let row = try Row.fetchOne(db, sql: """
                 SELECT
-                    MAX(COALESCE(ss.actual_weight, ss.target_weight, 0)) as max_weight,
-                    COALESCE(ss.actual_weight_unit, ss.target_weight_unit, 'lbs') as unit
+                    MAX(COALESCE(mw_a.value, mw_t.value, 0)) as max_weight,
+                    COALESCE(mw_a.unit, mw_t.unit, 'lbs') as unit
                 FROM session_exercises se
                 JOIN workout_sessions ws ON ws.id = se.workout_session_id
                 JOIN session_sets ss ON ss.session_exercise_id = se.id
+                LEFT JOIN set_measurements mw_a ON mw_a.set_id = ss.id
+                    AND mw_a.parent_type = 'session' AND mw_a.kind = 'weight' AND mw_a.role = 'actual'
+                LEFT JOIN set_measurements mw_t ON mw_t.set_id = ss.id
+                    AND mw_t.parent_type = 'session' AND mw_t.kind = 'weight' AND mw_t.role = 'target'
                 WHERE se.exercise_name = ? AND ws.status = 'completed' AND ss.status = 'completed'
             """, arguments: [exerciseName])
 

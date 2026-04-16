@@ -128,7 +128,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         XCTAssertEqual(sets[0]["actualRpe"] as? Int, 9)
         XCTAssertEqual(sets[0]["targetRpe"] as? Int, 8)
         XCTAssertEqual(sets[0]["restSeconds"] as? Int, 180)
-        XCTAssertEqual(sets[0]["tempo"] as? String, "3-1-1-0")
+        XCTAssertNil(sets[0]["tempo"]) // tempo is deprecated
     }
 
     // MARK: - exportSessionsAsJson
@@ -346,7 +346,7 @@ final class WorkoutExportIntegrationTests: XCTestCase {
         XCTAssertEqual(importedPlan?.exercises[0].sets[0].targetWeight, 135)
         XCTAssertEqual(importedPlan?.exercises[0].sets[0].targetWeightUnit, .lbs)
         XCTAssertEqual(importedPlan?.exercises[0].sets[0].targetReps, 10)
-        XCTAssertEqual(importedPlan?.exercises[0].sets[2].tempo, "3-0-1-0")
+        XCTAssertNil(importedPlan?.exercises[0].sets[2].tempo) // tempo is deprecated
 
         // Verify imported session data
         let sessions = try sessionRepo.getCompleted()

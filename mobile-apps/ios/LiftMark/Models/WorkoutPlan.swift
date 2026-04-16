@@ -84,19 +84,38 @@ struct PlannedSet: Identifiable, Codable, Hashable {
     var id: String
     var plannedExerciseId: String
     var orderIndex: Int
-    var targetWeight: Double?
-    var targetWeightUnit: WeightUnit?
-    var targetReps: Int?
-    var targetTime: Int?
-    var targetDistance: Double?
-    var targetDistanceUnit: DistanceUnit?
-    var targetRpe: Int?
+    var entries: [SetEntry]
     var restSeconds: Int?
-    var tempo: String?
     var isDropset: Bool
     var isPerSide: Bool
     var isAmrap: Bool
     var notes: String?
+
+    // MARK: - Entries-native init
+
+    init(
+        id: String = UUID().uuidString,
+        plannedExerciseId: String,
+        orderIndex: Int,
+        entries: [SetEntry] = [],
+        restSeconds: Int? = nil,
+        isDropset: Bool = false,
+        isPerSide: Bool = false,
+        isAmrap: Bool = false,
+        notes: String? = nil
+    ) {
+        self.id = id
+        self.plannedExerciseId = plannedExerciseId
+        self.orderIndex = orderIndex
+        self.entries = entries
+        self.restSeconds = restSeconds
+        self.isDropset = isDropset
+        self.isPerSide = isPerSide
+        self.isAmrap = isAmrap
+        self.notes = notes
+    }
+
+    // MARK: - Backward-compatible init (builds entries from flat fields)
 
     init(
         id: String = UUID().uuidString,
@@ -119,18 +138,98 @@ struct PlannedSet: Identifiable, Codable, Hashable {
         self.id = id
         self.plannedExerciseId = plannedExerciseId
         self.orderIndex = orderIndex
-        self.targetWeight = targetWeight
-        self.targetWeightUnit = targetWeightUnit
-        self.targetReps = targetReps
-        self.targetTime = targetTime
-        self.targetDistance = targetDistance
-        self.targetDistanceUnit = targetDistanceUnit
-        self.targetRpe = targetRpe
         self.restSeconds = restSeconds
-        self.tempo = tempo
         self.isDropset = isDropset
         self.isPerSide = isPerSide
         self.isAmrap = isAmrap
         self.notes = notes
+
+        let target = EntryValues(
+            weight: targetWeight.map { MeasuredWeight(value: $0, unit: targetWeightUnit ?? .lbs) },
+            reps: targetReps,
+            time: targetTime,
+            distance: targetDistance.map { MeasuredDistance(value: $0, unit: targetDistanceUnit ?? .meters) },
+            rpe: targetRpe
+        )
+
+        if !target.isEmpty {
+            self.entries = [SetEntry(groupIndex: 0, target: target, actual: nil)]
+        } else {
+            self.entries = []
+        }
+    }
+
+    // MARK: - Backward-compatible computed properties
+
+    var tempo: String? { nil }
+
+    var targetWeight: Double? {
+        get { entries.first?.target?.weight?.value }
+        set {
+            ensureTarget()
+            if let nv = newValue {
+                let unit = entries[0].target?.weight?.unit ?? .lbs
+                entries[0].target?.weight = MeasuredWeight(value: nv, unit: unit)
+            } else {
+                entries[0].target?.weight = nil
+            }
+        }
+    }
+
+    var targetWeightUnit: WeightUnit? {
+        get { entries.first?.target?.weight?.unit }
+        set {
+            guard var w = entries.first?.target?.weight else { return }
+            w.unit = newValue ?? .lbs
+            entries[0].target?.weight = w
+        }
+    }
+
+    var targetReps: Int? {
+        get { entries.first?.target?.reps }
+        set { ensureTarget(); entries[0].target?.reps = newValue }
+    }
+
+    var targetTime: Int? {
+        get { entries.first?.target?.time }
+        set { ensureTarget(); entries[0].target?.time = newValue }
+    }
+
+    var targetDistance: Double? {
+        get { entries.first?.target?.distance?.value }
+        set {
+            ensureTarget()
+            if let nv = newValue {
+                let unit = entries[0].target?.distance?.unit ?? .meters
+                entries[0].target?.distance = MeasuredDistance(value: nv, unit: unit)
+            } else {
+                entries[0].target?.distance = nil
+            }
+        }
+    }
+
+    var targetDistanceUnit: DistanceUnit? {
+        get { entries.first?.target?.distance?.unit }
+        set {
+            guard var d = entries.first?.target?.distance else { return }
+            d.unit = newValue ?? .meters
+            entries[0].target?.distance = d
+        }
+    }
+
+    var targetRpe: Int? {
+        get { entries.first?.target?.rpe }
+        set { ensureTarget(); entries[0].target?.rpe = newValue }
+    }
+
+    // MARK: - Private helpers
+
+    private mutating func ensureTarget() {
+        if entries.isEmpty {
+            entries = [SetEntry(groupIndex: 0, target: EntryValues(), actual: nil)]
+        }
+        if entries[0].target == nil {
+            entries[0].target = EntryValues()
+        }
     }
 }
