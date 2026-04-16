@@ -59,6 +59,7 @@ final class DatabaseManager: @unchecked Sendable {
                 // Order matters: children first due to foreign keys
                 try db.execute(sql: "DELETE FROM sync_engine_state")
                 try db.execute(sql: "DELETE FROM sync_metadata")
+                try db.execute(sql: "DELETE FROM set_measurements")
                 try db.execute(sql: "DELETE FROM session_sets")
                 try db.execute(sql: "DELETE FROM session_exercises")
                 try db.execute(sql: "DELETE FROM workout_sessions")

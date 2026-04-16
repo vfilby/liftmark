@@ -7,6 +7,7 @@ struct SessionSnapshot {
     let sessionRow: WorkoutSessionRow
     let exerciseRows: [SessionExerciseRow]
     let setRows: [SessionSetRow]
+    let measurementRows: [SetMeasurementRow]
 
     var exerciseIds: Set<String> { Set(exerciseRows.map(\.id)) }
     var setIds: Set<String> { Set(setRows.map(\.id)) }
@@ -40,16 +41,25 @@ enum SyncSessionGuard {
 
                 let exerciseIds = exercises.map(\.id)
                 var sets: [SessionSetRow] = []
+                var measurements: [SetMeasurementRow] = []
                 if !exerciseIds.isEmpty {
                     sets = try SessionSetRow
                         .filter(exerciseIds.contains(Column("session_exercise_id")))
                         .fetchAll(db)
+                    let setIds = sets.map(\.id)
+                    if !setIds.isEmpty {
+                        measurements = try SetMeasurementRow
+                            .filter(setIds.contains(Column("set_id")))
+                            .filter(Column("parent_type") == "session")
+                            .fetchAll(db)
+                    }
                 }
 
                 return SessionSnapshot(
                     sessionRow: session,
                     exerciseRows: exercises,
-                    setRows: sets
+                    setRows: sets,
+                    measurementRows: measurements
                 )
             }
 
@@ -83,13 +93,16 @@ enum SyncSessionGuard {
                 // Check session still exists
                 let currentSession = try WorkoutSessionRow.fetchOne(db, key: snapshot.sessionRow.id)
                 guard let currentSession else {
-                    // Session gone — restore everything
+                    // Session gone — restore everything including measurements
                     try snapshot.sessionRow.insert(db)
                     for exercise in snapshot.exerciseRows {
                         try exercise.insert(db)
                     }
                     for set in snapshot.setRows {
                         try set.insert(db)
+                    }
+                    for measurement in snapshot.measurementRows {
+                        try measurement.insert(db)
                     }
                     return (missing: true, exerciseCount: snapshot.exerciseRows.count, setCount: snapshot.setRows.count)
                 }
@@ -124,8 +137,14 @@ enum SyncSessionGuard {
                 for exercise in missingExercises {
                     try exercise.insert(db)
                 }
+                let missingSetIds = Set(missingSets.map(\.id))
                 for set in missingSets {
                     try set.insert(db)
+                }
+                // Restore measurements for any restored sets
+                let missingMeasurements = snapshot.measurementRows.filter { missingSetIds.contains($0.setId) }
+                for measurement in missingMeasurements {
+                    try measurement.insert(db)
                 }
 
                 return (missing: true, exerciseCount: missingExercises.count, setCount: missingSets.count)
