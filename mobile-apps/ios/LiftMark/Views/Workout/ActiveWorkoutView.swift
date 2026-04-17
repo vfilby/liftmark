@@ -45,7 +45,7 @@ struct ActiveWorkoutView: View {
         } message: {
             let skipped = totalSets - completedSets
             if skipped > 0 {
-                Text("You have \(skipped) incomplete set\(skipped == 1 ? "" : "s"). They will be marked as skipped.")
+                Text("You have \(skipped) incomplete sets. They will be marked as skipped.")
             } else {
                 Text("Great job completing all your sets!")
             }
