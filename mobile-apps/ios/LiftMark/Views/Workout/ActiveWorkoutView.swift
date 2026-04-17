@@ -199,6 +199,9 @@ struct ActiveWorkoutView: View {
                                     onCompleteSet: { setIndex, weight, reps, elapsedTime in
                                         completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
                                     },
+                                    onCompleteDropSet: { setIndex, entries in
+                                        completeDropSet(exerciseIndex: exerciseIndex, setIndex: setIndex, entries: entries)
+                                    },
                                     onSkipSet: { setIndex in
                                         skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
                                     },
@@ -238,6 +241,9 @@ struct ActiveWorkoutView: View {
                                     },
                                     onCompleteSet: { exerciseIndex, setIndex, weight, reps, elapsedTime in
                                         completeSet(exerciseIndex: exerciseIndex, setIndex: setIndex, userWeight: weight, userReps: reps, elapsedTime: elapsedTime)
+                                    },
+                                    onCompleteDropSet: { exerciseIndex, setIndex, entries in
+                                        completeDropSet(exerciseIndex: exerciseIndex, setIndex: setIndex, entries: entries)
                                     },
                                     onSkipSet: { exerciseIndex, setIndex in
                                         skipSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
@@ -334,6 +340,32 @@ struct ActiveWorkoutView: View {
             actualTime: elapsedTime ?? actual?.time ?? target?.time,
             actualRpe: actual?.rpe ?? target?.rpe
         )
+
+        // Trigger rest timer if applicable
+        if let rest = set.restSeconds, rest > 0,
+           settingsStore.settings?.autoStartRestTimer == true {
+            activeRestTimer = RestTimerState(seconds: rest)
+            restTimerGeneration += 1
+            let updatedSession = sessionStore.activeSession
+            let nextExercise = updatedSession?.exercises.first { ex in ex.sets.contains { $0.status == .pending } }
+            ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings, restTimer: (remainingSeconds: rest, nextExercise: nextExercise))
+        } else {
+            ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
+        }
+    }
+
+    private func completeDropSet(exerciseIndex: Int, setIndex: Int, entries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) {
+        guard let session, exerciseIndex < session.exercises.count else { return }
+        let exercise = session.exercises[exerciseIndex]
+        guard setIndex < exercise.sets.count else { return }
+        let set = exercise.sets[setIndex]
+
+        lastInteractedExerciseId = exercise.id
+
+        // Dismiss any running rest timer before starting a new one
+        activeRestTimer = nil
+
+        sessionStore.completeDropSet(setId: set.id, entries: entries)
 
         // Trigger rest timer if applicable
         if let rest = set.restSeconds, rest > 0,

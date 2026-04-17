@@ -113,6 +113,17 @@ final class SessionStore {
         }
     }
 
+    func completeDropSet(setId: String, entries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) {
+        do {
+            let changes = try repository.completeDropSet(setId, entries: entries)
+            SyncChange.notifyAll(changes)
+            reloadActiveSession()
+        } catch {
+            lastError = error
+            Logger.shared.error(.database, "Failed to complete drop set", error: error)
+        }
+    }
+
     func skipSet(setId: String) {
         do {
             let changes = try repository.skipSet(setId)

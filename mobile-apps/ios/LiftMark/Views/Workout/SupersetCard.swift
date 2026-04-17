@@ -8,6 +8,7 @@ struct SupersetCard: View {
     let activeRestTimer: RestTimerState?
     let onToggleCollapse: () -> Void
     let onCompleteSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
+    let onCompleteDropSet: ((Int, Int, [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) -> Void)?
     let onSkipSet: (Int, Int) -> Void  // exerciseIndex, setIndex
     let onSaveSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
     let onDismissRest: () -> Void
@@ -131,6 +132,9 @@ struct SupersetCard: View {
                         onComplete: { weight, reps, time in
                             onCompleteSet(item.exerciseIndex, item.setIndex, weight, reps, time)
                         },
+                        onCompleteDropSet: item.set.isDropset ? { entries in
+                            onCompleteDropSet?(item.exerciseIndex, item.setIndex, entries)
+                        } : nil,
                         onSkip: { onSkipSet(item.exerciseIndex, item.setIndex) },
                         onSave: { weight, reps, time in
                             onSaveSet(item.exerciseIndex, item.setIndex, weight, reps, time)

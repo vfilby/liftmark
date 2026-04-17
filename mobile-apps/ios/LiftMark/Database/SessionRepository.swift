@@ -498,6 +498,59 @@ struct SessionRepository {
         return changes
     }
 
+    /// Complete a drop set by saving multiple actual entries at different groupIndices.
+    @discardableResult
+    func completeDropSet(_ setId: String, entries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) throws -> [SyncChange] {
+        let dbQueue = try dbManager.database()
+        let now = self.now
+
+        // Collect old actual measurement IDs before deleting
+        let oldMeasurementIds = try dbQueue.read { db -> [String] in
+            let rows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'", arguments: [setId])
+            return rows.compactMap { $0["id"] as String? }
+        }
+
+        var newMeasurementIds: [String] = []
+        try dbQueue.write { db in
+            // Update set status
+            try db.execute(
+                sql: "UPDATE session_sets SET status = ?, completed_at = ?, updated_at = ? WHERE id = ?",
+                arguments: [SetStatus.completed.rawValue, now, now, setId]
+            )
+
+            // Replace actual measurements
+            try db.execute(
+                sql: "DELETE FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'",
+                arguments: [setId]
+            )
+
+            for (groupIndex, entry) in entries.enumerated() {
+                let actual = EntryValues(
+                    weight: entry.weight.map { MeasuredWeight(value: $0, unit: entry.weightUnit ?? .lbs) },
+                    reps: entry.reps,
+                    time: nil,
+                    distance: nil,
+                    rpe: nil
+                )
+                if !actual.isEmpty {
+                    for mRow in actual.toMeasurementRows(setId: setId, parentType: "session", role: "actual", groupIndex: groupIndex, now: now) {
+                        try mRow.insert(db)
+                        newMeasurementIds.append(mRow.id)
+                    }
+                }
+            }
+        }
+
+        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
+        for mId in oldMeasurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
+        for mId in newMeasurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
+        return changes
+    }
+
     @discardableResult
     func skipSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()

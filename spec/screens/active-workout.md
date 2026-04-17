@@ -41,6 +41,15 @@ Primary workout execution screen. Displays all exercises and sets for the active
   - If all sets complete: triggers Finish flow
 - **Tap "Skip"** → marks set as skipped, advances
 
+### Drop Set Recording
+- Drop sets (`isDropset == true`) display a **"+ Drop"** button below the current entry inputs.
+- **Tap "+ Drop"** → adds a new entry row (next groupIndex) with weight/reps input fields. The weight field pre-fills with the previous entry's weight to make editing faster (user typically reduces weight).
+- Multiple drops can be added before completing the set.
+- **Tap "Complete"** → records all entries (each at its own groupIndex) as actual values on the single SessionSet.
+- **Remove a drop** → swipe left or tap the minus button on a drop entry to remove it before completing.
+- Completed drop sets display all entries in a compact format: "225×10 → 185×6 → 135×4" with a "Drop" badge.
+- Drop sets with no added drops behave identically to normal sets (single entry at groupIndex=0).
+
 ### Set Editing (completed/skipped sets)
 - **Tap completed/skipped set** → opens inline edit form with editable fields for weight, reps, and/or time (matching the set type). Time fields are editable TextFields for timed sets (not read-only).
 - **Tap "Update"** → saves changes to completed set (including edited time for timed sets)

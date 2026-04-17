@@ -69,20 +69,15 @@ An exercise within a WorkoutPlan, defining what to perform and in what order.
 
 ### PlannedSet
 
-A single target set within a PlannedExercise.
+A single target set within a PlannedExercise. Measurement values (weight, reps, time, distance, RPE) are stored as SetMeasurement entries rather than inline fields.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
 | id | string | Yes | UUID | Primary key |
 | plannedExerciseId | string | Yes | — | FK to PlannedExercise (cascade) |
 | orderIndex | number | Yes | — | 0-based position within exercise |
-| targetWeight | number | No | — | Absent or 0 = bodyweight |
-| targetWeightUnit | WeightUnit | No | — | Only set when targetWeight is specified |
-| targetReps | number | No | — | Rep count target |
-| targetTime | number | No | — | Seconds, for time-based exercises |
-| targetRpe | number | No | — | Rate of Perceived Exertion, 1-10 |
+| entries | SetEntry[] | Yes | [] | Target measurements grouped by entry |
 | restSeconds | number | No | — | Rest period after this set |
-| tempo | string | No | — | Tempo notation, e.g., "3-0-1-0" |
 | isDropset | boolean | No | false | Drop set indicator |
 | isPerSide | boolean | No | false | Per-side indicator for unilateral exercises |
 | isAmrap | boolean | No | false | As Many Reps As Possible indicator |
@@ -92,6 +87,8 @@ A single target set within a PlannedExercise.
 - A set is either rep-based (targetReps) or time-based (targetTime), not both.
 - isAmrap overrides targetReps — the rep count becomes a minimum/suggestion.
 - isDropset indicates this set is part of a drop-set sequence with decreasing weight.
+- For normal sets, `entries` contains one SetEntry at groupIndex=0 with target values.
+- For drop sets, `entries` may contain multiple SetEntry elements (one per drop) with targets at groupIndex 0, 1, 2, etc.
 
 ---
 
@@ -145,42 +142,75 @@ An exercise within an active or completed workout session.
 
 ### SessionSet
 
-A single set within a session exercise, tracking both target and actual performance.
+A single set within a session exercise, tracking both target and actual performance. Measurement values are stored as SetMeasurement entries rather than inline fields.
 
 | Field | Type | Required | Default | Constraints |
 |-------|------|----------|---------|-------------|
 | id | string | Yes | UUID | Primary key |
 | sessionExerciseId | string | Yes | — | FK to SessionExercise (cascade) |
 | orderIndex | number | Yes | — | 0-based position |
-| parentSetId | string | No | — | FK to SessionSet (cascade); links drop-set children |
-| dropSequence | number | No | — | 0 = main set, 1 = first drop, 2 = second drop, etc. |
-| **Target values** | | | | *Copied from PlannedSet at session creation* |
-| targetWeight | number | No | — | |
-| targetWeightUnit | WeightUnit | No | — | |
-| targetReps | number | No | — | |
-| targetTime | number | No | — | Seconds |
-| targetRpe | number | No | — | |
-| restSeconds | number | No | — | |
-| **Actual values** | | | | *Entered by user during workout* |
-| actualWeight | number | No | — | |
-| actualWeightUnit | WeightUnit | No | — | |
-| actualReps | number | No | — | |
-| actualTime | number | No | — | Seconds |
-| actualRpe | number | No | — | |
-| **Metadata** | | | | |
+| entries | SetEntry[] | Yes | [] | Target and actual measurements grouped by entry |
+| restSeconds | number | No | — | Rest period after this set |
 | completedAt | datetime | No | — | ISO 8601 |
 | status | SetStatus | Yes | pending | |
 | notes | string | No | — | |
-| tempo | string | No | — | |
 | isDropset | boolean | No | false | |
 | isPerSide | boolean | No | false | |
+| isAmrap | boolean | No | false | |
 | side | string | No | — | "left" or "right" for expanded per-side timed sets, nil otherwise |
 
 **Business rules**:
-- On completion, if no actualWeight/actualReps are provided, values are copied from targets.
-- Drop sets link via parentSetId + dropSequence for ordering.
+- On completion, if no actual values are provided, values are copied from targets.
+- Each entry in `entries` has a groupIndex, target values, and actual values.
+- For normal sets: one entry at groupIndex=0.
+- For drop sets: multiple entries (one per drop) at groupIndex 0, 1, 2, etc. During recording, user can add drops dynamically.
 - Completing a set automatically advances the session to the next pending set.
 - During session creation, timed per-side sets (`isPerSide && targetTime != nil`) are expanded into two sets with `side = "left"` and `side = "right"`. Each gets its own timer and records `actualTime` independently.
+
+---
+
+### SetMeasurement
+
+A single measurement value associated with a set. Measurements are stored in a normalized table rather than inline on the set.
+
+| Field | Type | Required | Default | Constraints |
+|-------|------|----------|---------|-------------|
+| id | string | Yes | UUID | Primary key |
+| setId | string | Yes | — | FK to SessionSet or PlannedSet (no cascade — explicit delete required) |
+| parentType | string | Yes | — | `"session"` or `"planned"` |
+| role | string | Yes | — | `"target"` or `"actual"` |
+| kind | string | Yes | — | `"weight"`, `"reps"`, `"time"`, `"distance"`, `"rpe"` |
+| value | number | Yes | — | Numeric value |
+| unit | string | No | — | `"lbs"`, `"kg"`, `"meters"`, `"km"`, `"miles"`, `"feet"`, `"yards"`, `"s"` — nil for dimensionless (reps, RPE) |
+| groupIndex | number | Yes | 0 | Groups co-recorded measurements into entries |
+| updatedAt | datetime | No | — | ISO 8601 for sync |
+
+**Business rules**:
+- Measurements with the same `(setId, groupIndex)` belong to the same entry.
+- groupIndex=0 for normal sets. Drop sets use 0, 1, 2, etc.
+- No ON DELETE CASCADE — deleting a set requires explicitly deleting its measurements first.
+
+---
+
+### SetEntry (Facade)
+
+Not persisted directly — assembled from SetMeasurement rows at read time.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| groupIndex | number | Entry position (0 for normal sets, 0..N for drop sets) |
+| target | EntryValues? | Target measurements (from plan) |
+| actual | EntryValues? | Actual measurements (from recording) |
+
+### EntryValues (Facade)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| weight | MeasuredWeight? | Weight value + unit |
+| reps | number? | Rep count |
+| time | number? | Seconds |
+| distance | MeasuredDistance? | Distance value + unit |
+| rpe | number? | Rate of Perceived Exertion, 1-10 |
 
 ---
 
@@ -275,15 +305,11 @@ A catalog entry for exercise suggestions and history aggregation. Not currently 
 ## Relationships
 
 ```
-WorkoutPlan 1──* PlannedExercise 1──* PlannedSet
+WorkoutPlan 1──* PlannedExercise 1──* PlannedSet 1──* SetMeasurement (parentType=planned)
      │
      │ (FK, set null on delete)
      ▼
-WorkoutSession 1──* SessionExercise 1──* SessionSet
-                                              │
-                                              │ (self-ref for drop sets)
-                                              ▼
-                                         SessionSet (parentSetId)
+WorkoutSession 1──* SessionExercise 1──* SessionSet 1──* SetMeasurement (parentType=session)
 
 Gym 1──* GymEquipment
 

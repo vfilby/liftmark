@@ -54,6 +54,7 @@ in_progress → canceled
 
 | Action | Description |
 |---|---|
+| `completeDropSet()` | Complete a drop set with multiple weight/reps entries at different groupIndices |
 | `updateSetValues()` | Edit weight/reps for a set before completing it |
 | `addSetToExercise()` | Add extra sets to the current exercise |
 | `deleteSetFromExercise()` | Remove a set from the current exercise |
@@ -63,6 +64,7 @@ in_progress → canceled
 
 ## Variations
 
+- **Drop sets**: Sets with `isDropset == true` show a "+ Drop" button below the primary weight/reps inputs. Tapping "+ Drop" adds a new entry row with weight and reps fields, pre-filling weight from the previous entry. Multiple drops can be added before completing. "Complete Set" records all entries at different `groupIndex` values (0 for primary, 1+ for drops) via `completeDropSet()`. Each drop entry has a delete button (minus icon). Completed drop sets display compactly as "225x10 -> 185x6 -> 135x4" with a "Drop" badge. Drop sets with no added drops behave identically to normal sets.
 - **Time-based sets**: The exercise timer tracks elapsed time against a target rather than counting reps. On completion, `actualTime` is set to the timer's elapsed seconds if started, or `targetTime` if not started.
 - **All sets completed**: The Finish button proceeds without confirmation.
 - **Partially completed workout**: The "Finish Anyway" confirmation is shown listing incomplete sets.

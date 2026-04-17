@@ -19,6 +19,7 @@ struct SetRowView: View {
     let exerciseName: String
     let equipmentType: String?
     let onComplete: (Double?, Int?, Int?) -> Void
+    var onCompleteDropSet: ((_ entries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) -> Void)? = nil
     let onSkip: () -> Void
     let onSave: (Double?, Int?, Int?) -> Void
     var onWeightChanged: ((String) -> Void)? = nil
@@ -27,6 +28,8 @@ struct SetRowView: View {
     @State private var repsText: String = ""
     @State private var timeText: String = ""
     @State private var isEditing = false
+    /// Additional drop entries (groupIndex > 0). Each pair is (weight, reps) text.
+    @State private var dropEntries: [(weight: String, reps: String)] = []
 
     var body: some View {
         Group {
@@ -238,6 +241,38 @@ struct SetRowView: View {
                 .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
             }
 
+            // Drop set entries (additional drops, groupIndex > 0)
+            if set.isDropset && !dropEntries.isEmpty {
+                ForEach(Array(dropEntries.enumerated()), id: \.offset) { index, _ in
+                    dropEntryRow(index: index)
+                }
+            }
+
+            // "+ Drop" button for drop sets
+            if set.isDropset {
+                Button {
+                    // Pre-fill weight from previous entry (last drop or primary)
+                    let prevWeight = dropEntries.last?.weight ?? weightText
+                    dropEntries.append((weight: prevWeight, reps: ""))
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.caption.bold())
+                        Text("Drop")
+                            .font(.caption.bold())
+                    }
+                    .foregroundStyle(LiftMarkTheme.destructive)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(LiftMarkTheme.destructive.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("add-drop-button")
+                .accessibilityLabel("Add drop")
+                .accessibilityHint("Adds another weight reduction entry to this drop set")
+            }
+
             // Middle row: target hint — only when values differ from target
             if let target = targetHint, valuesChangedFromTarget {
                 Text(target)
@@ -248,7 +283,19 @@ struct SetRowView: View {
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
             if set.entries.first?.target?.time == nil {
                 Button {
-                    onComplete(Double(weightText), Int(repsText), Int(timeText))
+                    if set.isDropset && !dropEntries.isEmpty, let callback = onCompleteDropSet {
+                        // Build all entries: primary + drops
+                        let weightUnit = set.entries.first?.target?.weight?.unit
+                        var allEntries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)] = [
+                            (weight: Double(weightText), weightUnit: weightUnit, reps: Int(repsText))
+                        ]
+                        for drop in dropEntries {
+                            allEntries.append((weight: Double(drop.weight), weightUnit: weightUnit, reps: Int(drop.reps)))
+                        }
+                        callback(allEntries)
+                    } else {
+                        onComplete(Double(weightText), Int(repsText), Int(timeText))
+                    }
                 } label: {
                     HStack {
                         Image(systemName: "checkmark")
@@ -279,6 +326,10 @@ struct SetRowView: View {
         } else {
             Button {
                 if set.status == .completed || set.status == .skipped {
+                    // Don't allow inline edit for multi-entry drop sets (too complex)
+                    let actualEntries = set.entries.filter { $0.actual != nil }
+                    guard !(set.isDropset && actualEntries.count > 1) else { return }
+
                     isEditing.toggle()
                     // Initialize edit fields with current values
                     let target = set.entries.first?.target
@@ -294,63 +345,56 @@ struct SetRowView: View {
                     }
                 }
             } label: {
-                HStack(spacing: LiftMarkTheme.spacingSM) {
-                    if set.status == .completed {
-                        let actual = set.entries.first?.actual
-                        if let w = actual?.weight?.value, let u = actual?.weight?.unit {
-                            Text("\(formatWeight(w)) \(u.rawValue)")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.success)
-                        }
-                        if let r = actual?.reps {
-                            Text("× \(r)")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.success)
-                        }
-                        if let t = actual?.time {
-                            Text(formatTime(t))
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.success)
-                        }
-                    } else if set.status == .skipped {
-                        // Show target values + "— Skipped"
-                        let target = set.entries.first?.target
-                        if let w = target?.weight?.value, let u = target?.weight?.unit {
-                            Text("\(formatWeight(w)) \(u.rawValue)")
-                                .font(.subheadline.monospacedDigit())
+                if set.status == .completed && set.isDropset {
+                    completedDropSetContent
+                } else {
+                    HStack(spacing: LiftMarkTheme.spacingSM) {
+                        if set.status == .completed {
+                            normalCompletedContent
+                        } else if set.status == .skipped {
+                            // Show target values + "-- Skipped"
+                            let target = set.entries.first?.target
+                            if let w = target?.weight?.value, let u = target?.weight?.unit {
+                                Text("\(formatWeight(w)) \(u.rawValue)")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(LiftMarkTheme.warning)
+                            }
+                            if let r = target?.reps {
+                                Text("\u{00D7} \(r)")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(LiftMarkTheme.warning)
+                            }
+                            Text("-- Skipped")
+                                .font(.subheadline)
                                 .foregroundStyle(LiftMarkTheme.warning)
-                        }
-                        if let r = target?.reps {
-                            Text("× \(r)")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.warning)
-                        }
-                        Text("— Skipped")
-                            .font(.subheadline)
-                            .foregroundStyle(LiftMarkTheme.warning)
-                    } else {
-                        // Pending - show targets
-                        let target = set.entries.first?.target
-                        if let w = target?.weight?.value, let u = target?.weight?.unit {
-                            Text("\(formatWeight(w)) \(u.rawValue)")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                        }
-                        if let r = target?.reps {
-                            Text("× \(r)")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                        }
-                        if let t = target?.time {
-                            Text(formatTime(t))
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+
+                            Spacer()
+
+                            modifierBadges
+                        } else {
+                            // Pending - show targets
+                            let target = set.entries.first?.target
+                            if let w = target?.weight?.value, let u = target?.weight?.unit {
+                                Text("\(formatWeight(w)) \(u.rawValue)")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                            }
+                            if let r = target?.reps {
+                                Text("\u{00D7} \(r)")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                            }
+                            if let t = target?.time {
+                                Text(formatTime(t))
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                            }
+
+                            Spacer()
+
+                            modifierBadges
                         }
                     }
-
-                    Spacer()
-
-                    modifierBadges
                 }
             }
             .buttonStyle(.plain)
@@ -458,6 +502,133 @@ struct SetRowView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Cancel editing")
             .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+        }
+    }
+
+    // MARK: - Drop Entry Row
+
+    @ViewBuilder
+    private func dropEntryRow(index: Int) -> some View {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            // Drop arrow indicator
+            Image(systemName: "arrow.turn.down.right")
+                .font(.caption)
+                .foregroundStyle(LiftMarkTheme.destructive)
+                .frame(width: 28)
+
+            Text("Drop \(index + 1)")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(LiftMarkTheme.destructive)
+
+            if set.entries.first?.target?.weight != nil {
+                TextField("--", text: Binding(
+                    get: { dropEntries[index].weight },
+                    set: { dropEntries[index].weight = $0 }
+                ))
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+                .font(.body.monospacedDigit())
+                .multilineTextAlignment(.center)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+
+                Text("\u{00D7}")
+                    .font(.caption)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+            }
+
+            TextField("--", text: Binding(
+                get: { dropEntries[index].reps },
+                set: { dropEntries[index].reps = $0 }
+            ))
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
+            .font(.body.monospacedDigit())
+            .multilineTextAlignment(.center)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 60)
+
+            Spacer()
+
+            // Delete drop button
+            Button {
+                dropEntries.remove(at: index)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.body)
+                    .foregroundStyle(LiftMarkTheme.destructive.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Remove drop \(index + 1)")
+        }
+        .padding(.leading, LiftMarkTheme.spacingSM)
+    }
+
+    // MARK: - Completed Drop Set Display
+
+    /// Compact display for completed drop sets: "225x10 -> 185x6 -> 135x4"
+    @ViewBuilder
+    private var completedDropSetContent: some View {
+        let actualEntries = set.entries.filter { $0.actual != nil }
+        if actualEntries.count > 1 {
+            HStack(spacing: 4) {
+                ForEach(Array(actualEntries.enumerated()), id: \.offset) { index, entry in
+                    if index > 0 {
+                        Image(systemName: "arrow.right")
+                            .font(.caption2)
+                            .foregroundStyle(LiftMarkTheme.success.opacity(0.6))
+                    }
+                    HStack(spacing: 2) {
+                        if let w = entry.actual?.weight?.value {
+                            Text(formatWeight(w))
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.success)
+                        }
+                        if let r = entry.actual?.reps {
+                            Text("\u{00D7}\(r)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(LiftMarkTheme.success)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                modifierBadges
+            }
+        } else {
+            // Single entry or no entries — fall back to normal display
+            normalCompletedContent
+        }
+    }
+
+    /// Standard single-entry completed content (extracted from completedOrPendingContent)
+    @ViewBuilder
+    private var normalCompletedContent: some View {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            let actual = set.entries.first?.actual
+            if let w = actual?.weight?.value, let u = actual?.weight?.unit {
+                Text("\(formatWeight(w)) \(u.rawValue)")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(LiftMarkTheme.success)
+            }
+            if let r = actual?.reps {
+                Text("\u{00D7} \(r)")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(LiftMarkTheme.success)
+            }
+            if let t = actual?.time {
+                Text(formatTime(t))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(LiftMarkTheme.success)
+            }
+
+            Spacer()
+
+            modifierBadges
         }
     }
 

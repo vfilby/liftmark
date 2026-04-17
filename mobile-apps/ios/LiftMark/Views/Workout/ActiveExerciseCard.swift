@@ -9,6 +9,7 @@ struct ActiveExerciseCard: View {
     let activeRestTimer: RestTimerState?
     let onToggleCollapse: () -> Void
     let onCompleteSet: (Int, Double?, Int?, Int?) -> Void
+    let onCompleteDropSet: ((Int, [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) -> Void)?
     let onSkipSet: (Int) -> Void
     let onEditExercise: () -> Void
     let onSaveSet: (Int, Double?, Int?, Int?) -> Void
@@ -109,6 +110,9 @@ struct ActiveExerciseCard: View {
                         onComplete: { weight, reps, time in
                             onCompleteSet(setIndex, weight, reps, time)
                         },
+                        onCompleteDropSet: set.isDropset ? { entries in
+                            onCompleteDropSet?(setIndex, entries)
+                        } : nil,
                         onSkip: { onSkipSet(setIndex) },
                         onSave: { weight, reps, time in
                             onSaveSet(setIndex, weight, reps, time)
