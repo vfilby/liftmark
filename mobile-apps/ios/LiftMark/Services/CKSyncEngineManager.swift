@@ -76,6 +76,9 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
         // Don't create zone here — the engine fires .accountChange immediately,
         // which handles zone creation. Doing it here too causes a race.
+
+        // One-time recovery: re-upload all records after schema fix
+        scheduleFullUploadIfNeeded()
     }
 
     func stop() {
@@ -171,6 +174,19 @@ final class CKSyncEngineManager: @unchecked Sendable {
     }
 
     // MARK: - Zone Management
+
+    /// One-time recovery key. Bump the value to force a full re-upload on next launch.
+    private static let fullUploadVersion = "sync.fullUploadVersion"
+    private static let currentFullUploadVersion = 2 // Bump to force re-upload
+
+    /// Check if a forced full re-upload is needed (schema fix recovery).
+    func scheduleFullUploadIfNeeded() {
+        let current = UserDefaults.standard.integer(forKey: Self.fullUploadVersion)
+        guard current < Self.currentFullUploadVersion else { return }
+        Logger.shared.info(.sync, "[sync-engine] Forcing full re-upload (version \(current) → \(Self.currentFullUploadVersion))")
+        scheduleFullUpload()
+        UserDefaults.standard.set(Self.currentFullUploadVersion, forKey: Self.fullUploadVersion)
+    }
 
     private func createZoneAndScheduleFullUpload() async {
         Logger.shared.info(.sync, "[sync-engine] Creating zone \(zoneID.zoneName)...")
