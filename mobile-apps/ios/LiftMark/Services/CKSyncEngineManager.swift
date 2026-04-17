@@ -395,11 +395,18 @@ final class CKSyncEngineManager: @unchecked Sendable {
     // MARK: - Sent Changes (delegated)
 
     private func handleSentChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
+        // Log successful saves
+        for saved in event.savedRecords {
+            Logger.shared.info(.sync, "[sync-engine] Uploaded \(saved.recordType)/\(saved.recordID.recordName)")
+        }
+
         let result = conflictResolver.handleSentChanges(event, removePendingType: { recordName in
             self.lock.lock()
             self.pendingRecordTypes.removeValue(forKey: recordName)
             self.lock.unlock()
         }, engine: engine)
+
+        Logger.shared.debug(.sync, "[sync-engine] Sent changes: \(result.uploaded) uploaded, \(result.conflicts) conflicts, \(event.failedRecordSaves.count) failed")
 
         lock.lock()
         syncUploaded += result.uploaded
@@ -541,6 +548,8 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
             return true
         }
 
+        Logger.shared.debug(.sync, "[sync-engine] Preparing batch: \(pendingChanges.count) pending changes")
+
         let batch = await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { recordID in
             let recordName = recordID.recordName
 
@@ -549,7 +558,26 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
                 return nil
             }
 
-            return self.mapper.createCKRecord(for: recordID, zoneID: self.zoneID)
+            // If we have a cached server record from a previous conflict (local-wins),
+            // use it as the base and apply local values on top. This preserves the
+            // changeTag so CloudKit accepts the update.
+            if let serverRecord = self.conflictResolver.cachedServerRecord(for: recordName) {
+                if let localRecord = self.mapper.createCKRecord(for: recordID, zoneID: self.zoneID) {
+                    // Copy all local field values onto the server record
+                    for key in localRecord.allKeys() {
+                        serverRecord[key] = localRecord[key]
+                    }
+                    Logger.shared.debug(.sync, "[sync-engine] Re-uploading \(serverRecord.recordType)/\(recordName) with server changeTag")
+                    return serverRecord
+                }
+                return nil
+            }
+
+            let record = self.mapper.createCKRecord(for: recordID, zoneID: self.zoneID)
+            if let record {
+                Logger.shared.debug(.sync, "[sync-engine] Uploading \(record.recordType)/\(recordName)")
+            }
+            return record
         }
         return batch
     }

@@ -12,6 +12,10 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     /// Records that already exist on the server — skip these in nextRecordZoneChangeBatch.
     private var resolvedConflicts = Set<String>() // recordID.recordName
 
+    /// Server records from conflicts where local wins — used as base for re-upload
+    /// so the changeTag matches what CloudKit expects.
+    private var serverRecordCache = [String: CKRecord]() // recordName → server CKRecord
+
     init(mapper: CKRecordMapper) {
         self.mapper = mapper
     }
@@ -29,7 +33,17 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     func clearResolved() {
         lock.lock()
         resolvedConflicts.removeAll()
+        serverRecordCache.removeAll()
         lock.unlock()
+    }
+
+    /// Returns the server's version of a record from a previous conflict,
+    /// so we can apply local values on top of it (preserving the changeTag).
+    func cachedServerRecord(for recordName: String) -> CKRecord? {
+        lock.lock()
+        let record = serverRecordCache[recordName]
+        lock.unlock()
+        return record
     }
 
     /// Process the result of a sent-changes event.
@@ -114,9 +128,12 @@ final class CKSyncConflictResolver: @unchecked Sendable {
                 resolvedConflicts.insert(recordName)
                 lock.unlock()
             } else {
-                // Local record is newer — don't merge, don't mark resolved.
-                // The record stays pending so CKSyncEngine will re-upload the local version.
-                Logger.shared.info(.sync, "[sync-engine] Conflict: local is newer for \(recordType)/\(recordName), will re-upload local version")
+                // Local record is newer — cache the server record so nextRecordZoneChangeBatch
+                // can apply local values on top of it (preserving the changeTag).
+                lock.lock()
+                serverRecordCache[recordName] = serverRecord
+                lock.unlock()
+                Logger.shared.info(.sync, "[sync-engine] Conflict: local is newer for \(recordType)/\(recordName), cached server record for re-upload")
             }
         } else {
             Logger.shared.error(.sync, "[sync-engine] serverRecordChanged for \(recordType)/\(recordName) but no serverRecord provided (CKError \(error.code.rawValue))")
