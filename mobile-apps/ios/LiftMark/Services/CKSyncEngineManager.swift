@@ -204,6 +204,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
                     ("workout_sessions", "WorkoutSession"),
                     ("session_exercises", "SessionExercise"),
                     ("session_sets", "SessionSet"),
+                    ("set_measurements", "SetMeasurement"),
                     // user_settings excluded — fetched from server, only uploaded on change
                 ]
 
@@ -271,7 +272,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
     /// Dependency order for merging: parents before children.
     private static let mergeOrder = [
         "Gym", "GymEquipment", "WorkoutPlan", "PlannedExercise", "PlannedSet",
-        "WorkoutSession", "SessionExercise", "SessionSet", "UserSettings"
+        "WorkoutSession", "SessionExercise", "SessionSet", "SetMeasurement", "UserSettings"
     ]
 
     private func handleFetchedChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {

@@ -70,6 +70,7 @@ struct SessionRepository {
 
         var createdExerciseIds: [String] = []
         var createdSetIds: [String] = []
+        var createdMeasurementIds: [String] = []
 
         let result = try dbQueue.write { db -> WorkoutSession in
             let sessionRow = WorkoutSessionRow(
@@ -115,13 +116,14 @@ struct SessionRepository {
                 )
                 try exerciseRow.insert(db)
 
-                let setIds = try insertSessionSets(
+                let (setIds, measurementIds) = try insertSessionSets(
                     from: exercise.sets,
                     sessionExerciseId: sessionExerciseId,
                     now: now,
                     in: db
                 )
                 createdSetIds.append(contentsOf: setIds)
+                createdMeasurementIds.append(contentsOf: measurementIds)
             }
 
             // Re-assemble the full session with exercises and sets from DB
@@ -135,19 +137,23 @@ struct SessionRepository {
         for setId in createdSetIds {
             syncChanges.append(.save(recordType: "SessionSet", recordID: setId))
         }
+        for mId in createdMeasurementIds {
+            syncChanges.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
 
         return (result, syncChanges)
     }
 
     /// Insert session sets from planned sets, expanding per-side sets into left/right pairs.
-    /// Returns the IDs of all created session sets.
+    /// Returns the IDs of all created session sets and measurement rows.
     private func insertSessionSets(
         from plannedSets: [PlannedSet],
         sessionExerciseId: String,
         now: String,
         in db: Database
-    ) throws -> [String] {
+    ) throws -> (setIds: [String], measurementIds: [String]) {
         var createdSetIds: [String] = []
+        var createdMeasurementIds: [String] = []
         var expandedOrderIndex = 0
 
         for set in plannedSets {
@@ -172,7 +178,8 @@ struct SessionRepository {
                     try setRow.insert(db)
 
                     // Copy target measurements from planned set
-                    try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+                    let mIds = try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+                    createdMeasurementIds.append(contentsOf: mIds)
 
                     expandedOrderIndex += 1
                 }
@@ -196,22 +203,26 @@ struct SessionRepository {
                 try setRow.insert(db)
 
                 // Copy target measurements from planned set
-                try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+                let mIds = try insertMeasurementsFromPlannedSet(set, sessionSetId: setId, now: now, in: db)
+                createdMeasurementIds.append(contentsOf: mIds)
 
                 expandedOrderIndex += 1
             }
         }
 
-        return createdSetIds
+        return (createdSetIds, createdMeasurementIds)
     }
 
     /// Copy target measurements from a planned set into session measurements.
+    /// Returns the IDs of all created measurement rows.
+    @discardableResult
     private func insertMeasurementsFromPlannedSet(
         _ plannedSet: PlannedSet,
         sessionSetId: String,
         now: String,
         in db: Database
-    ) throws {
+    ) throws -> [String] {
+        var measurementIds: [String] = []
         for entry in plannedSet.entries {
             if let target = entry.target {
                 for mRow in target.toMeasurementRows(
@@ -219,9 +230,11 @@ struct SessionRepository {
                     role: "target", groupIndex: entry.groupIndex, now: now
                 ) {
                     try mRow.insert(db)
+                    measurementIds.append(mRow.id)
                 }
             }
         }
+        return measurementIds
     }
 
     @discardableResult
@@ -277,7 +290,7 @@ struct SessionRepository {
     func delete(_ id: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         // Collect child IDs before cascading delete
-        let (exerciseIds, setIds) = try dbQueue.read { db -> ([String], [String]) in
+        let (exerciseIds, setIds, measurementIds) = try dbQueue.read { db -> ([String], [String], [String]) in
             let exRows = try Row.fetchAll(db, sql: "SELECT id FROM session_exercises WHERE workout_session_id = ?", arguments: [id])
             let exIds = exRows.compactMap { $0["id"] as String? }
             let setRows = try Row.fetchAll(db, sql: """
@@ -286,7 +299,12 @@ struct SessionRepository {
                 WHERE se.workout_session_id = ?
             """, arguments: [id])
             let sIds = setRows.compactMap { $0["id"] as String? }
-            return (exIds, sIds)
+            var mIds: [String] = []
+            for setId in sIds {
+                let mRows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ?", arguments: [setId])
+                mIds.append(contentsOf: mRows.compactMap { $0["id"] as String? })
+            }
+            return (exIds, sIds, mIds)
         }
         try dbQueue.write { db in
             // Delete measurements for sets (no CASCADE)
@@ -296,6 +314,9 @@ struct SessionRepository {
             try db.execute(sql: "DELETE FROM workout_sessions WHERE id = ?", arguments: [id])
         }
         var changes: [SyncChange] = []
+        for mId in measurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
         for setId in setIds {
             changes.append(.delete(recordType: "SessionSet", recordID: setId))
         }
@@ -383,6 +404,14 @@ struct SessionRepository {
         let dbQueue = try dbManager.database()
         let now = self.now
         let completedAt = status == .completed ? now : nil
+
+        // Collect old actual measurement IDs before deleting
+        let oldMeasurementIds = try dbQueue.read { db -> [String] in
+            let rows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'", arguments: [setId])
+            return rows.compactMap { $0["id"] as String? }
+        }
+
+        var newMeasurementIds: [String] = []
         try dbQueue.write { db in
             // Update set status
             try db.execute(
@@ -405,16 +434,33 @@ struct SessionRepository {
             if !actual.isEmpty {
                 for mRow in actual.toMeasurementRows(setId: setId, parentType: "session", role: "actual", groupIndex: 0, now: now) {
                     try mRow.insert(db)
+                    newMeasurementIds.append(mRow.id)
                 }
             }
         }
-        return [.save(recordType: "SessionSet", recordID: setId)]
+
+        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
+        for mId in oldMeasurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
+        for mId in newMeasurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
+        return changes
     }
 
     @discardableResult
     func updateSessionSetTarget(_ setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
+
+        // Collect old target measurement IDs before deleting
+        let oldMeasurementIds = try dbQueue.read { db -> [String] in
+            let rows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ? AND parent_type = 'session' AND role = 'target'", arguments: [setId])
+            return rows.compactMap { $0["id"] as String? }
+        }
+
+        var newMeasurementIds: [String] = []
         try dbQueue.write { db in
             // Update set timestamp
             try db.execute(
@@ -437,10 +483,19 @@ struct SessionRepository {
             if !target.isEmpty {
                 for mRow in target.toMeasurementRows(setId: setId, parentType: "session", role: "target", groupIndex: 0, now: now) {
                     try mRow.insert(db)
+                    newMeasurementIds.append(mRow.id)
                 }
             }
         }
-        return [.save(recordType: "SessionSet", recordID: setId)]
+
+        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
+        for mId in oldMeasurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
+        for mId in newMeasurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
+        return changes
     }
 
     @discardableResult
@@ -488,6 +543,7 @@ struct SessionRepository {
         let dbQueue = try dbManager.database()
         let setId = IDGenerator.generate()
         let now = self.now
+        var measurementIds: [String] = []
         try dbQueue.write { db in
             let row = SessionSetRow(
                 id: setId,
@@ -516,10 +572,15 @@ struct SessionRepository {
             if !target.isEmpty {
                 for mRow in target.toMeasurementRows(setId: setId, parentType: "session", role: "target", groupIndex: 0, now: now) {
                     try mRow.insert(db)
+                    measurementIds.append(mRow.id)
                 }
             }
         }
-        return [.save(recordType: "SessionSet", recordID: setId)]
+        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
+        for mId in measurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
+        return changes
     }
 
     @discardableResult
@@ -538,10 +599,16 @@ struct SessionRepository {
     @discardableResult
     func deleteSessionExercise(_ exerciseId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
-        // Collect child set IDs before deleting
-        let childSetIds = try dbQueue.read { db -> [String] in
-            let rows = try Row.fetchAll(db, sql: "SELECT id FROM session_sets WHERE session_exercise_id = ?", arguments: [exerciseId])
-            return rows.compactMap { $0["id"] as String? }
+        // Collect child set IDs and measurement IDs before deleting
+        let (childSetIds, measurementIds) = try dbQueue.read { db -> ([String], [String]) in
+            let setRows = try Row.fetchAll(db, sql: "SELECT id FROM session_sets WHERE session_exercise_id = ?", arguments: [exerciseId])
+            let setIds = setRows.compactMap { $0["id"] as String? }
+            var mIds: [String] = []
+            for setId in setIds {
+                let mRows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ?", arguments: [setId])
+                mIds.append(contentsOf: mRows.compactMap { $0["id"] as String? })
+            }
+            return (setIds, mIds)
         }
         try dbQueue.write { db in
             // Delete measurements for sets (no CASCADE)
@@ -551,6 +618,9 @@ struct SessionRepository {
             try db.execute(sql: "DELETE FROM session_exercises WHERE id = ?", arguments: [exerciseId])
         }
         var changes: [SyncChange] = []
+        for mId in measurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
         for setId in childSetIds {
             changes.append(.delete(recordType: "SessionSet", recordID: setId))
         }
@@ -561,12 +631,22 @@ struct SessionRepository {
     @discardableResult
     func deleteSessionSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
+        // Collect measurement IDs before deleting
+        let measurementIds = try dbQueue.read { db -> [String] in
+            let rows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ?", arguments: [setId])
+            return rows.compactMap { $0["id"] as String? }
+        }
         try dbQueue.write { db in
             // Delete measurements first (no CASCADE)
             try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [setId])
             try db.execute(sql: "DELETE FROM session_sets WHERE id = ?", arguments: [setId])
         }
-        return [.delete(recordType: "SessionSet", recordID: setId)]
+        var changes: [SyncChange] = []
+        for mId in measurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
+        changes.append(.delete(recordType: "SessionSet", recordID: setId))
+        return changes
     }
 
     // MARK: - Assembly

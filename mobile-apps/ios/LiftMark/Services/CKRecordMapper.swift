@@ -95,6 +95,8 @@ final class CKRecordMapper {
                         return try SessionSetRow.fetchOne(db, key: recordName)?.updatedAt
                     case "UserSettings":
                         return try UserSettingsRow.fetchOne(db, key: recordName)?.updatedAt
+                    case "SetMeasurement":
+                        return try SetMeasurementRow.fetchOne(db, key: recordName)?.updatedAt
                     default:
                         return nil
                     }
@@ -309,6 +311,20 @@ final class CKRecordMapper {
         if let d = parseDate(isoString) { record[key] = d as CKRecordValue }
     }
 
+    func toCKRecord(_ m: SetMeasurementRow, zoneID: CKRecordZone.ID) -> CKRecord {
+        let recordID = CKRecord.ID(recordName: m.id, zoneID: zoneID)
+        let record = CKRecord(recordType: "SetMeasurement", recordID: recordID)
+        record["setId"] = makeReference(recordName: m.setId, zoneID: zoneID) as CKRecordValue
+        record["parentType"] = m.parentType as CKRecordValue
+        record["role"] = m.role as CKRecordValue
+        record["kind"] = m.kind as CKRecordValue
+        record["value"] = m.value as CKRecordValue
+        if let u = m.unit { record["unit"] = u as CKRecordValue }
+        record["groupIndex"] = Int64(m.groupIndex) as CKRecordValue
+        if let d = parseDate(m.updatedAt) { record["updatedAt"] = d as CKRecordValue }
+        return record
+    }
+
     func toCKRecord(_ s: UserSettingsRow, zoneID: CKRecordZone.ID) -> CKRecord {
         let recordID = CKRecord.ID(recordName: "user-settings", zoneID: zoneID)
         let record = CKRecord(recordType: "UserSettings", recordID: recordID)
@@ -354,6 +370,8 @@ final class CKRecordMapper {
             return try mergeSessionSet(record, dbQueue: dbQueue)
         case "UserSettings":
             return try mergeUserSettings(record, dbQueue: dbQueue)
+        case "SetMeasurement":
+            return try mergeSetMeasurement(record, dbQueue: dbQueue)
         default:
             Logger.shared.warn(.sync, "Unknown record type for merge: \(record.recordType)")
             return false
@@ -764,6 +782,47 @@ final class CKRecordMapper {
         }
     }
 
+    private func mergeSetMeasurement(_ record: CKRecord, dbQueue: DatabaseQueue) throws -> Bool {
+        let remoteUpdatedAt = dateField(record, "updatedAt")
+        return try dbQueue.write { db in
+            let measurementId = record.recordID.recordName
+            let existing = try SetMeasurementRow.fetchOne(db, key: measurementId)
+
+            if let existing, !self.remoteIsNewer(remoteDate: remoteUpdatedAt, localUpdatedAt: existing.updatedAt) {
+                return false
+            }
+
+            let setId = self.referenceId(record, "setId") ?? existing?.setId ?? ""
+            if setId.isEmpty {
+                Logger.shared.error(.sync, "[sync-merge] Skipping SetMeasurement \(measurementId): missing setId FK")
+                return false
+            }
+
+            // Validate FK: setId must reference an existing session_set or template_set
+            let parentType = self.stringField(record, "parentType") ?? existing?.parentType ?? "session"
+            let fkTable = parentType == "planned" ? "template_sets" : "session_sets"
+            let fkExists = try Row.fetchOne(db, sql: "SELECT 1 FROM \(fkTable) WHERE id = ?", arguments: [setId]) != nil
+            if !fkExists && existing == nil {
+                Logger.shared.error(.sync, "[sync-merge] Skipping SetMeasurement \(measurementId): setId \(setId) not found in \(fkTable)")
+                return false
+            }
+
+            let row = SetMeasurementRow(
+                id: measurementId,
+                setId: setId,
+                parentType: parentType,
+                role: self.stringField(record, "role") ?? existing?.role ?? "actual",
+                kind: self.stringField(record, "kind") ?? existing?.kind ?? "weight",
+                value: self.doubleField(record, "value") ?? existing?.value ?? 0,
+                unit: self.stringField(record, "unit") ?? existing?.unit,
+                groupIndex: self.int64Field(record, "groupIndex").map { Int($0) } ?? existing?.groupIndex ?? 0,
+                updatedAt: self.dateToISO(remoteUpdatedAt) ?? existing?.updatedAt
+            )
+            if existing != nil { try row.update(db) } else { try row.insert(db) }
+            return true
+        }
+    }
+
     // MARK: - Record Lookup
 
     /// Create a CKRecord for a local row identified by its record ID.
@@ -812,6 +871,9 @@ final class CKRecordMapper {
                         return self.toCKRecord(settings, zoneID: zoneID)
                     }
                 }
+                if let measurement = try SetMeasurementRow.fetchOne(db, key: id) {
+                    return self.toCKRecord(measurement, zoneID: zoneID)
+                }
                 return nil
             }
         } catch {
@@ -833,6 +895,10 @@ final class CKRecordMapper {
         try dbQueue.write { db in
             // Clean up measurements if this is a set being deleted (no CASCADE)
             try db.execute(sql: "DELETE FROM set_measurements WHERE set_id = ?", arguments: [id])
+
+            // Also try deleting from set_measurements directly (the deleted record may BE a SetMeasurement)
+            try db.execute(sql: "DELETE FROM set_measurements WHERE id = ?", arguments: [id])
+            if db.changesCount > 0 { return }
 
             for table in tables {
                 try db.execute(sql: "DELETE FROM \(table) WHERE id = ?", arguments: [id])

@@ -56,6 +56,7 @@ struct WorkoutPlanRepository {
     @discardableResult
     func create(_ plan: WorkoutPlan) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
+        var createdMeasurementIds: [String] = []
         try dbQueue.write { db in
             let tagsJSON = try JSONEncoder().encode(plan.tags)
             let tagsString = String(data: tagsJSON, encoding: .utf8)
@@ -108,6 +109,7 @@ struct WorkoutPlanRepository {
                         if let target = entry.target {
                             for mRow in target.toMeasurementRows(setId: set.id, parentType: "planned", role: "target", groupIndex: entry.groupIndex, now: now) {
                                 try mRow.insert(db)
+                                createdMeasurementIds.append(mRow.id)
                             }
                         }
                     }
@@ -122,6 +124,9 @@ struct WorkoutPlanRepository {
                 changes.append(.save(recordType: "PlannedSet", recordID: set.id))
             }
         }
+        for mId in createdMeasurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
         return changes
     }
 
@@ -129,8 +134,8 @@ struct WorkoutPlanRepository {
     func update(_ plan: WorkoutPlan) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
 
-        // Collect old exercise/set IDs before deletion for sync notifications
-        let (oldExerciseIds, oldSetIds) = try dbQueue.read { db -> ([String], [String]) in
+        // Collect old exercise/set/measurement IDs before deletion for sync notifications
+        let (oldExerciseIds, oldSetIds, oldMeasurementIds) = try dbQueue.read { db -> ([String], [String], [String]) in
             let exRows = try Row.fetchAll(db, sql: "SELECT id FROM template_exercises WHERE workout_template_id = ?", arguments: [plan.id])
             let exIds = exRows.compactMap { $0["id"] as String? }
             let setRows = try Row.fetchAll(db, sql: """
@@ -139,9 +144,15 @@ struct WorkoutPlanRepository {
                 WHERE te.workout_template_id = ?
             """, arguments: [plan.id])
             let sIds = setRows.compactMap { $0["id"] as String? }
-            return (exIds, sIds)
+            var mIds: [String] = []
+            for setId in sIds {
+                let mRows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ?", arguments: [setId])
+                mIds.append(contentsOf: mRows.compactMap { $0["id"] as String? })
+            }
+            return (exIds, sIds, mIds)
         }
 
+        var newMeasurementIds: [String] = []
         try dbQueue.write { db in
             // Delete measurements for old sets (no CASCADE)
             for setId in oldSetIds {
@@ -205,6 +216,7 @@ struct WorkoutPlanRepository {
                         if let target = entry.target {
                             for mRow in target.toMeasurementRows(setId: set.id, parentType: "planned", role: "target", groupIndex: entry.groupIndex, now: now) {
                                 try mRow.insert(db)
+                                newMeasurementIds.append(mRow.id)
                             }
                         }
                     }
@@ -212,8 +224,11 @@ struct WorkoutPlanRepository {
             }
         }
 
-        // Build sync changes: delete old exercises/sets, save new ones
+        // Build sync changes: delete old exercises/sets/measurements, save new ones
         var changes: [SyncChange] = []
+        for mId in oldMeasurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
         for setId in oldSetIds {
             changes.append(.delete(recordType: "PlannedSet", recordID: setId))
         }
@@ -227,6 +242,9 @@ struct WorkoutPlanRepository {
                 changes.append(.save(recordType: "PlannedSet", recordID: set.id))
             }
         }
+        for mId in newMeasurementIds {
+            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
+        }
         return changes
     }
 
@@ -234,7 +252,7 @@ struct WorkoutPlanRepository {
     func delete(_ id: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         // Collect child IDs before cascading delete
-        let (exerciseIds, setIds) = try dbQueue.read { db -> ([String], [String]) in
+        let (exerciseIds, setIds, measurementIds) = try dbQueue.read { db -> ([String], [String], [String]) in
             let exRows = try Row.fetchAll(db, sql: "SELECT id FROM template_exercises WHERE workout_template_id = ?", arguments: [id])
             let exIds = exRows.compactMap { $0["id"] as String? }
             let setRows = try Row.fetchAll(db, sql: """
@@ -243,7 +261,12 @@ struct WorkoutPlanRepository {
                 WHERE te.workout_template_id = ?
             """, arguments: [id])
             let sIds = setRows.compactMap { $0["id"] as String? }
-            return (exIds, sIds)
+            var mIds: [String] = []
+            for setId in sIds {
+                let mRows = try Row.fetchAll(db, sql: "SELECT id FROM set_measurements WHERE set_id = ?", arguments: [setId])
+                mIds.append(contentsOf: mRows.compactMap { $0["id"] as String? })
+            }
+            return (exIds, sIds, mIds)
         }
         try dbQueue.write { db in
             // Delete measurements for sets (no CASCADE)
@@ -253,6 +276,9 @@ struct WorkoutPlanRepository {
             try db.execute(sql: "DELETE FROM workout_templates WHERE id = ?", arguments: [id])
         }
         var changes: [SyncChange] = []
+        for mId in measurementIds {
+            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
+        }
         for setId in setIds {
             changes.append(.delete(recordType: "PlannedSet", recordID: setId))
         }
