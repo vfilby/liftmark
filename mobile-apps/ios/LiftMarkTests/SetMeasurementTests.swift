@@ -658,4 +658,44 @@ final class SetMeasurementTests: XCTestCase {
             status: "pending", isDropset: 0, isPerSide: 0, isAmrap: 0
         )
     }
+
+    // MARK: - Drop Set Round-Trip Regression
+
+    func testDropSetFlagSurvivesPlanToSessionRoundTrip() throws {
+        let markdown = """
+        # Drop Set Test
+
+        ## Lateral Raise
+        - 25 lbs x 20 @dropset
+        """
+        let result = MarkdownParser.parseWorkout(markdown)
+        XCTAssertTrue(result.success)
+        let parsed = try XCTUnwrap(result.data)
+
+        // Verify parser sets isDropset
+        XCTAssertEqual(parsed.exercises.count, 1)
+        XCTAssertEqual(parsed.exercises[0].sets.count, 1)
+        XCTAssertTrue(parsed.exercises[0].sets[0].isDropset, "Parser should set isDropset=true")
+
+        // Save as plan
+        let plan = WorkoutPlan(
+            name: parsed.name,
+            sourceMarkdown: markdown,
+            exercises: parsed.exercises
+        )
+        let planRepo = WorkoutPlanRepository()
+        try planRepo.create(plan)
+
+        // Fetch plan back and verify isDropset survived
+        let fetchedPlan = try XCTUnwrap(planRepo.getById(plan.id))
+        XCTAssertTrue(fetchedPlan.exercises[0].sets[0].isDropset, "isDropset should survive plan save/fetch")
+
+        // Create session from plan
+        let sessionRepo = SessionRepository()
+        let (session, _) = try sessionRepo.createFromPlan(fetchedPlan)
+
+        // Verify session set has isDropset
+        XCTAssertEqual(session.exercises.count, 1)
+        XCTAssertTrue(session.exercises[0].sets[0].isDropset, "isDropset should carry to session set")
+    }
 }

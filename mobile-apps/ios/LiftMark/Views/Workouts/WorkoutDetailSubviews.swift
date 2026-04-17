@@ -214,6 +214,24 @@ struct PlanExerciseCard: View {
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
 
                         Spacer()
+
+                        // Modifier badges
+                        if set.isDropset {
+                            Text("Drop")
+                                .font(.caption2)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(LiftMarkTheme.destructive.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
+                        if set.isPerSide {
+                            Text("/side")
+                                .font(.caption2)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(LiftMarkTheme.primary.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
                     }
                     .padding(.vertical, 8)
                     .accessibilityElement(children: .contain)
@@ -332,6 +350,23 @@ struct PlanSupersetCard: View {
                         }
 
                         Spacer()
+
+                        if item.set.isDropset {
+                            Text("Drop")
+                                .font(.caption2)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(LiftMarkTheme.destructive.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
+                        if item.set.isPerSide {
+                            Text("/side")
+                                .font(.caption2)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(LiftMarkTheme.primary.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
                     }
                     .padding(.vertical, 8)
                     .accessibilityIdentifier("set-\(item.set.id)")

@@ -251,9 +251,21 @@ struct SetRowView: View {
             // "+ Drop" button for drop sets
             if set.isDropset {
                 Button {
-                    // Pre-fill weight from previous entry (last drop or primary)
-                    let prevWeight = dropEntries.last?.weight ?? weightText
-                    dropEntries.append((weight: prevWeight, reps: ""))
+                    // Auto-decrement weight by 5 lbs from previous entry
+                    let prevWeightStr = dropEntries.last?.weight ?? weightText
+                    let prevWeight = Double(prevWeightStr) ?? 0
+                    let droppedWeight = max(0, prevWeight - 5)
+                    let newWeight = droppedWeight.truncatingRemainder(dividingBy: 1) == 0
+                        ? "\(Int(droppedWeight))" : String(format: "%.1f", droppedWeight)
+
+                    // Pre-fill reps with remaining count (target - sum of entered reps)
+                    let targetReps = set.entries.first?.target?.reps ?? 0
+                    let primaryReps = Int(repsText) ?? 0
+                    let dropRepsSum = dropEntries.compactMap { Int($0.reps) }.reduce(0, +)
+                    let remaining = max(0, targetReps - primaryReps - dropRepsSum)
+                    let newReps = remaining > 0 ? "\(remaining)" : ""
+
+                    dropEntries.append((weight: newWeight, reps: newReps))
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
