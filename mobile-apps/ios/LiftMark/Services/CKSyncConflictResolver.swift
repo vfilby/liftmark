@@ -33,7 +33,7 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     func clearResolved() {
         lock.lock()
         resolvedConflicts.removeAll()
-        serverRecordCache.removeAll()
+        // Don't clear serverRecordCache — cached records are needed across batches
         lock.unlock()
     }
 
