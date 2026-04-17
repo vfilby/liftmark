@@ -408,6 +408,23 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
         Logger.shared.debug(.sync, "[sync-engine] Sent changes: \(result.uploaded) uploaded, \(result.conflicts) conflicts, \(event.failedRecordSaves.count) failed")
 
+        // Re-queue records that had local-wins conflicts — the cached server records
+        // are ready with local values applied, but CKSyncEngine needs them re-added
+        // to pendingRecordZoneChanges to trigger another batch.
+        if result.conflicts > 0 {
+            var requeued = 0
+            for failedSave in event.failedRecordSaves where failedSave.error.code == .serverRecordChanged {
+                let recordName = failedSave.record.recordID.recordName
+                if conflictResolver.cachedServerRecord(for: recordName) != nil {
+                    engine?.state.add(pendingRecordZoneChanges: [.saveRecord(failedSave.record.recordID)])
+                    requeued += 1
+                }
+            }
+            if requeued > 0 {
+                Logger.shared.info(.sync, "[sync-engine] Re-queued \(requeued) conflict-resolved records for upload")
+            }
+        }
+
         lock.lock()
         syncUploaded += result.uploaded
         syncConflicts += result.conflicts
