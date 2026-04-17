@@ -241,6 +241,8 @@ struct SessionRepository {
     func complete(_ sessionId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = ISO8601DateFormatter().string(from: Date())
+        var changes: [SyncChange] = []
+
         try dbQueue.write { db in
             guard let row = try WorkoutSessionRow.fetchOne(db, key: sessionId) else { return }
             var duration: Int? = nil
@@ -248,12 +250,53 @@ struct SessionRepository {
                let start = ISO8601DateFormatter().date(from: startTime) {
                 duration = Int(Date().timeIntervalSince(start))
             }
+
+            // Mark session as completed
             try db.execute(
                 sql: "UPDATE workout_sessions SET status = ?, end_time = ?, duration = ?, updated_at = ? WHERE id = ?",
                 arguments: [SessionStatus.completed.rawValue, now, duration, now, sessionId]
             )
+            changes.append(.save(recordType: "WorkoutSession", recordID: sessionId))
+
+            // Mark all pending sets as skipped
+            let pendingSetRows = try Row.fetchAll(db, sql: """
+                SELECT ss.id FROM session_sets ss
+                JOIN session_exercises se ON se.id = ss.session_exercise_id
+                WHERE se.workout_session_id = ? AND ss.status = ?
+            """, arguments: [sessionId, SetStatus.pending.rawValue])
+            let pendingSetIds = pendingSetRows.compactMap { $0["id"] as String? }
+
+            if !pendingSetIds.isEmpty {
+                try db.execute(sql: """
+                    UPDATE session_sets SET status = ?, updated_at = ?
+                    WHERE session_exercise_id IN (
+                        SELECT id FROM session_exercises WHERE workout_session_id = ?
+                    ) AND status = ?
+                """, arguments: [SetStatus.skipped.rawValue, now, sessionId, SetStatus.pending.rawValue])
+                for setId in pendingSetIds {
+                    changes.append(.save(recordType: "SessionSet", recordID: setId))
+                }
+            }
+
+            // Mark all pending/in-progress exercises as completed
+            let pendingExRows = try Row.fetchAll(db, sql: """
+                SELECT id FROM session_exercises
+                WHERE workout_session_id = ? AND status IN (?, ?)
+            """, arguments: [sessionId, ExerciseStatus.pending.rawValue, ExerciseStatus.inProgress.rawValue])
+            let pendingExIds = pendingExRows.compactMap { $0["id"] as String? }
+
+            if !pendingExIds.isEmpty {
+                try db.execute(sql: """
+                    UPDATE session_exercises SET status = ?, updated_at = ?
+                    WHERE workout_session_id = ? AND status IN (?, ?)
+                """, arguments: [ExerciseStatus.completed.rawValue, now, sessionId, ExerciseStatus.pending.rawValue, ExerciseStatus.inProgress.rawValue])
+                for exId in pendingExIds {
+                    changes.append(.save(recordType: "SessionExercise", recordID: exId))
+                }
+            }
         }
-        return [.save(recordType: "WorkoutSession", recordID: sessionId)]
+
+        return changes
     }
 
     @discardableResult
