@@ -116,24 +116,32 @@ final class CKSyncConflictResolver: @unchecked Sendable {
     private func handleServerRecordChanged(recordName: String, recordType: String, error: CKError) {
         if let serverRecord = error.serverRecord {
             if mapper.serverRecordIsNewer(serverRecord) {
-                // Server record is newer (or equal) — merge it and mark resolved
+                // Server record is newer (or equal) — merge server version locally
                 do {
                     _ = try mapper.mergeIncoming(serverRecord)
-                    Logger.shared.info(.sync, "[sync-engine] Conflict: server is newer for \(recordType)/\(recordName), merged server version")
+                    Logger.shared.info(.sync, "[sync-engine] Conflict: server wins for \(recordType)/\(recordName), merged server version")
                 } catch {
                     Logger.shared.error(.sync, "[sync-engine] Failed to merge conflict for \(recordType)/\(recordName)", error: error)
                 }
-                // Mark as resolved so nextRecordZoneChangeBatch skips it on retry
+                // Mark as resolved so nextRecordZoneChangeBatch skips it
                 lock.lock()
                 resolvedConflicts.insert(recordName)
                 lock.unlock()
             } else {
-                // Local record is newer — cache the server record so nextRecordZoneChangeBatch
-                // can apply local values on top of it (preserving the changeTag).
+                // Local record is newer — apply local values onto the server record
+                // (preserving changeTag) and cache for re-upload in the next batch.
+                if let localRecord = mapper.createCKRecord(
+                    for: CKRecord.ID(recordName: recordName, zoneID: serverRecord.recordID.zoneID),
+                    zoneID: serverRecord.recordID.zoneID
+                ) {
+                    for key in localRecord.allKeys() {
+                        serverRecord[key] = localRecord[key]
+                    }
+                }
                 lock.lock()
                 serverRecordCache[recordName] = serverRecord
                 lock.unlock()
-                Logger.shared.info(.sync, "[sync-engine] Conflict: local is newer for \(recordType)/\(recordName), cached server record for re-upload")
+                Logger.shared.info(.sync, "[sync-engine] Conflict: local wins for \(recordType)/\(recordName), prepared re-upload with server changeTag")
             }
         } else {
             Logger.shared.error(.sync, "[sync-engine] serverRecordChanged for \(recordType)/\(recordName) but no serverRecord provided (CKError \(error.code.rawValue))")
