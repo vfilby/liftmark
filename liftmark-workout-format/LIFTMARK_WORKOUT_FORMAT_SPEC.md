@@ -337,7 +337,7 @@ Modifiers provide functional metadata that affects how the app behaves. They use
 | Modifier | Values | Description | Example |
 |----------|--------|-------------|---------|
 | `@rest` | Number + `s`/`m` | Rest timer after set (triggers countdown in app) | `@rest: 180s` or `@rest: 3m` |
-| `@dropset` | flag | Drop set indicator (changes UI tracking) | `@dropset` |
+| `@dropset` | flag | Drop set — user adds weight drops during recording | `@dropset` |
 | `@perside` | flag | Per-side indicator (shows dual sequential timers for timed sets) | `@perside` |
 
 ### Examples
@@ -347,10 +347,8 @@ Modifiers provide functional metadata that affects how the app behaves. They use
 - 315 lbs x 3 reps @rest: 3m
 - 315 lbs x 3 reps @rest: 180s
 
-# Drop set (UI shows connected sets)
-- 100 lbs x 12 reps
-- 70 lbs x 10 reps @dropset
-- 50 lbs x 8 reps @dropset
+# Drop set (user adds weight drops during recording)
+- 100 lbs x 12 reps @dropset
 
 # Per-side (explicit modifier)
 - 30s @perside
@@ -1071,7 +1069,7 @@ Format requirements:
 - Sets format: - [weight] [unit] x [reps] or - [weight] [unit] for [time] or - [distance] [distance_unit]
 - Distance units: meters, km, miles, mi, feet, ft, yards, yd (note: "m" means minutes, NOT meters)
 - If @units is set, weight units can be omitted: - [weight] x [reps]
-- Functional modifiers: @rest (triggers timer), @dropset (UI behavior), @perside (per-side timer)
+- Functional modifiers: @rest (triggers timer), @dropset (enables multi-drop recording), @perside (per-side timer)
 - Descriptive data (tempo, RPE, etc.) goes in freeform notes
 - For supersets, use nested headers with "superset" in the name
   - Header containing "superset" (case-insensitive) becomes the superset parent
@@ -1318,7 +1316,7 @@ These have been feeling great lately.
 - 500 x 1 @rest: 600s
 ```
 
-**TC-V14: Dropset chain**
+**TC-V14: Dropset**
 ```markdown
 # Hypertrophy Arms
 
@@ -1326,13 +1324,10 @@ These have been feeling great lately.
 - 40 lbs x 10 @rest: 60s
 - 35 lbs x 10 @rest: 60s
 - 30 lbs x 12 @dropset
-- 20 lbs x 15 @dropset
-- 10 lbs x 20 @dropset
 
 ## Tricep Pushdown
 - 80 lbs x 10 @rest: 60s
 - 70 lbs x 12 @dropset
-- 50 lbs x 15 @dropset
 ```
 
 **TC-V15: Per-side — explicit modifier**
@@ -1590,7 +1585,6 @@ Heavy sets with rest, finishing with drops.
 - 225 lbs x 5 @rest: 180s
 - 225 lbs x 5 @rest: 180s
 - 185 lbs x 8 @dropset
-- 135 lbs x 12 @dropset
 
 ## Side Plank Hold
 - 45s @perside @rest: 30s
@@ -1649,21 +1643,18 @@ Today is the big one. Eat well, sleep well, lift well.
 - 20 x 12 @rest: 45s
 - 20 x 12 @rest: 45s
 - 15 x 15 @dropset
-- 10 x 20 @dropset
 
 ## Barbell Curl
 - 65 x 10 @rest: 60s
 - 75 x 8 @rest: 60s
 - 85 x 6 @rest: 60s
 - 65 x 12 @dropset
-- 45 x 15 @dropset
 
 ## Tricep Pushdown
 - 60 x 12 @rest: 60s
 - 70 x 10 @rest: 60s
 - 80 x 8 @rest: 60s
 - 60 x 12 @dropset
-- 40 x 15 @dropset
 
 ## Plank
 - 60s @rest: 30s
