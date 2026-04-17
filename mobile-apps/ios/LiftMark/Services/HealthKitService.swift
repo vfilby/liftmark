@@ -108,9 +108,10 @@ enum HealthKitService {
 
         for exercise in session.exercises {
             for set in exercise.sets {
+                let actual = set.entries.first?.actual
                 if set.status == .completed,
-                   let weight = set.actualWeight,
-                   let reps = set.actualReps {
+                   let weight = actual?.weight?.value,
+                   let reps = actual?.reps {
                     totalVolume += weight * Double(reps)
                 }
             }

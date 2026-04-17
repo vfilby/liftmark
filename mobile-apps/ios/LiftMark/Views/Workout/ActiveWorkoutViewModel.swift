@@ -149,7 +149,8 @@ enum ActiveWorkoutViewModel {
         let result = MarkdownParser.parseWorkout(markdown)
         guard let plan = result.data, let firstExercise = plan.exercises.first else { return nil }
         let sets = firstExercise.sets.map { set in
-            (weight: set.targetWeight, unit: set.targetWeightUnit, reps: set.targetReps, time: set.targetTime)
+            let target = set.entries.first?.target
+            return (weight: target?.weight?.value, unit: target?.weight?.unit, reps: target?.reps, time: target?.time)
         }
         return (name: firstExercise.exerciseName, sets: sets)
     }

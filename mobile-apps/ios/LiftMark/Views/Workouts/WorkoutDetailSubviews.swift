@@ -32,32 +32,29 @@ func workoutSectionColor(for name: String) -> Color {
 // MARK: - Set Detail Formatting
 
 func planSetDetailString(_ set: PlannedSet) -> String {
+    let target = set.entries.first?.target
     var parts: [String] = []
 
-    if let weight = set.targetWeight, let unit = set.targetWeightUnit {
+    if let weight = target?.weight?.value, let unit = target?.weight?.unit {
         parts.append("\(planFormatWeight(weight)) \(unit.rawValue)")
     }
 
-    if let reps = set.targetReps {
+    if let reps = target?.reps {
         let amrapSuffix = set.isAmrap ? "+" : ""
         parts.append("× \(reps)\(amrapSuffix) reps")
     } else if set.isAmrap {
         parts.append("AMRAP")
     }
 
-    if let time = set.targetTime {
+    if let time = target?.time {
         parts.append(planFormatTime(time))
     }
 
     var detail = parts.joined(separator: " ")
 
     // Inline modifiers
-    if let rpe = set.targetRpe {
+    if let rpe = target?.rpe {
         detail += " · RPE \(rpe)"
-    }
-
-    if let tempo = set.tempo {
-        detail += " · Tempo \(tempo)"
     }
 
     if let rest = set.restSeconds, rest > 0 {

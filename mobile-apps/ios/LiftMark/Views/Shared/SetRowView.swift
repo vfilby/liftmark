@@ -58,14 +58,16 @@ struct SetRowView: View {
         .background(isCurrent ? LiftMarkTheme.primary.opacity(0.05) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
         .onAppear {
-            if let w = set.targetWeight ?? set.actualWeight {
+            let target = set.entries.first?.target
+            let actual = set.entries.first?.actual
+            if let w = target?.weight?.value ?? actual?.weight?.value {
                 weightText = formatWeight(w)
                 onWeightChanged?(weightText)
             }
-            if let r = set.targetReps ?? set.actualReps {
+            if let r = target?.reps ?? actual?.reps {
                 repsText = "\(r)"
             }
-            if let t = set.targetTime ?? set.actualTime {
+            if let t = target?.time ?? actual?.time {
                 timeText = "\(t)"
             }
         }
@@ -154,7 +156,7 @@ struct SetRowView: View {
                 }
 
                 // Weight input — only for weighted exercises (not bodyweight/timed)
-                if set.targetWeight != nil {
+                if set.entries.first?.target?.weight != nil {
                     VStack(alignment: .center, spacing: 2) {
                         Text("Weight\(weightUnitLabel)")
                             .font(.caption2)
@@ -174,7 +176,7 @@ struct SetRowView: View {
                     }
 
                     // Show × separator only when reps follow (not for weighted-timed sets)
-                    if set.targetTime == nil {
+                    if set.entries.first?.target?.time == nil {
                         Text("×")
                             .font(.callout)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
@@ -183,7 +185,7 @@ struct SetRowView: View {
                 }
 
                 // Time input — for all timed exercises (including weighted-timed)
-                if set.targetTime != nil {
+                if set.entries.first?.target?.time != nil {
                     VStack(alignment: .center, spacing: 2) {
                         Text("Time (s)")
                             .font(.caption2)
@@ -201,7 +203,7 @@ struct SetRowView: View {
                 }
 
                 // Reps input — only for non-timed exercises
-                if set.targetTime == nil {
+                if set.entries.first?.target?.time == nil {
                     VStack(alignment: .center, spacing: 2) {
                         Text("Reps")
                             .font(.caption2)
@@ -244,7 +246,7 @@ struct SetRowView: View {
             }
 
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
-            if set.targetTime == nil {
+            if set.entries.first?.target?.time == nil {
                 Button {
                     onComplete(Double(weightText), Int(repsText), Int(timeText))
                 } label: {
@@ -279,42 +281,46 @@ struct SetRowView: View {
                 if set.status == .completed || set.status == .skipped {
                     isEditing.toggle()
                     // Initialize edit fields with current values
-                    if let w = set.actualWeight ?? set.targetWeight {
+                    let target = set.entries.first?.target
+                    let actual = set.entries.first?.actual
+                    if let w = actual?.weight?.value ?? target?.weight?.value {
                         weightText = formatWeight(w)
                     }
-                    if let r = set.actualReps ?? set.targetReps {
+                    if let r = actual?.reps ?? target?.reps {
                         repsText = "\(r)"
                     }
-                    if let t = set.actualTime ?? set.targetTime {
+                    if let t = actual?.time ?? target?.time {
                         timeText = "\(t)"
                     }
                 }
             } label: {
                 HStack(spacing: LiftMarkTheme.spacingSM) {
                     if set.status == .completed {
-                        if let w = set.actualWeight, let u = set.actualWeightUnit {
+                        let actual = set.entries.first?.actual
+                        if let w = actual?.weight?.value, let u = actual?.weight?.unit {
                             Text("\(formatWeight(w)) \(u.rawValue)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.success)
                         }
-                        if let r = set.actualReps {
+                        if let r = actual?.reps {
                             Text("× \(r)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.success)
                         }
-                        if let t = set.actualTime {
+                        if let t = actual?.time {
                             Text(formatTime(t))
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.success)
                         }
                     } else if set.status == .skipped {
                         // Show target values + "— Skipped"
-                        if let w = set.targetWeight, let u = set.targetWeightUnit {
+                        let target = set.entries.first?.target
+                        if let w = target?.weight?.value, let u = target?.weight?.unit {
                             Text("\(formatWeight(w)) \(u.rawValue)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.warning)
                         }
-                        if let r = set.targetReps {
+                        if let r = target?.reps {
                             Text("× \(r)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.warning)
@@ -324,17 +330,18 @@ struct SetRowView: View {
                             .foregroundStyle(LiftMarkTheme.warning)
                     } else {
                         // Pending - show targets
-                        if let w = set.targetWeight, let u = set.targetWeightUnit {
+                        let target = set.entries.first?.target
+                        if let w = target?.weight?.value, let u = target?.weight?.unit {
                             Text("\(formatWeight(w)) \(u.rawValue)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
-                        if let r = set.targetReps {
+                        if let r = target?.reps {
                             Text("× \(r)")
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
-                        if let t = set.targetTime {
+                        if let t = target?.time {
                             Text(formatTime(t))
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
@@ -355,7 +362,7 @@ struct SetRowView: View {
     @ViewBuilder
     private var inlineEditContent: some View {
         HStack(alignment: .textFieldCenter, spacing: LiftMarkTheme.spacingSM) {
-            if set.actualWeight != nil || set.targetWeight != nil {
+            if set.entries.first?.actual?.weight != nil || set.entries.first?.target?.weight != nil {
                 VStack(alignment: .center, spacing: 2) {
                     Text("Weight\(weightUnitLabel)")
                         .font(.caption2)
@@ -372,7 +379,7 @@ struct SetRowView: View {
                 }
 
                 // Show × separator only for non-timed sets (weighted reps)
-                if set.targetTime == nil {
+                if set.entries.first?.target?.time == nil {
                     Text("×")
                         .font(.caption)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
@@ -381,7 +388,7 @@ struct SetRowView: View {
             }
 
             // Reps field — only for non-timed sets
-            if set.targetTime == nil {
+            if set.entries.first?.target?.time == nil {
                 VStack(alignment: .center, spacing: 2) {
                     Text("Reps")
                         .font(.caption2)
@@ -399,7 +406,7 @@ struct SetRowView: View {
             }
 
             // Time input — editable for timed sets in inline edit
-            if set.actualTime != nil || set.targetTime != nil {
+            if set.entries.first?.actual?.time != nil || set.entries.first?.target?.time != nil {
                 VStack(alignment: .center, spacing: 2) {
                     Text("Time (s)")
                         .font(.caption2)
@@ -487,13 +494,14 @@ struct SetRowView: View {
 
     /// Plate math text for barbell exercises, computed from current weight input.
     private var plateMathText: String? {
-        guard set.targetWeight != nil,
+        let target = set.entries.first?.target
+        guard target?.weight != nil,
               PlateCalculator.isBarbellExercise(exerciseName: exerciseName, equipmentType: equipmentType)
         else { return nil }
 
         guard let weight = Double(weightText), weight > 0 else { return nil }
 
-        let unit = set.targetWeightUnit?.rawValue ?? "lbs"
+        let unit = target?.weight?.unit.rawValue ?? "lbs"
         let breakdown = PlateCalculator.calculatePlates(totalWeight: weight, unit: unit)
 
         // Don't show if weight is less than bar
@@ -503,29 +511,33 @@ struct SetRowView: View {
     }
 
     private var weightUnitLabel: String {
-        if let unit = set.targetWeightUnit ?? set.actualWeightUnit {
+        let target = set.entries.first?.target
+        let actual = set.entries.first?.actual
+        if let unit = target?.weight?.unit ?? actual?.weight?.unit {
             return " (\(unit.rawValue))"
         }
         return ""
     }
 
     private var valuesChangedFromTarget: Bool {
-        if let tw = set.targetWeight {
+        let target = set.entries.first?.target
+        if let tw = target?.weight?.value {
             if Double(weightText) != tw { return true }
         }
-        if let tr = set.targetReps {
+        if let tr = target?.reps {
             if Int(repsText) != tr { return true }
         }
         return false
     }
 
     private var targetHint: String? {
+        let target = set.entries.first?.target
         var parts: [String] = []
-        if let w = set.targetWeight {
-            let unit = set.targetWeightUnit?.rawValue ?? ""
+        if let w = target?.weight?.value {
+            let unit = target?.weight?.unit.rawValue ?? ""
             parts.append("\(formatWeight(w)) \(unit)")
         }
-        if let r = set.targetReps {
+        if let r = target?.reps {
             parts.append("× \(r)")
         }
         guard !parts.isEmpty else { return nil }

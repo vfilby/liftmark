@@ -86,6 +86,8 @@ private struct SetDisplayRow: View {
     let set: PlannedSet
 
     var body: some View {
+        let target = set.entries.first?.target
+
         HStack(spacing: LiftMarkTheme.spacingSM) {
             // Set number
             Text("Set \(set.orderIndex + 1)")
@@ -94,13 +96,13 @@ private struct SetDisplayRow: View {
                 .frame(width: 50, alignment: .leading)
 
             // Weight
-            if let weight = set.targetWeight, let unit = set.targetWeightUnit {
+            if let weight = target?.weight?.value, let unit = target?.weight?.unit {
                 Text("\(formatWeight(weight)) \(unit.rawValue)")
                     .font(.subheadline.monospacedDigit())
             }
 
             // Reps
-            if let reps = set.targetReps {
+            if let reps = target?.reps {
                 Text("x \(reps)\(set.isAmrap ? "+" : "")")
                     .font(.subheadline.monospacedDigit())
             } else if set.isAmrap {
@@ -109,7 +111,7 @@ private struct SetDisplayRow: View {
             }
 
             // Time
-            if let time = set.targetTime {
+            if let time = target?.time {
                 Text(formatTime(time))
                     .font(.subheadline.monospacedDigit())
             }
@@ -118,7 +120,7 @@ private struct SetDisplayRow: View {
 
             // Modifiers
             HStack(spacing: 4) {
-                if let rpe = set.targetRpe {
+                if let rpe = target?.rpe {
                     Text("RPE \(rpe)")
                         .font(.caption2)
                         .padding(.horizontal, 4)

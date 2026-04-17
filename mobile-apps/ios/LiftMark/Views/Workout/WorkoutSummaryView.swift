@@ -36,15 +36,21 @@ struct WorkoutSummaryView: View {
 
     private var totalReps: Int {
         session?.exercises.reduce(0) { sum, ex in
-            sum + ex.sets.filter { $0.status == .completed }.reduce(0) { $0 + ($1.actualReps ?? $1.targetReps ?? 0) }
+            sum + ex.sets.filter { $0.status == .completed }.reduce(0) { total, set in
+                let actual = set.entries.first?.actual
+                let target = set.entries.first?.target
+                return total + (actual?.reps ?? target?.reps ?? 0)
+            }
         } ?? 0
     }
 
     private var totalVolume: Double {
         session?.exercises.reduce(0.0) { sum, ex in
             sum + ex.sets.filter { $0.status == .completed }.reduce(0.0) { setSum, set in
-                let weight = set.actualWeight ?? set.targetWeight ?? 0
-                let reps = Double(set.actualReps ?? set.targetReps ?? 0)
+                let actual = set.entries.first?.actual
+                let target = set.entries.first?.target
+                let weight = actual?.weight?.value ?? target?.weight?.value ?? 0
+                let reps = Double(actual?.reps ?? target?.reps ?? 0)
                 return setSum + (weight * reps)
             }
         } ?? 0
@@ -303,7 +309,7 @@ struct WorkoutSummaryView: View {
         for exercise in session.exercises {
             let maxWeight = exercise.sets
                 .filter { $0.status == .completed }
-                .compactMap { $0.actualWeight }
+                .compactMap { $0.entries.first?.actual?.weight?.value }
                 .max()
 
             if let maxWeight {
@@ -312,13 +318,13 @@ struct WorkoutSummaryView: View {
                     let exerciseMax = prevSession.exercises
                         .filter { $0.exerciseName == exercise.exerciseName }
                         .flatMap { $0.sets.filter { $0.status == .completed } }
-                        .compactMap { $0.actualWeight }
+                        .compactMap { $0.entries.first?.actual?.weight?.value }
                         .max() ?? 0
                     return max(best, exerciseMax)
                 }
 
                 if maxWeight > previousMax && previousMax > 0 {
-                    let unit = exercise.sets.first?.actualWeightUnit ?? exercise.sets.first?.targetWeightUnit ?? .lbs
+                    let unit = exercise.sets.first?.entries.first?.actual?.weight?.unit ?? exercise.sets.first?.entries.first?.target?.weight?.unit ?? .lbs
                     result.append(WorkoutHighlight(
                         type: .pr,
                         emoji: "🏆",
@@ -442,9 +448,9 @@ private struct ExerciseSummaryRow: View {
             // Best set weight
             if let bestWeight = exercise.sets
                 .filter({ $0.status == .completed })
-                .compactMap({ $0.actualWeight })
+                .compactMap({ $0.entries.first?.actual?.weight?.value })
                 .max() {
-                let unit = exercise.sets.first?.actualWeightUnit ?? exercise.sets.first?.targetWeightUnit ?? .lbs
+                let unit = exercise.sets.first?.entries.first?.actual?.weight?.unit ?? exercise.sets.first?.entries.first?.target?.weight?.unit ?? .lbs
                 Text("\(formatWeight(bestWeight)) \(unit.rawValue)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(LiftMarkTheme.secondaryLabel)

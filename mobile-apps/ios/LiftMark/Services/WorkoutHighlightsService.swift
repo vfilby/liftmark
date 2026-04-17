@@ -221,23 +221,26 @@ struct WorkoutHighlightsService {
         var maxSet: SessionSet?
 
         for set in exercise.sets {
-            if set.status == .completed, let weight = set.actualWeight, weight > maxWeight {
+            let actual = set.entries.first?.actual
+            if set.status == .completed, let weight = actual?.weight?.value, weight > maxWeight {
                 maxWeight = weight
                 maxSet = set
             }
         }
 
         guard let maxSet, maxWeight > 0 else { return nil }
-        return (maxWeight, maxSet.actualReps ?? 0, maxSet.actualWeightUnit?.rawValue ?? "lbs")
+        let actual = maxSet.entries.first?.actual
+        return (maxWeight, actual?.reps ?? 0, actual?.weight?.unit.rawValue ?? "lbs")
     }
 
     func calculateSessionVolume(_ session: WorkoutSession) -> Double {
         var totalVolume: Double = 0
         for exercise in session.exercises {
             for set in exercise.sets {
+                let actual = set.entries.first?.actual
                 if set.status == .completed,
-                   let weight = set.actualWeight,
-                   let reps = set.actualReps {
+                   let weight = actual?.weight?.value,
+                   let reps = actual?.reps {
                     totalVolume += weight * Double(reps)
                 }
             }

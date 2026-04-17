@@ -120,7 +120,7 @@ struct ActiveExerciseCard: View {
 
                     // Timed exercise timer — inline after the current set
                     if setIndex == currentSetIndex,
-                       let targetTime = set.targetTime, targetTime > 0 {
+                       let targetTime = set.entries.first?.target?.time, targetTime > 0 {
                         ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
                             let weight = Double(currentWeightText)
                             onCompleteSet(setIndex, weight, nil, elapsedSeconds)

@@ -31,7 +31,8 @@ struct HistoryDetailView: View {
         return session.exercises.flatMap(\.sets)
             .filter { $0.status == .completed }
             .reduce(0.0) { total, set in
-                total + (set.actualWeight ?? 0) * Double(set.actualReps ?? 0)
+                let actual = set.entries.first?.actual
+                return total + (actual?.weight?.value ?? 0) * Double(actual?.reps ?? 0)
             }
     }
 
@@ -39,7 +40,7 @@ struct HistoryDetailView: View {
         guard let session else { return 0 }
         return session.exercises.flatMap(\.sets)
             .filter { $0.status == .completed }
-            .compactMap(\.actualReps)
+            .compactMap { $0.entries.first?.actual?.reps }
             .reduce(0, +)
     }
 
@@ -412,18 +413,20 @@ struct HistoryDetailView: View {
                     .foregroundStyle(.secondary)
                     .italic()
             } else {
+                let actual = set.entries.first?.actual
+                let target = set.entries.first?.target
                 HStack(spacing: 4) {
-                    if let weight = set.actualWeight ?? set.targetWeight,
-                       let unit = set.actualWeightUnit ?? set.targetWeightUnit {
+                    if let weight = actual?.weight?.value ?? target?.weight?.value,
+                       let unit = actual?.weight?.unit ?? target?.weight?.unit {
                         Text("\(Int(weight)) \(unit.rawValue)")
                             .font(.subheadline)
                     }
-                    if let reps = set.actualReps ?? set.targetReps {
+                    if let reps = actual?.reps ?? target?.reps {
                         Text("× \(reps) reps")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    if let time = set.actualTime ?? set.targetTime {
+                    if let time = actual?.time ?? target?.time {
                         Text("\(time)s")
                             .font(.subheadline)
                     }

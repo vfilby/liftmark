@@ -458,21 +458,22 @@ struct WorkoutDetailView: View {
                 lines.append(notes)
             }
             for set in exercise.sets {
+                let target = set.entries.first?.target
                 var parts: [String] = []
-                if let w = set.targetWeight {
+                if let w = target?.weight?.value {
                     let wStr = w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
                     parts.append(wStr)
-                    if let unit = set.targetWeightUnit {
+                    if let unit = target?.weight?.unit {
                         parts.append(unit.rawValue)
                     }
                 }
-                if let r = set.targetReps {
+                if let r = target?.reps {
                     parts.append("x \(r)")
                 }
-                if let t = set.targetTime {
+                if let t = target?.time {
                     parts.append("\(t)s")
                 }
-                if let rpe = set.targetRpe {
+                if let rpe = target?.rpe {
                     parts.append("@rpe: \(rpe)")
                 }
                 if let rest = set.restSeconds, rest > 0 {
@@ -483,9 +484,6 @@ struct WorkoutDetailView: View {
                 }
                 if set.isPerSide {
                     parts.append("@perside")
-                }
-                if let tempo = set.tempo {
-                    parts.append("@tempo: \(tempo)")
                 }
                 lines.append("- \(parts.joined(separator: " "))")
             }

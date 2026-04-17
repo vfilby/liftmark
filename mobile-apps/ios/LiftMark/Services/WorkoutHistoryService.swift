@@ -68,9 +68,11 @@ struct WorkoutHistoryService {
     /// Format a single set in compact format.
     /// Example: "185x8" or "30s" or "bwx10"
     func formatSetCompact(_ set: SessionSet) -> String {
-        let weight = set.actualWeight ?? set.targetWeight
-        let reps = set.actualReps ?? set.targetReps
-        let time = set.actualTime ?? set.targetTime
+        let target = set.entries.first?.target
+        let actual = set.entries.first?.actual
+        let weight = actual?.weight?.value ?? target?.weight?.value
+        let reps = actual?.reps ?? target?.reps
+        let time = actual?.time ?? target?.time
 
         if let time, reps == nil {
             return "\(time)s"

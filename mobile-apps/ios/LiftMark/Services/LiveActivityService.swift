@@ -223,7 +223,8 @@ final class LiveActivityService: @unchecked Sendable {
         let setNumber = setIndex + 1
         let totalSets = exercise.sets.count
 
-        let weight = formatWeight(set?.targetWeight, unit: set?.targetWeightUnit)
+        let target = set?.entries.first?.target
+        let weight = formatWeight(target?.weight?.value, unit: target?.weight?.unit)
         let reps = formatReps(set)
 
         let progressValue = progress.total > 0 ? Double(progress.completed) / Double(progress.total) : 0
@@ -285,7 +286,8 @@ final class LiveActivityService: @unchecked Sendable {
     /// Format the first pending set of an exercise as "weight × reps".
     func nextExerciseSetDetail(_ exercise: SessionExercise) -> String? {
         guard let set = exercise.sets.first(where: { $0.status == .pending }) else { return nil }
-        let weight = formatWeight(set.targetWeight, unit: set.targetWeightUnit)
+        let target = set.entries.first?.target
+        let weight = formatWeight(target?.weight?.value, unit: target?.weight?.unit)
         let reps = formatReps(set)
         return "\(weight) \u{00D7} \(reps)"
     }
@@ -297,9 +299,10 @@ final class LiveActivityService: @unchecked Sendable {
 
     func formatReps(_ set: SessionSet?) -> String {
         guard let set else { return "?" }
-        if let reps = set.targetReps {
+        let target = set.entries.first?.target
+        if let reps = target?.reps {
             return String(reps)
-        } else if let time = set.targetTime {
+        } else if let time = target?.time {
             return "\(time)s"
         }
         return "?"

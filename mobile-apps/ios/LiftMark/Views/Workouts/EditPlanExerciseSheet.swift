@@ -10,17 +10,18 @@ struct EditablePlanSetRow: Identifiable {
     var weightUnit: WeightUnit?
 
     static func from(_ set: PlannedSet) -> EditablePlanSetRow {
-        EditablePlanSetRow(
+        let target = set.entries.first?.target
+        return EditablePlanSetRow(
             id: set.id,
             weightText: {
-                if let w = set.targetWeight {
+                if let w = target?.weight?.value {
                     return w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
                 }
                 return ""
             }(),
-            repsText: set.targetReps.map { "\($0)" } ?? "",
-            timeText: set.targetTime.map { "\($0)" } ?? "",
-            weightUnit: set.targetWeightUnit
+            repsText: target?.reps.map { "\($0)" } ?? "",
+            timeText: target?.time.map { "\($0)" } ?? "",
+            weightUnit: target?.weight?.unit
         )
     }
 }
@@ -230,14 +231,17 @@ struct EditPlanExerciseSheet: View {
             var newSets: [EditablePlanSetRow] = []
             for (i, parsedSet) in parsedExercise.sets.enumerated() {
                 let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
+                let parsedTarget = parsedSet.entries.first?.target
+                let weightVal = parsedTarget?.weight?.value
+                let weightStr: String = weightVal.map {
+                    $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
+                } ?? ""
                 newSets.append(EditablePlanSetRow(
                     id: existingId ?? UUID().uuidString,
-                    weightText: parsedSet.targetWeight.map {
-                        $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
-                    } ?? "",
-                    repsText: parsedSet.targetReps.map { "\($0)" } ?? "",
-                    timeText: parsedSet.targetTime.map { "\($0)" } ?? "",
-                    weightUnit: parsedSet.targetWeightUnit
+                    weightText: weightStr,
+                    repsText: parsedTarget?.reps.map { "\($0)" } ?? "",
+                    timeText: parsedTarget?.time.map { "\($0)" } ?? "",
+                    weightUnit: parsedTarget?.weight?.unit
                 ))
             }
             saveSets = newSets
@@ -323,18 +327,19 @@ struct EditPlanExerciseSheet: View {
             lines.append(notes)
         }
         for set in exercise.sets {
+            let target = set.entries.first?.target
             var parts: [String] = []
-            if let w = set.targetWeight {
+            if let w = target?.weight?.value {
                 let wStr = w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
                 parts.append(wStr)
-                if let unit = set.targetWeightUnit {
+                if let unit = target?.weight?.unit {
                     parts.append(unit.rawValue)
                 }
             }
-            if let r = set.targetReps {
+            if let r = target?.reps {
                 parts.append("x \(r)")
             }
-            if let t = set.targetTime {
+            if let t = target?.time {
                 parts.append("\(t)s")
             }
             lines.append("- \(parts.joined(separator: " "))")
@@ -357,14 +362,17 @@ struct EditPlanExerciseSheet: View {
         var newSets: [EditablePlanSetRow] = []
         for (i, parsedSet) in parsedExercise.sets.enumerated() {
             let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
+            let parsedTarget = parsedSet.entries.first?.target
+            let weightVal = parsedTarget?.weight?.value
+            let weightStr: String = weightVal.map {
+                $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
+            } ?? ""
             newSets.append(EditablePlanSetRow(
                 id: existingId ?? UUID().uuidString,
-                weightText: parsedSet.targetWeight.map {
-                    $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
-                } ?? "",
-                repsText: parsedSet.targetReps.map { "\($0)" } ?? "",
-                timeText: parsedSet.targetTime.map { "\($0)" } ?? "",
-                weightUnit: parsedSet.targetWeightUnit
+                weightText: weightStr,
+                repsText: parsedTarget?.reps.map { "\($0)" } ?? "",
+                timeText: parsedTarget?.time.map { "\($0)" } ?? "",
+                weightUnit: parsedTarget?.weight?.unit
             ))
         }
         editableSets = newSets

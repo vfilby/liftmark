@@ -324,13 +324,15 @@ struct ActiveWorkoutView: View {
         activeRestTimer = nil
 
         // Persist with actual values — prefer user-edited, then existing actual, then target
+        let target = set.entries.first?.target
+        let actual = set.entries.first?.actual
         sessionStore.completeSet(
             setId: set.id,
-            actualWeight: userWeight ?? set.actualWeight ?? set.targetWeight,
-            actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
-            actualReps: userReps ?? set.actualReps ?? set.targetReps,
-            actualTime: elapsedTime ?? set.actualTime ?? set.targetTime,
-            actualRpe: set.actualRpe ?? set.targetRpe
+            actualWeight: userWeight ?? actual?.weight?.value ?? target?.weight?.value,
+            actualWeightUnit: actual?.weight?.unit ?? target?.weight?.unit,
+            actualReps: userReps ?? actual?.reps ?? target?.reps,
+            actualTime: elapsedTime ?? actual?.time ?? target?.time,
+            actualRpe: actual?.rpe ?? target?.rpe
         )
 
         // Trigger rest timer if applicable
@@ -366,13 +368,15 @@ struct ActiveWorkoutView: View {
         guard setIndex < exercise.sets.count else { return }
         let set = exercise.sets[setIndex]
 
+        let setTarget = set.entries.first?.target
+        let setActual = set.entries.first?.actual
         sessionStore.completeSet(
             setId: set.id,
             actualWeight: weight,
-            actualWeightUnit: set.actualWeightUnit ?? set.targetWeightUnit,
+            actualWeightUnit: setActual?.weight?.unit ?? setTarget?.weight?.unit,
             actualReps: reps,
-            actualTime: time ?? set.actualTime ?? set.targetTime,
-            actualRpe: set.actualRpe ?? set.targetRpe
+            actualTime: time ?? setActual?.time ?? setTarget?.time,
+            actualRpe: setActual?.rpe ?? setTarget?.rpe
         )
     }
 

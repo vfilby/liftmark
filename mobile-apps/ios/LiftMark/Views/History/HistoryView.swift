@@ -252,7 +252,8 @@ private struct SessionCardView: View {
         session.exercises.flatMap(\.sets)
             .filter { $0.status == .completed }
             .reduce(0.0) { total, set in
-                total + (set.actualWeight ?? 0) * Double(set.actualReps ?? 0)
+                let actual = set.entries.first?.actual
+                return total + (actual?.weight?.value ?? 0) * Double(actual?.reps ?? 0)
             }
     }
 

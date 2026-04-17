@@ -221,7 +221,7 @@ struct HomeView: View {
             for exercise in session.exercises where ExerciseDictionary.isSameExercise(exercise.exerciseName, exerciseName) {
                 if let maxW = exercise.sets
                     .filter({ $0.status == .completed })
-                    .compactMap({ $0.actualWeight })
+                    .compactMap({ $0.entries.first?.actual?.weight?.value })
                     .max() {
                     weights.append(maxW)
                 }

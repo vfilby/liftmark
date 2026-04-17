@@ -194,19 +194,20 @@ struct WorkoutExportService {
     }
 
     private func stripPlannedSet(_ set: PlannedSet) -> [String: Any] {
+        let target = set.entries.first?.target
+
         var dict: [String: Any] = [
             "orderIndex": set.orderIndex,
             "isDropset": set.isDropset,
             "isPerSide": set.isPerSide,
             "isAmrap": set.isAmrap
         ]
-        if let v = set.targetWeight { dict["targetWeight"] = v }
-        if let v = set.targetWeightUnit { dict["targetWeightUnit"] = v.rawValue }
-        if let v = set.targetReps { dict["targetReps"] = v }
-        if let v = set.targetTime { dict["targetTime"] = v }
-        if let v = set.targetRpe { dict["targetRpe"] = v }
+        if let v = target?.weight?.value { dict["targetWeight"] = v }
+        if let v = target?.weight?.unit { dict["targetWeightUnit"] = v.rawValue }
+        if let v = target?.reps { dict["targetReps"] = v }
+        if let v = target?.time { dict["targetTime"] = v }
+        if let v = target?.rpe { dict["targetRpe"] = v }
         if let v = set.restSeconds { dict["restSeconds"] = v }
-        if let v = set.tempo { dict["tempo"] = v }
         if let v = set.notes { dict["notes"] = v }
         return dict
     }
@@ -240,26 +241,28 @@ struct WorkoutExportService {
     }
 
     private func stripSet(_ set: SessionSet) -> [String: Any] {
+        let target = set.entries.first?.target
+        let actual = set.entries.first?.actual
+
         var dict: [String: Any] = [
             "orderIndex": set.orderIndex,
             "status": set.status.rawValue,
             "isDropset": set.isDropset,
             "isPerSide": set.isPerSide
         ]
-        if let v = set.targetWeight { dict["targetWeight"] = v }
-        if let v = set.targetWeightUnit { dict["targetWeightUnit"] = v.rawValue }
-        if let v = set.targetReps { dict["targetReps"] = v }
-        if let v = set.targetTime { dict["targetTime"] = v }
-        if let v = set.targetRpe { dict["targetRpe"] = v }
+        if let v = target?.weight?.value { dict["targetWeight"] = v }
+        if let v = target?.weight?.unit { dict["targetWeightUnit"] = v.rawValue }
+        if let v = target?.reps { dict["targetReps"] = v }
+        if let v = target?.time { dict["targetTime"] = v }
+        if let v = target?.rpe { dict["targetRpe"] = v }
         if let v = set.restSeconds { dict["restSeconds"] = v }
-        if let v = set.actualWeight { dict["actualWeight"] = v }
-        if let v = set.actualWeightUnit { dict["actualWeightUnit"] = v.rawValue }
-        if let v = set.actualReps { dict["actualReps"] = v }
-        if let v = set.actualTime { dict["actualTime"] = v }
-        if let v = set.actualRpe { dict["actualRpe"] = v }
+        if let v = actual?.weight?.value { dict["actualWeight"] = v }
+        if let v = actual?.weight?.unit { dict["actualWeightUnit"] = v.rawValue }
+        if let v = actual?.reps { dict["actualReps"] = v }
+        if let v = actual?.time { dict["actualTime"] = v }
+        if let v = actual?.rpe { dict["actualRpe"] = v }
         if let v = set.completedAt { dict["completedAt"] = v }
         if let v = set.notes { dict["notes"] = v }
-        if let v = set.tempo { dict["tempo"] = v }
         return dict
     }
 }

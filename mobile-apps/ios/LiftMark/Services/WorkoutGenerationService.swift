@@ -201,19 +201,20 @@ enum WorkoutGenerationService {
 
             // Set validation
             for (setIdx, set) in exercise.sets.enumerated() {
-                let hasWeight = set.targetWeight != nil
-                let hasReps = set.targetReps != nil
-                let hasTime = set.targetTime != nil
+                let target = set.entries.first?.target
+                let hasWeight = target?.weight?.value != nil
+                let hasReps = target?.reps != nil
+                let hasTime = target?.time != nil
 
                 if !hasWeight && !hasReps && !hasTime {
                     issues.append("Exercise \"\(exercise.exerciseName)\", set \(setIdx + 1): must specify weight, reps, or time")
                 }
 
-                if hasWeight && set.targetWeightUnit == nil {
+                if hasWeight && target?.weight?.unit == nil {
                     warnings.append("Exercise \"\(exercise.exerciseName)\", set \(setIdx + 1): weight specified without unit")
                 }
 
-                if let rpe = set.targetRpe, (rpe < 1 || rpe > 10) {
+                if let rpe = target?.rpe, (rpe < 1 || rpe > 10) {
                     issues.append("Exercise \"\(exercise.exerciseName)\", set \(setIdx + 1): RPE must be between 1 and 10")
                 }
             }
