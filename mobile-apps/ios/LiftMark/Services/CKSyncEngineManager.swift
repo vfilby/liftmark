@@ -489,7 +489,11 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
                 )
             }
 
-        case .willSendChanges, .didSendChanges:
+        case .willSendChanges:
+            // Clear resolved conflicts so records modified since last cycle can be re-uploaded
+            conflictResolver.clearResolved()
+
+        case .didSendChanges:
             break
 
         case .willFetchRecordZoneChanges, .didFetchRecordZoneChanges:

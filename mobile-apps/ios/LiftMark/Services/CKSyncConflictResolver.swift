@@ -24,6 +24,14 @@ final class CKSyncConflictResolver: @unchecked Sendable {
         return resolved
     }
 
+    /// Clear resolved conflicts at the start of each sync cycle so records
+    /// can be re-uploaded if they change again after a previous conflict.
+    func clearResolved() {
+        lock.lock()
+        resolvedConflicts.removeAll()
+        lock.unlock()
+    }
+
     /// Process the result of a sent-changes event.
     ///
     /// - Parameters:
