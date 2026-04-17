@@ -296,7 +296,15 @@ final class CKSyncEngineManager: @unchecked Sendable {
             let recordId = record.recordID.recordName
             let recordType = record.recordType
 
-            if let protectedSet = protectedIds.byRecordType[recordType], protectedSet.contains(recordId) {
+            // Allow WorkoutSession updates through protection — status changes
+            // (e.g., completed on another device) must sync even during active sessions.
+            // The mergeWorkoutSession handler preserves local cancellation status.
+            let isProtectedSession = recordType == "WorkoutSession"
+                && protectedIds.sessionId == recordId
+
+            if !isProtectedSession,
+               let protectedSet = protectedIds.byRecordType[recordType],
+               protectedSet.contains(recordId) {
                 Logger.shared.debug(.sync, "[sync-engine] Skipping protected record: \(recordType)/\(recordId)")
                 continue
             }
