@@ -356,7 +356,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
 
             if mergedThisPass == 0 {
                 for record in pendingRecords {
-                    Logger.shared.error(.sync, "[sync-engine] Failed to merge \(record.recordType)/\(record.recordID.recordName) after \(pass + 1) passes")
+                    Logger.shared.debug(.sync, "[sync-engine] Skipped merge \(record.recordType)/\(record.recordID.recordName) — local is newer or unchanged")
                 }
                 break
             }
