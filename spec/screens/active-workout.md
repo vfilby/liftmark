@@ -70,7 +70,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap Start** → begins counting up toward target
 - **Tap Pause** → pauses timer; elapsed time is frozen
 - **Done button** → visible immediately once the timer is started (including at 0:00 elapsed), whether the timer is running or paused. Always uses success (green) styling to be visually consistent with the "Complete Set" button. Logs the current elapsed time as `actualTime`.
-- **Background resilience**: Exercise timer uses wall-clock `Date()` timestamps. A `startDate` is set on start/resume. On pause, elapsed time is accumulated into `pausedElapsed` and `startDate` is cleared. Total elapsed = `pausedElapsed + (startDate != nil ? Date().timeIntervalSince(startDate!) : 0)`. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods).
+- **Background resilience**: Exercise timer uses wall-clock `Date()` timestamps. A `startDate` is set on start/resume. On pause, elapsed time is accumulated into `pausedElapsed` and `startDate` is cleared. Total elapsed = `pausedElapsed + (startDate != nil ? Date().timeIntervalSince(startDate!) : 0)`. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods). The `onDisappear` handler must only invalidate the Timer scheduling object — it must NOT reset timer state (`startDate`, `pausedElapsed`, `isRunning`, `displayElapsed`), because SwiftUI may call `onDisappear` during app backgrounding while the timer should continue tracking time. Full state reset only happens in the explicit `stopTimer()` path (Done button or set completion).
 - **Timer tick alignment**: Both rest timers and exercise timers must align their 1-second display ticks to whole-second boundaries. On start, compute the delay to the next whole second, fire the first tick at that boundary, then schedule repeating 1-second ticks. This ensures countdown sounds at 5/4/3/2/1s fire precisely when the displayed time transitions, not at arbitrary offsets.
 - **On set completion (timed sets)**:
   - If the exercise timer was started (elapsed > 0): log `actualTime` as the elapsed seconds from the timer at the moment of completion. If the timer is running, capture the current elapsed time. If the timer is paused, capture the paused elapsed time.
@@ -102,9 +102,9 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap "+" (Add Exercise)** → opens AddExerciseModal
 - **Tap "Finish"** → behavior depends on workout state:
   - All complete → directly completes → navigates to `/workout/summary`
-  - Incomplete sets remain → 3-option alert (Continue / Finish Anyway / Discard)
+  - Incomplete (pending) sets remain → "Finish Workout?" alert. The incomplete count considers only **pending** sets (not skipped sets — those are intentional). Button text: "Finish Anyway" when pending > 0, "Finish" when 0. Message: "You have N incomplete sets. They will be marked as skipped." when pending > 0, or "Great job completing all your sets!" when 0.
     - Finish Anyway → completes workout → navigates to `/workout/summary`
-    - Discard → cancels workout → navigates back
+    - Cancel → returns to active workout
   - **Majority skipped** → if >50% of total sets are skipped and <50% are completed, show a "Discard Workout?" confirmation with options:
     - "Discard" (destructive) → cancels session without logging, navigates back
     - "Log Anyway" → completes workout normally → navigates to `/workout/summary`

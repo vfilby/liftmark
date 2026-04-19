@@ -389,6 +389,86 @@ final class SessionRepositoryTests: XCTestCase {
         XCTAssertTrue(bestWeights.isEmpty)
     }
 
+    // MARK: - Per-Side Set Expansion
+
+    func testPerSideTimedSetExpandsIntoLeftRight() throws {
+        let plan = makePlan(exercises: [
+            makePlannedExercise(name: "Plank", sets: [
+                makePlannedSet(time: 30, isPerSide: true)
+            ])
+        ])
+        try planRepo.create(plan)
+
+        let (session, _) = try repo.createFromPlan(plan)
+        let sets = session.exercises[0].sets
+        // Timed per-side set should expand into 2 sets (left + right)
+        XCTAssertEqual(sets.count, 2)
+        XCTAssertEqual(sets[0].side, "left")
+        XCTAssertEqual(sets[1].side, "right")
+        XCTAssertTrue(sets[0].isPerSide)
+        XCTAssertTrue(sets[1].isPerSide)
+        XCTAssertEqual(sets[0].targetTime, 30)
+        XCTAssertEqual(sets[1].targetTime, 30)
+    }
+
+    func testPerSideRepSetDoesNotExpand() throws {
+        let plan = makePlan(exercises: [
+            makePlannedExercise(name: "Lunges", sets: [
+                makePlannedSet(weight: 25, reps: 12, isPerSide: true)
+            ])
+        ])
+        try planRepo.create(plan)
+
+        let (session, _) = try repo.createFromPlan(plan)
+        let sets = session.exercises[0].sets
+        // Rep-based per-side set should NOT expand — remains a single set
+        XCTAssertEqual(sets.count, 1)
+        XCTAssertTrue(sets[0].isPerSide)
+        XCTAssertNil(sets[0].side)
+        XCTAssertEqual(sets[0].targetWeight, 25)
+        XCTAssertEqual(sets[0].targetReps, 12)
+    }
+
+    func testPerSideTimedMultipleSetsExpandCorrectly() throws {
+        let plan = makePlan(exercises: [
+            makePlannedExercise(name: "Side Plank", sets: [
+                makePlannedSet(time: 30, isPerSide: true),
+                makePlannedSet(time: 45, isPerSide: true)
+            ])
+        ])
+        try planRepo.create(plan)
+
+        let (session, _) = try repo.createFromPlan(plan)
+        let sets = session.exercises[0].sets
+        // 2 timed per-side sets should expand into 4 sets total
+        XCTAssertEqual(sets.count, 4)
+        XCTAssertEqual(sets[0].side, "left")
+        XCTAssertEqual(sets[1].side, "right")
+        XCTAssertEqual(sets[2].side, "left")
+        XCTAssertEqual(sets[3].side, "right")
+        XCTAssertEqual(sets[0].targetTime, 30)
+        XCTAssertEqual(sets[1].targetTime, 30)
+        XCTAssertEqual(sets[2].targetTime, 45)
+        XCTAssertEqual(sets[3].targetTime, 45)
+    }
+
+    func testNonPerSideTimedSetDoesNotExpand() throws {
+        let plan = makePlan(exercises: [
+            makePlannedExercise(name: "Plank", sets: [
+                makePlannedSet(time: 60, isPerSide: false)
+            ])
+        ])
+        try planRepo.create(plan)
+
+        let (session, _) = try repo.createFromPlan(plan)
+        let sets = session.exercises[0].sets
+        // Non per-side timed set should remain as single set
+        XCTAssertEqual(sets.count, 1)
+        XCTAssertFalse(sets[0].isPerSide)
+        XCTAssertNil(sets[0].side)
+        XCTAssertEqual(sets[0].targetTime, 60)
+    }
+
     // MARK: - Helpers
 
     private func makePlan(
@@ -412,14 +492,18 @@ final class SessionRepositoryTests: XCTestCase {
 
     private func makePlannedSet(
         weight: Double? = nil,
-        reps: Int? = nil
+        reps: Int? = nil,
+        time: Int? = nil,
+        isPerSide: Bool = false
     ) -> PlannedSet {
         PlannedSet(
             plannedExerciseId: "ex-1",
             orderIndex: 0,
             targetWeight: weight,
             targetWeightUnit: weight != nil ? .lbs : nil,
-            targetReps: reps
+            targetReps: reps,
+            targetTime: time,
+            isPerSide: isPerSide
         )
     }
 }

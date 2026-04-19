@@ -38,14 +38,14 @@ struct ActiveWorkoutView: View {
         }
         .alert("Finish Workout?", isPresented: $showFinishConfirm) {
             Button("Cancel", role: .cancel) {}
-            let incomplete = totalSets - completedSets
-            Button(incomplete > 0 ? "Finish Anyway" : "Finish") {
+            let pending = ActiveWorkoutViewModel.pendingSets(in: session)
+            Button(pending > 0 ? "Finish Anyway" : "Finish") {
                 finishWorkout()
             }
         } message: {
-            let skipped = totalSets - completedSets
-            if skipped > 0 {
-                Text("You have \(skipped) incomplete sets. They will be marked as skipped.")
+            let pending = ActiveWorkoutViewModel.pendingSets(in: session)
+            if pending > 0 {
+                Text("You have \(pending) incomplete sets. They will be marked as skipped.")
             } else {
                 Text("Great job completing all your sets!")
             }

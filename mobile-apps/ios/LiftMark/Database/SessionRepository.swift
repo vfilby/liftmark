@@ -157,7 +157,10 @@ struct SessionRepository {
         var expandedOrderIndex = 0
 
         for set in plannedSets {
-            if set.isPerSide {
+            // Only expand per-side sets into left/right pairs when they have a time target.
+            // Rep-based per-side sets remain as a single set with the isPerSide flag preserved.
+            let hasTimeTarget = set.entries.contains { $0.target?.time != nil }
+            if set.isPerSide && hasTimeTarget {
                 for side in ["left", "right"] {
                     let setId = IDGenerator.generate()
                     createdSetIds.append(setId)

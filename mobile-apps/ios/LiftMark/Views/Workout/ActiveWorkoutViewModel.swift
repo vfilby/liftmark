@@ -16,6 +16,14 @@ enum ActiveWorkoutViewModel {
         session?.exercises.reduce(0) { $0 + $1.sets.count } ?? 0
     }
 
+    /// Count of sets that are still pending (not completed and not skipped).
+    /// Used for the finish-workout confirmation to exclude intentionally skipped sets.
+    static func pendingSets(in session: WorkoutSession?) -> Int {
+        session?.exercises.reduce(0) { sum, ex in
+            sum + ex.sets.filter { $0.status == .pending }.count
+        } ?? 0
+    }
+
     static func progress(in session: WorkoutSession?) -> Double {
         let total = totalSets(in: session)
         guard total > 0 else { return 0 }
