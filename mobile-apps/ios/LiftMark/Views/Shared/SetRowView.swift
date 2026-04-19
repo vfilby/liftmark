@@ -303,11 +303,12 @@ struct SetRowView: View {
                 .accessibilityHint("Adds another weight reduction entry to this drop set")
             }
 
-            // Middle row: target hint — only when values differ from target
-            if let target = targetHint, valuesChangedFromTarget {
+            // Middle row: target hint — always reserve space, show when values differ from target
+            if let target = targetHint {
                 Text(target)
                     .font(.caption)
                     .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                    .opacity(valuesChangedFromTarget ? 1 : 0)
             }
 
             // Bottom row: complete button — hide for timed sets (completed via ExerciseTimerView Done)
