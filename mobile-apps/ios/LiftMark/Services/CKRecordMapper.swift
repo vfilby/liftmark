@@ -5,7 +5,7 @@ import GRDB
 /// CKRecords into the local database. Extracted from CloudKitService to support the
 /// CKSyncEngine migration.
 final class CKRecordMapper {
-    private let dbManager: DatabaseManager
+    let dbManager: DatabaseManager
 
     init(dbManager: DatabaseManager = .shared) {
         self.dbManager = dbManager
@@ -13,7 +13,7 @@ final class CKRecordMapper {
 
     // MARK: - Date Helpers
 
-    private let isoFormatter: ISO8601DateFormatter = {
+    let isoFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
@@ -25,31 +25,31 @@ final class CKRecordMapper {
         return f
     }()
 
-    private func parseDate(_ str: String?) -> Date? {
+    func parseDate(_ str: String?) -> Date? {
         guard let str else { return nil }
         return isoFormatter.date(from: str) ?? isoFormatterNoFrac.date(from: str)
     }
 
-    private func dateToISO(_ date: Date?) -> String? {
+    func dateToISO(_ date: Date?) -> String? {
         guard let date else { return nil }
         return isoFormatter.string(from: date)
     }
 
     // MARK: - CKRecord Field Extractors
 
-    private func stringField(_ record: CKRecord, _ key: String) -> String? {
+    func stringField(_ record: CKRecord, _ key: String) -> String? {
         record[key] as? String
     }
 
-    private func int64Field(_ record: CKRecord, _ key: String) -> Int64? {
+    func int64Field(_ record: CKRecord, _ key: String) -> Int64? {
         record[key] as? Int64
     }
 
-    private func doubleField(_ record: CKRecord, _ key: String) -> Double? {
+    func doubleField(_ record: CKRecord, _ key: String) -> Double? {
         record[key] as? Double
     }
 
-    private func dateField(_ record: CKRecord, _ key: String) -> Date? {
+    func dateField(_ record: CKRecord, _ key: String) -> Date? {
         record[key] as? Date
     }
 
@@ -57,7 +57,7 @@ final class CKRecordMapper {
         record[key] as? [String] ?? []
     }
 
-    private func referenceId(_ record: CKRecord, _ key: String) -> String? {
+    func referenceId(_ record: CKRecord, _ key: String) -> String? {
         if let ref = record[key] as? CKRecord.Reference {
             return ref.recordID.recordName
         }
@@ -112,7 +112,7 @@ final class CKRecordMapper {
     }
 
     /// Returns true if remote updatedAt is newer than local updatedAt.
-    private func remoteIsNewer(remoteDate: Date?, localUpdatedAt: String?) -> Bool {
+    func remoteIsNewer(remoteDate: Date?, localUpdatedAt: String?) -> Bool {
         guard let remoteDate else { return false }
         guard let localStr = localUpdatedAt, let localDate = parseDate(localStr) else { return true }
         return remoteDate > localDate
@@ -120,7 +120,7 @@ final class CKRecordMapper {
 
     // MARK: - Reference Helper
 
-    private func makeReference(recordName: String, zoneID: CKRecordZone.ID) -> CKRecord.Reference {
+    func makeReference(recordName: String, zoneID: CKRecordZone.ID) -> CKRecord.Reference {
         let id = CKRecord.ID(recordName: recordName, zoneID: zoneID)
         return CKRecord.Reference(recordID: id, action: .none)
     }
@@ -182,43 +182,6 @@ final class CKRecordMapper {
         return record
     }
 
-    func toCKRecord(_ ps: PlannedSetRow, measurements: [SetMeasurementRow] = [], zoneID: CKRecordZone.ID) -> CKRecord {
-        let recordID = CKRecord.ID(recordName: ps.id, zoneID: zoneID)
-        let record = CKRecord(recordType: "PlannedSet", recordID: recordID)
-        record["plannedExerciseId"] = makeReference(recordName: ps.templateExerciseId, zoneID: zoneID) as CKRecordValue
-        record["orderIndex"] = Int64(ps.orderIndex) as CKRecordValue
-        var attrs: [String] = []
-        if ps.isDropset != 0 { attrs.append("dropset") }
-        if ps.isPerSide != 0 { attrs.append("perSide") }
-        if ps.isAmrap != 0 { attrs.append("amrap") }
-        if !attrs.isEmpty { record["attributes"] = attrs as CKRecordValue }
-
-        // Write target fields from measurements (dual-write for backward compat with old devices)
-        let targets = measurements.filter { $0.role == "target" && $0.groupIndex == 0 }
-        for m in targets {
-            switch m.kind {
-            case "weight":
-                record["targetWeight"] = m.value as CKRecordValue
-                if let u = m.unit { record["targetWeightUnit"] = u as CKRecordValue }
-            case "reps":
-                record["targetReps"] = Int64(m.value) as CKRecordValue
-            case "time":
-                record["targetTime"] = Int64(m.value) as CKRecordValue
-            case "distance":
-                record["targetDistance"] = m.value as CKRecordValue
-                if let u = m.unit { record["targetDistanceUnit"] = u as CKRecordValue }
-            case "rpe":
-                record["targetRpe"] = m.value as CKRecordValue
-            default: break
-            }
-        }
-
-        if let r = ps.restSeconds { record["restSeconds"] = Int64(r) as CKRecordValue }
-        if let n = ps.notes { record["notes"] = n as CKRecordValue }
-        if let d = parseDate(ps.updatedAt) { record["updatedAt"] = d as CKRecordValue }
-        return record
-    }
-
     func toCKRecord(_ session: WorkoutSessionRow, zoneID: CKRecordZone.ID) -> CKRecord {
         let recordID = CKRecord.ID(recordName: session.id, zoneID: zoneID)
         let record = CKRecord(recordType: "WorkoutSession", recordID: recordID)
@@ -249,79 +212,6 @@ final class CKRecordMapper {
             record["parentExerciseId"] = makeReference(recordName: p, zoneID: zoneID) as CKRecordValue
         }
         if let d = parseDate(se.updatedAt) { record["updatedAt"] = d as CKRecordValue }
-        return record
-    }
-
-    func toCKRecord(_ ss: SessionSetRow, measurements: [SetMeasurementRow] = [], zoneID: CKRecordZone.ID) -> CKRecord {
-        let recordID = CKRecord.ID(recordName: ss.id, zoneID: zoneID)
-        let record = CKRecord(recordType: "SessionSet", recordID: recordID)
-        record["sessionExerciseId"] = makeReference(recordName: ss.sessionExerciseId, zoneID: zoneID) as CKRecordValue
-        record["orderIndex"] = Int64(ss.orderIndex) as CKRecordValue
-        record["status"] = ss.status as CKRecordValue
-
-        // Attributes
-        var attrs: [String] = []
-        if ss.isDropset != 0 { attrs.append("dropset") }
-        if ss.isPerSide != 0 { attrs.append("perSide") }
-        if ss.isAmrap != 0 { attrs.append("amrap") }
-        if !attrs.isEmpty { record["attributes"] = attrs as CKRecordValue }
-
-        // Write target/actual fields from measurements (dual-write for backward compat)
-        let groupZero = measurements.filter { $0.groupIndex == 0 }
-        for m in groupZero {
-            let prefix = m.role == "target" ? "target" : "actual"
-            switch m.kind {
-            case "weight":
-                record["\(prefix)Weight"] = m.value as CKRecordValue
-                if let u = m.unit { record["\(prefix)WeightUnit"] = u as CKRecordValue }
-            case "reps":
-                record["\(prefix)Reps"] = Int64(m.value) as CKRecordValue
-            case "time":
-                record["\(prefix)Time"] = Int64(m.value) as CKRecordValue
-            case "distance":
-                record["\(prefix)Distance"] = m.value as CKRecordValue
-                if let u = m.unit { record["\(prefix)DistanceUnit"] = u as CKRecordValue }
-            case "rpe":
-                record["\(prefix)Rpe"] = m.value as CKRecordValue
-            default: break
-            }
-        }
-
-        setOptionalInt(on: record, key: "restSeconds", value: ss.restSeconds)
-        setOptionalString(on: record, key: "notes", value: ss.notes)
-        setOptionalString(on: record, key: "side", value: ss.side)
-        setOptionalDate(on: record, key: "completedAt", isoString: ss.completedAt)
-        setOptionalDate(on: record, key: "updatedAt", isoString: ss.updatedAt)
-        return record
-    }
-
-    private func setOptionalString(on record: CKRecord, key: String, value: String?) {
-        if let v = value { record[key] = v as CKRecordValue }
-    }
-
-    private func setOptionalInt(on record: CKRecord, key: String, value: Int?) {
-        if let v = value { record[key] = Int64(v) as CKRecordValue }
-    }
-
-    private func setOptionalDouble(on record: CKRecord, key: String, value: Double?) {
-        if let v = value { record[key] = v as CKRecordValue }
-    }
-
-    private func setOptionalDate(on record: CKRecord, key: String, isoString: String?) {
-        if let d = parseDate(isoString) { record[key] = d as CKRecordValue }
-    }
-
-    func toCKRecord(_ m: SetMeasurementRow, zoneID: CKRecordZone.ID) -> CKRecord {
-        let recordID = CKRecord.ID(recordName: m.id, zoneID: zoneID)
-        let record = CKRecord(recordType: "SetMeasurement", recordID: recordID)
-        record["setId"] = makeReference(recordName: m.setId, zoneID: zoneID) as CKRecordValue
-        record["parentType"] = m.parentType as CKRecordValue
-        record["role"] = m.role as CKRecordValue
-        record["kind"] = m.kind as CKRecordValue
-        record["value"] = m.value as CKRecordValue
-        if let u = m.unit { record["unit"] = u as CKRecordValue }
-        record["groupIndex"] = Int64(m.groupIndex) as CKRecordValue
-        if let d = parseDate(m.updatedAt) { record["updatedAt"] = d as CKRecordValue }
         return record
     }
 
@@ -660,69 +550,6 @@ final class CKRecordMapper {
         }
     }
 
-    /// Extract measurement fields from a CKRecord and insert into set_measurements.
-    /// Handles old-format CKRecords that store target/actual fields directly on the set record.
-    private func insertMeasurementsFromCKRecord(
-        _ record: CKRecord,
-        setId: String,
-        parentType: String,
-        role: String,
-        now: String?,
-        in db: Database
-    ) throws {
-        let prefix = role == "target" ? "target" : "actual"
-
-        if let w = doubleField(record, "\(prefix)Weight") {
-            let unit = stringField(record, "\(prefix)WeightUnit")
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "weight", value: w, unit: unit,
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        }
-        if let r = int64Field(record, "\(prefix)Reps") {
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "reps", value: Double(r), unit: nil,
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        }
-        if let t = int64Field(record, "\(prefix)Time") {
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "time", value: Double(t), unit: "s",
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        }
-        if let d = doubleField(record, "\(prefix)Distance") {
-            let unit = stringField(record, "\(prefix)DistanceUnit")
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "distance", value: d, unit: unit,
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        }
-        if let rpe = doubleField(record, "\(prefix)Rpe") {
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "rpe", value: rpe, unit: nil,
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        } else if let rpe = int64Field(record, "\(prefix)Rpe") {
-            let mRow = SetMeasurementRow(
-                id: IDGenerator.generate(), setId: setId, parentType: parentType,
-                role: role, kind: "rpe", value: Double(rpe), unit: nil,
-                groupIndex: 0, updatedAt: now
-            )
-            try mRow.insert(db)
-        }
-    }
-
     private func mergeUserSettings(_ record: CKRecord, dbQueue: DatabaseQueue) throws -> Bool {
         let remoteUpdatedAt = dateField(record, "updatedAt")
         return try dbQueue.write { db in
@@ -779,47 +606,6 @@ final class CKRecordMapper {
                 try row.insert(db)
                 return true
             }
-        }
-    }
-
-    private func mergeSetMeasurement(_ record: CKRecord, dbQueue: DatabaseQueue) throws -> Bool {
-        let remoteUpdatedAt = dateField(record, "updatedAt")
-        return try dbQueue.write { db in
-            let measurementId = record.recordID.recordName
-            let existing = try SetMeasurementRow.fetchOne(db, key: measurementId)
-
-            if let existing, !self.remoteIsNewer(remoteDate: remoteUpdatedAt, localUpdatedAt: existing.updatedAt) {
-                return false
-            }
-
-            let setId = self.referenceId(record, "setId") ?? existing?.setId ?? ""
-            if setId.isEmpty {
-                Logger.shared.error(.sync, "[sync-merge] Skipping SetMeasurement \(measurementId): missing setId FK")
-                return false
-            }
-
-            // Validate FK: setId must reference an existing session_set or template_set
-            let parentType = self.stringField(record, "parentType") ?? existing?.parentType ?? "session"
-            let fkTable = parentType == "planned" ? "template_sets" : "session_sets"
-            let fkExists = try Row.fetchOne(db, sql: "SELECT 1 FROM \(fkTable) WHERE id = ?", arguments: [setId]) != nil
-            if !fkExists && existing == nil {
-                Logger.shared.error(.sync, "[sync-merge] Skipping SetMeasurement \(measurementId): setId \(setId) not found in \(fkTable)")
-                return false
-            }
-
-            let row = SetMeasurementRow(
-                id: measurementId,
-                setId: setId,
-                parentType: parentType,
-                role: self.stringField(record, "role") ?? existing?.role ?? "actual",
-                kind: self.stringField(record, "kind") ?? existing?.kind ?? "weight",
-                value: self.doubleField(record, "value") ?? existing?.value ?? 0,
-                unit: self.stringField(record, "unit") ?? existing?.unit,
-                groupIndex: self.int64Field(record, "groupIndex").map { Int($0) } ?? existing?.groupIndex ?? 0,
-                updatedAt: self.dateToISO(remoteUpdatedAt) ?? existing?.updatedAt
-            )
-            if existing != nil { try row.update(db) } else { try row.insert(db) }
-            return true
         }
     }
 

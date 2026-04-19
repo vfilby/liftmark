@@ -606,7 +606,14 @@ final class DatabaseManager: @unchecked Sendable {
     // MARK: - V12: SetMeasurement — decouple metrics from set rows
 
     private func migrateToV12(_ db: Database) throws {
-        // 1. Create set_measurements table
+        try createSetMeasurementsTable(db)
+        try migrateSessionSetMeasurements(db)
+        try migrateTemplateSetMeasurements(db)
+        try rebuildSessionSetsSchema(db)
+        try rebuildTemplateSetsSchema(db)
+    }
+
+    private func createSetMeasurementsTable(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE set_measurements (
                 id TEXT PRIMARY KEY,
@@ -622,8 +629,9 @@ final class DatabaseManager: @unchecked Sendable {
         """)
         try db.execute(sql: "CREATE INDEX idx_set_measurements_set ON set_measurements(set_id, parent_type)")
         try db.execute(sql: "CREATE INDEX idx_set_measurements_group ON set_measurements(set_id, group_index)")
+    }
 
-        // 2. Migrate session_sets target/actual columns → set_measurements
+    private func migrateSessionSetMeasurements(_ db: Database) throws {
         let sessionSets = try Row.fetchAll(db, sql: "SELECT * FROM session_sets")
         for row in sessionSets {
             guard let setId: String = row["id"] else { continue }
@@ -667,8 +675,9 @@ final class DatabaseManager: @unchecked Sendable {
                 try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
             }
         }
+    }
 
-        // 3. Migrate template_sets target columns → set_measurements
+    private func migrateTemplateSetMeasurements(_ db: Database) throws {
         let templateSets = try Row.fetchAll(db, sql: "SELECT * FROM template_sets")
         for row in templateSets {
             guard let setId: String = row["id"] else { continue }
@@ -692,8 +701,9 @@ final class DatabaseManager: @unchecked Sendable {
                 try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
             }
         }
+    }
 
-        // 4. Rebuild session_sets without target/actual/drop columns
+    private func rebuildSessionSetsSchema(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE session_sets_new (
                 id TEXT PRIMARY KEY,
@@ -719,8 +729,9 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "DROP TABLE session_sets")
         try db.execute(sql: "ALTER TABLE session_sets_new RENAME TO session_sets")
         try db.execute(sql: "CREATE INDEX idx_session_sets_exercise ON session_sets(session_exercise_id)")
+    }
 
-        // 5. Rebuild template_sets without target columns
+    private func rebuildTemplateSetsSchema(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE template_sets_new (
                 id TEXT PRIMARY KEY,
