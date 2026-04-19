@@ -599,6 +599,7 @@ struct SetRowView: View {
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Decrease drop \(index + 1) weight by \(formatWeight(weightStepIncrement))")
 
                     TextField("--", text: Binding(
                         get: { dropEntries[index].weight },
@@ -618,6 +619,7 @@ struct SetRowView: View {
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Increase drop \(index + 1) weight by \(formatWeight(weightStepIncrement))")
                 }
 
                 Text("\u{00D7}")
@@ -632,6 +634,7 @@ struct SetRowView: View {
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Decrease drop \(index + 1) reps by 1")
 
                 TextField("--", text: Binding(
                     get: { dropEntries[index].reps },
@@ -651,6 +654,7 @@ struct SetRowView: View {
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Increase drop \(index + 1) reps by 1")
             }
 
             Spacer()
