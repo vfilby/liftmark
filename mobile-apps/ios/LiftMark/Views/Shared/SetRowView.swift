@@ -164,18 +164,36 @@ struct SetRowView: View {
                         Text("Weight\(weightUnitLabel)")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        TextField("--", text: $weightText)
-                            #if os(iOS)
-                            .keyboardType(.decimalPad)
-                            #endif
-                            .font(.title3.monospacedDigit())
-                            .multilineTextAlignment(.center)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 90)
-                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
-                            .onChange(of: weightText) { _, newValue in
-                                onWeightChanged?(newValue)
+                        HStack(spacing: 4) {
+                            Button { adjustWeight(by: -weightStepIncrement) } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Decrease weight by \(formatWeight(weightStepIncrement))")
+
+                            TextField("--", text: $weightText)
+                                #if os(iOS)
+                                .keyboardType(.decimalPad)
+                                #endif
+                                .font(.title3.monospacedDigit())
+                                .multilineTextAlignment(.center)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 90)
+                                .onChange(of: weightText) { _, newValue in
+                                    onWeightChanged?(newValue)
+                                }
+
+                            Button { adjustWeight(by: weightStepIncrement) } label: {
+                                Image(systemName: "plus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Increase weight by \(formatWeight(weightStepIncrement))")
+                        }
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                     }
 
                     // Show × separator only when reps follow (not for weighted-timed sets)
@@ -534,17 +552,33 @@ struct SetRowView: View {
                 .foregroundStyle(LiftMarkTheme.destructive)
 
             if set.entries.first?.target?.weight != nil {
-                TextField("--", text: Binding(
-                    get: { dropEntries[index].weight },
-                    set: { dropEntries[index].weight = $0 }
-                ))
-                #if os(iOS)
-                .keyboardType(.decimalPad)
-                #endif
-                .font(.body.monospacedDigit())
-                .multilineTextAlignment(.center)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 80)
+                HStack(spacing: 4) {
+                    Button { adjustDropWeight(index: index, by: -weightStepIncrement) } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.body)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    }
+                    .buttonStyle(.plain)
+
+                    TextField("--", text: Binding(
+                        get: { dropEntries[index].weight },
+                        set: { dropEntries[index].weight = $0 }
+                    ))
+                    #if os(iOS)
+                    .keyboardType(.decimalPad)
+                    #endif
+                    .font(.body.monospacedDigit())
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+
+                    Button { adjustDropWeight(index: index, by: weightStepIncrement) } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.body)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Text("\u{00D7}")
                     .font(.caption)
@@ -725,6 +759,28 @@ struct SetRowView: View {
         }
         guard !parts.isEmpty else { return nil }
         return "Target: \(parts.joined(separator: " "))"
+    }
+
+    /// Step increment for weight stepper buttons: 5 for lbs, 2.5 for kg.
+    private var weightStepIncrement: Double {
+        let unit = set.entries.first?.target?.weight?.unit ?? set.entries.first?.actual?.weight?.unit
+        return unit == .kg ? 2.5 : 5.0
+    }
+
+    /// Adjusts the main weight field by the given delta, clamped to 0.
+    private func adjustWeight(by delta: Double) {
+        let current = Double(weightText) ?? 0
+        let newWeight = max(0, current + delta)
+        weightText = formatWeight(newWeight)
+        onWeightChanged?(weightText)
+    }
+
+    /// Adjusts a drop entry's weight field by the given delta, clamped to 0.
+    private func adjustDropWeight(index: Int, by delta: Double) {
+        guard index >= 0 && index < dropEntries.count else { return }
+        let current = Double(dropEntries[index].weight) ?? 0
+        let newWeight = max(0, current + delta)
+        dropEntries[index].weight = formatWeight(newWeight)
     }
 
     private func formatWeight(_ w: Double) -> String {

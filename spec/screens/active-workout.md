@@ -69,6 +69,12 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - ExerciseTimer component appears for sets with `targetTime`
 - **Tap Start** → begins counting up toward target
 - **Tap Pause** → pauses timer; elapsed time is frozen
+- **Tap timer display** → toggles between count-up and count-down display modes:
+  - **Count-up** (default): Shows elapsed time counting from 0 toward target (e.g., "0:00 → target")
+  - **Count-down**: Shows remaining time counting from target toward 0 (e.g., "target → 0:00"). Displayed as `max(0, targetSeconds - elapsed)`.
+  - Count-down mode is only available when `targetSeconds` is not nil. When no target exists, the timer always shows count-up.
+  - A small arrow icon (up or down) appears next to the timer text to indicate the current mode.
+  - The toggle state is local to the timer instance and resets when the timer is dismissed.
 - **Done button** → visible immediately once the timer is started (including at 0:00 elapsed), whether the timer is running or paused. Always uses success (green) styling to be visually consistent with the "Complete Set" button. Logs the current elapsed time as `actualTime`.
 - **Background resilience**: Exercise timer uses wall-clock `Date()` timestamps. A `startDate` is set on start/resume. On pause, elapsed time is accumulated into `pausedElapsed` and `startDate` is cleared. Total elapsed = `pausedElapsed + (startDate != nil ? Date().timeIntervalSince(startDate!) : 0)`. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods).
 - **Timer tick alignment**: Both rest timers and exercise timers must align their 1-second display ticks to whole-second boundaries. On start, compute the delay to the next whole second, fire the first tick at that boundary, then schedule repeating 1-second ticks. This ensures countdown sounds at 5/4/3/2/1s fire precisely when the displayed time transitions, not at arbitrary offsets.
@@ -170,6 +176,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - When an exercise's last set is completed, it collapses and scroll focus moves to the next exercise
 - The currently active exercise (containing the current pending set) is always expanded
 - User can manually expand/collapse any exercise
+- **Tap target**: The entire exercise header row (number badge, exercise name, spacer area, set count) must be tappable to toggle collapse. The button label HStack must use `.contentShape(Rectangle())` so that transparent spacer areas forward taps. Additional `.padding(.vertical, 4)` ensures a comfortable vertical tap target.
 
 | Element | testID | Type |
 |---------|--------|------|
@@ -208,6 +215,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 Renders individual sets with multiple visual states:
 - **Pending**: Shows target weight/reps (e.g., "135 lbs x 5"), neutral styling
 - **Current (active form)**: Blue highlight, weight/reps input fields pre-filled with target values, Skip and Complete buttons. Uses consistent padding (spacingXS vertical, spacingSM horizontal) matching other set rows. Larger fonts (.title3.monospacedDigit() for inputs) and 44pt minimum tap targets. Layout is two rows: top row has inputs + skip button, bottom row has a full-width "Complete Set" button to separate it from skip and provide a large tap target. For per-side sets, a side label badge ("Left" or "Right") is displayed next to the set indicator, before the input fields.
+  - **Weight stepper buttons**: The main weight input field and drop set weight fields are flanked by minus/plus stepper buttons (`minus.circle` / `plus.circle` icons) for quick weight adjustment during workouts. The increment is unit-aware: +/-5 for lbs, +/-2.5 for kg. Weight is clamped to a minimum of 0. Stepper buttons use `.secondaryLabel` color and `.body` font size.
 - **Up Next preview**: Compact single-line with "UP NEXT" label
 - **Completed**: Green background, shows actual values (weight + reps), "Tap to edit"
 - **Skipped**: Yellow/warning background, "Skipped", "Tap to edit"

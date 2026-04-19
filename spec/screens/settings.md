@@ -151,6 +151,8 @@ Tapping "Export Database" creates a timestamped copy of the database and present
 3. On success: presents a share sheet (`UIActivityViewController`) with the exported file URL
 4. On failure: shows an alert with the error message
 
+**Share sheet binding**: All share sheets must use the `sheet(item:)` pattern with an identifiable wrapper (e.g., `ExportFile`) instead of `sheet(isPresented:)` with a separate optional URL. This ensures the sheet only opens when the URL is fully ready, preventing blank share sheets on first tap.
+
 **UI elements:**
 
 | Element | testID | Type | Purpose |

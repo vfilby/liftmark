@@ -67,6 +67,8 @@ struct ActiveExerciseCard: View {
                                 .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                         }
                     }
+                    .contentShape(Rectangle())
+                    .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isCollapsed ? "Expand \(exercise.exerciseName), \(completedSetCount) of \(exercise.sets.count) sets done" : "Collapse \(exercise.exerciseName)")

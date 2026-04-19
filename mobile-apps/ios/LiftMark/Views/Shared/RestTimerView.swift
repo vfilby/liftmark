@@ -164,6 +164,7 @@ struct ExerciseTimerView: View {
     @State private var displayElapsed: Int = 0
     @State private var lastPlayedSecond: Int = -1
     @State private var completionPlayed: Bool = false
+    @State private var showCountdown: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(SettingsStore.self) private var settingsStore
 
@@ -185,14 +186,36 @@ struct ExerciseTimerView: View {
         return displayElapsed >= target
     }
 
+    /// The display value: either elapsed (count-up) or remaining (count-down).
+    private var displayValue: Int {
+        if showCountdown, let target = targetSeconds {
+            return max(0, target - displayElapsed)
+        }
+        return displayElapsed
+    }
+
     var body: some View {
         VStack(spacing: LiftMarkTheme.spacingSM) {
-            // Timer display
-            Text(formatTime(displayElapsed))
-                .font(.system(size: 40, weight: .light, design: .monospaced))
-                .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.primary)
-                .tracking(1)
-                .accessibilityLabel("Exercise timer, \(displayElapsed) seconds elapsed")
+            // Timer display — tap to toggle count-up/count-down
+            HStack(spacing: 6) {
+                Text(formatTime(displayValue))
+                    .font(.system(size: 40, weight: .light, design: .monospaced))
+                    .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.primary)
+                    .tracking(1)
+
+                if targetSeconds != nil {
+                    Image(systemName: showCountdown ? "arrow.down" : "arrow.up")
+                        .font(.caption)
+                        .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                }
+            }
+            .accessibilityLabel("Exercise timer, \(displayElapsed) seconds elapsed")
+            .accessibilityHint(targetSeconds != nil ? "Tap to toggle between count-up and count-down" : "")
+            .onTapGesture {
+                if targetSeconds != nil {
+                    showCountdown.toggle()
+                }
+            }
 
             // Target label
             if let target = targetSeconds {

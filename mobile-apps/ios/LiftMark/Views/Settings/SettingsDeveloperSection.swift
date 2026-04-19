@@ -3,8 +3,7 @@ import SwiftUI
 struct SettingsDeveloperSection: View {
     @State private var showExportError = false
     @State private var exportErrorMessage = ""
-    @State private var exportURL: URL?
-    @State private var showShareSheet = false
+    @State private var exportFile: ExportFile?
 
     var body: some View {
         Group {
@@ -20,10 +19,8 @@ struct SettingsDeveloperSection: View {
             }
             .accessibilityIdentifier("export-database-button")
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let exportURL {
-                ShareSheet(items: [exportURL])
-            }
+        .sheet(item: $exportFile) { file in
+            ShareSheet(items: [file.url])
         }
         .alert("Export Error", isPresented: $showExportError) {
             Button("OK", role: .cancel) {}
@@ -37,8 +34,7 @@ struct SettingsDeveloperSection: View {
     private func exportDatabase() {
         do {
             let url = try DatabaseBackupService.exportDatabase()
-            exportURL = url
-            showShareSheet = true
+            exportFile = ExportFile(url: url)
         } catch {
             exportErrorMessage = error.localizedDescription
             showExportError = true
