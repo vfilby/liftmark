@@ -26,6 +26,19 @@ struct ActiveExerciseCard: View {
         exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
     }
 
+    /// The target time for the current pending set, if it's a timed set.
+    private var currentTimedSetTarget: Int? {
+        guard let idx = currentSetIndex else { return nil }
+        guard let targetTime = exercise.sets[idx].entries.first?.target?.time, targetTime > 0 else { return nil }
+        return targetTime
+    }
+
+    /// The stable identity for the current timed set (used to reset timer when set changes).
+    private var currentTimedSetId: String? {
+        guard let idx = currentSetIndex, currentTimedSetTarget != nil else { return nil }
+        return exercise.sets[idx].id
+    }
+
     /// Index of the last completed/skipped set (for placing rest timer after it)
     private var lastCompletedSetIndex: Int? {
         for i in stride(from: exercise.sets.count - 1, through: 0, by: -1) {
@@ -124,16 +137,6 @@ struct ActiveExerciseCard: View {
                         } : nil
                     )
 
-                    // Timed exercise timer — inline after the current set
-                    if setIndex == currentSetIndex,
-                       let targetTime = set.entries.first?.target?.time, targetTime > 0 {
-                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
-                            let weight = Double(currentWeightText)
-                            onCompleteSet(setIndex, weight, nil, elapsedSeconds)
-                        }
-                        .id(set.id)
-                    }
-
                     // Inline rest timer — placed after the last completed set
                     if let lastIdx = lastCompletedSetIndex, setIndex == lastIdx,
                        let restState = activeRestTimer {
@@ -185,6 +188,22 @@ struct ActiveExerciseCard: View {
                     .accessibilityLabel("Search \(exercise.exerciseName) form videos on YouTube")
                     .accessibilityHint("Opens YouTube in your browser")
                 }
+            }
+
+            // Timed exercise timer — rendered outside the collapsed content block
+            // so that @State (startDate, pausedElapsed, isRunning, etc.) survives
+            // collapse/expand cycles. Hidden visually when collapsed.
+            if let targetTime = currentTimedSetTarget, let setId = currentTimedSetId {
+                ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
+                    if let setIndex = currentSetIndex {
+                        let weight = Double(currentWeightText)
+                        onCompleteSet(setIndex, weight, nil, elapsedSeconds)
+                    }
+                }
+                .id(setId)
+                .opacity(isCollapsed ? 0 : 1)
+                .frame(height: isCollapsed ? 0 : nil)
+                .clipped()
             }
         }
         .padding()
