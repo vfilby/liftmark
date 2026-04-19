@@ -1,5 +1,19 @@
 .PHONY: test build deploy diff destroy typecheck install install-cdk bundle
 
+# Wrap AWS-calling commands in aws-vault-op, which pulls the file-backend
+# passphrase and MFA TOTP from 1Password before invoking aws-vault. Falls back
+# to plain aws-vault if the wrapper isn't installed. MFA is enforced via
+# ~/.aws/config. Override with AWS_VAULT= to bypass (e.g. in CI where
+# credentials come from the environment).
+ifeq ($(shell command -v aws-vault-op 2>/dev/null),)
+$(warning aws-vault-op not found — falling back to aws-vault (expect passphrase + MFA prompts))
+AWS_VAULT_CMD := aws-vault
+else
+AWS_VAULT_CMD := aws-vault-op
+endif
+
+AWS_VAULT ?= $(AWS_VAULT_CMD) exec liftmark-validator-deploy --
+
 # ── App dependencies ──
 install:
 	npm install
@@ -29,13 +43,13 @@ bundle:
 
 # ── CDK commands ──
 build: bundle
-	cd cdk && npx cdk synth
+	cd cdk && $(AWS_VAULT) npx cdk synth
 
 diff: bundle
-	cd cdk && npx cdk diff
+	cd cdk && $(AWS_VAULT) npx cdk diff --strict
 
 deploy: bundle
-	cd cdk && npx cdk deploy --require-approval any-change
+	cd cdk && $(AWS_VAULT) npx cdk deploy --require-approval any-change
 
 destroy:
-	cd cdk && npx cdk destroy
+	cd cdk && $(AWS_VAULT) npx cdk destroy

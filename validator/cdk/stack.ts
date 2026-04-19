@@ -15,7 +15,7 @@ export class LmwfValidatorStack extends cdk.Stack {
     super(scope, id, props);
 
     // ── Domain setup ──
-    const domainName = 'validate.liftmark.app';
+    const domainName = 'workoutformat.liftmark.app';
     const hostedZoneId = this.node.tryGetContext('hostedZoneId') ?? 'Z082094022DMVFBOHDGOE';
     const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'LiftMarkZone', {
       hostedZoneId,
@@ -35,6 +35,11 @@ export class LmwfValidatorStack extends cdk.Stack {
     });
 
     // ── Lambda function ──
+    const validatorLogGroup = new logs.LogGroup(this, 'ValidatorLogGroup', {
+      retention: logs.RetentionDays.TWO_WEEKS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     const validatorFn = new lambda.Function(this, 'ValidatorFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
@@ -46,7 +51,7 @@ export class LmwfValidatorStack extends cdk.Stack {
       environment: {
         NODE_ENV: 'production',
       },
-      logRetention: logs.RetentionDays.TWO_WEEKS,
+      logGroup: validatorLogGroup,
     });
 
     // ── HTTP API ──
@@ -83,7 +88,7 @@ export class LmwfValidatorStack extends cdk.Stack {
     // ── DNS record ──
     new route53.ARecord(this, 'ValidatorAliasRecord', {
       zone: hostedZone,
-      recordName: 'validate',
+      recordName: domainName.split('.')[0],
       target: route53.RecordTarget.fromAlias(
         new route53targets.ApiGatewayv2DomainProperties(
           customDomain.regionalDomainName,

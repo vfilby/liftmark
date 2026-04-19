@@ -5,7 +5,7 @@ import { LmwfValidatorStack } from './stack';
 const app = new cdk.App();
 
 new LmwfValidatorStack(app, 'LmwfValidatorStack', {
-  description: 'LMWF Validator — LiftMark Workout Format validation service',
+  description: 'LMWF Validator - LiftMark Workout Format validation service',
   env: {
     // Use the account/region from the CLI profile
     account: process.env.CDK_DEFAULT_ACCOUNT,

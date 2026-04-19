@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeCDKBootstrapRoles",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": [
+        "arn:aws:iam::341556346945:role/cdk-hnb659fds-deploy-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-hnb659fds-file-publishing-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-hnb659fds-image-publishing-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-hnb659fds-lookup-role-341556346945-us-west-2"
+      ],
+      "Condition": {
+        "Bool": { "aws:MultiFactorAuthPresent": "true" }
+      }
+    }
+  ]
+}
