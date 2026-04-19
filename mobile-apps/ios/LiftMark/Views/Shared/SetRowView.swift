@@ -164,7 +164,7 @@ struct SetRowView: View {
                         Text("Weight\(weightUnitLabel)")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        HStack(spacing: 4) {
+                        HStack(spacing: 2) {
                             Button { adjustWeight(by: -weightStepIncrement) } label: {
                                 Image(systemName: "minus.circle")
                                     .font(.body)
@@ -180,7 +180,7 @@ struct SetRowView: View {
                                 .font(.title3.monospacedDigit())
                                 .multilineTextAlignment(.center)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 90)
+                                .frame(width: 72)
                                 .onChange(of: weightText) { _, newValue in
                                     onWeightChanged?(newValue)
                                 }
@@ -211,10 +211,10 @@ struct SetRowView: View {
                         Text("Time (s)")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        HStack(spacing: 4) {
+                        HStack(spacing: 2) {
                             Button { adjustTime(by: -5) } label: {
                                 Image(systemName: "minus.circle")
-                                    .font(.body)
+                                    .font(.callout)
                                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             }
                             .buttonStyle(.plain)
@@ -227,11 +227,11 @@ struct SetRowView: View {
                                 .font(.title3.monospacedDigit())
                                 .multilineTextAlignment(.center)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 70)
+                                .frame(width: 56)
 
                             Button { adjustTime(by: 5) } label: {
                                 Image(systemName: "plus.circle")
-                                    .font(.body)
+                                    .font(.callout)
                                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             }
                             .buttonStyle(.plain)
@@ -247,10 +247,10 @@ struct SetRowView: View {
                         Text("Reps")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        HStack(spacing: 4) {
+                        HStack(spacing: 2) {
                             Button { adjustReps(by: -1) } label: {
                                 Image(systemName: "minus.circle")
-                                    .font(.body)
+                                    .font(.callout)
                                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             }
                             .buttonStyle(.plain)
@@ -263,11 +263,11 @@ struct SetRowView: View {
                                 .font(.title3.monospacedDigit())
                                 .multilineTextAlignment(.center)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 60)
+                                .frame(width: 50)
 
                             Button { adjustReps(by: 1) } label: {
                                 Image(systemName: "plus.circle")
-                                    .font(.body)
+                                    .font(.callout)
                                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             }
                             .buttonStyle(.plain)
@@ -591,7 +591,7 @@ struct SetRowView: View {
                 .foregroundStyle(LiftMarkTheme.destructive)
 
             if set.entries.first?.target?.weight != nil {
-                HStack(spacing: 4) {
+                HStack(spacing: 2) {
                     Button { adjustDropWeight(index: index, by: -weightStepIncrement) } label: {
                         Image(systemName: "minus.circle")
                             .font(.body)
@@ -609,7 +609,7 @@ struct SetRowView: View {
                     .font(.body.monospacedDigit())
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
+                    .frame(width: 72)
 
                     Button { adjustDropWeight(index: index, by: weightStepIncrement) } label: {
                         Image(systemName: "plus.circle")
@@ -624,10 +624,10 @@ struct SetRowView: View {
                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
             }
 
-            HStack(spacing: 4) {
+            HStack(spacing: 2) {
                 Button { adjustDropReps(index: index, by: -1) } label: {
                     Image(systemName: "minus.circle")
-                        .font(.body)
+                        .font(.callout)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
                 }
                 .buttonStyle(.plain)
@@ -646,7 +646,7 @@ struct SetRowView: View {
 
                 Button { adjustDropReps(index: index, by: 1) } label: {
                     Image(systemName: "plus.circle")
-                        .font(.body)
+                        .font(.callout)
                         .foregroundStyle(LiftMarkTheme.secondaryLabel)
                 }
                 .buttonStyle(.plain)
