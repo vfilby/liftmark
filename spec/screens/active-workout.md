@@ -216,10 +216,11 @@ Primary workout execution screen. Displays all exercises and sets for the active
 Renders individual sets with multiple visual states:
 - **Pending**: Shows target weight/reps (e.g., "135 lbs x 5"), neutral styling
 - **Current (active form)**: Blue highlight, weight/reps input fields pre-filled with target values, Skip and Complete buttons. Uses consistent padding (spacingXS vertical, spacingSM horizontal) matching other set rows. Larger fonts (.title3.monospacedDigit() for inputs) and 44pt minimum tap targets. Layout is two rows: top row has inputs + skip button, bottom row has a full-width "Complete Set" button to separate it from skip and provide a large tap target. For per-side sets, a side label badge ("Left" or "Right") is displayed next to the set indicator, before the input fields.
-  - **Stepper buttons**: Input fields are flanked by minus/plus stepper buttons (`minus.circle` / `plus.circle` icons) for quick adjustment during workouts. All values are clamped to a minimum of 0. Stepper buttons use `.secondaryLabel` color and `.body` font size.
+  - **Stepper buttons**: Input fields are flanked by minus/plus stepper buttons (`minus.circle` / `plus.circle` icons) for quick adjustment during workouts. All values are clamped to a minimum of 0. Stepper buttons use `.secondaryLabel` color and `.callout` font size for reps/time, `.body` for weight.
     - **Weight**: +/-5 for lbs, +/-2.5 for kg (unit-aware). Applied to main weight field and drop set weight fields.
     - **Reps**: +/-1 per tap. Applied to main reps field and drop set reps fields.
     - **Time**: +/-5 seconds per tap. Applied to timed exercise input fields.
+  - **Target hint**: When a target exists, a "Target: 185 lbs x 5" hint line is always present in the layout to reserve its vertical space. It is only visible (opacity 1) when the user has changed weight or reps from the target values; otherwise it is hidden (opacity 0). This prevents the "Complete Set" button from jumping when the hint appears or disappears.
 - **Up Next preview**: Compact single-line with "UP NEXT" label
 - **Completed**: Green background, shows actual values (weight + reps), "Tap to edit"
 - **Skipped**: Yellow/warning background, "Skipped", "Tap to edit"
