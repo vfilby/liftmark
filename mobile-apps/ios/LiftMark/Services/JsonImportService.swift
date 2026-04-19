@@ -19,6 +19,32 @@ enum JsonImportError: LocalizedError {
     }
 }
 
+/// Bundles the JSON key names used to extract measurement values from set data.
+struct MeasurementKeyMap {
+    let weightKey: String
+    let weightUnitKey: String
+    let repsKey: String
+    let timeKey: String
+    let rpeKey: String
+
+    static let targetKeys = MeasurementKeyMap(
+        weightKey: "targetWeight", weightUnitKey: "targetWeightUnit",
+        repsKey: "targetReps", timeKey: "targetTime", rpeKey: "targetRpe"
+    )
+
+    static let actualKeys = MeasurementKeyMap(
+        weightKey: "actualWeight", weightUnitKey: "actualWeightUnit",
+        repsKey: "actualReps", timeKey: "actualTime", rpeKey: "actualRpe"
+    )
+}
+
+/// Bundles the identity and classification context for a set measurement.
+struct MeasurementContext {
+    let setId: String
+    let parentType: String
+    let role: String
+}
+
 /// Service for importing unified JSON exports into the database.
 /// Uses merge semantics: skips duplicates by name+date for sessions, name for plans.
 struct JsonImportService {
@@ -176,11 +202,8 @@ struct JsonImportService {
                             ])
 
                         // Insert target measurements into set_measurements
-                        try insertMeasurementsFromJson(
-                            setData, into: db, setId: setId, parentType: "planned", role: "target",
-                            weightKey: "targetWeight", weightUnitKey: "targetWeightUnit",
-                            repsKey: "targetReps", timeKey: "targetTime", rpeKey: "targetRpe"
-                        )
+                        let context = MeasurementContext(setId: setId, parentType: "planned", role: "target")
+                        try insertMeasurementsFromJson(setData, into: db, context: context, keyMap: .targetKeys)
                     }
                 }
             }
@@ -262,18 +285,12 @@ struct JsonImportService {
                             ])
 
                         // Insert target measurements into set_measurements
-                        try insertMeasurementsFromJson(
-                            setData, into: db, setId: setId, parentType: "session", role: "target",
-                            weightKey: "targetWeight", weightUnitKey: "targetWeightUnit",
-                            repsKey: "targetReps", timeKey: "targetTime", rpeKey: "targetRpe"
-                        )
+                        let targetCtx = MeasurementContext(setId: setId, parentType: "session", role: "target")
+                        try insertMeasurementsFromJson(setData, into: db, context: targetCtx, keyMap: .targetKeys)
 
                         // Insert actual measurements into set_measurements
-                        try insertMeasurementsFromJson(
-                            setData, into: db, setId: setId, parentType: "session", role: "actual",
-                            weightKey: "actualWeight", weightUnitKey: "actualWeightUnit",
-                            repsKey: "actualReps", timeKey: "actualTime", rpeKey: "actualRpe"
-                        )
+                        let actualCtx = MeasurementContext(setId: setId, parentType: "session", role: "actual")
+                        try insertMeasurementsFromJson(setData, into: db, context: actualCtx, keyMap: .actualKeys)
                     }
                 }
             }
@@ -312,31 +329,25 @@ struct JsonImportService {
     private func insertMeasurementsFromJson(
         _ setData: [String: Any],
         into db: Database,
-        setId: String,
-        parentType: String,
-        role: String,
-        weightKey: String,
-        weightUnitKey: String,
-        repsKey: String,
-        timeKey: String,
-        rpeKey: String
+        context: MeasurementContext,
+        keyMap: MeasurementKeyMap
     ) throws {
-        if let weight = setData[weightKey] as? Double {
-            let unit = setData[weightUnitKey] as? String
-            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
-                                  kind: "weight", value: weight, unit: unit)
+        if let weight = setData[keyMap.weightKey] as? Double {
+            let unit = setData[keyMap.weightUnitKey] as? String
+            try insertMeasurement(into: db, setId: context.setId, parentType: context.parentType,
+                                  role: context.role, kind: "weight", value: weight, unit: unit)
         }
-        if let reps = setData[repsKey] as? Int {
-            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
-                                  kind: "reps", value: Double(reps), unit: nil)
+        if let reps = setData[keyMap.repsKey] as? Int {
+            try insertMeasurement(into: db, setId: context.setId, parentType: context.parentType,
+                                  role: context.role, kind: "reps", value: Double(reps), unit: nil)
         }
-        if let time = setData[timeKey] as? Int {
-            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
-                                  kind: "time", value: Double(time), unit: "s")
+        if let time = setData[keyMap.timeKey] as? Int {
+            try insertMeasurement(into: db, setId: context.setId, parentType: context.parentType,
+                                  role: context.role, kind: "time", value: Double(time), unit: "s")
         }
-        if let rpe = setData[rpeKey] as? Int {
-            try insertMeasurement(into: db, setId: setId, parentType: parentType, role: role,
-                                  kind: "rpe", value: Double(rpe), unit: nil)
+        if let rpe = setData[keyMap.rpeKey] as? Int {
+            try insertMeasurement(into: db, setId: context.setId, parentType: context.parentType,
+                                  role: context.role, kind: "rpe", value: Double(rpe), unit: nil)
         }
     }
 

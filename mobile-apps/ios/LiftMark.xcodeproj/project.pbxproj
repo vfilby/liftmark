@@ -42,6 +42,7 @@
 		3B9DF2D85C08913F8747FF81 /* SettingsLiveActivitiesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94030A0DD7D6D4C9C38223A9 /* SettingsLiveActivitiesSection.swift */; };
 		406622C47E2E20CD649B12C4 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E789B9A675739D485DEB8B /* Enums.swift */; };
 		41A6BB3648D0800ABF0B74BD /* ErrorBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE0CDF79B2DFFE19F219027 /* ErrorBannerView.swift */; };
+		427BED86761D60153C8502F0 /* CKRecordMapper+SetMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA978B791C36287F69431C8C /* CKRecordMapper+SetMeasurement.swift */; };
 		477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85D10A4E19321EE0AEF31C1 /* SettingsStore.swift */; };
 		50B36ED3634D4244EB12525B /* LoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E22FBBD1B7949397C1E5C8D9 /* LoggerTests.swift */; };
 		546AE7E2A848F9BC65C17886 /* ExerciseHistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB64AAA0256291C97FA9D19B /* ExerciseHistoryChartView.swift */; };
@@ -347,6 +348,7 @@
 		F33E7AC1F974FF1C4952C4B7 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		F367406D6EAEEB16A1D945D6 /* SetRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetRowView.swift; sourceTree = "<group>"; };
 		F60A15DD48ACEE99146D8D6B /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
+		FA978B791C36287F69431C8C /* CKRecordMapper+SetMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CKRecordMapper+SetMeasurement.swift"; sourceTree = "<group>"; };
 		FB133008B74E2A84E1FC8E73 /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		FD2CDC4A9F0168141B6F99C9 /* AnthropicServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicServiceTests.swift; sourceTree = "<group>"; };
 		FD62A5DD7A3746F10518F287 /* ExerciseHistoryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseHistoryRepositoryTests.swift; sourceTree = "<group>"; };
@@ -405,6 +407,7 @@
 				D9FE10D43C37D15D55CD7E43 /* AnthropicService.swift */,
 				D029E8EF3D26021C1DE6232F /* AudioService.swift */,
 				954B57205C002E2857EE075A /* CKRecordMapper.swift */,
+				FA978B791C36287F69431C8C /* CKRecordMapper+SetMeasurement.swift */,
 				B38D581107ECEEEBFDA783CD /* CKSyncConflictResolver.swift */,
 				18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */,
 				156873BF197F953F583CBC22 /* CKSyncMetadataStore.swift */,
@@ -897,6 +900,7 @@
 				046BDEE4D56EEF1A07640A9D /* AppearancePicker.swift in Sources */,
 				5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */,
 				D76A9B26D9C1583D5A4E7C95 /* BuildInfo.swift in Sources */,
+				427BED86761D60153C8502F0 /* CKRecordMapper+SetMeasurement.swift in Sources */,
 				D51863263DFBB6D10A1DEB3E /* CKRecordMapper.swift in Sources */,
 				D40C0999EBC0725D6A1270B4 /* CKSyncConflictResolver.swift in Sources */,
 				5F55ACA6E2E8C4EF04EF35EE /* CKSyncEngineManager.swift in Sources */,
