@@ -1,0 +1,9 @@
+// Copy this file to Sentry.xcconfig and fill in the rest of your DSN.
+// The real Sentry.xcconfig is gitignored.
+//
+// The DSN is split to avoid `//` in xcconfig (Xcode treats // as a comment).
+// Paste the part of your Sentry DSN that comes AFTER the "https://" prefix.
+// Example: given https://abc123@o1234.ingest.us.sentry.io/5678, set:
+//   SENTRY_DSN_REST = abc123@o1234.ingest.us.sentry.io/5678
+
+SENTRY_DSN_REST =

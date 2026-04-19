@@ -42,8 +42,11 @@
 		3B9DF2D85C08913F8747FF81 /* SettingsLiveActivitiesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94030A0DD7D6D4C9C38223A9 /* SettingsLiveActivitiesSection.swift */; };
 		406622C47E2E20CD649B12C4 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E789B9A675739D485DEB8B /* Enums.swift */; };
 		41A6BB3648D0800ABF0B74BD /* ErrorBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE0CDF79B2DFFE19F219027 /* ErrorBannerView.swift */; };
+		4232EDCEBC800BF3822C24AF /* SettingsPrivacySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */; };
 		427BED86761D60153C8502F0 /* CKRecordMapper+SetMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA978B791C36287F69431C8C /* CKRecordMapper+SetMeasurement.swift */; };
 		477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85D10A4E19321EE0AEF31C1 /* SettingsStore.swift */; };
+		4795C2A323A8F776D98904FE /* SentryConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5CCC90C4FCF3464EB1900B /* SentryConfig.swift */; };
+		48F69FDC6CCAB10B1D77DF37 /* CrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FDA4E5D795A7517D503E44 /* CrashReporterTests.swift */; };
 		50B36ED3634D4244EB12525B /* LoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E22FBBD1B7949397C1E5C8D9 /* LoggerTests.swift */; };
 		546AE7E2A848F9BC65C17886 /* ExerciseHistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB64AAA0256291C97FA9D19B /* ExerciseHistoryChartView.swift */; };
 		55C41D670ADEC7A15EB4EFAA /* NavigationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83446B2AFC5D21A415A51FA /* NavigationCoordinator.swift */; };
@@ -65,6 +68,7 @@
 		67F8E833AB970E7C0B0D3E7F /* SyncChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FB0FF7A71BDC475DA488AB4 /* SyncChange.swift */; };
 		697ACE9A93DBDD78F0B11F3B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D5191B081A643D264F9790 /* SettingsView.swift */; };
 		6AAEFF60A1CB9A5943574B71 /* ExerciseTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D356A67A58628F0D7881CC0 /* ExerciseTrendView.swift */; };
+		6C719CD2D4AEF2D0928096A2 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 6D124AFE5C66ABF0FB74FBC2 /* Sentry */; };
 		6D543A2B5DAE7E7414CD09DA /* WorkoutPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = F137B212FEE18D030DBC9C70 /* WorkoutPlan.swift */; };
 		6E470AECCA4B776FDD395E88 /* WorkoutPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183AA7541B9622B31C10CC50 /* WorkoutPlanStore.swift */; };
 		70EB05BEF00C39E243663AB4 /* GymStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5A19C073FB83621738F4CA3 /* GymStore.swift */; };
@@ -76,6 +80,7 @@
 		77DC164C212FE5675DDA696B /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AABEE074F959694604AA09E /* DatabaseManager.swift */; };
 		789A92F54B181AE5B0F2E526 /* CloudKitSyncProtectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8B0A4526BD762457DD4ABF /* CloudKitSyncProtectionTests.swift */; };
 		7AB5F2F72412312FF135E237 /* ExerciseHistoryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD62A5DD7A3746F10518F287 /* ExerciseHistoryRepositoryTests.swift */; };
+		7C90C1A92BE487A6425D9FD5 /* CrashReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFB75FAACD87D8A4AA1F8F7 /* CrashReporter.swift */; };
 		7D298DEAA05518F3DC66D53A /* SetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB9A5D9D4A27C0A81A9292F /* SetEntry.swift */; };
 		808A3DC210664F94AE68D4FD /* SettingsDeveloperSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565A9B08E30D7C1D7E6E94BD /* SettingsDeveloperSection.swift */; };
 		80C8D2569FADEDE15CE14823 /* SyncSessionGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAF9A728BCBE8C842B01E9D /* SyncSessionGuard.swift */; };
@@ -206,6 +211,7 @@
 		0BBF08237635EFE610F8D173 /* ActionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionAdapter.swift; sourceTree = "<group>"; };
 		0CA40A430E6513546C353DA5 /* CKSyncMetadataStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CKSyncMetadataStoreTests.swift; sourceTree = "<group>"; };
 		0DBFB6A09B3686193653A62B /* MarkdownParserAdvancedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParserAdvancedTests.swift; sourceTree = "<group>"; };
+		0F5CCC90C4FCF3464EB1900B /* SentryConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryConfig.swift; sourceTree = "<group>"; };
 		0F8D8C6B7DB03FE38BFEF1F2 /* LiveWorkoutsLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutsLiveActivity.swift; sourceTree = "<group>"; };
 		0FF868F5979A1635824B2B27 /* SecureStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorageTests.swift; sourceTree = "<group>"; };
 		100FA0E0A273C20AB13B252D /* LiveWorkoutsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutsBundle.swift; sourceTree = "<group>"; };
@@ -245,9 +251,11 @@
 		4EE0CDF79B2DFFE19F219027 /* ErrorBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBannerView.swift; sourceTree = "<group>"; };
 		4FB0FF7A71BDC475DA488AB4 /* SyncChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncChange.swift; sourceTree = "<group>"; };
 		4FD57CEFF5022DFA698C39EF /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacySection.swift; sourceTree = "<group>"; };
 		553E996598991A764AABC251 /* ActiveExerciseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveExerciseCard.swift; sourceTree = "<group>"; };
 		557BC7BEA37C9CC95B533600 /* SettingsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRepository.swift; sourceTree = "<group>"; };
 		565A9B08E30D7C1D7E6E94BD /* SettingsDeveloperSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDeveloperSection.swift; sourceTree = "<group>"; };
+		56FDA4E5D795A7517D503E44 /* CrashReporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashReporterTests.swift; sourceTree = "<group>"; };
 		58BA4F2232025DD4B5E50533 /* SyncSessionGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSessionGuardTests.swift; sourceTree = "<group>"; };
 		59613C15DB7D08E18367BB55 /* WorkoutHighlightsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHighlightsServiceTests.swift; sourceTree = "<group>"; };
 		598097ACA9731458C838AD5E /* SettingsAboutSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAboutSection.swift; sourceTree = "<group>"; };
@@ -289,6 +297,7 @@
 		9E064AE978D172E88F26E1DF /* complete.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = complete.mp3; sourceTree = "<group>"; };
 		9E0BE62F2191556A9EF27651 /* DeviceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLayout.swift; sourceTree = "<group>"; };
 		9E2A9274874F0DB09EC0507F /* LiftMarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftMarkTests.swift; sourceTree = "<group>"; };
+		9EFB75FAACD87D8A4AA1F8F7 /* CrashReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashReporter.swift; sourceTree = "<group>"; };
 		9F0BF91C3434CBDA7624B6C4 /* WorkoutGenerationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutGenerationServiceTests.swift; sourceTree = "<group>"; };
 		9FFE17786DC0564D38BF1802 /* EditPlanMarkdownSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditPlanMarkdownSheet.swift; sourceTree = "<group>"; };
 		A0C9B42D3BD8986494435EF5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -334,6 +343,7 @@
 		DCCF35B4BE5F3808F7C7098B /* WorkoutPlanRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanRepositoryTests.swift; sourceTree = "<group>"; };
 		DD702828FD007982A779D112 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		DEE07A8ED79EB88BFE43E5D3 /* HistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDetailView.swift; sourceTree = "<group>"; };
+		DEE36433D2EE0E33935C9B34 /* Sentry.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Sentry.xcconfig; sourceTree = "<group>"; };
 		DF5E7925F25E5F7CFE3C109B /* DisclaimerText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisclaimerText.swift; sourceTree = "<group>"; };
 		E0525E47DACD40D017D6CF66 /* WorkoutPlanRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanRepository.swift; sourceTree = "<group>"; };
 		E08159618FF39CFB1C6166D5 /* DatabaseBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseBackupService.swift; sourceTree = "<group>"; };
@@ -361,6 +371,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				39D05647DD77A9B90DD4730C /* GRDB in Frameworks */,
+				6C719CD2D4AEF2D0928096A2 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,6 +422,7 @@
 				B38D581107ECEEEBFDA783CD /* CKSyncConflictResolver.swift */,
 				18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */,
 				156873BF197F953F583CBC22 /* CKSyncMetadataStore.swift */,
+				9EFB75FAACD87D8A4AA1F8F7 /* CrashReporter.swift */,
 				E08159618FF39CFB1C6166D5 /* DatabaseBackupService.swift */,
 				4D27BE6564E91C3C656A48BC /* ExerciseDictionary.swift */,
 				470878A407B7BB8EB252FDB4 /* FileImportService.swift */,
@@ -467,6 +479,7 @@
 		6AFE5312FAE0458B3140414A = {
 			isa = PBXGroup;
 			children = (
+				80C7C37BD5D98393E6E7BC11 /* Config */,
 				78F97E99676A1D3EE4761C33 /* LiftMark */,
 				C4F89D1354BFA217F7471872 /* LiftMarkTests */,
 				1A4AA1E9A2731880C8724F16 /* LiftMarkUITests */,
@@ -517,12 +530,21 @@
 				2461031C021EB0B3B5E5300B /* SettingsGymSection.swift */,
 				2631DD9FD25AA06EBF3FDA73 /* SettingsHealthKitSection.swift */,
 				94030A0DD7D6D4C9C38223A9 /* SettingsLiveActivitiesSection.swift */,
+				52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */,
 				CC6EB2D92849470F1D048482 /* SettingsSection.swift */,
 				97D5191B081A643D264F9790 /* SettingsView.swift */,
 				EC7055EA2B5CF16CA09CB3AA /* SyncSettingsView.swift */,
 				6FF93345D4144D74BDEB39C8 /* WorkoutSettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		80C7C37BD5D98393E6E7BC11 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				DEE36433D2EE0E33935C9B34 /* Sentry.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		8175C017E11F4DC0F8AC0605 /* History */ = {
@@ -565,6 +587,7 @@
 				DA93F33BB15CE056E4A94451 /* BuildInfo.swift */,
 				888A9E535EF4C68643D49640 /* ContentView.swift */,
 				70B5C9C6A595B9A570A75396 /* LiftMarkApp.swift */,
+				0F5CCC90C4FCF3464EB1900B /* SentryConfig.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -654,6 +677,7 @@
 				EADAA4A9258171076A1B482F /* CKSyncEngineManagerTests.swift */,
 				0CA40A430E6513546C353DA5 /* CKSyncMetadataStoreTests.swift */,
 				5A8B0A4526BD762457DD4ABF /* CloudKitSyncProtectionTests.swift */,
+				56FDA4E5D795A7517D503E44 /* CrashReporterTests.swift */,
 				10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */,
 				5AE9C7D51ED3CF2FC7D59030 /* DatabaseManagerTests.swift */,
 				14DB416A43A59922B4ADF59B /* ExerciseDictionaryTests.swift */,
@@ -746,6 +770,7 @@
 			buildConfigurationList = DE2284B086CFFEA7FEB322E3 /* Build configuration list for PBXNativeTarget "LiftMark" */;
 			buildPhases = (
 				BE8AA02ED848F896828C98D8 /* Generate BuildInfo */,
+				6EC267FE41F3EE5B042042B7 /* Generate SentryConfig */,
 				1E9564402A0D8C22CC68839C /* Sources */,
 				A0AF0BAA864D0D6B6DA7FBF1 /* Resources */,
 				E8BA941CBD1AFD3AC7EF19A2 /* Frameworks */,
@@ -759,6 +784,7 @@
 			name = LiftMark;
 			packageProductDependencies = (
 				9BACEAB18D55AF17C12768D1 /* GRDB */,
+				6D124AFE5C66ABF0FB74FBC2 /* Sentry */,
 			);
 			productName = LiftMark;
 			productReference = 1376C535AFA86CB726E7F73F /* LiftMark.app */;
@@ -826,6 +852,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				1D73A9B434A0EEBB9CB11EF6 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -862,6 +889,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		6EC267FE41F3EE5B042042B7 /* Generate SentryConfig */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate SentryConfig";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/LiftMark/App/SentryConfig.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# SENTRY_DSN_REST comes from Config/Sentry.xcconfig (scheme-less to avoid\n# xcconfig's // comment handling). Empty is fine — CrashReporter no-ops.\nif [ -n \"${SENTRY_DSN_REST}\" ]; then\n  DSN=\"https://${SENTRY_DSN_REST}\"\nelse\n  DSN=\"\"\nfi\ncat > \"${SRCROOT}/LiftMark/App/SentryConfig.swift\" << SWIFT\n// Auto-generated at build time — do not edit. Source: Config/Sentry.xcconfig\nenum SentryConfig {\n    static let dsn = \"${DSN}\"\n}\nSWIFT\n";
+		};
 		BE8AA02ED848F896828C98D8 /* Generate BuildInfo */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -906,6 +952,7 @@
 				5F55ACA6E2E8C4EF04EF35EE /* CKSyncEngineManager.swift in Sources */,
 				5A89491A1D1631DFCA0533B2 /* CKSyncMetadataStore.swift in Sources */,
 				2683EA07E89C34E9DB15B061 /* ContentView.swift in Sources */,
+				7C90C1A92BE487A6425D9FD5 /* CrashReporter.swift in Sources */,
 				347BDEA12B7813E2E5100A23 /* DatabaseBackupService.swift in Sources */,
 				77DC164C212FE5675DDA696B /* DatabaseManager.swift in Sources */,
 				DC281FEEC2342BDA851A5E3D /* DebugLogsView.swift in Sources */,
@@ -950,6 +997,7 @@
 				8A5E5266EC0AF8521010B53C /* RestTimerState.swift in Sources */,
 				A47498AD84CC4B09D112D56A /* RestTimerView.swift in Sources */,
 				CFA76D7EC9EE9EC8195CCD9F /* SecureStorage.swift in Sources */,
+				4795C2A323A8F776D98904FE /* SentryConfig.swift in Sources */,
 				D1F4C2096E3E879F3919EE3D /* SessionRepository.swift in Sources */,
 				1330EAEB43A76F37FAD353AA /* SessionStore.swift in Sources */,
 				7D298DEAA05518F3DC66D53A /* SetEntry.swift in Sources */,
@@ -962,6 +1010,7 @@
 				BB9409DBF9E147D486C2A9F4 /* SettingsGymSection.swift in Sources */,
 				2BA06E28ECB209FB585178AD /* SettingsHealthKitSection.swift in Sources */,
 				3B9DF2D85C08913F8747FF81 /* SettingsLiveActivitiesSection.swift in Sources */,
+				4232EDCEBC800BF3822C24AF /* SettingsPrivacySection.swift in Sources */,
 				23287E25CE8A3CE1B1889420 /* SettingsRepository.swift in Sources */,
 				126A8904E9CCD3D3420C88E4 /* SettingsSection.swift in Sources */,
 				477624438ABA426BFB9F103B /* SettingsStore.swift in Sources */,
@@ -1015,6 +1064,7 @@
 				3273B2841C34A0D2FE1F203B /* CKSyncEngineManagerTests.swift in Sources */,
 				9AB084ACC5B5E49965B0A0C8 /* CKSyncMetadataStoreTests.swift in Sources */,
 				789A92F54B181AE5B0F2E526 /* CloudKitSyncProtectionTests.swift in Sources */,
+				48F69FDC6CCAB10B1D77DF37 /* CrashReporterTests.swift in Sources */,
 				DF373888E7CD580855CE16A4 /* DatabaseBackupServiceTests.swift in Sources */,
 				D45603E48D634CC83C564E66 /* DatabaseManagerTests.swift in Sources */,
 				8D9AF779D21C1E42D0059D6F /* ExerciseDictionaryTests.swift in Sources */,
@@ -1220,6 +1270,7 @@
 		};
 		49FF9FC7C4DB52F5A2EA2AF2 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DEE36433D2EE0E33935C9B34 /* Sentry.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LiftMark/LiftMark.entitlements;
@@ -1346,6 +1397,7 @@
 		};
 		FEBFF9BD3B7F5BF043A41B47 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DEE36433D2EE0E33935C9B34 /* Sentry.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LiftMark/LiftMark.entitlements;
@@ -1434,9 +1486,22 @@
 				minimumVersion = 7.10.0;
 			};
 		};
+		E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.10.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6D124AFE5C66ABF0FB74FBC2 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
 		9BACEAB18D55AF17C12768D1 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1D73A9B434A0EEBB9CB11EF6 /* XCRemoteSwiftPackageReference "GRDB.swift" */;

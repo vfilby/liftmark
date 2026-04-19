@@ -43,6 +43,15 @@ jobs:
             exit 1
           fi
 
+      - name: Write placeholder Sentry xcconfig
+        run: |
+          # CI builds don't need a real DSN — Sentry init no-ops on empty.
+          # But the xcconfig file must exist or xcodegen's configFiles reference fails.
+          cat > Config/Sentry.xcconfig <<'EOF'
+          // CI placeholder — no DSN. Real DSN written in deploy workflow.
+          SENTRY_DSN_REST =
+          EOF
+
       - name: Generate Xcode project
         run: xcodegen generate
 

@@ -116,6 +116,12 @@ struct SettingsView: View {
                     SettingsDataSection()
                 }
             }
+        case .privacy:
+            List {
+                Section(section.rawValue) {
+                    SettingsPrivacySection()
+                }
+            }
         case .developer:
             List {
                 Section(section.rawValue) {
@@ -171,6 +177,10 @@ struct SettingsView: View {
 
             Section("Data Management") {
                 SettingsDataSection()
+            }
+
+            Section("Privacy") {
+                SettingsPrivacySection()
             }
 
             #if DEBUG

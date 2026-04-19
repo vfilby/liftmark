@@ -17,6 +17,9 @@ packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift.git
     from: "7.10.0"
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa.git
+    from: "9.10.0"
 
 targets:
   LiftMark:
@@ -30,6 +33,9 @@ targets:
       - path: Shared
         excludes:
           - "**/.DS_Store"
+    configFiles:
+      Debug: Config/Sentry.xcconfig
+      Release: Config/Sentry.xcconfig
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.eff3.liftmark.native-ios
@@ -87,8 +93,27 @@ targets:
           SWIFT
         outputFiles:
           - $(SRCROOT)/LiftMark/App/BuildInfo.swift
+      - name: Generate SentryConfig
+        script: |
+          # SENTRY_DSN_REST comes from Config/Sentry.xcconfig (scheme-less to avoid
+          # xcconfig's // comment handling). Empty is fine — CrashReporter no-ops.
+          if [ -n "${SENTRY_DSN_REST}" ]; then
+            DSN="https://${SENTRY_DSN_REST}"
+          else
+            DSN=""
+          fi
+          cat > "${SRCROOT}/LiftMark/App/SentryConfig.swift" << SWIFT
+          // Auto-generated at build time — do not edit. Source: Config/Sentry.xcconfig
+          enum SentryConfig {
+              static let dsn = "${DSN}"
+          }
+          SWIFT
+        outputFiles:
+          - $(SRCROOT)/LiftMark/App/SentryConfig.swift
     dependencies:
       - package: GRDB
+      - package: Sentry
+        product: Sentry
       - target: LiveWorkouts
     entitlements:
       path: LiftMark/LiftMark.entitlements

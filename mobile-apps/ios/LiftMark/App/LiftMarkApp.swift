@@ -20,6 +20,10 @@ struct LiftMarkApp: App {
                 UserDefaults.standard.removePersistentDomain(forName: bundleId)
             }
         }
+
+        if !Self.isRunningTests {
+            CrashReporter.shared.start()
+        }
     }
 
     /// Parse --import-content launch argument at init time so the @State

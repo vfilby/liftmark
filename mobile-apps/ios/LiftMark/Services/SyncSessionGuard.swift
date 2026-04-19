@@ -155,6 +155,8 @@ enum SyncSessionGuard {
                 if result.exerciseCount > 0 || result.setCount > 0 {
                     Logger.shared.error(.sync,
                         "[sync-guard] DATA LOSS detected and RESTORED \(result.exerciseCount) exercises, \(result.setCount) sets")
+                    let dataLossError = NSError(domain: "LiftMark.SyncSessionGuard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Data loss detected and restored"])
+                    CrashReporter.shared.captureError(dataLossError, category: .sync, metadata: ["tag": "data_loss"])
                 }
                 return false
             } else {
@@ -165,6 +167,7 @@ enum SyncSessionGuard {
 
         } catch {
             Logger.shared.error(.sync, "[sync-guard] RESTORE FAILED: \(error.localizedDescription)")
+            CrashReporter.shared.captureError(error, category: .sync, metadata: ["tag": "data_loss_restore_failed"])
             return false
         }
     }

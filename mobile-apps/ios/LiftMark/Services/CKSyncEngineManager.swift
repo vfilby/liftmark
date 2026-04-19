@@ -201,6 +201,12 @@ final class CKSyncEngineManager: @unchecked Sendable {
                 Logger.shared.info(.sync, "[sync-engine] Zone already exists (non-fatal): \(error.localizedDescription)")
             } else {
                 Logger.shared.error(.sync, "[sync-engine] Failed to create zone: \(error)")
+                var metadata: [String: String] = ["zoneName": zoneID.zoneName, "tag": "zone-create-failed"]
+                if let ckError {
+                    metadata["errorCode"] = "\(ckError.code.rawValue)"
+                    metadata["errorDomain"] = CKErrorDomain
+                }
+                CrashReporter.shared.captureError(error, category: .sync, metadata: metadata)
             }
         }
 
@@ -249,6 +255,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
             }
         } catch {
             Logger.shared.error(.sync, "Failed to schedule full upload", error: error)
+            CrashReporter.shared.captureError(error, category: .sync, metadata: ["tag": "full-upload-schedule-failed"])
         }
     }
 
@@ -266,6 +273,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
             }
         } catch {
             Logger.shared.error(.sync, "Failed to persist sync engine state", error: error)
+            CrashReporter.shared.captureError(error, category: .sync, metadata: ["tag": "state-persist-failed"])
         }
     }
 
@@ -279,6 +287,7 @@ final class CKSyncEngineManager: @unchecked Sendable {
             }
         } catch {
             Logger.shared.error(.sync, "Failed to load persisted sync engine state", error: error)
+            CrashReporter.shared.captureError(error, category: .sync, metadata: ["tag": "state-load-failed"])
             return nil
         }
     }
@@ -513,12 +522,14 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
         case .willFetchChanges:
             currentSnapshot = SyncSessionGuard.takeSnapshot()
             resetSyncStats()
+            CrashReporter.shared.addBreadcrumb("sync.fetch.begin", category: .sync)
 
         case .didFetchChanges:
             if let snapshot = currentSnapshot {
                 SyncSessionGuard.validateAndRestore(snapshot: snapshot)
             }
             currentSnapshot = nil
+            CrashReporter.shared.addBreadcrumb("sync.fetch.end", category: .sync)
             let (stats, changedRecordTypes) = collectSyncStats()
             metadataStore.updateSyncMetadata(stats: stats)
             await MainActor.run {
@@ -532,9 +543,10 @@ extension CKSyncEngineManager: CKSyncEngineDelegate {
         case .willSendChanges:
             // Clear resolved conflicts so records modified since last cycle can be re-uploaded
             conflictResolver.clearResolved()
+            CrashReporter.shared.addBreadcrumb("sync.send.begin", category: .sync)
 
         case .didSendChanges:
-            break
+            CrashReporter.shared.addBreadcrumb("sync.send.end", category: .sync)
 
         case .willFetchRecordZoneChanges, .didFetchRecordZoneChanges:
             break

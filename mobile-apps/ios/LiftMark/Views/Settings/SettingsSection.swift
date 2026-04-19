@@ -8,6 +8,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case integrations = "Integrations"
     case ai = "AI Assistance"
     case data = "Data Management"
+    case privacy = "Privacy"
     case developer = "Developer"
     case about = "About"
 
@@ -22,6 +23,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .integrations: return "link"
         case .ai: return "brain"
         case .data: return "externaldrive"
+        case .privacy: return "hand.raised"
         case .developer: return "hammer"
         case .about: return "info.circle"
         }
@@ -36,6 +38,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .integrations: return .green
         case .ai: return .pink
         case .data: return .gray
+        case .privacy: return .indigo
         case .developer: return .yellow
         case .about: return .secondary
         }

@@ -47,6 +47,27 @@ jobs:
             exit 1
           fi
 
+      - name: Write Sentry xcconfig
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          if [ -z "$SENTRY_DSN" ]; then
+            echo "::error::SENTRY_DSN secret is empty — refusing to ship a build with no crash reporting"
+            exit 1
+          fi
+          # Strip the https:// prefix — xcconfig treats // as a comment start, so
+          # we store everything after the scheme and reassemble in the build phase.
+          DSN_REST=${SENTRY_DSN#https://}
+          if [ "$DSN_REST" = "$SENTRY_DSN" ]; then
+            echo "::error::SENTRY_DSN did not start with https:// — got: ${SENTRY_DSN:0:12}..."
+            exit 1
+          fi
+          cat > Config/Sentry.xcconfig <<EOF
+          // Written by CI from SENTRY_DSN secret. Do not commit.
+          SENTRY_DSN_REST = ${DSN_REST}
+          EOF
+          echo "Wrote Config/Sentry.xcconfig ($(wc -c < Config/Sentry.xcconfig) bytes)"
+
       - name: Generate Xcode project
         run: xcodegen generate
 
