@@ -258,23 +258,25 @@ struct ExerciseTimerView: View {
             RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
                 .stroke(LiftMarkTheme.primary.opacity(0.2), lineWidth: 1.5)
         )
-        .onDisappear { stopTimer() }
+        .onAppear {
+            // Restart the display tick if the timer was running (e.g., after SwiftUI re-added the view)
+            if isRunning && timer == nil {
+                restartDisplayTick()
+            }
+        }
+        .onDisappear {
+            // Only invalidate the Timer scheduling object — do NOT reset timer state.
+            // SwiftUI may call onDisappear during app backgrounding, but the timer
+            // should continue tracking time via wall-clock timestamps.
+            timer?.invalidate()
+            timer = nil
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
                 // Restart tick timer aligned to second boundaries if still running
                 if isRunning {
-                    timer?.invalidate()
-                    timer = nil
-                    let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
-                    let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
-                    timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
-                        recalculate()
-                        self.timer?.invalidate()
-                        self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                            recalculate()
-                        }
-                    }
+                    restartDisplayTick()
                 }
             }
         }
@@ -300,16 +302,12 @@ struct ExerciseTimerView: View {
         }
     }
 
-    private func startTimer() {
-        guard !isRunning else { return }
-        AudioService.shared.preloadSounds()
-        startDate = Date()
-        isRunning = true
-
-        // Align to next whole-second boundary so countdown sounds fire precisely
+    /// Restart the 1-second display tick, aligned to the next whole-second boundary.
+    private func restartDisplayTick() {
+        timer?.invalidate()
+        timer = nil
         let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
         let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
-
         timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
             self.timer?.invalidate()
@@ -317,6 +315,14 @@ struct ExerciseTimerView: View {
                 recalculate()
             }
         }
+    }
+
+    private func startTimer() {
+        guard !isRunning else { return }
+        AudioService.shared.preloadSounds()
+        startDate = Date()
+        isRunning = true
+        restartDisplayTick()
     }
 
     private func pauseTimer() {

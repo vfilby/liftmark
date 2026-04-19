@@ -97,6 +97,50 @@ final class ActiveWorkoutViewModelTests: XCTestCase {
         XCTAssertEqual(ActiveWorkoutViewModel.progress(in: session), 1.0 / 3.0, accuracy: 0.001)
     }
 
+    // MARK: - Progress: pendingSets
+
+    func testPendingSetsCountsOnlyPending() {
+        let session = makeSession(exercises: [
+            makeExercise(sets: [
+                makeSet(status: .completed),
+                makeSet(status: .pending),
+                makeSet(status: .skipped),
+                makeSet(status: .pending)
+            ])
+        ])
+        XCTAssertEqual(ActiveWorkoutViewModel.pendingSets(in: session), 2)
+    }
+
+    func testPendingSetsExcludesSkippedSets() {
+        let session = makeSession(exercises: [
+            makeExercise(sets: [
+                makeSet(status: .completed),
+                makeSet(status: .skipped),
+                makeSet(status: .skipped)
+            ])
+        ])
+        XCTAssertEqual(ActiveWorkoutViewModel.pendingSets(in: session), 0)
+    }
+
+    func testPendingSetsReturnsZeroForNilSession() {
+        XCTAssertEqual(ActiveWorkoutViewModel.pendingSets(in: nil), 0)
+    }
+
+    func testPendingSetsAcrossMultipleExercises() {
+        let session = makeSession(exercises: [
+            makeExercise(sets: [makeSet(status: .pending), makeSet(status: .completed)]),
+            makeExercise(sets: [makeSet(status: .skipped), makeSet(status: .pending)])
+        ])
+        XCTAssertEqual(ActiveWorkoutViewModel.pendingSets(in: session), 2)
+    }
+
+    func testPendingSetsReturnsZeroWhenAllCompleted() {
+        let session = makeSession(exercises: [
+            makeExercise(sets: [makeSet(status: .completed), makeSet(status: .completed)])
+        ])
+        XCTAssertEqual(ActiveWorkoutViewModel.pendingSets(in: session), 0)
+    }
+
     // MARK: - Skip-Heavy Detection
 
     func testIsSkipHeavyReturnsFalseForNilSession() {
