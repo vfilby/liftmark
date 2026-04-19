@@ -211,15 +211,33 @@ struct SetRowView: View {
                         Text("Time (s)")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        TextField("--", text: $timeText)
-                            #if os(iOS)
-                            .keyboardType(.numberPad)
-                            #endif
-                            .font(.title3.monospacedDigit())
-                            .multilineTextAlignment(.center)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 70)
-                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                        HStack(spacing: 4) {
+                            Button { adjustTime(by: -5) } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Decrease time by 5 seconds")
+
+                            TextField("--", text: $timeText)
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
+                                .font(.title3.monospacedDigit())
+                                .multilineTextAlignment(.center)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 70)
+
+                            Button { adjustTime(by: 5) } label: {
+                                Image(systemName: "plus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Increase time by 5 seconds")
+                        }
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                     }
                 }
 
@@ -229,15 +247,33 @@ struct SetRowView: View {
                         Text("Reps")
                             .font(.caption2)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        TextField("--", text: $repsText)
-                            #if os(iOS)
-                            .keyboardType(.numberPad)
-                            #endif
-                            .font(.title3.monospacedDigit())
-                            .multilineTextAlignment(.center)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 70)
-                            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+                        HStack(spacing: 4) {
+                            Button { adjustReps(by: -1) } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Decrease reps by 1")
+
+                            TextField("--", text: $repsText)
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
+                                .font(.title3.monospacedDigit())
+                                .multilineTextAlignment(.center)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 60)
+
+                            Button { adjustReps(by: 1) } label: {
+                                Image(systemName: "plus.circle")
+                                    .font(.body)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Increase reps by 1")
+                        }
+                        .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
                     }
                 }
 
@@ -285,17 +321,20 @@ struct SetRowView: View {
 
                     dropEntries.append((weight: newWeight, reps: newReps))
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Image(systemName: "plus")
-                            .font(.caption.bold())
-                        Text("Drop")
-                            .font(.caption.bold())
+                            .font(.subheadline.bold())
+                        Text("Add Drop")
+                            .font(.subheadline.bold())
                     }
                     .foregroundStyle(LiftMarkTheme.destructive)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, minHeight: 44)
                     .background(LiftMarkTheme.destructive.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
+                            .stroke(LiftMarkTheme.destructive.opacity(0.3), lineWidth: 1)
+                    )
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("add-drop-button")
@@ -585,17 +624,33 @@ struct SetRowView: View {
                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
             }
 
-            TextField("--", text: Binding(
-                get: { dropEntries[index].reps },
-                set: { dropEntries[index].reps = $0 }
-            ))
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-            .font(.body.monospacedDigit())
-            .multilineTextAlignment(.center)
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 60)
+            HStack(spacing: 4) {
+                Button { adjustDropReps(index: index, by: -1) } label: {
+                    Image(systemName: "minus.circle")
+                        .font(.body)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                }
+                .buttonStyle(.plain)
+
+                TextField("--", text: Binding(
+                    get: { dropEntries[index].reps },
+                    set: { dropEntries[index].reps = $0 }
+                ))
+                #if os(iOS)
+                .keyboardType(.numberPad)
+                #endif
+                .font(.body.monospacedDigit())
+                .multilineTextAlignment(.center)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 50)
+
+                Button { adjustDropReps(index: index, by: 1) } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.body)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                }
+                .buttonStyle(.plain)
+            }
 
             Spacer()
 
@@ -773,6 +828,25 @@ struct SetRowView: View {
         let newWeight = max(0, current + delta)
         weightText = formatWeight(newWeight)
         onWeightChanged?(weightText)
+    }
+
+    /// Adjusts the main reps field by the given delta, clamped to 0.
+    private func adjustReps(by delta: Int) {
+        let current = Int(repsText) ?? 0
+        repsText = "\(max(0, current + delta))"
+    }
+
+    /// Adjusts the main time field by the given delta, clamped to 0.
+    private func adjustTime(by delta: Int) {
+        let current = Int(timeText) ?? 0
+        timeText = "\(max(0, current + delta))"
+    }
+
+    /// Adjusts a drop entry's reps field by the given delta, clamped to 0.
+    private func adjustDropReps(index: Int, by delta: Int) {
+        guard index >= 0 && index < dropEntries.count else { return }
+        let current = Int(dropEntries[index].reps) ?? 0
+        dropEntries[index].reps = "\(max(0, current + delta))"
     }
 
     /// Adjusts a drop entry's weight field by the given delta, clamped to 0.
