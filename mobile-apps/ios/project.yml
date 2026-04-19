@@ -16,7 +16,7 @@ settings:
 packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift.git
-    from: "6.24.0"
+    from: "7.10.0"
 
 targets:
   LiftMark:
