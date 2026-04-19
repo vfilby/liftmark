@@ -75,7 +75,7 @@ struct WorkoutSummaryView: View {
         computeHighlights()
     }
 
-    @State private var exportFileItem: ShareableURL?
+    @State private var exportFileItem: ExportFile?
     @State private var showExportError = false
     @State private var exportErrorMessage = ""
 
@@ -356,7 +356,7 @@ struct WorkoutSummaryView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSingleSessionAsJson(session)
-            exportFileItem = ShareableURL(url: url)
+            exportFileItem = ExportFile(url: url)
         } catch {
             exportErrorMessage = "Could not export workout: \(error.localizedDescription)"
             showExportError = true

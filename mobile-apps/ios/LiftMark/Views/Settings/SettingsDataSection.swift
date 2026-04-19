@@ -4,8 +4,7 @@ import UniformTypeIdentifiers
 struct SettingsDataSection: View {
     @State private var showExportError = false
     @State private var exportErrorMessage = ""
-    @State private var exportURL: URL?
-    @State private var showShareSheet = false
+    @State private var exportFile: ExportFile?
     @State private var showImportSheet = false
     @State private var showImportConfirm = false
     @State private var importSourceURL: URL?
@@ -32,8 +31,7 @@ struct SettingsDataSection: View {
             .accessibilityIdentifier("import-data-button")
         }
         .modifier(DatabaseBackupModifiers(
-            showShareSheet: $showShareSheet,
-            exportURL: exportURL,
+            exportFile: $exportFile,
             showImportSheet: $showImportSheet,
             handleImportFileSelection: handleImportFileSelection,
             showExportError: $showExportError,
@@ -54,8 +52,7 @@ struct SettingsDataSection: View {
         do {
             let service = WorkoutExportService()
             let url = try service.exportUnifiedJson()
-            exportURL = url
-            showShareSheet = true
+            exportFile = ExportFile(url: url)
         } catch {
             exportErrorMessage = error.localizedDescription
             showExportError = true
@@ -157,8 +154,7 @@ struct SettingsDataSection: View {
 // MARK: - Database Backup Modifiers
 
 struct DatabaseBackupModifiers: ViewModifier {
-    @Binding var showShareSheet: Bool
-    let exportURL: URL?
+    @Binding var exportFile: ExportFile?
     @Binding var showImportSheet: Bool
     let handleImportFileSelection: (Result<[URL], Error>) -> Void
     @Binding var showExportError: Bool
@@ -173,10 +169,8 @@ struct DatabaseBackupModifiers: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .sheet(isPresented: $showShareSheet) {
-                if let exportURL {
-                    ShareSheet(items: [exportURL])
-                }
+            .sheet(item: $exportFile) { file in
+                ShareSheet(items: [file.url])
             }
             .fileImporter(
                 isPresented: $showImportSheet,

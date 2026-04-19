@@ -8,8 +8,7 @@ struct DebugLogsView: View {
     @State private var logs: [LogEntry] = []
     @State private var selectedLevel: LogLevel? = nil
     @State private var showClearConfirmation = false
-    @State private var showShareSheet = false
-    @State private var shareURL: URL?
+    @State private var shareFile: ExportFile?
 
     private var filteredLogs: [LogEntry] {
         if let level = selectedLevel {
@@ -106,10 +105,8 @@ struct DebugLogsView: View {
         } message: {
             Text("Are you sure you want to clear all debug logs?")
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let shareURL {
-                ShareSheet(items: [shareURL])
-            }
+        .sheet(item: $shareFile) { file in
+            ShareSheet(items: [file.url])
         }
         .onAppear {
             loadLogs()
@@ -201,8 +198,7 @@ struct DebugLogsView: View {
 
         do {
             try logText.write(to: tempURL, atomically: true, encoding: .utf8)
-            shareURL = tempURL
-            showShareSheet = true
+            shareFile = ExportFile(url: tempURL)
         } catch {
             Logger.shared.error(.app, "Failed to write log file", error: error)
         }

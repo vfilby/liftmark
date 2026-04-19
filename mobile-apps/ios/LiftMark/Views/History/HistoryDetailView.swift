@@ -6,7 +6,7 @@ struct HistoryDetailView: View {
     @Environment(SessionStore.self) private var sessionStore
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
-    @State private var exportFileItem: ShareableURL?
+    @State private var exportFileItem: ExportFile?
     @State private var showExportError = false
     @State private var exportErrorMessage = ""
     @State private var showExerciseHistory = false
@@ -461,7 +461,7 @@ struct HistoryDetailView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSingleSessionAsJson(session)
-            exportFileItem = ShareableURL(url: url)
+            exportFileItem = ExportFile(url: url)
         } catch {
             exportErrorMessage = "Could not export workout: \(error.localizedDescription)"
             showExportError = true

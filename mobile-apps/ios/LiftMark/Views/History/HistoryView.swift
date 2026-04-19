@@ -4,11 +4,10 @@ struct HistoryView: View {
     @Environment(SessionStore.self) private var sessionStore
     @State private var searchText = ""
     @State private var showExportConfirmation = false
-    @State private var exportFileURL: URL?
-    @State private var showShareSheet = false
+    @State private var exportFile: ExportFile?
     @State private var exportError: String?
     @State private var selectedSessionId: String?
-    @State private var singleExportFileItem: ShareableURL?
+    @State private var singleExportFile: ExportFile?
 
     private var completedSessions: [WorkoutSession] {
         sessionStore.sessions.filter { $0.status == .completed }
@@ -87,13 +86,11 @@ struct HistoryView: View {
             Text(exportError ?? "")
         }
         #if os(iOS)
-        .sheet(isPresented: $showShareSheet) {
-            if let url = exportFileURL {
-                ShareSheet(items: [url])
-            }
+        .sheet(item: $exportFile) { file in
+            ShareSheet(items: [file.url])
         }
-        .sheet(item: $singleExportFileItem) { item in
-            ShareSheet(items: [item.url])
+        .sheet(item: $singleExportFile) { file in
+            ShareSheet(items: [file.url])
         }
         #endif
         .navigationDestination(for: AppDestination.self) { destination in
@@ -212,7 +209,7 @@ struct HistoryView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSingleSessionAsJson(session)
-            singleExportFileItem = ShareableURL(url: url)
+            singleExportFile = ExportFile(url: url)
         } catch {
             exportError = error.localizedDescription
         }
@@ -222,8 +219,7 @@ struct HistoryView: View {
         let exportService = WorkoutExportService()
         do {
             let url = try exportService.exportSessionsAsJson()
-            exportFileURL = url
-            showShareSheet = true
+            exportFile = ExportFile(url: url)
         } catch {
             exportError = error.localizedDescription
         }
@@ -355,11 +351,4 @@ private struct SessionCardView: View {
         let formatted = formatter.string(from: NSNumber(value: volume)) ?? "\(Int(volume))"
         return "\(formatted) lbs"
     }
-}
-
-// MARK: - Identifiable URL for sheet(item:)
-
-struct ShareableURL: Identifiable {
-    let id = UUID()
-    let url: URL
 }
