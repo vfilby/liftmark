@@ -188,6 +188,18 @@ final class CKSyncEngineManager: @unchecked Sendable {
         UserDefaults.standard.set(Self.currentFullUploadVersion, forKey: Self.fullUploadVersion)
     }
 
+    /// Classifies a CKError code from `privateCloudDatabase.save(zone)` as non-fatal.
+    /// - `zoneNotFound` / `partialFailure`: zone already exists on retry.
+    /// - `accountTemporarilyUnavailable`: transient iCloud account state; retry on CKAccountChanged.
+    static func isNonFatalZoneCreateError(_ code: CKError.Code?) -> Bool {
+        switch code {
+        case .zoneNotFound, .partialFailure, .accountTemporarilyUnavailable:
+            return true
+        default:
+            return false
+        }
+    }
+
     private func createZoneAndScheduleFullUpload() async {
         Logger.shared.info(.sync, "[sync-engine] Creating zone \(zoneID.zoneName)...")
 
@@ -197,8 +209,8 @@ final class CKSyncEngineManager: @unchecked Sendable {
             Logger.shared.info(.sync, "[sync-engine] Created record zone: \(zoneID.zoneName)")
         } catch {
             let ckError = error as? CKError
-            if ckError?.code == .zoneNotFound || ckError?.code == .partialFailure {
-                Logger.shared.info(.sync, "[sync-engine] Zone already exists (non-fatal): \(error.localizedDescription)")
+            if Self.isNonFatalZoneCreateError(ckError?.code) {
+                Logger.shared.info(.sync, "[sync-engine] Zone create non-fatal (\(ckError?.code.rawValue.description ?? "?")): \(error.localizedDescription)")
             } else {
                 Logger.shared.error(.sync, "[sync-engine] Failed to create zone: \(error)")
                 var metadata: [String: String] = ["zoneName": zoneID.zoneName, "tag": "zone-create-failed"]

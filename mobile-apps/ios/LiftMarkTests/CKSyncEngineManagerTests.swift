@@ -1,3 +1,4 @@
+import CloudKit
 import XCTest
 @testable import LiftMark
 
@@ -54,5 +55,21 @@ final class CKSyncEngineManagerTests: XCTestCase {
         wait(for: [expectation], timeout: 2.0)
 
         NotificationCenter.default.removeObserver(observer)
+    }
+
+    // MARK: - isNonFatalZoneCreateError
+
+    func testZoneCreateNonFatalErrors() {
+        XCTAssertTrue(CKSyncEngineManager.isNonFatalZoneCreateError(.zoneNotFound))
+        XCTAssertTrue(CKSyncEngineManager.isNonFatalZoneCreateError(.partialFailure))
+        XCTAssertTrue(CKSyncEngineManager.isNonFatalZoneCreateError(.accountTemporarilyUnavailable))
+    }
+
+    func testZoneCreateFatalErrorsAreNotMisclassified() {
+        XCTAssertFalse(CKSyncEngineManager.isNonFatalZoneCreateError(nil))
+        XCTAssertFalse(CKSyncEngineManager.isNonFatalZoneCreateError(.notAuthenticated))
+        XCTAssertFalse(CKSyncEngineManager.isNonFatalZoneCreateError(.permissionFailure))
+        XCTAssertFalse(CKSyncEngineManager.isNonFatalZoneCreateError(.invalidArguments))
+        XCTAssertFalse(CKSyncEngineManager.isNonFatalZoneCreateError(.quotaExceeded))
     }
 }

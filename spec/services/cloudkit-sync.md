@@ -411,6 +411,7 @@ A device is performing its "first sync" when `sync_metadata.last_sync_date` is N
 - Simulator and development environment errors are treated as non-fatal and result in degraded but functional behavior.
 - Network errors should be retried with exponential backoff (max 3 attempts).
 - CloudKit rate limiting (CKError.requestRateLimited) should respect the `retryAfterSeconds` value.
+- Transient CloudKit account-state errors (`CKError.accountTemporarilyUnavailable`, code 36) MUST NOT be reported to the crash reporter. They indicate the iCloud account is in a temporary state (per Apple, wait for `CKAccountChanged` and retry); they are not actionable and would otherwise generate high-volume Sentry noise during account warm-up. Log at info level and treat as non-fatal at every CK call site (zone create, fetch, save).
 
 ## UI Requirements
 
