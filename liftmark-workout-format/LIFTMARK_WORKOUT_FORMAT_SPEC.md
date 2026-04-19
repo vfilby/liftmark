@@ -752,6 +752,7 @@ Short sprints with full recovery.
 - ⚠️ Very high rep count (>100, might be typo)
 - ⚠️ Very short rest (<10s, might be typo)
 - ⚠️ Very long rest (>10m, might be typo)
+- ⚠️ Mixed section levels — exercises and sections (groups with nested headers) at the same heading level. This is valid but may indicate structural issues (e.g., `## Warmup` as a section alongside `## Bench Press` as a standalone exercise).
 
 ### Error Examples
 

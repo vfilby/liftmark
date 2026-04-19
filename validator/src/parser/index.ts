@@ -382,6 +382,10 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
   const exercises: PlannedExercise[] = [];
   let orderIndex = 0;
 
+  // Track which blocks are singles (exercises) vs groups (sections/supersets) for mixed-level warning
+  let firstSingleLine: number | null = null;
+  let firstGroupLine: number | null = null;
+
   while (context.currentIndex < context.lines.length) {
     const line = context.lines[context.currentIndex];
 
@@ -392,15 +396,18 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
 
     // Parse exercise at expected level
     if (line.headerLevel === context.exerciseHeaderLevel) {
+      const blockLineNumber = line.lineNumber;
       const result = parseExerciseBlock(context, workoutPlanId, orderIndex);
       switch (result.type) {
         case 'single':
           exercises.push(result.exercise);
           orderIndex += 1;
+          if (firstSingleLine == null) firstSingleLine = blockLineNumber;
           break;
         case 'group':
           exercises.push(...result.exercises);
           orderIndex += result.exercises.length;
+          if (firstGroupLine == null) firstGroupLine = blockLineNumber;
           break;
         case 'none':
           break;
@@ -408,6 +415,16 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
     } else {
       context.currentIndex += 1;
     }
+  }
+
+  // Warn if both standalone exercises and sections/supersets exist at the same heading level
+  if (firstSingleLine != null && firstGroupLine != null && context.exerciseHeaderLevel != null) {
+    const hashes = '#'.repeat(context.exerciseHeaderLevel);
+    context.warnings.push({
+      line: Math.min(firstSingleLine, firstGroupLine),
+      message: `Mixing exercises and sections at the same heading level (${hashes}). Consider using consistent nesting.`,
+      code: 'MIXED_SECTION_LEVELS',
+    });
   }
 
   return exercises;

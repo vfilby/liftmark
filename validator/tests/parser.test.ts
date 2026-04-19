@@ -1818,3 +1818,107 @@ Warmup: spin, jumping jacks, banded pull-a-parts, push ups
     expect(result.data?.description).toContain('spin, jumping jacks');
   });
 });
+
+// MARK: - Mixed Section Levels Warning
+
+describe('Mixed Section Levels Warning', () => {
+  it('emits warning when sections and exercises are mixed at same heading level', () => {
+    const markdown = `# Upper Push
+
+## Warmup
+### Arm Circles
+- 10
+
+## Bench Press
+- 95 lbs x 8`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    expect(mixedWarnings).toHaveLength(1);
+    expect(mixedWarnings[0]).toContain('##');
+    expect(mixedWarnings[0]).toContain('consistent nesting');
+  });
+
+  it('does not emit warning when all same-level headers are exercises', () => {
+    const markdown = `# Workout
+
+## Bench Press
+- 135 x 10
+
+## Squat
+- 225 x 5
+
+## Deadlift
+- 315 x 3`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    expect(mixedWarnings).toHaveLength(0);
+  });
+
+  it('does not emit warning when all same-level headers are sections', () => {
+    const markdown = `# Workout
+
+## Warmup
+### Arm Circles
+- 10
+### Jumping Jacks
+- 60s
+
+## Main Work
+### Bench Press
+- 135 x 10
+### Squat
+- 225 x 5`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    expect(mixedWarnings).toHaveLength(0);
+  });
+
+  it('emits warning with correct heading level indicator', () => {
+    // Using ### as the exercise level (workout is ##)
+    const markdown = `## Training Session
+
+### Warmup
+#### Arm Circles
+- 10
+
+### Bench Press
+- 135 x 10`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    expect(mixedWarnings).toHaveLength(1);
+    expect(mixedWarnings[0]).toContain('###');
+  });
+
+  it('emits warning with full structure from issue example', () => {
+    const markdown = `# Upper Push
+
+## Warmup
+### Arm Circles
+- 10
+
+### Band Pull-Aparts
+- 15
+
+## Bench Press
+- 95 lbs x 8
+- 135 lbs x 5
+- 185 lbs x 3
+
+## Cooldown
+### Stretching
+- 60s`;
+    const result = parseWorkout(markdown);
+
+    expect(result.success).toBe(true);
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    expect(mixedWarnings).toHaveLength(1);
+  });
+});
