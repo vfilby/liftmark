@@ -177,6 +177,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - The currently active exercise (containing the current pending set) is always expanded
 - User can manually expand/collapse any exercise
 - **Tap target**: The entire exercise header row (number badge, exercise name, spacer area, set count) must be tappable to toggle collapse. The button label HStack must use `.contentShape(Rectangle())` so that transparent spacer areas forward taps. Additional `.padding(.vertical, 4)` ensures a comfortable vertical tap target.
+- **Exercise timer persistence**: When a timed exercise has a running (or paused) ExerciseTimerView and the user collapses the exercise card, the timer state must be preserved. The ExerciseTimerView must remain in the SwiftUI view hierarchy (hidden visually when collapsed) so that its `@State` variables (`startDate`, `pausedElapsed`, `isRunning`, `displayElapsed`) survive collapse/expand cycles. The timer is rendered outside the collapsed content block with `.opacity(0)`, `.frame(height: 0)`, and `.clipped()` when collapsed, ensuring it is invisible and takes no space but remains alive in the view tree.
 
 | Element | testID | Type |
 |---------|--------|------|
