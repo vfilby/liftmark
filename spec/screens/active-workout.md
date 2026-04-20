@@ -70,11 +70,12 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap Start** → begins counting up toward target
 - **Tap Pause** → pauses timer; elapsed time is frozen
 - **Tap timer display** → toggles between count-up and count-down display modes:
-  - **Count-up** (default): Shows elapsed time counting from 0 toward target (e.g., "0:00 → target")
+  - **Count-up**: Shows elapsed time counting from 0 toward target (e.g., "0:00 → target")
   - **Count-down**: Shows remaining time counting from target toward 0 (e.g., "target → 0:00"). Displayed as `max(0, targetSeconds - elapsed)`.
-  - Count-down mode is only available when `targetSeconds` is not nil. When no target exists, the timer always shows count-up.
+  - The **initial mode** for each new timed set is determined by the `defaultTimerCountdown` user setting (see [Settings → Default Timer Countdown Behavior](./settings.md)). Default is count-up (setting off). Users who prefer count-down can enable the setting to skip the per-set toggle.
+  - Count-down mode is only available when `targetSeconds` is not nil. When no target exists, the timer always shows count-up regardless of the setting.
   - A small arrow icon (up or down) appears next to the timer text to indicate the current mode.
-  - The toggle state is local to the timer instance and resets when the timer is dismissed.
+  - The toggle state is local to the timer instance and resets to the setting-defined default when a new timed set begins.
 - **Done button** → visible immediately once the timer is started (including at 0:00 elapsed), whether the timer is running or paused. Always uses success (green) styling to be visually consistent with the "Complete Set" button. Logs the current elapsed time as `actualTime`.
 - **Background resilience**: Exercise timer uses wall-clock `Date()` timestamps. A `startDate` is set on start/resume. On pause, elapsed time is accumulated into `pausedElapsed` and `startDate` is cleared. Total elapsed = `pausedElapsed + (startDate != nil ? Date().timeIntervalSince(startDate!) : 0)`. The timer responds to `scenePhase` changes to recalculate on foreground return. On return to foreground, the timer must restart its display update tick if it was running before backgrounding (the system may invalidate the Timer during extended background periods). The `onDisappear` handler must only invalidate the Timer scheduling object — it must NOT reset timer state (`startDate`, `pausedElapsed`, `isRunning`, `displayElapsed`), because SwiftUI may call `onDisappear` during app backgrounding while the timer should continue tracking time. Full state reset only happens in the explicit `stopTimer()` path (Done button or set completion).
 - **Timer tick alignment**: Both rest timers and exercise timers must align their 1-second display ticks to whole-second boundaries. On start, compute the delay to the next whole second, fire the first tick at that boundary, then schedule repeating 1-second ticks. This ensures countdown sounds at 5/4/3/2/1s fire precisely when the displayed time transitions, not at arbitrary offsets.

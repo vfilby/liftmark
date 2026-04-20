@@ -20,7 +20,7 @@ Central configuration hub for the app. Manages appearance, workout preferences, 
   5. **AI Assistance** — Custom prompt text, API key management, button options
   6. **Data Management** — Backup export/import
   7. **Developer** (hidden by default, activated via easter egg) — Debug Logs nav link, Database export
-  8. **About** — Version + Build info
+  8. **About** — Version + Build info, Disclaimer, Open Source acknowledgements
 
 ## UI Elements
 
@@ -83,6 +83,26 @@ The Developer section is hidden by default. Users activate it via a classic east
 | Element | testID | Type | Purpose |
 |---------|--------|------|---------|
 | Version row (tap target) | `version-info-row` | Button | 7-tap easter egg to toggle developer mode |
+| Disclaimer row | `disclaimer-button` | NavigationLink | Opens legal/health disclaimer |
+| Open Source row | `open-source-button` | NavigationLink | Opens Open Source acknowledgements sub-screen |
+
+### Open Source Acknowledgements
+
+A sub-screen listing the third-party open source packages shipped in the app, with links to each project's homepage and license text. Must be kept in sync with `mobile-apps/ios/Package.resolved` and `project.yml` — adding or removing a package requires updating this list.
+
+**Current packages:**
+
+| Package | License | Homepage | License URL |
+|---------|---------|----------|-------------|
+| GRDB.swift | MIT | https://github.com/groue/GRDB.swift | https://github.com/groue/GRDB.swift/blob/master/LICENSE |
+| Sentry Cocoa | MIT | https://github.com/getsentry/sentry-cocoa | https://github.com/getsentry/sentry-cocoa/blob/main/LICENSE.md |
+
+**UI elements:**
+
+| Element | testID | Type | Purpose |
+|---------|--------|------|---------|
+| Open Source screen | `open-source-screen` | List | Root container |
+| Package row | `oss-package-{name}` | View | Package name + license + homepage link + license link |
 
 ### Theme Application
 
@@ -229,6 +249,16 @@ Configure weight units, rest timer behavior, and screen preferences.
 | Auto-start rest timer switch | `switch-auto-start-rest` | Switch |
 | Keep screen awake switch | `switch-keep-screen-awake` | Switch |
 | Countdown sounds switch | `switch-countdown-sounds` | Switch |
+| Default timer countdown switch | `switch-default-timer-countdown` | Switch |
+
+### Default Timer Countdown Behavior
+
+The "Start timer in countdown mode" toggle under Rest Timer controls the **initial** display mode of the large exercise timer (`ExerciseTimerView`) on timed sets.
+
+- **Off (default)**: Exercise timers start in count-up mode — elapsed time counts from 0 toward target.
+- **On**: Exercise timers start in count-down mode — remaining time counts from target toward 0.
+- Users may still tap the timer display at any time during a set to toggle between modes. The setting only controls the initial value for each new set; it does not disable the per-exercise tap toggle.
+- Persisted via the `default_timer_countdown` column in `user_settings` (see [database-schema.md](../data/database-schema.md)).
 
 ---
 

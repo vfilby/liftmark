@@ -21,6 +21,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var developerModeEnabled: Int // SQLite boolean
     var countdownSoundsEnabled: Int // SQLite boolean
     var hasAcceptedDisclaimer: Int // SQLite boolean
+    var defaultTimerCountdown: Int // SQLite boolean
     var homeTiles: String? // JSON array
     var createdAt: String
     var updatedAt: String
@@ -41,6 +42,7 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case developerModeEnabled = "developer_mode_enabled"
         case countdownSoundsEnabled = "countdown_sounds_enabled"
         case hasAcceptedDisclaimer = "has_accepted_disclaimer"
+        case defaultTimerCountdown = "default_timer_countdown"
         case homeTiles = "home_tiles"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

@@ -165,6 +165,10 @@ struct ExerciseTimerView: View {
     @State private var lastPlayedSecond: Int = -1
     @State private var completionPlayed: Bool = false
     @State private var showCountdown: Bool = false
+    /// Tracks whether `showCountdown` has been seeded from the user setting.
+    /// Prevents re-seeding on subsequent `onAppear` calls (e.g. after backgrounding)
+    /// so the user's in-session tap toggle is preserved.
+    @State private var hasInitializedCountdownMode: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(SettingsStore.self) private var settingsStore
 
@@ -282,6 +286,14 @@ struct ExerciseTimerView: View {
                 .stroke(LiftMarkTheme.primary.opacity(0.2), lineWidth: 1.5)
         )
         .onAppear {
+            // Initialize countdown mode from user setting on first appearance for this timed set.
+            // Only applies when a target exists — count-down is meaningless otherwise.
+            // Users may still tap the display to toggle per-exercise; this controls only the initial value.
+            if targetSeconds != nil, !hasInitializedCountdownMode {
+                showCountdown = settingsStore.settings?.defaultTimerCountdown ?? false
+                hasInitializedCountdownMode = true
+            }
+
             // Restart the display tick if the timer was running (e.g., after SwiftUI re-added the view)
             if isRunning && timer == nil {
                 restartDisplayTick()

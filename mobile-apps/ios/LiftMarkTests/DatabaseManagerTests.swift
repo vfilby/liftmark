@@ -80,7 +80,7 @@ final class DatabaseManagerTests: XCTestCase {
         let version = try db.read { db in
             try Int.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
         }
-        XCTAssertEqual(version, 12, "Schema version should be 11 after all migrations")
+        XCTAssertEqual(version, 13, "Schema version should be 13 after all migrations")
     }
 
     func testSchemaVersionHasExactlyOneRow() throws {
@@ -224,7 +224,7 @@ final class DatabaseManagerTests: XCTestCase {
         let version = try db.read { db in
             try Int.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
         }
-        XCTAssertEqual(version, 12)
+        XCTAssertEqual(version, 13)
     }
 
     // MARK: - Close
@@ -254,6 +254,45 @@ final class DatabaseManagerTests: XCTestCase {
             return rows.map { $0["name"] as String }
         }
         XCTAssertTrue(columns.contains("side"), "session_sets should have 'side' column from V6 migration")
+    }
+
+    // MARK: - V13: default_timer_countdown
+
+    func testUserSettingsHasDefaultTimerCountdownColumn() throws {
+        let db = try DatabaseManager.shared.database()
+        let columns: [String] = try db.read { db in
+            let rows = try Row.fetchAll(db, sql: "PRAGMA table_info(user_settings)")
+            return rows.map { $0["name"] as String }
+        }
+        XCTAssertTrue(columns.contains("default_timer_countdown"), "user_settings should have 'default_timer_countdown' column from V13 migration")
+    }
+
+    func testDefaultTimerCountdownDefaultsToZero() throws {
+        let db = try DatabaseManager.shared.database()
+        let value: Int? = try db.read { db in
+            try Int.fetchOne(db, sql: "SELECT default_timer_countdown FROM user_settings LIMIT 1")
+        }
+        XCTAssertEqual(value, 0, "Seeded user_settings row should default default_timer_countdown to 0 (count-up)")
+    }
+
+    func testSettingsRepositoryDefaultTimerCountdownRoundtrip() throws {
+        _ = try DatabaseManager.shared.database()
+        let repo = SettingsRepository()
+
+        // Initial: should load with defaultTimerCountdown = false
+        guard var settings = try repo.get() else {
+            XCTFail("Expected seeded settings row")
+            return
+        }
+        XCTAssertFalse(settings.defaultTimerCountdown, "Newly-seeded settings should have defaultTimerCountdown = false")
+
+        // Flip to true and persist
+        settings.defaultTimerCountdown = true
+        try repo.update(settings)
+
+        // Re-read and assert persisted
+        let reloaded = try repo.get()
+        XCTAssertEqual(reloaded?.defaultTimerCountdown, true, "defaultTimerCountdown should persist across reads")
     }
 
     func testUpdatedAtColumnsExist() throws {

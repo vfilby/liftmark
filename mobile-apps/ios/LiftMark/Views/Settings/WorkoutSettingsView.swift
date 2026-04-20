@@ -58,6 +58,16 @@ struct WorkoutSettingsView: View {
                         }
                     ))
                     .accessibilityIdentifier("switch-countdown-sounds")
+
+                    Toggle("Start Timer in Countdown Mode", isOn: Binding(
+                        get: { settings.defaultTimerCountdown },
+                        set: { newValue in
+                            var updated = settings
+                            updated.defaultTimerCountdown = newValue
+                            settingsStore.updateSettings(updated)
+                        }
+                    ))
+                    .accessibilityIdentifier("switch-default-timer-countdown")
                 }
 
                 Section("Screen") {

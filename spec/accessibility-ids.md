@@ -227,6 +227,7 @@ Implementations on any platform must attach these identifiers to the correspondi
 | `switch-workout-timer` | Switch | Toggle rest timer visibility |
 | `switch-auto-start-rest` | Switch | Toggle auto-start rest timer |
 | `switch-keep-screen-awake` | Switch | Toggle keep screen awake during workouts |
+| `switch-default-timer-countdown` | Switch | Toggle default exercise timer mode (off = count-up, on = count-down) |
 
 ---
 

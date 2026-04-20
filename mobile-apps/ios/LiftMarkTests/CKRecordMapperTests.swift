@@ -350,7 +350,8 @@ final class CKRecordMapperTests: XCTestCase {
             anthropicApiKeyStatus: "valid", healthkitEnabled: 1,
             liveActivitiesEnabled: 0, keepScreenAwake: 1, showOpenInClaudeButton: 1,
             developerModeEnabled: 1, countdownSoundsEnabled: 0,
-            hasAcceptedDisclaimer: 1, homeTiles: "[\"Squat\"]", createdAt: ts, updatedAt: ts
+            hasAcceptedDisclaimer: 1, defaultTimerCountdown: 1,
+            homeTiles: "[\"Squat\"]", createdAt: ts, updatedAt: ts
         )
         try db.write { try original.insert($0) }
 

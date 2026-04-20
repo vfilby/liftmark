@@ -43,6 +43,7 @@ struct SettingsRepository {
                     developer_mode_enabled = ?,
                     countdown_sounds_enabled = ?,
                     has_accepted_disclaimer = ?,
+                    default_timer_countdown = ?,
                     home_tiles = ?,
                     updated_at = ?
                 WHERE id = ?
@@ -61,6 +62,7 @@ struct SettingsRepository {
                 settings.developerModeEnabled ? 1 : 0,
                 settings.countdownSoundsEnabled ? 1 : 0,
                 settings.hasAcceptedDisclaimer ? 1 : 0,
+                settings.defaultTimerCountdown ? 1 : 0,
                 homeTilesJSON,
                 now,
                 settings.id
@@ -88,6 +90,7 @@ struct SettingsRepository {
             developerModeEnabled: row.developerModeEnabled != 0,
             countdownSoundsEnabled: row.countdownSoundsEnabled != 0,
             hasAcceptedDisclaimer: row.hasAcceptedDisclaimer != 0,
+            defaultTimerCountdown: row.defaultTimerCountdown != 0,
             homeTiles: row.homeTiles.flatMap { data in
                 (try? JSONDecoder().decode([String].self, from: Data(data.utf8)))
             },

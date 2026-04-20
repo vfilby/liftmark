@@ -10,7 +10,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 12
+    private static let currentSchemaVersion = 13
 
     private init() {}
 
@@ -150,6 +150,10 @@ final class DatabaseManager: @unchecked Sendable {
 
             if currentVersion < 12 {
                 try migrateToV12(db)
+            }
+
+            if currentVersion < 13 {
+                try migrateToV13(db)
             }
 
             try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
@@ -754,6 +758,12 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "DROP TABLE template_sets")
         try db.execute(sql: "ALTER TABLE template_sets_new RENAME TO template_sets")
         try db.execute(sql: "CREATE INDEX idx_template_sets_exercise ON template_sets(template_exercise_id)")
+    }
+
+    // MARK: - V13: default_timer_countdown user setting
+
+    private func migrateToV13(_ db: Database) throws {
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_timer_countdown INTEGER DEFAULT 0")
     }
 
     private func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {

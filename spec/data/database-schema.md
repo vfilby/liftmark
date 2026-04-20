@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   developer_mode_enabled      INTEGER DEFAULT 0,     -- Boolean: hidden developer menu
   countdown_sounds_enabled    INTEGER DEFAULT 1,     -- Boolean: audible countdown ticks
   has_accepted_disclaimer     INTEGER DEFAULT 0,     -- Boolean: onboarding disclaimer accepted
+  default_timer_countdown     INTEGER DEFAULT 0,     -- Boolean: initial mode for ExerciseTimerView (0 = count-up, 1 = count-down)
   created_at                  TEXT NOT NULL,
   updated_at                  TEXT NOT NULL
 );

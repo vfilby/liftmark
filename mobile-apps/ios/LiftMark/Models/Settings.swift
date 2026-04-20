@@ -19,6 +19,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var developerModeEnabled: Bool
     var countdownSoundsEnabled: Bool
     var hasAcceptedDisclaimer: Bool
+    var defaultTimerCountdown: Bool
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -40,6 +41,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         developerModeEnabled: Bool = false,
         countdownSoundsEnabled: Bool = true,
         hasAcceptedDisclaimer: Bool = false,
+        defaultTimerCountdown: Bool = false,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -60,6 +62,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.developerModeEnabled = developerModeEnabled
         self.countdownSoundsEnabled = countdownSoundsEnabled
         self.hasAcceptedDisclaimer = hasAcceptedDisclaimer
+        self.defaultTimerCountdown = defaultTimerCountdown
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -78,6 +81,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         keepScreenAwake != other.keepScreenAwake ||
         showOpenInClaudeButton != other.showOpenInClaudeButton ||
         countdownSoundsEnabled != other.countdownSoundsEnabled ||
+        defaultTimerCountdown != other.defaultTimerCountdown ||
         homeTiles != other.homeTiles
     }
 }
