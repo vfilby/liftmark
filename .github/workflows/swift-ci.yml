@@ -19,6 +19,7 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
+        shell: bash --noprofile --norc -eo pipefail {0}
         working-directory: mobile-apps/ios
 
     steps:
@@ -63,7 +64,7 @@ jobs:
           xcodebuild build \
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
             | xcpretty
 
       - name: Run unit tests
@@ -72,7 +73,7 @@ jobs:
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
             -only-testing:LiftMarkTests \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
             -resultBundlePath TestResults.xcresult \
             | xcpretty
 
@@ -82,7 +83,7 @@ jobs:
             -scheme LiftMark \
             -project LiftMark.xcodeproj \
             -only-testing:LiftMarkUITests \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
             -resultBundlePath TestResults-UI.xcresult \
             | xcpretty
 
