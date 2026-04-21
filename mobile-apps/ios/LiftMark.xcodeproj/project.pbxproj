@@ -100,6 +100,7 @@
 		9649467FDFC1A05AD2E8278C /* WorkoutExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8488F5EFBF4053E8DE028BC /* WorkoutExportService.swift */; };
 		96AD81B165F60D2D49565BE5 /* ActiveWorkoutHistoryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C447D8C4134B2798F7DFFA /* ActiveWorkoutHistoryPanel.swift */; };
 		980FA92D2641735C2326B9ED /* ActiveExerciseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553E996598991A764AABC251 /* ActiveExerciseCard.swift */; };
+		997CC18DD98D13A295A8D008 /* SettingsOpenSourceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95DDC3542DC00400DB0FE4A4 /* SettingsOpenSourceView.swift */; };
 		9A1587CA91B078A30A5F40B0 /* CKSyncConflictResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79EBC001661D8B385B2F7E9 /* CKSyncConflictResolverTests.swift */; };
 		9A7F698F044594B23FF93F06 /* SupersetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95FD80E58BB2915C7C4C0B1 /* SupersetCard.swift */; };
 		9AB084ACC5B5E49965B0A0C8 /* CKSyncMetadataStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA40A430E6513546C353DA5 /* CKSyncMetadataStoreTests.swift */; };
@@ -292,6 +293,7 @@
 		94030A0DD7D6D4C9C38223A9 /* SettingsLiveActivitiesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsLiveActivitiesSection.swift; sourceTree = "<group>"; };
 		954B57205C002E2857EE075A /* CKRecordMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CKRecordMapper.swift; sourceTree = "<group>"; };
 		957D4A87021F20EE0AE5AFF2 /* UserSettingsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsRow.swift; sourceTree = "<group>"; };
+		95DDC3542DC00400DB0FE4A4 /* SettingsOpenSourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsOpenSourceView.swift; sourceTree = "<group>"; };
 		97D5191B081A643D264F9790 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9998EA6926EF208F23FBFCC9 /* tick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = tick.mp3; sourceTree = "<group>"; };
 		9E064AE978D172E88F26E1DF /* complete.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = complete.mp3; sourceTree = "<group>"; };
@@ -530,6 +532,7 @@
 				2461031C021EB0B3B5E5300B /* SettingsGymSection.swift */,
 				2631DD9FD25AA06EBF3FDA73 /* SettingsHealthKitSection.swift */,
 				94030A0DD7D6D4C9C38223A9 /* SettingsLiveActivitiesSection.swift */,
+				95DDC3542DC00400DB0FE4A4 /* SettingsOpenSourceView.swift */,
 				52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */,
 				CC6EB2D92849470F1D048482 /* SettingsSection.swift */,
 				97D5191B081A643D264F9790 /* SettingsView.swift */,
@@ -1010,6 +1013,7 @@
 				BB9409DBF9E147D486C2A9F4 /* SettingsGymSection.swift in Sources */,
 				2BA06E28ECB209FB585178AD /* SettingsHealthKitSection.swift in Sources */,
 				3B9DF2D85C08913F8747FF81 /* SettingsLiveActivitiesSection.swift in Sources */,
+				997CC18DD98D13A295A8D008 /* SettingsOpenSourceView.swift in Sources */,
 				4232EDCEBC800BF3822C24AF /* SettingsPrivacySection.swift in Sources */,
 				23287E25CE8A3CE1B1889420 /* SettingsRepository.swift in Sources */,
 				126A8904E9CCD3D3420C88E4 /* SettingsSection.swift in Sources */,

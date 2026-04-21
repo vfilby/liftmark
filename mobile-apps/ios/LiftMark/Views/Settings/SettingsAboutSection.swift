@@ -27,6 +27,12 @@ struct SettingsAboutSection: View {
                 Text("Disclaimer")
             }
             .accessibilityIdentifier("disclaimer-button")
+            NavigationLink {
+                SettingsOpenSourceView()
+            } label: {
+                Text("Open Source")
+            }
+            .accessibilityIdentifier("open-source-button")
         }
         .alert(
             settingsStore.settings?.developerModeEnabled == true ? "Developer Mode Enabled" : "Developer Mode Disabled",
