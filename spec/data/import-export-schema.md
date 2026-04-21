@@ -364,7 +364,7 @@ Destructive operation — replaces the entire database.
 4. Wait 500ms for connection to fully close
 5. Delete current database file
 6. Copy imported file to database location
-7. Reopen database (triggers migration system)
+7. Reopen database — triggers the migration system (`DatabaseMigrator`), which also runs the one-time GRDB bridge if the imported DB still carries a legacy `schema_version` row and no `grdb_migrations` table. See [`../services/migrator.md`](../services/migrator.md).
 8. Clean up backup on success
 9. On failure: restore from backup, reopen original database
 

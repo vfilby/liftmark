@@ -46,7 +46,7 @@ Attach a stable anonymous identifier so errors from the same device can be group
 
 ## Privacy
 
-Error sources split into two classes with different rules:
+Error sources split into three classes with different rules:
 
 ### Sync-class errors
 CloudKit errors, DB errors, state persistence errors. The diagnostic signal is structural (error code, record type, field name) — content is not needed to act on the report.
@@ -97,6 +97,36 @@ When toggled off mid-session, `CrashReporter.setEnabled(false)` calls `SentrySDK
 Record IDs (UUIDs) are allowed in breadcrumbs but **not** in captured error metadata, because Sentry's search makes high-cardinality UUIDs noisy without being useful.
 
 Any key not on the allowlist is dropped silently. The allowlist is a compile-time `Set<String>` constant.
+
+### Migrator-class errors
+
+Events emitted by the one-time GRDB migration bridge and post-bridge schema migrations. Structural only — no user data is ever attached.
+
+**Allowed metadata keys** (enforced by a separate compile-time `migratorMetadataAllowlist` in `CrashReporter` — without it, `beforeSend` sanitizes these away):
+
+- `fromVersion` — starting `schema_version.version` (Int as String)
+- `toIdentifier` — highest bridge identifier written (e.g. `v13_default_timer_countdown`)
+- `bridgedIdentifierCount` — Int as String
+- `durationMs` — Int as String
+- `backupPath` — file path only, never content
+- `backupSizeBytes`, `dbSizeBytes`, `freeBytes` — Int as String
+- `verificationStep` — one of `integrity`, `header`, `tables`, `rowCount`
+- `failedIdentifier` — String
+- `fkTable` — String (shared with sync-class allowlist)
+- `errorDomain`, `errorCode` — shared with sync-class allowlist
+- `integrityCheckOutput` — truncated to 2 KB; SQLite's `integrity_check` emits structural messages only
+- `resumeReason` — for the app-killed-mid-bridge breadcrumb
+
+The full event catalog and breadcrumb list lives in [`migrator.md`](migrator.md) §5.2 (single source of truth); do not duplicate it here.
+
+### Tags
+
+Tags attached to captured events:
+
+| Tag | Values | Purpose |
+|-----|--------|---------|
+| `tag: "data_loss"` | set on `SyncSessionGuard` data-loss-detected / restore-failed paths, and on `migrator_bridge_restore_failed` | Target for a single alert rule |
+| `data_integrity_risk` | `"true"` on every migrator failure event except `skipped_already_done`, `skipped_fresh_install`, `observed_after_downgrade` | Target for a single migrator-failure alert rule. See [`migrator.md`](migrator.md) §5.4. |
 
 ### `beforeSend` hook
 

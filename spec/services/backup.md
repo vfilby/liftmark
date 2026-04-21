@@ -26,8 +26,10 @@ Validate that a file is a legitimate SQLite database suitable for import.
 
 ### Export
 
-- Copies the current database file to the cache directory.
+- Copies the current database file to the **cache directory**.
 - Backup filename format: `liftmark_backup_{timestamp}.db`
+- **Scope:** cache-dir export is for **user-initiated exports only** (share sheet, manual backup to Files/iCloud Drive). iOS may evict the cache directory under storage pressure, so this path is **not** suitable for safety backups that must persist until the next launch. The pre-upgrade backup written by the GRDB migration bridge lives in Application Support instead — see "Pre-upgrade backup" below.
+- **Known issue:** the cache-dir location has a second drawback even for user-initiated flows — cache can evict mid-share-sheet. Flagged for follow-up; not in scope for the GRDB migration work.
 
 ### Import
 
@@ -39,6 +41,19 @@ Import is a destructive operation that replaces all existing data. The process f
 4. Copy the import file to the database location.
 5. Reopen the database to verify the import is valid.
 6. On failure at any step: restore the database from the safety backup created in step 1.
+
+### Pre-upgrade backup
+
+Distinct from the user-initiated export above. Created by the one-time GRDB migration bridge before any schema mutation. See [`migrator.md`](migrator.md) §2 for full semantics.
+
+- **Location:** `<Application Support>/LiftMark/pre-grdb-bridge.bak.db`. Application Support is not OS-evictable (unlike Caches) and not user-visible in Files.app (unlike Documents).
+- **Copy mechanism:** GRDB's `Database.backup(to:)` (SQLite Online Backup API), **not** `FileManager.copyItem`. A raw file copy can produce a torn backup when WAL pages or in-flight transactions are open; the Online Backup API locks page-by-page and guarantees a consistent destination.
+- **Post-backup verification:** `PRAGMA integrity_check = "ok"`, `validateDatabaseFile(at:)` passes, row counts per required table match the live DB, and `schema_version.version` matches.
+- **Retention:** not deleted as part of the bridge transaction. Deletion triggers (any of):
+  - Successful bridge followed by 7 successful app launches with no `migrator_*_failed` telemetry on the same device. Tracked via `UserDefaults` key `migrator.bridge.postSuccessfulLaunchCount`.
+  - User-initiated via Settings → Debug → "Delete GRDB bridge backup".
+  - App uninstall (Application Support is removed with the app bundle).
+- **Restore path:** see [`migrator.md`](migrator.md) §2.6. Restore uses `FileManager.copyItem` because the destination path is no longer hot at that point.
 
 ### Validation
 

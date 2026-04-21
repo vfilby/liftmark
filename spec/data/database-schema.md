@@ -11,14 +11,35 @@
 - **Format**: SQLite 3
 - **File extension**: `.db`
 - **Foreign keys**: `PRAGMA foreign_keys = ON`
-- **Schema version**: Tracked in `schema_version` table
-- **Current version**: 1
+- **Schema version**: Tracked in `grdb_migrations` (authoritative) and `schema_version` (legacy; still on disk during the bridge transition — see [`../services/migrator.md`](../services/migrator.md)).
+- **Current version**: 13
+
+### Version History
+
+Observable changes per schema version. Full migration contract lives in [`migration-contract.md`](migration-contract.md); migrator orchestration in [`../services/migrator.md`](../services/migrator.md).
+
+| Ver | Observable change |
+|-----|-------------------|
+| 1   | Bootstrap: create all core tables, 12 indexes, seed default `user_settings` row, orphan-equipment rescue. |
+| 2   | `sync_metadata` += `last_uploaded`, `last_downloaded`, `last_conflicts`. |
+| 3   | `user_settings` += `developer_mode_enabled`. |
+| 4   | `gyms` / `gym_equipment` += `deleted_at`; invariant fix: exactly one non-deleted gym has `is_default = 1`. |
+| 5   | `user_settings` += `countdown_sounds_enabled`. |
+| 6   | `session_sets` += `side`. |
+| 7   | `user_settings` += `has_accepted_disclaimer`. |
+| 8   | `updated_at` added + backfilled on `workout_sessions`, `session_exercises`, `session_sets`, `template_exercises`, `template_sets`; `sync_engine_state` created. |
+| 9   | `anthropic_api_key` wiped and column dropped; `gym_equipment` rebuilt with FK to `gyms(id) ON DELETE CASCADE`; `idx_workout_sessions_date` added; residual `updated_at` NULLs backfilled; `schema_version` de-duplicated; `sync_queue` and `sync_conflicts` dropped. |
+| 10  | `template_sets` and `session_sets` += distance columns (`target_distance`, `target_distance_unit`; plus `actual_distance`, `actual_distance_unit` on `session_sets`). |
+| 11  | Self-FK parent indexes added on `session_exercises`, `session_sets`, `template_exercises`; `gym_equipment` rebuilt with composite `UNIQUE (gym_id, name)` (global `UNIQUE (name)` relaxed). |
+| 12  | Major reshape: `set_measurements` created; all measurement columns fanned out from `session_sets` / `template_sets`; both set tables rebuilt with measurement columns removed and lossy drop of `parent_set_id`, `drop_sequence`, `tempo`, `target_weight_unit` (see "Legacy columns removed in v12" below). |
+| 13  | `user_settings` += `default_timer_countdown`. |
 
 ### Forward Compatibility
 
 - Newer schema versions add tables, columns, or indexes via migrations.
 - An app receiving a `.db` file with a **higher** schema version than it supports **should reject the file** with a clear error rather than silently losing data.
 - An app receiving a `.db` file with a **lower** schema version **must run its migration chain** to bring the file up to the current version before use.
+- During the bridge transition, exported `.db` files carry both `schema_version` (legacy) and `grdb_migrations` (authoritative). Importers that understand both **should prefer `grdb_migrations`** as the source of truth; `schema_version` remains for backward compatibility with pre-bridge builds.
 
 ---
 
@@ -26,13 +47,47 @@
 
 ### schema_version
 
-Tracks the current migration version. Single-row table.
+**Status: legacy.** Retained on-disk during the bridge transition so that users who downgrade to a pre-bridge build still see the correct version and the old migrator no-ops. New authoritative bookkeeping lives in `grdb_migrations` (below). See [`../services/migrator.md`](../services/migrator.md) for removal timing (telemetry-gated).
+
+Single-row table tracking the hand-rolled migration version.
 
 ```sql
 CREATE TABLE IF NOT EXISTS schema_version (
   version INTEGER NOT NULL DEFAULT 0
 );
 ```
+
+---
+
+### grdb_migrations
+
+**Status: authoritative** going forward. Owned and written by GRDB's `DatabaseMigrator`. One row per applied migration identifier. See [`../services/migrator.md`](../services/migrator.md) for the canonical identifier list and bridge semantics.
+
+```sql
+CREATE TABLE IF NOT EXISTS grdb_migrations (
+  identifier TEXT PRIMARY KEY NOT NULL
+);
+```
+
+Identifiers (v1..v13), in application order:
+
+```
+v1_bootstrap
+v2_sync_metadata_stats
+v3_developer_mode
+v4_soft_delete_gyms
+v5_countdown_sounds
+v6_session_set_side
+v7_accepted_disclaimer
+v8_updated_at_cksync
+v9_api_key_fk_indexes
+v10_distance_columns
+v11_gym_unique_fk_indexes
+v12_set_measurements
+v13_default_timer_countdown
+```
+
+The mapping is a wire-level contract — identifiers **must not change** after first ship. Canonical definition in [`../services/migrator.md`](../services/migrator.md).
 
 ---
 
@@ -80,24 +135,19 @@ CREATE TABLE IF NOT EXISTS template_exercises (
 
 ### template_sets
 
-Target sets within a planned exercise. Maps to the **PlannedSet** entity.
+Target sets within a planned exercise. Maps to the **PlannedSet** entity. Shape shown is **post-v12** (measurement columns removed; `set_measurements` is the source of truth for targets).
 
 ```sql
 CREATE TABLE IF NOT EXISTS template_sets (
   id                    TEXT PRIMARY KEY,
   template_exercise_id  TEXT NOT NULL,
   order_index           INTEGER NOT NULL,
-  target_weight         REAL,
-  target_weight_unit    TEXT,
-  target_reps           INTEGER,
-  target_time           INTEGER,
-  target_rpe            INTEGER,
   rest_seconds          INTEGER,
-  tempo                 TEXT,
   is_dropset            INTEGER DEFAULT 0,
   is_per_side           INTEGER DEFAULT 0,
   is_amrap              INTEGER DEFAULT 0,
   notes                 TEXT,
+  updated_at            TEXT,                 -- Added in v8
   FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE
 );
 ```
@@ -150,37 +200,66 @@ CREATE TABLE IF NOT EXISTS session_exercises (
 
 ### session_sets
 
-Individual sets within a session exercise. Maps to the **SessionSet** entity.
+Individual sets within a session exercise. Maps to the **SessionSet** entity. Shape shown is **post-v12** (measurement columns and dropset chain removed; `set_measurements` is the source of truth for targets and actuals).
 
 ```sql
 CREATE TABLE IF NOT EXISTS session_sets (
   id                   TEXT PRIMARY KEY,
   session_exercise_id  TEXT NOT NULL,
   order_index          INTEGER NOT NULL,
-  parent_set_id        TEXT,
-  drop_sequence        INTEGER,
-  target_weight        REAL,
-  target_weight_unit   TEXT,
-  target_reps          INTEGER,
-  target_time          INTEGER,
-  target_rpe           INTEGER,
   rest_seconds         INTEGER,
-  actual_weight        REAL,
-  actual_weight_unit   TEXT,
-  actual_reps          INTEGER,
-  actual_time          INTEGER,
-  actual_rpe           INTEGER,
   completed_at         TEXT,
   status               TEXT NOT NULL DEFAULT 'pending',
   notes                TEXT,
-  tempo                TEXT,
   is_dropset           INTEGER DEFAULT 0,
   is_per_side          INTEGER DEFAULT 0,
+  is_amrap             INTEGER DEFAULT 0,
   side                 TEXT,                 -- 'left' or 'right' for expanded per-side timed sets, NULL otherwise
-  FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE,
-  FOREIGN KEY (parent_set_id) REFERENCES session_sets(id) ON DELETE CASCADE
+  updated_at           TEXT,                 -- Added in v8
+  FOREIGN KEY (session_exercise_id) REFERENCES session_exercises(id) ON DELETE CASCADE
 );
 ```
+
+#### Legacy columns removed in v12
+
+Migration v12 rebuilt both `session_sets` and `template_sets` and **silently dropped** the following columns. Any data they held is lost (see [`migration-contract.md`](migration-contract.md) for the lossy-transformation inventory, SR1–SR4):
+
+- `session_sets.parent_set_id` — dropset chain parent reference. Dropset relationships expressible via the new `set_measurements` model are not automatically reconstructed.
+- `session_sets.drop_sequence` — dropset ordering index. Lost.
+- `session_sets.tempo` — tempo annotation. Lost.
+- `session_sets.target_weight`, `target_weight_unit`, `target_reps`, `target_time`, `target_rpe`, `actual_weight`, `actual_weight_unit`, `actual_reps`, `actual_time`, `actual_rpe` — fanned out into `set_measurements` rows with `parent_type = 'session'`.
+- `template_sets.target_weight`, `target_weight_unit`, `target_reps`, `target_time`, `target_rpe`, `tempo` — targets fanned out into `set_measurements` rows with `parent_type = 'planned'`; `tempo` is **lost**.
+
+The `FOREIGN KEY (parent_set_id)` self-reference and the `idx_session_sets_parent` index are no longer present post-v12.
+
+---
+
+### set_measurements
+
+Unified measurement store for planned targets and session actuals. Introduced in v12. Source of truth for weight / reps / time / distance / rpe values at both the template and session level.
+
+```sql
+CREATE TABLE IF NOT EXISTS set_measurements (
+  id            TEXT PRIMARY KEY,
+  set_id        TEXT NOT NULL,                   -- session_sets.id or template_sets.id
+  parent_type   TEXT NOT NULL,                   -- 'session' or 'planned'
+  role          TEXT NOT NULL,                   -- 'target' or 'actual'
+  kind          TEXT NOT NULL,                   -- 'weight' | 'reps' | 'time' | 'distance' | 'rpe'
+  value         REAL NOT NULL,
+  unit          TEXT,                            -- 'lbs' | 'kg' | 's' | 'km' | 'mi' | NULL (for reps/rpe)
+  group_index   INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_set_measurements_set   ON set_measurements(set_id, parent_type);
+CREATE INDEX IF NOT EXISTS idx_set_measurements_kind  ON set_measurements(kind);
+```
+
+Notes:
+- `parent_type = 'planned'` rows carry only `role = 'target'` (no actuals on templates).
+- `parent_type = 'session'` rows carry both `target` and `actual` as they are recorded.
+- `group_index` is always `0` for rows produced by the v12 fan-out; reserved for future grouping semantics.
+- There is no DB-level foreign key on `set_id` because it polymorphically references two tables; referential integrity is enforced at the application layer.
 
 ---
 
@@ -225,71 +304,84 @@ CREATE TABLE IF NOT EXISTS gyms (
   name        TEXT NOT NULL,
   is_default  INTEGER DEFAULT 0,
   created_at  TEXT NOT NULL,
-  updated_at  TEXT NOT NULL
+  updated_at  TEXT NOT NULL,
+  deleted_at  TEXT                              -- Added in v4
 );
 ```
+
+Invariant (enforced by v4 migration and application code): **exactly one** non-soft-deleted gym has `is_default = 1`.
 
 ---
 
 ### gym_equipment
 
-Equipment availability per gym. Maps to the **GymEquipment** entity.
+Equipment availability per gym. Maps to the **GymEquipment** entity. Shape shown is **post-v11** (composite unique constraint; FK to `gyms(id) ON DELETE CASCADE` added in v9).
 
 ```sql
 CREATE TABLE IF NOT EXISTS gym_equipment (
   id              TEXT PRIMARY KEY,
-  name            TEXT NOT NULL UNIQUE,
+  name            TEXT NOT NULL,
   is_available    INTEGER DEFAULT 1,
   last_checked_at TEXT,
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL,
-  gym_id          TEXT
+  gym_id          TEXT,
+  deleted_at      TEXT,                         -- Added in v4
+  UNIQUE (gym_id, name),                        -- Replaced global UNIQUE(name) in v11
+  FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
 );
 ```
 
 ---
 
-### sync_metadata / sync_queue / sync_conflicts
-
-Sync infrastructure tables.
+### sync_metadata
 
 ```sql
 CREATE TABLE IF NOT EXISTS sync_metadata (
   id TEXT PRIMARY KEY, device_id TEXT NOT NULL, last_sync_date TEXT,
   server_change_token TEXT, sync_enabled INTEGER DEFAULT 0,
-  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sync_queue (
-  id TEXT PRIMARY KEY, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL,
-  operation TEXT NOT NULL, payload TEXT NOT NULL, attempts INTEGER DEFAULT 0,
-  last_attempt_at TEXT, created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sync_conflicts (
-  id TEXT PRIMARY KEY, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL,
-  local_data TEXT NOT NULL, remote_data TEXT NOT NULL, resolution TEXT NOT NULL,
-  resolved_at TEXT, created_at TEXT NOT NULL
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  last_uploaded   INTEGER DEFAULT 0,            -- Added in v2
+  last_downloaded INTEGER DEFAULT 0,            -- Added in v2
+  last_conflicts  INTEGER DEFAULT 0             -- Added in v2
 );
 ```
+
+### sync_engine_state
+
+Opaque CKSyncEngine state blob, written by `CKSyncEngineManager`. Introduced in v8.
+
+```sql
+CREATE TABLE IF NOT EXISTS sync_engine_state (
+  id   TEXT PRIMARY KEY DEFAULT 'default',
+  data BLOB NOT NULL
+);
+```
+
+### Removed tables: `sync_queue`, `sync_conflicts`
+
+Both tables existed in v1 and were **dropped in v9** (replaced by `sync_engine_state` + CKSyncEngine). Any rows they contained at v8-or-earlier time are lost during the v9 upgrade. Referenced here for historical clarity — they are not part of the v13 schema.
 
 ---
 
 ## Indexes
 
+Post-v13 index set. Some parent-FK indexes present at v11 were dropped by v12's table rebuild and **not** re-created — see [`migration-contract.md`](migration-contract.md) SR1 for details.
+
 ```sql
-CREATE INDEX IF NOT EXISTS idx_template_exercises_workout    ON template_exercises(workout_template_id);
-CREATE INDEX IF NOT EXISTS idx_template_sets_exercise        ON template_sets(template_exercise_id);
-CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite    ON workout_templates(is_favorite);
-CREATE INDEX IF NOT EXISTS idx_session_exercises_session     ON session_exercises(workout_session_id);
-CREATE INDEX IF NOT EXISTS idx_session_exercises_name        ON session_exercises(exercise_name);
-CREATE INDEX IF NOT EXISTS idx_session_sets_exercise         ON session_sets(session_exercise_id);
-CREATE INDEX IF NOT EXISTS idx_workout_sessions_status       ON workout_sessions(status);
-CREATE INDEX IF NOT EXISTS idx_gym_equipment_name            ON gym_equipment(name);
-CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym             ON gym_equipment(gym_id);
-CREATE INDEX IF NOT EXISTS idx_gyms_default                  ON gyms(is_default);
-CREATE INDEX IF NOT EXISTS idx_sync_queue_entity             ON sync_queue(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity         ON sync_conflicts(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_template_exercises_workout     ON template_exercises(workout_template_id);
+CREATE INDEX IF NOT EXISTS idx_template_sets_exercise         ON template_sets(template_exercise_id);
+CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite     ON workout_templates(is_favorite);
+CREATE INDEX IF NOT EXISTS idx_session_exercises_session      ON session_exercises(workout_session_id);
+CREATE INDEX IF NOT EXISTS idx_session_exercises_name         ON session_exercises(exercise_name);
+CREATE INDEX IF NOT EXISTS idx_session_exercises_parent       ON session_exercises(parent_exercise_id); -- v11
+CREATE INDEX IF NOT EXISTS idx_session_sets_exercise          ON session_sets(session_exercise_id);
+CREATE INDEX IF NOT EXISTS idx_workout_sessions_status        ON workout_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_workout_sessions_date          ON workout_sessions(date DESC);           -- v9
+CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym              ON gym_equipment(gym_id);
+CREATE INDEX IF NOT EXISTS idx_gyms_default                   ON gyms(is_default);
+CREATE INDEX IF NOT EXISTS idx_set_measurements_set           ON set_measurements(set_id, parent_type); -- v12
+CREATE INDEX IF NOT EXISTS idx_set_measurements_kind          ON set_measurements(kind);                -- v12
 ```
 
 ---
@@ -320,10 +412,10 @@ CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity         ON sync_conflicts(e
 | `workout_sessions` | `session_exercises` | CASCADE |
 | `session_exercises` | `session_sets` | CASCADE |
 | `session_exercises` | `session_exercises` (self) | CASCADE |
-| `session_sets` | `session_sets` (self) | CASCADE |
+| `gyms` | `gym_equipment` | CASCADE (FK added in v9; prior to v9 this was application-level) |
 
 ### Application-Level Cascades
 
 | Parent | Child | Notes |
 |--------|-------|-------|
-| `gyms` | `gym_equipment` | Application code deletes equipment before gym; no DB-level FK |
+| `session_sets` / `template_sets` | `set_measurements` | No DB-level FK (polymorphic `set_id`). Application code deletes measurements before the parent set. |

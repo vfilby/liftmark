@@ -62,7 +62,7 @@ Third-party dependencies should be managed via **Swift Package Manager** (integr
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| [GRDB.swift](https://github.com/groue/GRDB.swift) | 6.24+ | SQLite database (canonical schema from `spec/data/database-schema.md`) |
+| [GRDB.swift](https://github.com/groue/GRDB.swift) | 7.10+ | SQLite database (canonical schema from [`data/database-schema.md`](data/database-schema.md)). Required features: `DatabaseMigrator` (orchestration of the GRDB migration system — see [`services/migrator.md`](services/migrator.md)) and `DatabaseReader.backup(to:)` (SQLite Online Backup API, used for the pre-upgrade backup — see [`services/backup.md`](services/backup.md)). The authoritative `Package.resolved` is `mobile-apps/ios/LiftMark.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` (currently `7.10.0`); the root-level `mobile-apps/ios/Package.resolved` is a stale leftover from a pre-`.xcodeproj` layout and will be removed in a follow-up PR. |
 
 All other functionality uses Apple frameworks:
 - **SwiftUI** — UI
