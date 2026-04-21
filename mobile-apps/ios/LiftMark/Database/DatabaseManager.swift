@@ -10,7 +10,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    private static let currentSchemaVersion = 13
+    static let currentSchemaVersion = 13
 
     private init() {}
 
@@ -37,7 +37,7 @@ final class DatabaseManager: @unchecked Sendable {
             try db.execute(sql: "PRAGMA foreign_keys = ON")
         }
 
-        try runMigrations(dbQueue)
+        try Self.runMigrations(on: dbQueue)
         self.dbQueue = dbQueue
         return dbQueue
     }
@@ -84,83 +84,58 @@ final class DatabaseManager: @unchecked Sendable {
 
     // MARK: - Migrations
 
-    private func runMigrations(_ dbQueue: DatabaseQueue) throws {
+    /// Runs the hand-rolled migration chain on a `DatabaseQueue`, opening its own write transaction.
+    ///
+    /// Test and bridge-entry surface. Production callers use `database()`, which funnels here.
+    /// `upTo` is intended for test cross-checks that need to stop at an intermediate version; production code
+    /// always uses the default (`currentSchemaVersion`).
+    static func runMigrations(on dbQueue: DatabaseQueue, upTo targetVersion: Int = currentSchemaVersion) throws {
         try dbQueue.write { db in
-            // Create version tracking table
-            try db.execute(sql: """
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    version INTEGER NOT NULL DEFAULT 0
-                )
-            """)
-
-            let row = try Row.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
-            var currentVersion: Int
-            if let row {
-                currentVersion = row["version"]
-            } else {
-                try db.execute(sql: "INSERT INTO schema_version (version) VALUES (0)")
-                currentVersion = 0
-            }
-
-            if currentVersion >= Self.currentSchemaVersion { return }
-
-            if currentVersion < 1 {
-                try migrateToV1(db)
-            }
-
-            if currentVersion < 2 {
-                try migrateToV2(db)
-            }
-
-            if currentVersion < 3 {
-                try migrateToV3(db)
-            }
-
-            if currentVersion < 4 {
-                try migrateToV4(db)
-            }
-
-            if currentVersion < 5 {
-                try migrateToV5(db)
-            }
-
-            if currentVersion < 6 {
-                try migrateToV6(db)
-            }
-
-            if currentVersion < 7 {
-                try migrateToV7(db)
-            }
-
-            if currentVersion < 8 {
-                try migrateToV8(db)
-            }
-
-            if currentVersion < 9 {
-                try migrateToV9(db)
-            }
-
-            if currentVersion < 10 {
-                try migrateToV10(db)
-            }
-
-            if currentVersion < 11 {
-                try migrateToV11(db)
-            }
-
-            if currentVersion < 12 {
-                try migrateToV12(db)
-            }
-
-            if currentVersion < 13 {
-                try migrateToV13(db)
-            }
-
-            try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [Self.currentSchemaVersion])
+            try runMigrations(db, upTo: targetVersion)
         }
     }
 
-    private func migrateToV1(_ db: Database) throws {
+    /// Runs the hand-rolled migration chain inside an existing write transaction.
+    ///
+    /// The GRDB bridge (see `spec/services/migrator.md` §1.5) calls this inside its own
+    /// `dbQueue.write { … }` so bridge-write + legacy catch-up commit atomically.
+    static func runMigrations(_ db: Database, upTo targetVersion: Int = currentSchemaVersion) throws {
+        // Create version tracking table
+        try db.execute(sql: """
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        let row = try Row.fetchOne(db, sql: "SELECT version FROM schema_version LIMIT 1")
+        var currentVersion: Int
+        if let row {
+            currentVersion = row["version"]
+        } else {
+            try db.execute(sql: "INSERT INTO schema_version (version) VALUES (0)")
+            currentVersion = 0
+        }
+
+        if currentVersion >= targetVersion { return }
+
+        if currentVersion < 1 && targetVersion >= 1 { try migrateToV1(db) }
+        if currentVersion < 2 && targetVersion >= 2 { try migrateToV2(db) }
+        if currentVersion < 3 && targetVersion >= 3 { try migrateToV3(db) }
+        if currentVersion < 4 && targetVersion >= 4 { try migrateToV4(db) }
+        if currentVersion < 5 && targetVersion >= 5 { try migrateToV5(db) }
+        if currentVersion < 6 && targetVersion >= 6 { try migrateToV6(db) }
+        if currentVersion < 7 && targetVersion >= 7 { try migrateToV7(db) }
+        if currentVersion < 8 && targetVersion >= 8 { try migrateToV8(db) }
+        if currentVersion < 9 && targetVersion >= 9 { try migrateToV9(db) }
+        if currentVersion < 10 && targetVersion >= 10 { try migrateToV10(db) }
+        if currentVersion < 11 && targetVersion >= 11 { try migrateToV11(db) }
+        if currentVersion < 12 && targetVersion >= 12 { try migrateToV12(db) }
+        if currentVersion < 13 && targetVersion >= 13 { try migrateToV13(db) }
+
+        try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [targetVersion])
+    }
+
+    private static func migrateToV1(_ db: Database) throws {
         try createTemplateTables(db)
         try createUserSettingsTable(db)
         try createGymTables(db)
@@ -171,7 +146,7 @@ final class DatabaseManager: @unchecked Sendable {
         try seedDefaultUserSettings(db)
     }
 
-    private func createTemplateTables(_ db: Database) throws {
+    private static func createTemplateTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS workout_templates (
                 id TEXT PRIMARY KEY,
@@ -223,7 +198,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func createUserSettingsTable(_ db: Database) throws {
+    private static func createUserSettingsTable(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS user_settings (
                 id TEXT PRIMARY KEY,
@@ -246,7 +221,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func createGymTables(_ db: Database) throws {
+    private static func createGymTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS gyms (
                 id TEXT PRIMARY KEY,
@@ -270,7 +245,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func createSessionTables(_ db: Database) throws {
+    private static func createSessionTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS workout_sessions (
                 id TEXT PRIMARY KEY,
@@ -333,7 +308,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func createSyncTables(_ db: Database) throws {
+    private static func createSyncTables(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE IF NOT EXISTS sync_metadata (
                 id TEXT PRIMARY KEY,
@@ -373,7 +348,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func createV1Indexes(_ db: Database) throws {
+    private static func createV1Indexes(_ db: Database) throws {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_workout ON template_exercises(workout_template_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_sets_exercise ON template_sets(template_exercise_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)")
@@ -388,7 +363,7 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id)")
     }
 
-    private func migrateOrphanedEquipment(_ db: Database) throws {
+    private static func migrateOrphanedEquipment(_ db: Database) throws {
         let orphanCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL") ?? 0
         if orphanCount > 0 {
             let now = ISO8601DateFormatter().string(from: Date())
@@ -401,7 +376,7 @@ final class DatabaseManager: @unchecked Sendable {
         }
     }
 
-    private func seedDefaultUserSettings(_ db: Database) throws {
+    private static func seedDefaultUserSettings(_ db: Database) throws {
         let existingSettings = try Row.fetchOne(db, sql: "SELECT id FROM user_settings LIMIT 1")
         if existingSettings == nil {
             let now = ISO8601DateFormatter().string(from: Date())
@@ -415,30 +390,30 @@ final class DatabaseManager: @unchecked Sendable {
         }
     }
 
-    private func migrateToV2(_ db: Database) throws {
+    private static func migrateToV2(_ db: Database) throws {
         // Add last sync stat columns to sync_metadata for displaying sync history in UI
         try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_uploaded INTEGER DEFAULT 0")
         try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_downloaded INTEGER DEFAULT 0")
         try db.execute(sql: "ALTER TABLE sync_metadata ADD COLUMN last_conflicts INTEGER DEFAULT 0")
     }
 
-    private func migrateToV3(_ db: Database) throws {
+    private static func migrateToV3(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN developer_mode_enabled INTEGER DEFAULT 0")
     }
 
-    private func migrateToV5(_ db: Database) throws {
+    private static func migrateToV5(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN countdown_sounds_enabled INTEGER DEFAULT 1")
     }
 
-    private func migrateToV6(_ db: Database) throws {
+    private static func migrateToV6(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN side TEXT")
     }
 
-    private func migrateToV7(_ db: Database) throws {
+    private static func migrateToV7(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN has_accepted_disclaimer INTEGER DEFAULT 0")
     }
 
-    private func migrateToV8(_ db: Database) throws {
+    private static func migrateToV8(_ db: Database) throws {
         // Add updated_at columns for CKSyncEngine migration
         try db.execute(sql: "ALTER TABLE workout_sessions ADD COLUMN updated_at TEXT")
         try db.execute(sql: "ALTER TABLE session_exercises ADD COLUMN updated_at TEXT")
@@ -490,7 +465,7 @@ final class DatabaseManager: @unchecked Sendable {
         """)
     }
 
-    private func migrateToV9(_ db: Database) throws {
+    private static func migrateToV9(_ db: Database) throws {
         // 1. Clear legacy API key data from user_settings (keys now live in Keychain)
         try db.execute(sql: "UPDATE user_settings SET anthropic_api_key = NULL")
         // SQLite 3.35.0+ supports DROP COLUMN; safe on iOS 16+
@@ -539,7 +514,7 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "DROP TABLE IF EXISTS sync_conflicts")
     }
 
-    private func migrateToV4(_ db: Database) throws {
+    private static func migrateToV4(_ db: Database) throws {
         // Soft-delete support for gyms and gym_equipment to prevent CloudKit sync
         // from re-inserting deleted records.
         try db.execute(sql: "ALTER TABLE gyms ADD COLUMN deleted_at TEXT")
@@ -562,7 +537,7 @@ final class DatabaseManager: @unchecked Sendable {
         }
     }
 
-    private func migrateToV10(_ db: Database) throws {
+    private static func migrateToV10(_ db: Database) throws {
         // Add distance columns to template_sets
         try db.execute(sql: "ALTER TABLE template_sets ADD COLUMN target_distance REAL")
         try db.execute(sql: "ALTER TABLE template_sets ADD COLUMN target_distance_unit TEXT")
@@ -574,7 +549,7 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "ALTER TABLE session_sets ADD COLUMN actual_distance_unit TEXT")
     }
 
-    private func migrateToV11(_ db: Database) throws {
+    private static func migrateToV11(_ db: Database) throws {
         // 1. Add missing indexes on self-referential FK columns used for supersets/dropsets
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_parent ON session_exercises(parent_exercise_id)")
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_sets_parent ON session_sets(parent_set_id)")
@@ -609,7 +584,7 @@ final class DatabaseManager: @unchecked Sendable {
 
     // MARK: - V12: SetMeasurement — decouple metrics from set rows
 
-    private func migrateToV12(_ db: Database) throws {
+    private static func migrateToV12(_ db: Database) throws {
         try createSetMeasurementsTable(db)
         try migrateSessionSetMeasurements(db)
         try migrateTemplateSetMeasurements(db)
@@ -617,7 +592,7 @@ final class DatabaseManager: @unchecked Sendable {
         try rebuildTemplateSetsSchema(db)
     }
 
-    private func createSetMeasurementsTable(_ db: Database) throws {
+    private static func createSetMeasurementsTable(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE set_measurements (
                 id TEXT PRIMARY KEY,
@@ -635,7 +610,7 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "CREATE INDEX idx_set_measurements_group ON set_measurements(set_id, group_index)")
     }
 
-    private func migrateSessionSetMeasurements(_ db: Database) throws {
+    private static func migrateSessionSetMeasurements(_ db: Database) throws {
         let sessionSets = try Row.fetchAll(db, sql: "SELECT * FROM session_sets")
         for row in sessionSets {
             guard let setId: String = row["id"] else { continue }
@@ -681,7 +656,7 @@ final class DatabaseManager: @unchecked Sendable {
         }
     }
 
-    private func migrateTemplateSetMeasurements(_ db: Database) throws {
+    private static func migrateTemplateSetMeasurements(_ db: Database) throws {
         let templateSets = try Row.fetchAll(db, sql: "SELECT * FROM template_sets")
         for row in templateSets {
             guard let setId: String = row["id"] else { continue }
@@ -707,7 +682,7 @@ final class DatabaseManager: @unchecked Sendable {
         }
     }
 
-    private func rebuildSessionSetsSchema(_ db: Database) throws {
+    private static func rebuildSessionSetsSchema(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE session_sets_new (
                 id TEXT PRIMARY KEY,
@@ -735,7 +710,7 @@ final class DatabaseManager: @unchecked Sendable {
         try db.execute(sql: "CREATE INDEX idx_session_sets_exercise ON session_sets(session_exercise_id)")
     }
 
-    private func rebuildTemplateSetsSchema(_ db: Database) throws {
+    private static func rebuildTemplateSetsSchema(_ db: Database) throws {
         try db.execute(sql: """
             CREATE TABLE template_sets_new (
                 id TEXT PRIMARY KEY,
@@ -762,11 +737,11 @@ final class DatabaseManager: @unchecked Sendable {
 
     // MARK: - V13: default_timer_countdown user setting
 
-    private func migrateToV13(_ db: Database) throws {
+    private static func migrateToV13(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_timer_countdown INTEGER DEFAULT 0")
     }
 
-    private func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {
+    private static func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {
         let id = UUID().uuidString
         try db.execute(
             sql: "INSERT INTO set_measurements (id, set_id, parent_type, role, kind, value, unit, group_index, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
