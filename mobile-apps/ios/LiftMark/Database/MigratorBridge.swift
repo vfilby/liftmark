@@ -145,10 +145,52 @@ enum MigratorBridge {
         fromVersion: Int
     ) throws -> Outcome {
         let startedAt = Date()
-
-        // Pre-flight (breadcrumb + checks).
-        CrashReporter.shared.addBreadcrumb("bridge.preflight.begin", category: .database)
         let dbSize = (try? MigratorBridgeBackup.dbSizeBytes(at: liveDBURL)) ?? 0
+
+        try runPreflight(on: dbQueue, liveDBURL: liveDBURL, dbSize: dbSize)
+
+        CrashReporter.shared.captureMigratorEvent(
+            "migrator_bridge_attempted",
+            metadata: [
+                "fromVersion": String(fromVersion),
+                "dbSizeBytes": String(dbSize)
+            ]
+        )
+
+        let backup = try runBackup(on: dbQueue, liveDBURL: liveDBURL, startedAt: startedAt)
+
+        let rowsInserted = try runBridgeWrite(
+            on: dbQueue,
+            liveDBURL: liveDBURL,
+            fromVersion: fromVersion,
+            backupURL: backup.url
+        )
+
+        try runMigratorHandoff(on: dbQueue, liveDBURL: liveDBURL, backupURL: backup.url)
+
+        // Keep schema_version aligned for downgrade safety.
+        try writeSchemaVersion(dbQueue, version: currentVersion)
+
+        let totalDurationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        emitSuccessIfFirstTime(
+            fromVersion: fromVersion,
+            rowsInserted: rowsInserted,
+            durationMs: totalDurationMs
+        )
+        UserDefaults.standard.set(currentBuildNumber(), forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber)
+        UserDefaults.standard.set(false, forKey: MigratorBridgeBackup.UserDefaultsKey.lastAttemptFailed)
+
+        return .bridged(fromVersion: fromVersion, rowsInserted: rowsInserted)
+    }
+
+    // MARK: - Core bridge phases
+
+    private static func runPreflight(
+        on dbQueue: DatabaseQueue,
+        liveDBURL: URL,
+        dbSize: Int64
+    ) throws {
+        CrashReporter.shared.addBreadcrumb("bridge.preflight.begin", category: .database)
         do {
             try MigratorBridgeBackup.preflight(liveDBURL: liveDBURL, liveDbQueue: dbQueue)
         } catch MigratorBridgeBackup.BackupError.diskFull(let free, _) {
@@ -174,16 +216,13 @@ enum MigratorBridge {
             throw MigratorBridgeError.preflightFailed(reason: "integrity_failed")
         }
         CrashReporter.shared.addBreadcrumb("bridge.preflight.end", category: .database)
+    }
 
-        CrashReporter.shared.captureMigratorEvent(
-            "migrator_bridge_attempted",
-            metadata: [
-                "fromVersion": String(fromVersion),
-                "dbSizeBytes": String(dbSize)
-            ]
-        )
-
-        // Backup.
+    private static func runBackup(
+        on dbQueue: DatabaseQueue,
+        liveDBURL: URL,
+        startedAt: Date
+    ) throws -> (url: URL, sizeBytes: Int64) {
         CrashReporter.shared.addBreadcrumb("bridge.backup.begin", category: .database)
         let backup: (url: URL, sizeBytes: Int64)
         do {
@@ -222,8 +261,15 @@ enum MigratorBridge {
                 "durationMs": String(backupDurationMs)
             ]
         )
+        return backup
+    }
 
-        // Bridge write (phase 2).
+    private static func runBridgeWrite(
+        on dbQueue: DatabaseQueue,
+        liveDBURL: URL,
+        fromVersion: Int,
+        backupURL: URL
+    ) throws -> Int {
         CrashReporter.shared.addBreadcrumb("bridge.write.begin", category: .database)
         let rowsInserted: Int
         do {
@@ -241,36 +287,30 @@ enum MigratorBridge {
                 dataIntegrityRisk: true
             )
             // Transaction rollback is primary defense; restore is the safety belt.
-            attemptRestore(backupURL: backup.url, liveDBURL: liveDBURL)
+            attemptRestore(backupURL: backupURL, liveDBURL: liveDBURL)
             throw MigratorBridgeError.bridgeWriteFailed(underlying: error)
         }
         CrashReporter.shared.addBreadcrumb("bridge.write.end", category: .database)
+        return rowsInserted
+    }
 
-        // Phase 3 — hand off to DatabaseMigrator.
+    private static func runMigratorHandoff(
+        on dbQueue: DatabaseQueue,
+        liveDBURL: URL,
+        backupURL: URL
+    ) throws {
         do {
             let migrator = Self.migrator
             try migrator.migrate(dbQueue)
         } catch {
-            let isFkViolation: Bool
-            let errorDomain: String
-            let errorCode: Int
-            if let dbError = error as? DatabaseError {
-                isFkViolation = dbError.resultCode == .SQLITE_CONSTRAINT
-                errorDomain = "GRDB.DatabaseError"
-                errorCode = Int(dbError.resultCode.rawValue)
-            } else {
-                let nsError = error as NSError
-                isFkViolation = false
-                errorDomain = nsError.domain
-                errorCode = nsError.code
-            }
-            if isFkViolation {
+            let classified = classifyMigratorError(error)
+            if classified.isFkViolation {
                 CrashReporter.shared.captureMigratorEvent(
                     "migrator_post_bridge_fk_violation",
                     level: .error,
                     metadata: [
-                        "errorDomain": errorDomain,
-                        "errorCode": String(errorCode)
+                        "errorDomain": classified.domain,
+                        "errorCode": String(classified.code)
                     ],
                     dataIntegrityRisk: true
                 )
@@ -279,30 +319,28 @@ enum MigratorBridge {
                     "migrator_post_bridge_migration_failed",
                     level: .error,
                     metadata: [
-                        "errorDomain": errorDomain,
-                        "errorCode": String(errorCode),
+                        "errorDomain": classified.domain,
+                        "errorCode": String(classified.code),
                         "failedIdentifier": identifiers.last ?? ""
                     ],
                     dataIntegrityRisk: true
                 )
             }
-            attemptRestore(backupURL: backup.url, liveDBURL: liveDBURL)
+            attemptRestore(backupURL: backupURL, liveDBURL: liveDBURL)
             throw MigratorBridgeError.postBridgeMigrationFailed(underlying: error)
         }
+    }
 
-        // Keep schema_version aligned for downgrade safety.
-        try writeSchemaVersion(dbQueue, version: currentVersion)
-
-        let totalDurationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-        emitSuccessIfFirstTime(
-            fromVersion: fromVersion,
-            rowsInserted: rowsInserted,
-            durationMs: totalDurationMs
-        )
-        UserDefaults.standard.set(currentBuildNumber(), forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber)
-        UserDefaults.standard.set(false, forKey: MigratorBridgeBackup.UserDefaultsKey.lastAttemptFailed)
-
-        return .bridged(fromVersion: fromVersion, rowsInserted: rowsInserted)
+    private static func classifyMigratorError(_ error: Error) -> (isFkViolation: Bool, domain: String, code: Int) {
+        if let dbError = error as? DatabaseError {
+            return (
+                isFkViolation: dbError.resultCode == .SQLITE_CONSTRAINT,
+                domain: "GRDB.DatabaseError",
+                code: Int(dbError.resultCode.rawValue)
+            )
+        }
+        let nsError = error as NSError
+        return (isFkViolation: false, domain: nsError.domain, code: nsError.code)
     }
 
     // MARK: - Bridge write
