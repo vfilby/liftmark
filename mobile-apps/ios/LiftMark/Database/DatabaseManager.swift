@@ -37,6 +37,15 @@ final class DatabaseManager: @unchecked Sendable {
             try db.execute(sql: "PRAGMA foreign_keys = ON")
         }
 
+        // Run the GRDB migrator bridge before the legacy chain. When the bridge completes
+        // (or short-circuits), the legacy `runMigrations` call below either no-ops (because
+        // the bridge ensured `schema_version.version = 13`) or catches up a pre-bridge DB
+        // that hit the feature-flag rollback path. See spec/services/migrator.md.
+        if MigratorBridge.isEnabled {
+            let liveDBURL = URL(fileURLWithPath: dbPath)
+            try MigratorBridge.runIfNeeded(on: dbQueue, liveDBURL: liveDBURL)
+        }
+
         try Self.runMigrations(on: dbQueue)
         self.dbQueue = dbQueue
         return dbQueue
