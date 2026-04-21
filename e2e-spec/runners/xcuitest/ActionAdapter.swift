@@ -19,6 +19,12 @@ class ActionAdapter {
     /// Track if first launch has happened (for data reset isolation).
     private var isFirstLaunch = true
 
+    /// Track whether onboarding has already been dismissed in this process.
+    /// Skip the accept-button probe on subsequent launches to avoid the
+    /// repeated accessibility snapshot requests that SIGKILL the test host
+    /// on iOS 26.
+    private var onboardingDismissed = false
+
     init(app: XCUIApplication, fixturesPath: String) {
         self.app = app
         self.fixturesPath = fixturesPath
@@ -122,13 +128,15 @@ class ActionAdapter {
         return el
     }
 
-    /// Waits for an element across multiple XCUITest element types.
-    /// SwiftUI sometimes only exposes accessibility identifiers through
-    /// type-specific queries (textFields, textViews, etc.) rather than
-    /// the generic descendants query.
+    /// Waits for an element by accessibility identifier using a single
+    /// predicate-based descendants query.
+    ///
+    /// Previously this polled six separate type-specific queries per loop,
+    /// which triggers a full accessibility-hierarchy snapshot on every miss.
+    /// On iOS 26 the repeated snapshots hang XCTestRunner long enough for
+    /// the watchdog to SIGKILL it, which shows up as the generic
+    /// "Test crashed with signal kill." failure on every UI test.
     private func waitForAnyElement(byId identifier: String, timeout: TimeInterval) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-
         // Tab bar buttons: always check tab bar first for tab-* identifiers
         if identifier.hasPrefix("tab-") {
             if let label = tabIdToLabel[identifier] {
@@ -137,24 +145,9 @@ class ActionAdapter {
             }
         }
 
-        // Try the generic descendants query first with native waitForExistence
-        let el = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
-        if el.waitForExistence(timeout: min(timeout, 2)) { return el }
-
-        // Fall back to type-specific queries in a polling loop (less frequent)
-        while Date() < deadline {
-            // Re-check generic query
-            if el.exists { return el }
-
-            // Type-specific queries for elements that don't expose via descendants
-            for query in [app.textFields, app.searchFields, app.textViews,
-                          app.buttons, app.switches, app.otherElements] {
-                let match = query.matching(identifier: identifier).firstMatch
-                if match.exists { return match }
-            }
-
-            Thread.sleep(forTimeInterval: 0.5)
-        }
+        let predicate = NSPredicate(format: "identifier == %@", identifier)
+        let el = app.descendants(matching: .any).matching(predicate).firstMatch
+        if el.waitForExistence(timeout: timeout) { return el }
         return nil
     }
 
@@ -231,6 +224,39 @@ class ActionAdapter {
             throw ActionError.missingSelector(action.action)
         }
     }
+
+    /// Searches for an element by identifier with small corrective scrolls.
+    /// Useful after a scenario's bulk scrolling lands just past the target:
+    /// SwiftUI's `List` (backed by `UICollectionView`) lazy-unloads cells
+    /// that are slightly outside the viewport, so an element that was the
+    /// intended destination can disappear from the accessibility tree if the
+    /// gesture overshoots by even ~60pt. Tries a few small swipes in each
+    /// direction on the first visible scroll container, re-checking between.
+    private func scrollSearchForElement(byId identifier: String) -> XCUIElement? {
+        let container: XCUIElement = {
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { return scroll }
+            let coll = app.collectionViews.firstMatch
+            if coll.exists { return coll }
+            return app.otherElements.firstMatch
+        }()
+        guard container.exists else { return nil }
+
+        for direction in [Direction.down, Direction.up] {
+            for _ in 0..<3 {
+                switch direction {
+                case .down: container.swipeDown()
+                case .up:   container.swipeUp()
+                }
+                if let el = waitForAnyElement(byId: identifier, timeout: 1) {
+                    return el
+                }
+            }
+        }
+        return nil
+    }
+
+    private enum Direction { case up, down }
 
     /// Scrolls the nearest scroll view until the element becomes hittable.
     private func scrollToHittable(_ element: XCUIElement, maxAttempts: Int = 5) {
@@ -342,18 +368,12 @@ class ActionAdapter {
         }
 
         el.tap()
-        // Select all and replace via pasteboard (avoids per-keystroke logging)
-        el.press(forDuration: 1.0)
-        if app.menuItems["Select All"].waitForExistence(timeout: 2) {
-            app.menuItems["Select All"].tap()
-        }
-        UIPasteboard.general.string = textValue
-        // Use Paste menu item if available, else fall back to typeText
-        if app.menuItems["Paste"].waitForExistence(timeout: 2) {
-            app.menuItems["Paste"].tap()
-        } else {
-            el.typeText(textValue)
-        }
+        // Use hardware-keyboard shortcuts rather than the UIKit edit menu.
+        // On iOS 26 the "Select All" / "Paste" menu items don't reliably
+        // appear on SwiftUI TextEditors via long-press, and the repeated
+        // menu probes cascade into the accessibility-snapshot SIGKILL.
+        el.typeKey("a", modifierFlags: .command)
+        el.typeText(textValue)
     }
 
     private func executeTypeText(_ action: TestAction) throws {
@@ -451,8 +471,13 @@ class ActionAdapter {
 
         case "toExist":
             if let target = action.target {
-                let el = waitForAnyElement(byId: target, timeout: 5)
-                XCTAssertNotNil(el, "Expected '\(desc)' to exist")
+                if let el = waitForAnyElement(byId: target, timeout: 5) {
+                    _ = el
+                } else if let el = scrollSearchForElement(byId: target) {
+                    _ = el
+                } else {
+                    XCTFail("Expected '\(desc)' to exist")
+                }
             } else {
                 let el = try resolveElement(action)
                 XCTAssertTrue(el.waitForExistence(timeout: 5), "Expected '\(desc)' to exist")
@@ -525,15 +550,17 @@ class ActionAdapter {
         app.launchArguments = args
         app.launch()
 
-        // Auto-dismiss onboarding disclaimer on fresh launches
-        if !args.contains("--show-onboarding") {
-            // Try multiple element types since SwiftUI may render the button differently
+        // Auto-dismiss onboarding disclaimer on fresh launches. Once dismissed
+        // in this process, skip the probe — the 5s accept-button check hits
+        // a SwiftUI tree that never has the element, and the repeated
+        // snapshots on iOS 26 are expensive enough to cascade into SIGKILL.
+        if !args.contains("--show-onboarding") && !onboardingDismissed {
             let acceptButton = app.descendants(matching: .any)["onboarding-accept-button"]
             if acceptButton.waitForExistence(timeout: 5) {
                 acceptButton.tap()
-                // Wait for onboarding to fully dismiss
                 _ = app.descendants(matching: .any)["home-screen"].waitForExistence(timeout: 10)
             }
+            onboardingDismissed = true
         }
     }
 
@@ -562,11 +589,13 @@ class ActionAdapter {
         }
         app.launch()
 
-        // Auto-dismiss onboarding if it appears after URL launch
-        let acceptButton = app.descendants(matching: .any)["onboarding-accept-button"]
-        if acceptButton.waitForExistence(timeout: 5) {
-            acceptButton.tap()
-            _ = app.descendants(matching: .any)["home-screen"].waitForExistence(timeout: 10)
+        if !onboardingDismissed {
+            let acceptButton = app.descendants(matching: .any)["onboarding-accept-button"]
+            if acceptButton.waitForExistence(timeout: 5) {
+                acceptButton.tap()
+                _ = app.descendants(matching: .any)["home-screen"].waitForExistence(timeout: 10)
+            }
+            onboardingDismissed = true
         }
     }
 
@@ -746,18 +775,10 @@ class ActionAdapter {
             return
         }
 
-        // Replace text in input via pasteboard (avoids per-keystroke logging)
+        // Hardware-keyboard select-all + typeText. See executeReplaceText for why.
         inputMarkdown.tap()
-        inputMarkdown.press(forDuration: 1.0)
-        if app.menuItems["Select All"].waitForExistence(timeout: 2) {
-            app.menuItems["Select All"].tap()
-        }
-        UIPasteboard.general.string = content
-        if app.menuItems["Paste"].waitForExistence(timeout: 2) {
-            app.menuItems["Paste"].tap()
-        } else {
-            inputMarkdown.typeText(content)
-        }
+        inputMarkdown.typeKey("a", modifierFlags: .command)
+        inputMarkdown.typeText(content)
 
         guard let importBtn = waitForAnyElement(byId: "button-import", timeout: 5) else {
             XCTFail("button-import not found for runFixture")

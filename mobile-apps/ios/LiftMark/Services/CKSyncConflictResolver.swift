@@ -174,7 +174,16 @@ final class CKSyncConflictResolver: @unchecked Sendable {
             CrashReporter.shared.captureError(error, category: .sync, metadata: ["recordType": recordType, "partialFailureCount": "\(partialErrors.count)", "tag": "partial-failure-rollup"])
         } else {
             Logger.shared.error(.sync, "[sync-engine] Partial failure for \(recordType)/\(recordName): CKError \(error.code.rawValue) — \(error.localizedDescription)")
-            CrashReporter.shared.captureError(error, category: .sync, metadata: ["recordType": recordType, "errorCode": "\(error.code.rawValue)", "errorDomain": CKErrorDomain, "tag": "partial-failure"])
+            CrashReporter.shared.captureError(
+                error,
+                category: .sync,
+                metadata: [
+                    "recordType": recordType,
+                    "errorCode": "\(error.code.rawValue)",
+                    "errorDomain": CKErrorDomain,
+                    "tag": "partial-failure"
+                ]
+            )
         }
     }
 

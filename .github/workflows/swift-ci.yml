@@ -76,13 +76,28 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             | xcpretty
 
-      # Note: UI tests (LiftMarkUITests) are not run in CI — they require
-      # a booted simulator and are slow. Run them manually or in a dedicated workflow.
+      - name: Run UI tests
+        run: |
+          xcodebuild test \
+            -scheme LiftMark \
+            -project LiftMark.xcodeproj \
+            -only-testing:LiftMarkUITests \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.0' \
+            -resultBundlePath TestResults-UI.xcresult \
+            | xcpretty
 
-      - name: Upload test results
+      - name: Upload unit test results
         uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
           path: mobile-apps/ios/TestResults.xcresult
+          retention-days: 7
+
+      - name: Upload UI test results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results-ui
+          path: mobile-apps/ios/TestResults-UI.xcresult
           retention-days: 7
