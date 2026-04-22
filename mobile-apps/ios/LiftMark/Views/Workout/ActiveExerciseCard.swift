@@ -26,6 +26,12 @@ struct ActiveExerciseCard: View {
         exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
     }
 
+    /// Aggregate tint reflecting the finalized state of all sets.
+    /// Neutral while any set is still pending.
+    private var cardTint: ExerciseCardTint {
+        ExerciseCardTint.from(statuses: exercise.sets.map { $0.status })
+    }
+
     /// The target time for the current pending set, if it's a timed set.
     private var currentTimedSetTarget: Int? {
         guard let idx = currentSetIndex else { return nil }
@@ -207,11 +213,17 @@ struct ActiveExerciseCard: View {
             }
         }
         .padding()
-        .background(LiftMarkTheme.secondaryBackground)
+        .background {
+            ZStack {
+                LiftMarkTheme.secondaryBackground
+                cardTint.backgroundOverlay
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         .opacity(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? 0.6 : 1.0)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("exercise-card-\(exerciseIndex)")
+        .accessibilityValue(cardTint.accessibilityDescription ?? "")
     }
 
     private var exerciseStatusColor: Color {

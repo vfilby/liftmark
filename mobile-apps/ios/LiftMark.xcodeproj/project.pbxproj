@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0036F605D492F1EF89705AA1 /* ExerciseCardTintTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518E43810147703F2482ED39 /* ExerciseCardTintTests.swift */; };
 		04462895D8B47403B759F38F /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9441D6B1D8EE6194A1A0631 /* AppNavigation.swift */; };
 		046BDEE4D56EEF1A07640A9D /* AppearancePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FE81B205D52B24B526C4350 /* AppearancePicker.swift */; };
 		06EE4DED95E7B9EE13AF33F1 /* RestTimerTickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54DEB10F36ACE6291531A52C /* RestTimerTickTests.swift */; };
@@ -68,6 +69,7 @@
 		5AFB4BC3349F22E53C712DCB /* StoreIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A76A2194E3AF636AD5C75F /* StoreIntegrationTests.swift */; };
 		5C39E58968CAA7347C04C0D2 /* LiveActivityServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711C97C8467DA625F9D782D2 /* LiveActivityServiceTests.swift */; };
 		5E464D67B5C96FD5BCBE2548 /* MigratorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1FEA12A71EB221F441F265 /* MigratorBridge.swift */; };
+		5F3AC1A59EC86EE4E43CD058 /* ExerciseCardTint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A161AAFB14DA2EA236581675 /* ExerciseCardTint.swift */; };
 		5F55ACA6E2E8C4EF04EF35EE /* CKSyncEngineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B78AC1165879EA49EE0A12 /* CKSyncEngineManager.swift */; };
 		5FAF2240A9E665DC7B211254 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D029E8EF3D26021C1DE6232F /* AudioService.swift */; };
 		61ED62C4504060D04CE1E68D /* EditPlanExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCECF3B709D362C97FA5F04 /* EditPlanExerciseSheet.swift */; };
@@ -281,6 +283,7 @@
 		4EE0CDF79B2DFFE19F219027 /* ErrorBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBannerView.swift; sourceTree = "<group>"; };
 		4FB0FF7A71BDC475DA488AB4 /* SyncChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncChange.swift; sourceTree = "<group>"; };
 		4FD57CEFF5022DFA698C39EF /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		518E43810147703F2482ED39 /* ExerciseCardTintTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCardTintTests.swift; sourceTree = "<group>"; };
 		52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacySection.swift; sourceTree = "<group>"; };
 		54DEB10F36ACE6291531A52C /* RestTimerTickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerTickTests.swift; sourceTree = "<group>"; };
 		553E996598991A764AABC251 /* ActiveExerciseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveExerciseCard.swift; sourceTree = "<group>"; };
@@ -343,6 +346,7 @@
 		9FFE17786DC0564D38BF1802 /* EditPlanMarkdownSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditPlanMarkdownSheet.swift; sourceTree = "<group>"; };
 		A0C9B42D3BD8986494435EF5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A104CAD1F813E1FC1B0AD2CB /* WorkoutSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSession.swift; sourceTree = "<group>"; };
+		A161AAFB14DA2EA236581675 /* ExerciseCardTint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCardTint.swift; sourceTree = "<group>"; };
 		A178CE4E73F55B275E245A02 /* exercise-dictionary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "exercise-dictionary.json"; sourceTree = "<group>"; };
 		A219D1B838B112723669B571 /* LiveActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityService.swift; sourceTree = "<group>"; };
 		A8488F5EFBF4053E8DE028BC /* WorkoutExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutExportService.swift; sourceTree = "<group>"; };
@@ -765,6 +769,7 @@
 				5AE9C7D51ED3CF2FC7D59030 /* DatabaseManagerTests.swift */,
 				FF1C774749F46282DA0627E6 /* DatabaseMigrationCrossCheckTests.swift */,
 				71B62D34A30D79B7E53455FA /* DatabaseMigrationTests.swift */,
+				518E43810147703F2482ED39 /* ExerciseCardTintTests.swift */,
 				14DB416A43A59922B4ADF59B /* ExerciseDictionaryTests.swift */,
 				FD62A5DD7A3746F10518F287 /* ExerciseHistoryRepositoryTests.swift */,
 				71BBB53853F20402D24BEFB4 /* FileImportServiceTests.swift */,
@@ -823,6 +828,7 @@
 				1DE768C209F34223C2D46AEE /* ActiveWorkoutViewModel.swift */,
 				0476CDBBFF3F062C1380241E /* AddExerciseSheet.swift */,
 				6D3ABAAB6882D92D306CB16D /* EditExerciseSheet.swift */,
+				A161AAFB14DA2EA236581675 /* ExerciseCardTint.swift */,
 				B2BBD343ADD45A9C1074E5C4 /* ExerciseDisplayItem.swift */,
 				CD93FB1BF42DD49919B91A5D /* ExerciseHistoryLastSessionView.swift */,
 				D2122EC8E298186859FF9B07 /* RestTimerState.swift */,
@@ -1053,6 +1059,7 @@
 				406622C47E2E20CD649B12C4 /* Enums.swift in Sources */,
 				EC458A0E78182E2C880D66F6 /* EquipmentStore.swift in Sources */,
 				41A6BB3648D0800ABF0B74BD /* ErrorBannerView.swift in Sources */,
+				5F3AC1A59EC86EE4E43CD058 /* ExerciseCardTint.swift in Sources */,
 				A729B0D0216DC029A3343B47 /* ExerciseCardView.swift in Sources */,
 				20BECB53AC35F8ECEC62A946 /* ExerciseDictionary.swift in Sources */,
 				84F5BF4CD91103157C9C6CE2 /* ExerciseDisplayItem.swift in Sources */,
@@ -1166,6 +1173,7 @@
 				3F6114498C9367986D4E1026 /* DatabaseMigrationTests.swift in Sources */,
 				AE4EB6EC971EF1017EE4BD3E /* DatabaseSeedLoader.swift in Sources */,
 				C5F99407BC520BB518F3F418 /* DatabaseSeeds.swift in Sources */,
+				0036F605D492F1EF89705AA1 /* ExerciseCardTintTests.swift in Sources */,
 				8D9AF779D21C1E42D0059D6F /* ExerciseDictionaryTests.swift in Sources */,
 				7AB5F2F72412312FF135E237 /* ExerciseHistoryRepositoryTests.swift in Sources */,
 				B85DE5789943AAD087F8090A /* FileImportServiceTests.swift in Sources */,

@@ -46,6 +46,19 @@ All custom colors use adaptive light/dark values to meet WCAG AA contrast minimu
 | Warmup | `#C45100` | `#FF9F0A` | 4.9:1 / 11.3:1 | Warmup section badge/text |
 | Cooldown | `#0077B6` | `#64D2FF` | 4.8:1 / 11.5:1 | Cooldown section badge/text |
 
+### Exercise Card Tints (Active Workout)
+
+Tint overlays applied to `secondaryBackground` on active-workout exercise/superset cards, based on the aggregate status of all sets. Tints apply only when every set is finalized (completed or skipped) — any pending set keeps the card neutral. Full rule lives in `spec/screens/active-workout.md`.
+
+| State | Overlay | Opacity |
+|-------|---------|---------|
+| Neutral (any pending / failed) | — | 0% (base `secondaryBackground` only) |
+| All completed | Success (`#1E7E34` / `#30D158`) | 18% |
+| All skipped | Warning (`#C45100` / `#FF9F0A`) | 18% |
+| Mixed completed + skipped | Diagonal `LinearGradient(Success, Warning)` top-leading → bottom-trailing | 22% each stop |
+
+Opacities are chosen to stay below 25% so label text on the card continues to meet WCAG AA against both light and dark system backgrounds. Tints reuse the existing Success and Warning tokens — no new color tokens are introduced.
+
 ## Typography
 
 The app uses the iOS system font (SF Pro) throughout.

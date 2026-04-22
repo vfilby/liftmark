@@ -20,6 +20,13 @@ struct SupersetCard: View {
         }
     }
 
+    /// Aggregate tint across all child exercises. Treats the superset as a
+    /// single unit: neutral while any child set is still pending.
+    private var cardTint: ExerciseCardTint {
+        let allStatuses = children.flatMap { $0.exercise.sets.map { $0.status } }
+        return ExerciseCardTint.from(statuses: allStatuses)
+    }
+
     private var completedSetCount: Int {
         children.reduce(0) { sum, child in
             sum + child.exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
@@ -153,11 +160,17 @@ struct SupersetCard: View {
             }
         }
         .padding()
-        .background(LiftMarkTheme.secondaryBackground)
+        .background {
+            ZStack {
+                LiftMarkTheme.secondaryBackground
+                cardTint.backgroundOverlay
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         .opacity(allSetsCompleted ? 0.6 : 1.0)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("superset-card-\(parentExercise.exerciseName)")
+        .accessibilityValue(cardTint.accessibilityDescription ?? "")
     }
 
     private var supersetTitle: String {

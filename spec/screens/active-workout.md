@@ -173,6 +173,23 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Exercise numbering**: Superset parents and section headers are excluded from the numbered badge index. Only exercises with sets (regular exercises and superset children) receive a sequential number. A superset with 2 children counts as 2 exercises in the numbering sequence.
 - **Session creation**: When creating a session from a plan, `parentExerciseId` must be mapped from plan exercise IDs to the corresponding session exercise IDs so superset grouping is preserved
 
+### Exercise Card Tinting
+- Each exercise card on the active workout screen is tinted by its *aggregate set status*, providing an at-a-glance signal of how the exercise was resolved. The rule applies only to **finalized** exercises — every set must have a terminal status (`.completed` or `.skipped`). A single `.pending` (or `.failed`) set keeps the card neutral.
+- Tint states map from `[SessionSet.status]` as follows:
+
+| Aggregate state | Treatment | Background |
+|-----------------|-----------|------------|
+| All sets completed | Green tint | `secondaryBackground` + Success overlay at 18% opacity |
+| All sets skipped | Amber tint | `secondaryBackground` + Warning overlay at 18% opacity |
+| Mixed (some completed, some skipped; all finalized) | Diagonal split (green → amber) | `secondaryBackground` + `LinearGradient(Success 22%, Warning 22%)` from top-leading to bottom-trailing |
+| Any pending set (not started or in progress) | Neutral | `secondaryBackground` |
+
+- The `.failed` status is not one of the two finalized terminal states for this rule and keeps the card neutral so the user notices the failure.
+- Tint overlays are layered on top of the existing `secondaryBackground` so that text contrast is preserved in both light and dark mode. The existing 60% opacity fade applied when an exercise is fully finalized is retained and composes with the tint.
+- **Supersets** use the same rule, aggregating statuses across all child exercises' sets so the superset card reflects the combined state.
+- The mapping is implemented as a pure function `ExerciseCardTint.from(statuses:)` in `Views/Workout/ExerciseCardTint.swift`; all tint decisions MUST go through it so behavior remains centrally testable.
+- **Accessibility**: when non-neutral, the card exposes an `accessibilityValue` of "All sets completed", "All sets skipped", or "Mixed completed and skipped sets".
+
 ### Exercise Collapse Behavior
 - Completed exercises (all sets completed or skipped) automatically collapse to a compact summary showing: exercise name, completion status badge, and a brief summary (e.g., "3/3 sets completed")
 - Collapsed exercises can be tapped to expand and view full set detail
