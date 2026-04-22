@@ -1,7 +1,14 @@
 import SwiftUI
 
 /// Countdown rest timer displayed inline after completing a set.
-/// Uses wall-clock Date() timestamps so the timer survives app backgrounding.
+///
+/// Uses wall-clock `Date()` timestamps so the timer survives app backgrounding.
+/// When the countdown reaches zero the timer does **not** auto-dismiss — it
+/// transitions into an overrun state (amber) and counts up (e.g. `+0:23`)
+/// until the user taps **Stop** or the next set implicitly dismisses it.
+///
+/// Runtime state (remaining/overrun/display) is derived via the pure
+/// `RestTimerTick` state machine, which is unit-tested independently.
 struct RestTimerView: View {
     let totalSeconds: Int
     let onSkip: () -> Void
@@ -9,32 +16,43 @@ struct RestTimerView: View {
     @State private var startDate: Date = Date()
     @State private var timer: Timer?
     @State private var isRunning = false
-    @State private var displayRemaining: Int
+    @State private var tick: RestTimerTick
     @State private var lastPlayedSecond: Int = -1
+    /// Whether the zero-crossing alert (completion sound + haptic) has fired
+    /// for the current timer instance. Ensures it plays exactly once per
+    /// timer, not repeatedly on every overrun tick.
+    @State private var zeroAlertFired: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(SettingsStore.self) private var settingsStore
 
     init(totalSeconds: Int, onSkip: @escaping () -> Void) {
         self.totalSeconds = totalSeconds
         self.onSkip = onSkip
-        self._displayRemaining = State(initialValue: totalSeconds)
+        self._tick = State(initialValue: RestTimerTick.compute(totalSeconds: totalSeconds, elapsedSeconds: 0))
     }
 
-    private var progress: Double {
-        guard totalSeconds > 0 else { return 0 }
-        return Double(totalSeconds - displayRemaining) / Double(totalSeconds)
+    /// Color for the timer display. Amber once in overrun; primary while counting down.
+    private var timerColor: Color {
+        tick.isOverrun ? LiftMarkTheme.warning : LiftMarkTheme.primary
+    }
+
+    private var accessibilityTimerLabel: String {
+        if tick.isOverrun {
+            return "Rest timer, overrun by \(tick.overrunSeconds) seconds"
+        }
+        return "Rest timer, \(tick.remainingSeconds) seconds remaining"
     }
 
     var body: some View {
         HStack(spacing: LiftMarkTheme.spacingMD) {
             Spacer()
 
-            Text(formatTime(displayRemaining))
+            Text(tick.displayString)
                 .font(.title)
                 .fontWeight(.semibold)
                 .monospacedDigit()
-                .foregroundStyle(displayRemaining <= 0 ? LiftMarkTheme.success : LiftMarkTheme.primary)
-                .accessibilityLabel("Rest timer, \(displayRemaining) seconds remaining")
+                .foregroundStyle(timerColor)
+                .accessibilityLabel(accessibilityTimerLabel)
 
             Button {
                 stopTimer()
@@ -72,45 +90,39 @@ struct RestTimerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 recalculate()
-                // Restart tick timer aligned to second boundaries if still running
-                if isRunning && displayRemaining > 0 {
-                    timer?.invalidate()
-                    timer = nil
-                    let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
-                    let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
-                    timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
-                        recalculate()
-                        self.timer?.invalidate()
-                        self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                            recalculate()
-                        }
-                    }
+                // Restart tick timer aligned to second boundaries if still running.
+                // We keep ticking even in overrun so the display continues to update.
+                if isRunning {
+                    restartDisplayTick()
                 }
             }
         }
     }
 
     private func recalculate() {
-        let elapsed = Int(Date().timeIntervalSince(startDate))
-        let newRemaining = max(0, totalSeconds - elapsed)
-        let previousRemaining = displayRemaining
-        displayRemaining = newRemaining
+        let previousTick = tick
+        let newTick = RestTimerTick.compute(totalSeconds: totalSeconds, startDate: startDate, now: Date())
+        tick = newTick
 
-        // Play countdown sounds if enabled
-        if settingsStore.settings?.countdownSoundsEnabled == true && newRemaining != previousRemaining {
-            if newRemaining >= 1 && newRemaining <= 5 && lastPlayedSecond != newRemaining {
-                lastPlayedSecond = newRemaining
-                AudioService.shared.playTick()
-            }
-            if newRemaining == 0 && lastPlayedSecond != 0 {
-                lastPlayedSecond = 0
-                AudioService.shared.playComplete()
-            }
+        guard settingsStore.settings?.countdownSoundsEnabled == true else { return }
+
+        // Countdown ticks at 5..1 — only while still counting down.
+        if newTick.phase == .counting,
+           previousTick.remainingSeconds != newTick.remainingSeconds,
+           newTick.remainingSeconds >= 1,
+           newTick.remainingSeconds <= 5,
+           lastPlayedSecond != newTick.remainingSeconds {
+            lastPlayedSecond = newTick.remainingSeconds
+            AudioService.shared.playTick()
         }
 
-        if displayRemaining <= 0 && isRunning {
-            stopTimer()
-            onSkip()
+        // Zero-crossing completion alert: fire exactly once when we first
+        // observe the overrun phase for this timer instance. Do NOT re-trigger
+        // on subsequent overrun ticks — the alert represents "you hit zero",
+        // not "you are still past zero".
+        if newTick.isOverrun && !zeroAlertFired {
+            zeroAlertFired = true
+            AudioService.shared.playComplete()
         }
     }
 
@@ -118,11 +130,20 @@ struct RestTimerView: View {
         guard !isRunning else { return }
         startDate = Date()
         isRunning = true
+        zeroAlertFired = false
+        lastPlayedSecond = -1
+        tick = RestTimerTick.compute(totalSeconds: totalSeconds, elapsedSeconds: 0)
+        restartDisplayTick()
+    }
 
-        // Align to next whole-second boundary so countdown sounds fire precisely
+    /// Restart the 1-second display tick, aligned to the next whole-second boundary.
+    /// Used on initial start, scenePhase return-to-active, and whenever the
+    /// system may have invalidated the Timer.
+    private func restartDisplayTick() {
+        timer?.invalidate()
+        timer = nil
         let fractional = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
         let delayToNextSecond = fractional < 0.001 ? 1.0 : (1.0 - fractional)
-
         timer = Timer.scheduledTimer(withTimeInterval: delayToNextSecond, repeats: false) { _ in
             recalculate()
             self.timer?.invalidate()
@@ -136,15 +157,6 @@ struct RestTimerView: View {
         timer?.invalidate()
         timer = nil
         isRunning = false
-    }
-
-    private func formatTime(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        if m > 0 {
-            return String(format: "%d:%02d", m, s)
-        }
-        return "0:\(String(format: "%02d", s))"
     }
 }
 
