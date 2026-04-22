@@ -57,6 +57,7 @@ final class MigratorBridgeTests: XCTestCase {
         for key in keys {
             UserDefaults.standard.removeObject(forKey: key)
         }
+        MigratorBridgeFailure.clearPersisted()
     }
 
     // MARK: - Helpers
@@ -444,5 +445,52 @@ final class MigratorBridgeTests: XCTestCase {
         for name in contents where name.hasPrefix("pre-grdb-bridge.bak.db") {
             try? FileManager.default.removeItem(at: dir.appendingPathComponent(name))
         }
+    }
+
+    // MARK: - Failure persistence (PR 4, GH #95)
+
+    /// Future-version refusal must persist the future-version failure case with
+    /// the offending schema version so the launch alert can surface it.
+    func testFutureVersion_persistsFailureForAlertUI() throws {
+        let (loaded, queue, url) = try loadSeed(
+            ddl: DatabaseSeeds.v14SyntheticDDL,
+            data: DatabaseSeeds.v14SyntheticData
+        )
+        defer { DatabaseSeedLoader.cleanup(loaded) }
+
+        _ = try? MigratorBridge.runIfNeeded(on: queue, liveDBURL: url)
+
+        let persisted = MigratorBridgeFailure.loadPersisted()
+        XCTAssertEqual(persisted?.failure, .futureVersion)
+        XCTAssertEqual(persisted?.context.fromVersion, 14)
+    }
+
+    /// A successful bridge must clear a stale lastAttemptFailed + failure case
+    /// left by a prior failed launch — otherwise the alert keeps firing forever.
+    func testSuccessfulBridge_clearsPersistedFailure() throws {
+        // Simulate a prior failed launch.
+        MigratorBridgeFailure.persist(.backupFailed)
+        XCTAssertNotNil(MigratorBridgeFailure.loadPersisted())
+
+        let (loaded, queue, url) = try loadSeed(ddl: DatabaseSeeds.v13DDL, data: DatabaseSeeds.v13Data)
+        defer { DatabaseSeedLoader.cleanup(loaded) }
+        _ = try runBridgeAndLegacy(on: queue, liveDBURL: url)
+
+        XCTAssertNil(MigratorBridgeFailure.loadPersisted(),
+                     "successful bridge must clear stale failure state")
+    }
+
+    /// Fresh install path must also clear any stale failure record, since the
+    /// alert container keys off the persisted state regardless of how the DB
+    /// reached its current version.
+    func testFreshInstall_clearsPersistedFailure() throws {
+        MigratorBridgeFailure.persist(.bridgeWriteFailed)
+        XCTAssertNotNil(MigratorBridgeFailure.loadPersisted())
+
+        let (loaded, queue, url) = try makeEmptyDB()
+        defer { DatabaseSeedLoader.cleanup(loaded) }
+        _ = try MigratorBridge.runIfNeeded(on: queue, liveDBURL: url)
+
+        XCTAssertNil(MigratorBridgeFailure.loadPersisted())
     }
 }

@@ -83,6 +83,7 @@ enum MigratorBridge {
                 rowsInserted: 0,
                 durationMs: 0
             )
+            MigratorBridgeFailure.clearPersisted()
             return .skippedFreshInstall
         }
 
@@ -96,6 +97,10 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(
+                .futureVersion,
+                context: .init(fromVersion: initialState.legacyVersion)
+            )
             throw MigratorBridgeError.refusedFutureVersion(version: initialState.legacyVersion)
         }
 
@@ -108,6 +113,10 @@ enum MigratorBridge {
                     level: .error,
                     metadata: ["fromVersion": String(initialState.legacyVersion)],
                     dataIntegrityRisk: true
+                )
+                MigratorBridgeFailure.persist(
+                    .futureVersion,
+                    context: .init(fromVersion: initialState.legacyVersion)
                 )
                 throw MigratorBridgeError.refusedFutureVersion(version: initialState.legacyVersion)
             }
@@ -130,6 +139,7 @@ enum MigratorBridge {
             // Migrator pass is a no-op for already-bridged DBs at v13; safe to run.
             let migrator = Self.migrator
             try migrator.migrate(dbQueue)
+            MigratorBridgeFailure.clearPersisted()
             return .skippedAlreadyBridged
         }
 
@@ -178,7 +188,7 @@ enum MigratorBridge {
             durationMs: totalDurationMs
         )
         UserDefaults.standard.set(currentBuildNumber(), forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber)
-        UserDefaults.standard.set(false, forKey: MigratorBridgeBackup.UserDefaultsKey.lastAttemptFailed)
+        MigratorBridgeFailure.clearPersisted()
 
         return .bridged(fromVersion: fromVersion, rowsInserted: rowsInserted)
     }
@@ -203,6 +213,10 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(
+                .diskFull,
+                context: .init(requiredBytes: dbSize * 2, dbSizeBytes: dbSize)
+            )
             throw MigratorBridgeError.preflightFailed(reason: "disk_full")
         } catch MigratorBridgeBackup.BackupError.sourceIntegrityFailed(let output) {
             CrashReporter.shared.captureMigratorEvent(
@@ -213,6 +227,7 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(.integrityFailed)
             throw MigratorBridgeError.preflightFailed(reason: "integrity_failed")
         }
         CrashReporter.shared.addBreadcrumb("bridge.preflight.end", category: .database)
@@ -237,6 +252,7 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(.backupFailed)
             throw MigratorBridgeError.backupFailed(reason: "verification:\(step.rawValue)")
         } catch {
             CrashReporter.shared.captureMigratorEvent(
@@ -248,6 +264,7 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(.backupFailed)
             throw MigratorBridgeError.backupFailed(reason: "write_error")
         }
         CrashReporter.shared.addBreadcrumb("bridge.backup.end", category: .database)
@@ -286,6 +303,7 @@ enum MigratorBridge {
                 ],
                 dataIntegrityRisk: true
             )
+            MigratorBridgeFailure.persist(.bridgeWriteFailed)
             // Transaction rollback is primary defense; restore is the safety belt.
             attemptRestore(backupURL: backupURL, liveDBURL: liveDBURL)
             throw MigratorBridgeError.bridgeWriteFailed(underlying: error)
@@ -314,6 +332,7 @@ enum MigratorBridge {
                     ],
                     dataIntegrityRisk: true
                 )
+                MigratorBridgeFailure.persist(.fkViolation)
             } else {
                 CrashReporter.shared.captureMigratorEvent(
                     "migrator_post_bridge_migration_failed",
@@ -325,6 +344,7 @@ enum MigratorBridge {
                     ],
                     dataIntegrityRisk: true
                 )
+                MigratorBridgeFailure.persist(.postBridgeMigrationFailed)
             }
             attemptRestore(backupURL: backupURL, liveDBURL: liveDBURL)
             throw MigratorBridgeError.postBridgeMigrationFailed(underlying: error)

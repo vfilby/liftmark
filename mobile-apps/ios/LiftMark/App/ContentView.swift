@@ -16,6 +16,13 @@ struct ContentView: View {
     }
 
     var body: some View {
+        MigratorBridgeAlertContainer {
+            mainContent
+        }
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
         TabView(selection: Bindable(navCoordinator).selectedTab) {
             NavigationStack(path: $navCoordinator.homeNavPath) {
                 HomeView()

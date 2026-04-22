@@ -14,6 +14,19 @@ final class DatabaseManager: @unchecked Sendable {
 
     private init() {}
 
+    /// Resolves the live database file URL without opening a connection.
+    /// Exposed for diagnostic flows (e.g. the migrator bridge support-export action)
+    /// that need a path to share even when the DB can't be opened. Returns `nil` if
+    /// the Documents directory can't be resolved.
+    static func liveDatabaseURL() -> URL? {
+        guard let documentsURL = try? FileManager.default.url(
+            for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false
+        ) else { return nil }
+        return documentsURL
+            .appendingPathComponent("SQLite", isDirectory: true)
+            .appendingPathComponent(dbName)
+    }
+
     // MARK: - Public API
 
     /// Returns the database queue, creating/migrating if needed.
