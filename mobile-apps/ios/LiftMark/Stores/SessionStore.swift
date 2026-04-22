@@ -208,6 +208,35 @@ final class SessionStore {
         }
     }
 
+    /// Update notes on the currently active session. Reaches the DB layer so the
+    /// notes survive backgrounding/termination mid-session. Empty strings are
+    /// normalized to nil by the repository.
+    func updateActiveSessionNotes(_ notes: String?) {
+        guard let session = activeSession else { return }
+        do {
+            let changes = try repository.updateSessionNotes(session.id, notes: notes)
+            SyncChange.notifyAll(changes)
+            reloadActiveSession()
+        } catch {
+            lastError = error
+            Logger.shared.error(.database, "Failed to update active session notes", error: error)
+        }
+    }
+
+    /// Update notes on any session (typically a completed one from the history list).
+    func updateSessionNotes(sessionId: String, notes: String?) {
+        do {
+            let changes = try repository.updateSessionNotes(sessionId, notes: notes)
+            SyncChange.notifyAll(changes)
+            // Refresh the completed-sessions list so UIs bound to `sessions` see the update.
+            sessions = try repository.getCompleted()
+            lastError = nil
+        } catch {
+            lastError = error
+            Logger.shared.error(.database, "Failed to update session notes", error: error)
+        }
+    }
+
     func updateExercise(exerciseId: String, name: String, notes: String?, equipmentType: String?) {
         do {
             let changes = try repository.updateSessionExercise(exerciseId, name: name, notes: notes, equipmentType: equipmentType)

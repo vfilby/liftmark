@@ -1,10 +1,14 @@
 import SwiftUI
 
-/// Top bar for the active workout screen with pause, add, and finish controls.
+/// Top bar for the active workout screen with pause, add, notes, and finish controls.
 struct ActiveWorkoutHeader: View {
     let sessionName: String
+    /// True when the active session already has non-empty notes. Used to badge the
+    /// notes button so the user can see, at a glance, that notes exist.
+    var hasNotes: Bool = false
     let onPause: () -> Void
     let onAddExercise: () -> Void
+    let onNotes: () -> Void
     let onFinish: () -> Void
 
     var body: some View {
@@ -30,6 +34,15 @@ struct ActiveWorkoutHeader: View {
                 .lineLimit(1)
 
             Spacer()
+
+            Button {
+                onNotes()
+            } label: {
+                Image(systemName: hasNotes ? "note.text" : "square.and.pencil")
+            }
+            .accessibilityIdentifier("active-workout-notes-button")
+            .accessibilityLabel(hasNotes ? "Edit workout notes" : "Add workout notes")
+            .accessibilityHint("Opens a free-text editor for notes on this workout")
 
             Button {
                 onAddExercise()

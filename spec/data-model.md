@@ -105,7 +105,7 @@ An actual workout instance being performed or already completed. Created from a 
 | startTime | datetime | No | — | ISO 8601 |
 | endTime | datetime | No | — | ISO 8601, set on completion |
 | duration | number | No | — | Seconds, calculated on completion |
-| notes | string | No | — | User notes |
+| notes | string | No | — | Workout-level free-text notes. Editable mid-session, promptable at the finish screen, editable later from history. Whitespace-only input is normalized to null. See `spec/screens/active-workout.md`, `spec/screens/workout-summary.md`, `spec/screens/history-detail.md`, and GH #91. |
 | exercises | SessionExercise[] | Yes | [] | Ordered list of exercises |
 | status | SessionStatus | Yes | in_progress | Session lifecycle state |
 
@@ -113,6 +113,7 @@ An actual workout instance being performed or already completed. Created from a 
 - Only one session can have `status = in_progress` at a time.
 - `duration` is computed as `endTime - startTime` in seconds on completion.
 - Deleting a plan sets workoutPlanId to null (preserves session history).
+- `notes` belong to the session, not the plan. Editing session notes never mutates the source plan. LMWF export emits session notes as the workout-level freeform notes block (see `liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md` §Workout Header).
 
 ---
 

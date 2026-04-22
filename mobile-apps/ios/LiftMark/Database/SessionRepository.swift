@@ -639,6 +639,28 @@ struct SessionRepository {
         return changes
     }
 
+    /// Update the freeform notes on a workout session. Used for workout-level notes
+    /// captured during, at the end of, or after a session. Empty/whitespace-only input
+    /// is stored as NULL so there is a single canonical "no notes" state.
+    @discardableResult
+    func updateSessionNotes(_ sessionId: String, notes: String?) throws -> [SyncChange] {
+        let dbQueue = try dbManager.database()
+        let now = self.now
+        let normalized: String? = {
+            guard let trimmed = notes?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+                return nil
+            }
+            return trimmed
+        }()
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE workout_sessions SET notes = ?, updated_at = ? WHERE id = ?",
+                arguments: [normalized, now, sessionId]
+            )
+        }
+        return [.save(recordType: "WorkoutSession", recordID: sessionId)]
+    }
+
     @discardableResult
     func updateSessionExercise(_ exerciseId: String, name: String, notes: String?, equipmentType: String?) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()

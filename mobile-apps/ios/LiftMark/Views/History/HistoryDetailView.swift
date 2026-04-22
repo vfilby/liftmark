@@ -11,6 +11,7 @@ struct HistoryDetailView: View {
     @State private var exportErrorMessage = ""
     @State private var showExerciseHistory = false
     @State private var selectedExerciseName: String?
+    @State private var showNotesSheet = false
 
     private var session: WorkoutSession? {
         sessionStore.sessions.first { $0.id == sessionId }
@@ -69,22 +70,8 @@ struct HistoryDetailView: View {
                             }
                         }
 
-                        // Notes
-                        if let notes = session.notes, !notes.isEmpty {
-                            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
-                                Text("Notes")
-                                    .font(.callout)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.secondary)
-                                Text(notes)
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(LiftMarkTheme.secondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-                        }
+                        // Notes — editable later from history, per GH #91.
+                        notesCard(session)
 
                         // Delete button
                         Button(role: .destructive) {
@@ -138,6 +125,15 @@ struct HistoryDetailView: View {
             ShareSheet(items: [item.url])
         }
         #endif
+        .sheet(isPresented: $showNotesSheet) {
+            SessionNotesSheet(
+                initialNotes: session?.notes,
+                title: "Workout Notes",
+                onSave: { newNotes in
+                    sessionStore.updateSessionNotes(sessionId: sessionId, notes: newNotes)
+                }
+            )
+        }
         .alert("Export Failed", isPresented: $showExportError) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -210,6 +206,42 @@ struct HistoryDetailView: View {
         }
 
         return sections
+    }
+
+    // MARK: - Notes Card
+
+    @ViewBuilder
+    private func notesCard(_ session: WorkoutSession) -> some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+            HStack {
+                Text("Notes")
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(session.notes?.isEmpty ?? true ? "Add" : "Edit") {
+                    showNotesSheet = true
+                }
+                .font(.subheadline)
+                .accessibilityIdentifier("history-detail-notes-edit-button")
+            }
+
+            if let notes = session.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("No notes yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .italic()
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .accessibilityIdentifier("history-detail-notes-card")
     }
 
     // MARK: - Section Header

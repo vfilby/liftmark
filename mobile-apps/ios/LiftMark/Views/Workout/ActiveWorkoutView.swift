@@ -18,6 +18,7 @@ struct ActiveWorkoutView: View {
     @State private var restTimerGeneration: Int = 0
     @State private var lastInteractedExerciseId: String?
     @State private var completedSessionForSummary: WorkoutSession?
+    @State private var showNotesSheet = false
 
     private var session: WorkoutSession? { sessionStore.activeSession }
 
@@ -118,6 +119,15 @@ struct ActiveWorkoutView: View {
                 addExerciseFromMarkdown(markdown)
             })
         }
+        .sheet(isPresented: $showNotesSheet) {
+            SessionNotesSheet(
+                initialNotes: sessionStore.activeSession?.notes,
+                title: "Workout Notes",
+                onSave: { newNotes in
+                    sessionStore.updateActiveSessionNotes(newNotes)
+                }
+            )
+        }
         .sheet(item: $editingExercise) { exercise in
             EditExerciseSheet(
                 exercise: exercise,
@@ -144,11 +154,13 @@ struct ActiveWorkoutView: View {
     private var workoutHeader: some View {
         ActiveWorkoutHeader(
             sessionName: session?.name ?? "Workout",
+            hasNotes: !(session?.notes?.isEmpty ?? true),
             onPause: {
                 ActiveWorkoutViewModel.endLiveActivity(settings: settingsStore.settings, immediate: true)
                 dismiss()
             },
             onAddExercise: { showAddExercise = true },
+            onNotes: { showNotesSheet = true },
             onFinish: {
                 if isSkipHeavy {
                     showDiscardConfirm = true

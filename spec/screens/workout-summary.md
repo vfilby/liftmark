@@ -13,7 +13,8 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
   2. Workout Highlights (conditional — PRs, streaks, volume/weight increases)
   3. Stats grid (2x2: Duration, Sets Completed, Total Reps, Total Volume)
   4. Completion card (sets completed, sets skipped, completion rate %)
-  5. Exercise summary list (per-exercise set counts)
+  5. Notes card (pre-filled with any notes entered during the session; tappable "Add" / "Edit" button opens `SessionNotesSheet`)
+  6. Exercise summary list (per-exercise set counts)
 - **Footer**: Fixed "Done" button pinned to bottom
 
 ## UI Elements
@@ -27,6 +28,8 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 | Highlights section | `workout-summary-highlights` | View |
 | Stats grid | `workout-summary-stats` | View |
 | Completion card | `workout-summary-completion` | View |
+| Notes card | `workout-summary-notes` | View |
+| Notes edit button | `workout-summary-notes-edit-button` | Button |
 | Exercise list | `workout-summary-exercises` | View |
 | Done button | `workout-summary-done-button` | TouchableOpacity |
 
@@ -34,6 +37,7 @@ Post-workout celebration screen showing completion stats, highlights (PRs, strea
 - **Tap share button (header)** → exports completed session as JSON via `exportSingleSessionAsJson` → share sheet
 - **Tap "Done"** → clears session from store → navigates to `/(tabs)` (home)
 - **Tap YouTube icon** on exercise → opens YouTube search for that exercise
+- **Tap "Add" / "Edit" on Notes card** → opens `SessionNotesSheet`. Pre-filled with any notes captured during the session. Saving updates the completed session record via `SessionStore.updateSessionNotes`. Notes belong to the completed session; they never mutate the source plan.
 
 ## Navigation
 - `/(tabs)` — via Done button (uses `router.replace`)

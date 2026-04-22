@@ -12,7 +12,7 @@ Detailed view of a completed workout session showing date/time, stats, exercises
   1. Header card (date, time, duration)
   2. Stats grid (sets, reps, volume)
   3. Exercises section with expandable trend charts
-  4. Notes section (if present)
+  4. Notes card (always present; shows current notes or a "No notes yet." placeholder, with an "Add" / "Edit" button that opens `SessionNotesSheet`)
   5. Delete button (if onDelete provided)
 - **Overlay**: ExerciseHistoryBottomSheet (when viewing exercise details)
 
@@ -26,11 +26,14 @@ Detailed view of a completed workout session showing date/time, stats, exercises
 | Exercise card | `exercise-card-{exerciseName}` | View |
 | Delete button | `delete-session-button` | Button |
 | Share button | `share-session-button` | Button |
+| Notes card | `history-detail-notes-card` | View |
+| Notes edit button | `history-detail-notes-edit-button` | Button |
 
 ## User Interactions
 - **Tap share button (header)** → exports single session as JSON → share sheet
 - **Tap "Show trends" toggle** on exercise → expands/collapses inline ExerciseHistoryChart
 - **Tap "Details" button** under chart → opens ExerciseHistoryBottomSheet
+- **Tap "Add" / "Edit" on Notes card** → opens `SessionNotesSheet`. Saving updates the session via `SessionStore.updateSessionNotes`. This is the "edit later" entry point described in GH #91; users can revisit notes as many times as they want. Empty / whitespace-only input is normalized to nil.
 - **Tap "Delete Workout"** → confirmation alert → deletes session → navigates back
 
 ## Navigation

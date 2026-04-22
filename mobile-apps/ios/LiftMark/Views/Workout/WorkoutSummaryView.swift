@@ -78,6 +78,11 @@ struct WorkoutSummaryView: View {
     @State private var exportFileItem: ExportFile?
     @State private var showExportError = false
     @State private var exportErrorMessage = ""
+    @State private var showNotesSheet = false
+    /// Local override for the session's notes: the completed session is passed in as
+    /// a value and we don't need to round-trip through the store to show the latest text.
+    @State private var notesOverride: String?
+    @State private var notesOverrideSet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -220,6 +225,9 @@ struct WorkoutSummaryView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Completion: \(completedSets) completed, \(skippedSets) skipped, \(Int(completionRate * 100)) percent rate")
 
+                    // Notes card — prompts the user to add notes on the just-finished workout.
+                    notesCard
+
                     // Exercise Summary
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Exercises")
@@ -292,11 +300,65 @@ struct WorkoutSummaryView: View {
         .sheet(item: $exportFileItem) { item in
             ShareSheet(items: [item.url])
         }
+        .sheet(isPresented: $showNotesSheet) {
+            SessionNotesSheet(
+                initialNotes: currentNotes,
+                title: "Workout Notes",
+                onSave: { newNotes in
+                    notesOverride = newNotes
+                    notesOverrideSet = true
+                    if let sid = session?.id {
+                        sessionStore.updateSessionNotes(sessionId: sid, notes: newNotes)
+                    }
+                }
+            )
+        }
         .alert("Export Failed", isPresented: $showExportError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(exportErrorMessage)
         }
+    }
+
+    // MARK: - Notes
+
+    /// The most-recent notes to show/edit: prefer the local override (if the user
+    /// has edited on this screen), else the session's persisted notes.
+    private var currentNotes: String? {
+        if notesOverrideSet { return notesOverride }
+        return session?.notes
+    }
+
+    @ViewBuilder
+    private var notesCard: some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            HStack {
+                Text("Notes")
+                    .font(.headline)
+                Spacer()
+                Button(currentNotes?.isEmpty ?? true ? "Add" : "Edit") {
+                    showNotesSheet = true
+                }
+                .font(.subheadline)
+                .accessibilityIdentifier("workout-summary-notes-edit-button")
+            }
+
+            if let notes = currentNotes, !notes.isEmpty {
+                Text(notes)
+                    .font(.body)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("How did this workout feel? Capture any notes while it's fresh.")
+                    .font(.subheadline)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding()
+        .background(LiftMarkTheme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+        .accessibilityIdentifier("workout-summary-notes")
     }
 
     // MARK: - Highlights Computation

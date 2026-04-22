@@ -7,7 +7,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 `/workout/active` — Navigated to after starting or resuming a workout.
 
 ## Layout
-- **Header**: Custom header with Pause button (left), workout name (center), Add Exercise button + Finish button (right)
+- **Header**: Custom header with Pause button (left), workout name (center), Notes button + Add Exercise button + Finish button (right). The Notes button is persistently reachable at all times during the session — the user should never lose a thought because they can't find the field.
 - **Progress bar**: Below header showing completed/total sets
 - **Body**: ScrollView of exercise sections, each containing SetRow components
 - **Modals**: EditExerciseModal, AddExerciseModal (overlaid)
@@ -19,6 +19,7 @@ Primary workout execution screen. Displays all exercises and sets for the active
 | Screen container | `active-workout-screen` | View |
 | Header | `active-workout-header` | View |
 | Pause button | `active-workout-pause-button` | TouchableOpacity |
+| Notes button | `active-workout-notes-button` | Button |
 | Add exercise button | `active-workout-add-exercise-button` | TouchableOpacity |
 | Finish button | `active-workout-finish-button` | TouchableOpacity |
 | Progress section | `active-workout-progress` | View |
@@ -29,6 +30,14 @@ Primary workout execution screen. Displays all exercises and sets for the active
 | YouTube link | `youtube-link-{exerciseName}` | Link |
 
 ## User Interactions
+
+### Workout Notes (GH #91)
+- **Tap Notes button in header** → opens `SessionNotesSheet` pre-filled with the current session's notes.
+- Notes are plain free text — no tags, structured fields, or auto-summarization.
+- Notes belong to the *completed session record* and never mutate the source plan.
+- Saving persists immediately via `SessionStore.updateActiveSessionNotes`, so notes survive app backgrounding or termination mid-session.
+- The notes button icon changes to indicate whether notes already exist (`note.text` when present, `square.and.pencil` when empty).
+- Empty / whitespace-only input is normalized to `nil` at the repository layer.
 
 ### Set Completion
 - **Tap current set** → no-op (already expanded)

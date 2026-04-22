@@ -63,7 +63,9 @@ Every workout follows this hierarchical structure:
 ### Optional Metadata
 - `@tags: [tag1, tag2, ...]` - Comma-separated tags for organization
 - `@units: [lbs|kg]` - Default weight unit for this workout (if not specified on individual sets)
-- **Freeform notes**: Any text after the header (before first exercise) is treated as workout notes
+- **Freeform notes**: Any text after the header (before first exercise) is treated as workout notes.
+  - For **workout plans** (templates): these are planning / coaching notes authored up front.
+  - For **completed session exports** (LMWF export of a finished workout): these are the user's free-text notes on the session — how it felt, energy, soreness, PR context, etc. The same syntax is used for both; the semantics are determined by the document's role, not by a separate modifier. This keeps LMWF a single canonical format and lets a completed session round-trip through parse → encode → parse cleanly.
 
 ### Examples
 
