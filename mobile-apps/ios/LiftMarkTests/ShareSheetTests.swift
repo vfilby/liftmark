@@ -37,8 +37,12 @@ final class ShareSheetTests: XCTestCase {
         let exportURL = try DatabaseBackupService.exportDatabase()
         defer { try? FileManager.default.removeItem(at: exportURL) }
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: exportURL.path),
-            "exportDatabase() must produce a file that exists on disk before returning — the share sheet presenter hands this URL to UIActivityViewController and the file must be readable immediately.")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: exportURL.path),
+            "exportDatabase() must produce a file that exists on disk before returning — the share"
+            + " sheet presenter hands this URL to UIActivityViewController and the file must be"
+            + " readable immediately."
+        )
 
         let attrs = try FileManager.default.attributesOfItem(atPath: exportURL.path)
         let size = attrs[.size] as? Int ?? 0
