@@ -171,7 +171,7 @@ Tapping "Export Database" creates a timestamped copy of the database and present
 3. On success: presents a share sheet (`UIActivityViewController`) with the exported file URL
 4. On failure: shows an alert with the error message
 
-**Share sheet binding**: All share sheets must use the `sheet(item:)` pattern with an identifiable wrapper (e.g., `ExportFile`) instead of `sheet(isPresented:)` with a separate optional URL. This ensures the sheet only opens when the URL is fully ready, preventing blank share sheets on first tap.
+**Share sheet presentation**: All file-export share sheets must use the `.shareSheet(item: Binding<ExportFile?>)` view modifier (see `Views/Shared/ShareSheet.swift`). The modifier presents `UIActivityViewController` directly on the key window's top-most view controller instead of wrapping it in a SwiftUI `.sheet`. Wrapping `UIActivityViewController` in a `UIHostingController` via `UIViewControllerRepresentable` causes a blank-sheet race on first tap (GH #70) because the activity VC's extension-service introspection runs concurrently with the hosting controller's transition. Direct UIKit presentation also defers one runloop tick so any pending file writes flush before iOS reads the URL for type/preview info. Callers set an `@State var exportFile: ExportFile?` and apply `.shareSheet(item: $exportFile)`; setting `exportFile = ExportFile(url: url)` after the file is written triggers presentation, and the binding is cleared on dismissal.
 
 **UI elements:**
 

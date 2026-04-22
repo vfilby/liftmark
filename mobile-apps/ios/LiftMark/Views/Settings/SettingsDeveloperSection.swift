@@ -19,9 +19,7 @@ struct SettingsDeveloperSection: View {
             }
             .accessibilityIdentifier("export-database-button")
         }
-        .sheet(item: $exportFile) { file in
-            ShareSheet(items: [file.url])
-        }
+        .shareSheet(item: $exportFile)
         .alert("Export Error", isPresented: $showExportError) {
             Button("OK", role: .cancel) {}
         } message: {

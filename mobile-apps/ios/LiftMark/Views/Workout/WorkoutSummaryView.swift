@@ -297,9 +297,7 @@ struct WorkoutSummaryView: View {
                 .accessibilityHint("Exports workout data for sharing")
             }
         }
-        .sheet(item: $exportFileItem) { item in
-            ShareSheet(items: [item.url])
-        }
+        .shareSheet(item: $exportFileItem)
         .sheet(isPresented: $showNotesSheet) {
             SessionNotesSheet(
                 initialNotes: currentNotes,

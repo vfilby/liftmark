@@ -86,12 +86,8 @@ struct HistoryView: View {
             Text(exportError ?? "")
         }
         #if os(iOS)
-        .sheet(item: $exportFile) { file in
-            ShareSheet(items: [file.url])
-        }
-        .sheet(item: $singleExportFile) { file in
-            ShareSheet(items: [file.url])
-        }
+        .shareSheet(item: $exportFile)
+        .shareSheet(item: $singleExportFile)
         #endif
         .navigationDestination(for: AppDestination.self) { destination in
             switch destination {

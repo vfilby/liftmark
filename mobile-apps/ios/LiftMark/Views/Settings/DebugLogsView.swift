@@ -105,9 +105,7 @@ struct DebugLogsView: View {
         } message: {
             Text("Are you sure you want to clear all debug logs?")
         }
-        .sheet(item: $shareFile) { file in
-            ShareSheet(items: [file.url])
-        }
+        .shareSheet(item: $shareFile)
         .onAppear {
             loadLogs()
         }

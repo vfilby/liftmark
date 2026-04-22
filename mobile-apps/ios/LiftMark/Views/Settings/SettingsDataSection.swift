@@ -169,9 +169,7 @@ struct DatabaseBackupModifiers: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .sheet(item: $exportFile) { file in
-                ShareSheet(items: [file.url])
-            }
+            .shareSheet(item: $exportFile)
             .fileImporter(
                 isPresented: $showImportSheet,
                 allowedContentTypes: [.json, .database, .data],

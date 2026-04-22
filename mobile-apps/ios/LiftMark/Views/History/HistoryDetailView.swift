@@ -121,9 +121,7 @@ struct HistoryDetailView: View {
             Text("Are you sure you want to delete this workout? This cannot be undone.")
         }
         #if os(iOS)
-        .sheet(item: $exportFileItem) { item in
-            ShareSheet(items: [item.url])
-        }
+        .shareSheet(item: $exportFileItem)
         #endif
         .sheet(isPresented: $showNotesSheet) {
             SessionNotesSheet(

@@ -47,9 +47,7 @@ struct MigratorBridgeAlertContainer<Content: View>: View {
                     }
             }
         }
-        .sheet(item: $exportFile) { file in
-            ShareSheet(items: [file.url])
-        }
+        .shareSheet(item: $exportFile)
     }
 
     private var alertBinding: Binding<Bool> {
