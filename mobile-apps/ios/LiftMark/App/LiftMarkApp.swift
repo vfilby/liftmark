@@ -28,10 +28,40 @@ struct LiftMarkApp: App {
 
         Self.seedMigratorFailureFromLaunchArgs()
 
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--seed-sample-plans") {
+            Self.seedSamplePlans()
+        }
+        #endif
+
         if !Self.isRunningTests {
             CrashReporter.shared.start()
         }
     }
+
+    #if DEBUG
+    /// Dev-only seeder: reads every `.md` file from `Documents/SampleFixtures/`,
+    /// parses via `MarkdownParser`, and saves via `WorkoutPlanRepository`. Intended
+    /// to be paired with `--reset-data` to quickly populate a simulator.
+    private static func seedSamplePlans() {
+        guard let documentsURL = try? FileManager.default.url(
+            for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false
+        ) else { return }
+        let fixturesDir = documentsURL.appendingPathComponent("SampleFixtures", isDirectory: true)
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: fixturesDir, includingPropertiesForKeys: nil
+        ) else { return }
+
+        let repository = WorkoutPlanRepository()
+        for url in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
+            where url.pathExtension.lowercased() == "md" {
+            guard let markdown = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            let result = MarkdownParser.parseWorkout(markdown)
+            guard result.success, let plan = result.data else { continue }
+            _ = try? repository.create(plan)
+        }
+    }
+    #endif
 
     /// Test seam: `--seed-migrator-failure <case>` lets UI tests pre-populate the
     /// migrator bridge's failure state so the boot-time alert/stall flow is exercisable
