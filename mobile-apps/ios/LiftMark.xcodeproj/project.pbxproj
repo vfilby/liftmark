@@ -64,6 +64,7 @@
 		546AE7E2A848F9BC65C17886 /* ExerciseHistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB64AAA0256291C97FA9D19B /* ExerciseHistoryChartView.swift */; };
 		55C41D670ADEC7A15EB4EFAA /* NavigationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83446B2AFC5D21A415A51FA /* NavigationCoordinator.swift */; };
 		56616E490E58C9F25A205274 /* LiftMarkUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAA5808AEA3816FAC1B69639 /* LiftMarkUITests.swift */; };
+		575D00310F4D056AE30775AA /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 90826DB9F2BC18668081C8B3 /* Logging */; };
 		57F4F3CDD8CB3F4716902824 /* complete.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9E064AE978D172E88F26E1DF /* complete.mp3 */; };
 		589768848F8054BCABF48594 /* ShareSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E207DFAAFEC931BC9C910783 /* ShareSheetTests.swift */; };
 		5A42ABE16700DB181A6DF24D /* WorkoutHighlightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C597DD1B866C5E697491391 /* WorkoutHighlightsService.swift */; };
@@ -441,6 +442,7 @@
 			files = (
 				39D05647DD77A9B90DD4730C /* GRDB in Frameworks */,
 				6C719CD2D4AEF2D0928096A2 /* Sentry in Frameworks */,
+				575D00310F4D056AE30775AA /* Logging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -900,6 +902,7 @@
 			packageProductDependencies = (
 				9BACEAB18D55AF17C12768D1 /* GRDB */,
 				6D124AFE5C66ABF0FB74FBC2 /* Sentry */,
+				90826DB9F2BC18668081C8B3 /* Logging */,
 			);
 			productName = LiftMark;
 			productReference = 1376C535AFA86CB726E7F73F /* LiftMark.app */;
@@ -971,6 +974,7 @@
 				1D73A9B434A0EEBB9CB11EF6 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				7240415DD379DA1A73C42ABC /* XCRemoteSwiftPackageReference "Yams" */,
+				C21050608BE79B97D9DAA152 /* XCRemoteSwiftPackageReference "swift-log" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -1642,6 +1646,14 @@
 				minimumVersion = 5.1.0;
 			};
 		};
+		C21050608BE79B97D9DAA152 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
 		E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
@@ -1662,6 +1674,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
+		};
+		90826DB9F2BC18668081C8B3 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C21050608BE79B97D9DAA152 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
 		};
 		9BACEAB18D55AF17C12768D1 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -1,5 +1,5 @@
 {
-  "originHash" : "17c16ca2a6cfee445cb03fe03ff33bd45eec853074d216098768c12d2af1d95b",
+  "originHash" : "d7be2b67b29d6f859608b36408a13de6cd0a6f4febc5d8345a03454e45997522",
   "pins" : [
     {
       "identity" : "grdb.swift",
@@ -20,12 +20,12 @@
       }
     },
     {
-      "identity" : "yams",
+      "identity" : "swift-log",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/Yams.git",
+      "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "3d6871d5b4a5cd519adf233fbb576e0a2af71c17",
-        "version" : "5.4.0"
+        "revision" : "5073617dac96330a486245e4c0179cb0a6fd2256",
+        "version" : "1.12.0"
       }
     }
   ],

@@ -11,6 +11,11 @@ struct LiftMarkApp: App {
     @State private var pendingImportContent: String? = Self.importContentFromLaunchArgs()
 
     init() {
+        // Wire swift-log to the SQLite-backed handler before anything else logs.
+        // Must precede Logger.shared access so the one-shot LoggingSystem.bootstrap
+        // happens here rather than from whichever call site logs first.
+        LiftMarkLogging.bootstrap()
+
         // Reset data before any views load (for test isolation)
         if ProcessInfo.processInfo.arguments.contains("--reset-data") {
             DatabaseManager.shared.deleteDatabase()

@@ -23,6 +23,9 @@ packages:
   Yams:
     url: https://github.com/jpsim/Yams.git
     from: "5.1.0"
+  swift-log:
+    url: https://github.com/apple/swift-log.git
+    from: "1.5.0"
 
 targets:
   LiftMark:
@@ -117,6 +120,8 @@ targets:
       - package: GRDB
       - package: Sentry
         product: Sentry
+      - package: swift-log
+        product: Logging
       - target: LiveWorkouts
     entitlements:
       path: LiftMark/LiftMark.entitlements

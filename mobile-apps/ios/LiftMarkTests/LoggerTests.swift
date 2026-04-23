@@ -1,5 +1,6 @@
 import XCTest
 import GRDB
+import Logging
 @testable import LiftMark
 
 /// Tests for the Logger service.
@@ -275,6 +276,66 @@ final class LoggerTests: XCTestCase {
             let match = logs.first { $0.message == "\(tag)-\(category.rawValue)" }
             XCTAssertNotNil(match, "Should be able to log with category \(category.rawValue)")
         }
+    }
+
+    // MARK: - swift-log facade (GH #93)
+
+    /// Verifies an idiomatic swift-log call round-trips through `SQLiteLogHandler`
+    /// and lands in the SQLite `app_logs` table with the correct category (mapped
+    /// from the label), level, and metadata.
+    func testSwiftLogRoundTripsToSQLiteStore() {
+        // Ensure bootstrap ran; Logger.shared.init() triggers it, and it's idempotent.
+        _ = Logger.shared
+        LiftMarkLogging.bootstrap()
+
+        let tag = prefix("swiftlog")
+        var logger = Logging.Logger(label: LogCategory.sync.loggerLabel)
+        logger.logLevel = .debug
+        logger.warning(Logging.Logger.Message(stringLiteral: tag), metadata: ["custom_key": "custom_value"])
+
+        let logs = waitForLog(tag, level: .warn, category: .sync)
+        let match = logs.first { $0.message == tag }
+        XCTAssertNotNil(match, "Log sent via swift-log should land in the SQLite store")
+        XCTAssertEqual(match?.level, .warn)
+        XCTAssertEqual(match?.category, .sync, "Label `liftmark.sync` should round-trip to .sync category")
+        XCTAssertEqual(match?.metadata?["custom_key"], "custom_value", "Caller metadata must be preserved")
+        XCTAssertNotNil(match?.metadata?["file"], "Handler must record call-site file")
+        XCTAssertNotNil(match?.metadata?["function"], "Handler must record call-site function")
+        XCTAssertNotNil(match?.metadata?["line"], "Handler must record call-site line")
+    }
+
+    /// Verifies `LiftMarkLogging.logger(_:)` produces a logger whose output also
+    /// round-trips — this is the idiomatic call-site helper for new code.
+    func testLiftMarkLoggingHelperRoundTrips() {
+        _ = Logger.shared
+        LiftMarkLogging.bootstrap()
+
+        let tag = prefix("helper")
+        var logger = LiftMarkLogging.logger(.navigation)
+        logger.logLevel = .debug
+        logger.info(Logging.Logger.Message(stringLiteral: tag))
+
+        let logs = waitForLog(tag, level: .info, category: .navigation)
+        XCTAssertNotNil(logs.first { $0.message == tag })
+    }
+
+    /// Unknown labels must bucket to `.app` with the original label preserved
+    /// in metadata, so third-party packages that bootstrap their own labels
+    /// don't corrupt `DebugLogsView` category filters.
+    func testUnknownLabelBucketsToAppCategory() {
+        _ = Logger.shared
+        LiftMarkLogging.bootstrap()
+
+        let tag = prefix("unknown")
+        var logger = Logging.Logger(label: "com.third-party.weird-label")
+        logger.logLevel = .debug
+        logger.info(Logging.Logger.Message(stringLiteral: tag))
+
+        let logs = waitForLog(tag, category: .app)
+        let match = logs.first { $0.message == tag }
+        XCTAssertNotNil(match, "Unknown labels should still persist")
+        XCTAssertEqual(match?.category, .app)
+        XCTAssertEqual(match?.metadata?["logger_label"], "com.third-party.weird-label")
     }
 
     // MARK: - All Levels Writable

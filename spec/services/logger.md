@@ -4,6 +4,15 @@
 
 Structured logging service with persistent SQLite storage for diagnosing issues in production and TestFlight builds where console access is not available. Provides log export for user-submitted bug reports.
 
+## Facade / Backend
+
+As of GH #93 the iOS implementation is a facade over [apple/swift-log](https://github.com/apple/swift-log). The SQLite store and public `Logger.shared` API are unchanged, but every log call is routed through `LoggingSystem`, with `SQLiteLogHandler: LogHandler` providing persistence.
+
+- **Bootstrap:** `LiftMarkLogging.bootstrap()` calls `LoggingSystem.bootstrap { label in SQLiteLogHandler(label: label) }` exactly once at app launch (invoked from `LiftMarkApp.init()`). Bootstrap is idempotent and safe to call from tests.
+- **Category mapping:** category → swift-log label via `LogCategory.loggerLabel` (`liftmark.<raw>`). `SQLiteLogHandler` parses the label back via `LogCategory.fromLabel`, so `DebugLogsView` category filters operate on the same `category` column as before. Unknown labels bucket to `.app` with the original label preserved in metadata under `logger_label`.
+- **Metadata preservation:** `SQLiteLogHandler` merges handler-level + call-site metadata and always adds `source`, `file` (basename), `function`, `line`. The merged dict is JSON-encoded into the `metadata` column. A metadata key `error` (set by `Logger.error(category:message:error:)`) is extracted into the `stack_trace` column.
+- **GRDB routing (opt-in):** When `LIFTMARK_SQL_TRACE=1` is in the process environment, GRDB's `Configuration.prepareDatabase` attaches `db.trace(options: .statement) { grdbLogger.debug(…) }` with `grdbLogger = Logger(label: "liftmark.database")`. Statements touching `app_logs` are filtered to prevent recursive inserts. Default is off to avoid noise and feedback loops.
+
 ## Public API
 
 The logger is a **singleton** instance. All methods are called on the shared instance.
@@ -121,6 +130,7 @@ Table: `app_logs`
 
 - A unit test must verify that calling `Logger.shared.debug(...)` does not cause a crash or deadlock when invoked from any context.
 - A unit test must verify that log entries written asynchronously are eventually persisted to the database.
+- A unit test must verify that logs sent through an idiomatic swift-log `Logger(label: "liftmark.<category>")` round-trip into the SQLite store with the correct category, level, and metadata (source/file/function/line plus caller-provided keys).
 
 ## Error Handling
 

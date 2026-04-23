@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import Logging
 
 /// Manages the SQLite database using GRDB, including migrations.
 /// Schema matches the React Native app exactly (see spec/data/database-schema.md).
@@ -44,7 +45,30 @@ final class DatabaseManager: @unchecked Sendable {
         try fileManager.createDirectory(at: sqliteDir, withIntermediateDirectories: true)
 
         let dbPath = sqliteDir.appendingPathComponent(Self.dbName).path
-        let dbQueue = try DatabaseQueue(path: dbPath)
+
+        // Route GRDB statement/profile events through swift-log so SQL traffic
+        // can land in the same SQLite `app_logs` store as the rest of the app.
+        //
+        // Opt-in via the `LIFTMARK_SQL_TRACE=1` environment variable — otherwise
+        // tracing every SQL statement creates an infinite feedback loop
+        // (each log INSERT fires a trace → writes another log row → another trace…).
+        // Also skips statements that touch `app_logs` itself as belt-and-suspenders
+        // protection if a developer enables the flag.
+        var configuration = Configuration()
+        if ProcessInfo.processInfo.environment["LIFTMARK_SQL_TRACE"] == "1" {
+            configuration.prepareDatabase { db in
+                // `liftmark.database` label routes to the `.database` category via
+                // SQLiteLogHandler.fromLabel, matching DebugLogsView's existing filter.
+                var grdbLogger = Logging.Logger(label: LogCategory.database.loggerLabel)
+                grdbLogger.logLevel = .debug
+                db.trace(options: .statement) { event in
+                    let desc = "\(event)"
+                    if desc.contains("app_logs") { return }
+                    grdbLogger.debug(Logging.Logger.Message(stringLiteral: desc))
+                }
+            }
+        }
+        let dbQueue = try DatabaseQueue(path: dbPath, configuration: configuration)
 
         try dbQueue.write { db in
             try db.execute(sql: "PRAGMA foreign_keys = ON")
