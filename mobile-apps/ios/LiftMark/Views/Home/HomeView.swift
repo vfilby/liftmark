@@ -140,12 +140,11 @@ struct HomeView: View {
             } label: {
                 Label("Create Plan", systemImage: "plus")
                     .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(LiftMarkTheme.primary)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
             .accessibilityIdentifier("button-import-workout")
             .padding(.horizontal)
             .padding(.bottom, LiftMarkTheme.spacingSM)

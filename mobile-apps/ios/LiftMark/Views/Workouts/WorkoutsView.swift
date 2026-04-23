@@ -313,14 +313,26 @@ struct WorkoutsView: View {
             if showEquipmentFilter {
                 NavigationLink(value: AppDestination.gymDetail(id: selectedGymId ?? "")) {
                     Text("Set Up Equipment")
+                        .font(.headline)
+                        .padding(.horizontal, LiftMarkTheme.spacingLG)
+                        .padding(.vertical, LiftMarkTheme.spacingXS)
                 }
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
                 .accessibilityIdentifier("button-setup-equipment")
             } else if planStore.plans.isEmpty {
-                Button("Import Plan") {
+                Button {
                     showImport = true
+                } label: {
+                    Text("Import Plan")
+                        .font(.headline)
+                        .padding(.horizontal, LiftMarkTheme.spacingLG)
+                        .padding(.vertical, LiftMarkTheme.spacingXS)
                 }
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
                 .accessibilityIdentifier("button-import-empty")
             }
 

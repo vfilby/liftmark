@@ -84,6 +84,8 @@ struct ActiveWorkoutFooter: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
             .accessibilityIdentifier("active-workout-add-exercise-button")
             .accessibilityLabel("Add exercise")
             .accessibilityHint("Opens a sheet to add a new exercise to this workout")
@@ -100,6 +102,8 @@ struct ActiveWorkoutFooter: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
             .accessibilityIdentifier("active-workout-footer-finish-button")
             .accessibilityLabel("End workout")
             .accessibilityHint("Completes and saves the workout session")
