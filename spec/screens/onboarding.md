@@ -22,7 +22,7 @@ Welcome new users and present a legal disclaimer that must be accepted before us
 
 A short paragraph explaining what the app does:
 
-> LiftMark keeps your workout plans as plain markdown — files you can read, edit, and share. Log your sets during sessions and keep a portable history of your training, ready for any text editor or AI assistant.
+> LiftMark helps you track your workouts using plain markdown — putting you in control of your plans and your data. Log your sets during sessions and keep a portable history of your training, ready for any text editor or AI assistant.
 
 ### Disclaimer Section — Scrollable
 

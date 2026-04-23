@@ -24,7 +24,8 @@ struct OnboardingView: View {
 
                     // Brief explanation
                     Text(
-                        "LiftMark keeps your workout plans as plain markdown — files you can read, edit, and share. "
+                        "LiftMark helps you track your workouts using plain markdown — "
+                        + "putting you in control of your plans and your data. "
                         + "Log your sets during sessions and keep a portable history of your training, "
                         + "ready for any text editor or AI assistant."
                     )
