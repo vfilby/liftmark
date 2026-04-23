@@ -254,7 +254,7 @@ final class SessionStoreTests: XCTestCase {
 
         store.addExercise(
             exerciseName: "Curls",
-            sets: [(weight: 40, unit: .lbs, reps: 12, time: nil, rest: nil)]
+            sets: [SessionSetDraft(weight: 40, unit: .lbs, reps: 12, time: nil, rest: nil)]
         )
 
         XCTAssertEqual(store.activeSession?.exercises.count, 1)
@@ -265,7 +265,7 @@ final class SessionStoreTests: XCTestCase {
         let plan = WorkoutPlan(name: "Test")
         try planRepo.create(plan)
         _ = store.startSession(from: plan)
-        store.addExercise(exerciseName: "Curls", sets: [(weight: 40, unit: .lbs, reps: 12, time: nil, rest: nil)])
+        store.addExercise(exerciseName: "Curls", sets: [SessionSetDraft(weight: 40, unit: .lbs, reps: 12, time: nil, rest: nil)])
         let exId = store.activeSession!.exercises[0].id
 
         store.updateExercise(exerciseId: exId, name: "Hammer Curls", notes: "Slow", equipmentType: "dumbbell")

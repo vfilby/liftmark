@@ -153,7 +153,7 @@ enum ActiveWorkoutViewModel {
 
     // MARK: - Markdown Parsing
 
-    static func parseExerciseFromMarkdown(_ markdown: String) -> (name: String, sets: [(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?, rest: Int?)])? {
+    static func parseExerciseFromMarkdown(_ markdown: String) -> (name: String, sets: [SessionSetDraft])? {
         // LMWF requires a `# Workout` header, but the Add Exercise sheet accepts a single
         // exercise block (`## Name` + sets). Prepend a synthetic workout header when missing
         // so the full-workout parser can handle the fragment.
@@ -169,9 +169,15 @@ enum ActiveWorkoutViewModel {
             Logger.shared.warn(.app, "Add Exercise markdown failed to parse: \(result.errors.joined(separator: "; "))")
             return nil
         }
-        let sets = firstExercise.sets.map { set in
+        let sets = firstExercise.sets.map { set -> SessionSetDraft in
             let target = set.entries.first?.target
-            return (weight: target?.weight?.value, unit: target?.weight?.unit, reps: target?.reps, time: target?.time, rest: set.restSeconds)
+            return SessionSetDraft(
+                weight: target?.weight?.value,
+                unit: target?.weight?.unit,
+                reps: target?.reps,
+                time: target?.time,
+                rest: set.restSeconds
+            )
         }
         return (name: firstExercise.exerciseName, sets: sets)
     }

@@ -23,7 +23,11 @@ struct OnboardingView: View {
                     .padding(.top, 48)
 
                     // Brief explanation
-                    Text("LiftMark keeps your workout plans as plain markdown — files you can read, edit, and share. Log your sets during sessions and keep a portable history of your training, ready for any text editor or AI assistant.")
+                    Text(
+                        "LiftMark keeps your workout plans as plain markdown — files you can read, edit, and share. "
+                        + "Log your sets during sessions and keep a portable history of your training, "
+                        + "ready for any text editor or AI assistant."
+                    )
                         .font(.body)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)

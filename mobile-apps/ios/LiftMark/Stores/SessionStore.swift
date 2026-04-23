@@ -1,5 +1,16 @@
 import Foundation
 
+/// Draft values for a new session set — used when adding an exercise mid-workout from
+/// parsed LMWF or the Edit Exercise sheet. Named struct (rather than a tuple) so the
+/// shape can carry rest without tripping SwiftLint's `large_tuple` rule.
+struct SessionSetDraft {
+    let weight: Double?
+    let unit: WeightUnit?
+    let reps: Int?
+    let time: Int?
+    let rest: Int?
+}
+
 @MainActor
 @Observable
 final class SessionStore {
@@ -146,7 +157,7 @@ final class SessionStore {
         }
     }
 
-    func addExercise(exerciseName: String, sets: [(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?, rest: Int?)]) {
+    func addExercise(exerciseName: String, sets: [SessionSetDraft]) {
         guard let session = activeSession else { return }
         do {
             var allChanges: [SyncChange] = []
