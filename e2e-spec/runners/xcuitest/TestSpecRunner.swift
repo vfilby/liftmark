@@ -1,5 +1,94 @@
 import XCTest
 import Foundation
+import Yams
+
+// MARK: - YAML Value
+
+/// Lightweight YAML value wrapper used by the E2E scenario runner.
+///
+/// Parsing is delegated to [Yams](https://github.com/jpsim/Yams); this enum
+/// preserves the keyed-subscript API (`yaml["name"]`) and typed accessors
+/// (`.stringValue`, `.intValue`, …) used throughout the runner.
+enum YAMLValue {
+    case string(String)
+    case int(Int)
+    case bool(Bool)
+    case array([YAMLValue])
+    case dictionary([(String, YAMLValue)])  // ordered pairs
+    case null
+
+    var stringValue: String? {
+        switch self {
+        case .string(let s): return s
+        case .int(let i): return String(i)
+        case .bool(let b): return b ? "true" : "false"
+        default: return nil
+        }
+    }
+
+    var intValue: Int? {
+        if case .int(let i) = self { return i }
+        return nil
+    }
+
+    var boolValue: Bool? {
+        if case .bool(let b) = self { return b }
+        return nil
+    }
+
+    var arrayValue: [YAMLValue]? {
+        if case .array(let a) = self { return a }
+        return nil
+    }
+
+    var dictionaryValue: [(String, YAMLValue)]? {
+        if case .dictionary(let d) = self { return d }
+        return nil
+    }
+
+    subscript(key: String) -> YAMLValue? {
+        guard case .dictionary(let pairs) = self else { return nil }
+        return pairs.first(where: { $0.0 == key })?.1
+    }
+
+    /// Parse a YAML document via Yams and convert the resulting value tree.
+    ///
+    /// Yams' default `Constructor` resolves scalars to Swift types — `Bool`,
+    /// `Int`, `Double`, `NSNull`, or `String` — following the YAML 1.1 core
+    /// schema. We convert that tree into `YAMLValue` so the rest of the
+    /// runner's keyed-subscript / typed-accessor code continues to work.
+    static func parse(_ text: String) -> YAMLValue {
+        guard let any = try? Yams.load(yaml: text) else { return .null }
+        return convert(any)
+    }
+
+    private static func convert(_ value: Any?) -> YAMLValue {
+        guard let value = value, !(value is NSNull) else { return .null }
+
+        // Check Bool before Int: both bridge to NSNumber and `value as? Bool`
+        // succeeds on 0/1 when the underlying type is actually Int. CFBoolean
+        // is the Core Foundation representation of Swift Bool and lets us
+        // disambiguate cleanly.
+        if CFGetTypeID(value as CFTypeRef) == CFBooleanGetTypeID() {
+            return .bool(value as? Bool ?? false)
+        }
+        if let i = value as? Int { return .int(i) }
+        if let s = value as? String { return .string(s) }
+        if let array = value as? [Any] { return .array(array.map(convert)) }
+        if let mapping = value as? [AnyHashable: Any] {
+            // Iteration order is undefined, but the runner only reads via keyed
+            // lookup (`yaml["name"]`) and iterates arrays, so ordering doesn't
+            // affect behavior.
+            let pairs: [(String, YAMLValue)] = mapping.compactMap { (k, v) in
+                guard let key = k as? String else { return nil }
+                return (key, convert(v))
+            }
+            return .dictionary(pairs)
+        }
+        // Floats, dates, anything else — stringify so `.stringValue` still works.
+        return .string(String(describing: value))
+    }
+}
 
 // MARK: - Data Models
 
@@ -77,7 +166,7 @@ class TestSpecRunner {
             return nil
         }
 
-        let yaml = YAMLParser.parse(content)
+        let yaml = YAMLValue.parse(content)
         return parseScenario(yaml)
     }
 

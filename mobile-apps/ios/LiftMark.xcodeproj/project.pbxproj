@@ -65,7 +65,6 @@
 		55C41D670ADEC7A15EB4EFAA /* NavigationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83446B2AFC5D21A415A51FA /* NavigationCoordinator.swift */; };
 		56616E490E58C9F25A205274 /* LiftMarkUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAA5808AEA3816FAC1B69639 /* LiftMarkUITests.swift */; };
 		57F4F3CDD8CB3F4716902824 /* complete.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9E064AE978D172E88F26E1DF /* complete.mp3 */; };
-		5804635F274D09ACE63243BD /* YAMLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38D2F26B7F5D04BCBF925F49 /* YAMLParser.swift */; };
 		589768848F8054BCABF48594 /* ShareSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E207DFAAFEC931BC9C910783 /* ShareSheetTests.swift */; };
 		5A42ABE16700DB181A6DF24D /* WorkoutHighlightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C597DD1B866C5E697491391 /* WorkoutHighlightsService.swift */; };
 		5A89491A1D1631DFCA0533B2 /* CKSyncMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156873BF197F953F583CBC22 /* CKSyncMetadataStore.swift */; };
@@ -172,6 +171,7 @@
 		DAE84428789E0D6CA78B74D4 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9175B7DB4682E974D72FBF5 /* LoadingView.swift */; };
 		DC281FEEC2342BDA851A5E3D /* DebugLogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BC30CC7136FEBF11EFB81E /* DebugLogsView.swift */; };
 		DE32D2B2D0BC36737819F32E /* SessionNotesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4285B345A9C1B0810A967BD /* SessionNotesSheet.swift */; };
+		DE38D1DB725BDF730177A59C /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 35C7774955CFDD8AC21B7740 /* Yams */; };
 		DF373888E7CD580855CE16A4 /* DatabaseBackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */; };
 		E668788C558E80F3E620BF5B /* WorkoutExportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B54090FD3C32CBDBBCA904 /* WorkoutExportServiceTests.swift */; };
 		E6750E3C596E80E2720795A9 /* ActionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBF08237635EFE610F8D173 /* ActionAdapter.swift */; };
@@ -275,7 +275,6 @@
 		339BCDD3A3DD50EB4BE72127 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		349FBA06AB83786EC1071ECA /* V1Seed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V1Seed.swift; sourceTree = "<group>"; };
 		3507D916606D7A07D255602A /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
-		38D2F26B7F5D04BCBF925F49 /* YAMLParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YAMLParser.swift; sourceTree = "<group>"; };
 		38F9A6FA3792FED0C30FF203 /* DatabaseSeeds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseSeeds.swift; sourceTree = "<group>"; };
 		3C597DD1B866C5E697491391 /* WorkoutHighlightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHighlightsService.swift; sourceTree = "<group>"; };
 		3E4BB7CEBD7B739F748472F1 /* HealthKitServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitServiceTests.swift; sourceTree = "<group>"; };
@@ -428,6 +427,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C254109068DD77F5E2EB2D23 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE38D1DB725BDF730177A59C /* Yams in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E8BA941CBD1AFD3AC7EF19A2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -447,7 +454,6 @@
 				CAA5808AEA3816FAC1B69639 /* LiftMarkUITests.swift */,
 				9BC1EDB3B698CE8E8A2E4E92 /* MigratorBridgeAlertUITests.swift */,
 				06C9D252D8932F613C54BC51 /* TestSpecRunner.swift */,
-				38D2F26B7F5D04BCBF925F49 /* YAMLParser.swift */,
 			);
 			path = LiftMarkUITests;
 			sourceTree = "<group>";
@@ -922,6 +928,7 @@
 			buildConfigurationList = 53A8134AC466C2BC7F0D6F52 /* Build configuration list for PBXNativeTarget "LiftMarkUITests" */;
 			buildPhases = (
 				3D48A97ECD7AA777E36A4C41 /* Sources */,
+				C254109068DD77F5E2EB2D23 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -930,6 +937,7 @@
 			);
 			name = LiftMarkUITests;
 			packageProductDependencies = (
+				35C7774955CFDD8AC21B7740 /* Yams */,
 			);
 			productName = LiftMarkUITests;
 			productReference = B7490BF0D1105001D9B883EE /* LiftMarkUITests.xctest */;
@@ -962,6 +970,7 @@
 			packageReferences = (
 				1D73A9B434A0EEBB9CB11EF6 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				7240415DD379DA1A73C42ABC /* XCRemoteSwiftPackageReference "Yams" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -1167,7 +1176,6 @@
 				56616E490E58C9F25A205274 /* LiftMarkUITests.swift in Sources */,
 				D0A4E215509B74FDBFDB9CD0 /* MigratorBridgeAlertUITests.swift in Sources */,
 				8518A5CC78B2CA615192FCB5 /* TestSpecRunner.swift in Sources */,
-				5804635F274D09ACE63243BD /* YAMLParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1626,6 +1634,14 @@
 				minimumVersion = 7.10.0;
 			};
 		};
+		7240415DD379DA1A73C42ABC /* XCRemoteSwiftPackageReference "Yams" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jpsim/Yams.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.0;
+			};
+		};
 		E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
@@ -1637,6 +1653,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		35C7774955CFDD8AC21B7740 /* Yams */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7240415DD379DA1A73C42ABC /* XCRemoteSwiftPackageReference "Yams" */;
+			productName = Yams;
+		};
 		6D124AFE5C66ABF0FB74FBC2 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = E5A0C4B28CC82C9E0A371F5A /* XCRemoteSwiftPackageReference "sentry-cocoa" */;

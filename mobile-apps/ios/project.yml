@@ -20,6 +20,9 @@ packages:
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa.git
     from: "9.10.0"
+  Yams:
+    url: https://github.com/jpsim/Yams.git
+    from: "5.1.0"
 
 targets:
   LiftMark:
@@ -188,6 +191,7 @@ targets:
           - "**/.DS_Store"
     dependencies:
       - target: LiftMark
+      - package: Yams
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.eff3.liftmark.native-ios.uitests
