@@ -91,13 +91,17 @@ struct ActiveWorkoutFooter: View {
             Button {
                 onFinish()
             } label: {
-                Text("Finish")
+                // Bottom button uses a distinct label from the top-bar "Finish" so
+                // text-based UI test matchers (which search for `Finish`, `Finish Anyway`,
+                // `Log Anyway` in confirm alerts) can't accidentally match this button
+                // when the confirm alert is what should be hit.
+                Text("End Workout")
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("active-workout-footer-finish-button")
-            .accessibilityLabel("Finish workout")
+            .accessibilityLabel("End workout")
             .accessibilityHint("Completes and saves the workout session")
         }
         .padding(.horizontal)
