@@ -3,8 +3,8 @@ import SwiftUI
 // MARK: - Edit Exercise Set Change
 
 enum EditExerciseSetChange {
-    case update(setId: String, weight: Double?, reps: Int?, time: Int?)
-    case add(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?)
+    case update(setId: String, weight: Double?, reps: Int?, time: Int?, rest: Int?)
+    case add(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?, rest: Int?)
     case delete(setId: String)
 }
 
@@ -16,6 +16,8 @@ struct EditableSetRow: Identifiable {
     var weightText: String
     var repsText: String
     var timeText: String
+    /// Rest between sets in seconds. Empty string means "no rest set".
+    var restText: String
     var weightUnit: WeightUnit?
     var status: SetStatus
 
@@ -32,6 +34,7 @@ struct EditableSetRow: Identifiable {
             }(),
             repsText: target?.reps.map { "\($0)" } ?? "",
             timeText: target?.time.map { "\($0)" } ?? "",
+            restText: set.restSeconds.map { "\($0)" } ?? "",
             weightUnit: target?.weight?.unit,
             status: set.status
         )
@@ -123,50 +126,70 @@ struct EditExerciseSheet: View {
 
             Section {
                 ForEach(Array(editableSets.enumerated()), id: \.element.id) { index, setRow in
-                    HStack(spacing: LiftMarkTheme.spacingSM) {
-                        Text("Set \(index + 1)")
-                            .font(.subheadline)
-                            .foregroundStyle(LiftMarkTheme.tertiaryLabel)
-                            .frame(width: 45, alignment: .leading)
+                    VStack(alignment: .leading, spacing: LiftMarkTheme.spacingXS) {
+                        HStack(spacing: LiftMarkTheme.spacingSM) {
+                            Text("Set \(index + 1)")
+                                .font(.subheadline)
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                                .frame(width: 45, alignment: .leading)
 
-                        TextField("Wt", text: $editableSets[index].weightText)
-                            #if os(iOS)
-                            .keyboardType(.decimalPad)
-                            #endif
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 65)
-                            .accessibilityIdentifier("edit-set-weight-\(index)")
+                            TextField("Wt", text: $editableSets[index].weightText)
+                                #if os(iOS)
+                                .keyboardType(.decimalPad)
+                                #endif
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 65)
+                                .accessibilityIdentifier("edit-set-weight-\(index)")
 
-                        Text("x")
-                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Text("x")
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
 
-                        TextField("Reps", text: $editableSets[index].repsText)
-                            #if os(iOS)
-                            .keyboardType(.numberPad)
-                            #endif
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 50)
-                            .accessibilityIdentifier("edit-set-reps-\(index)")
-
-                        if !setRow.timeText.isEmpty {
-                            TextField("Time", text: $editableSets[index].timeText)
+                            TextField("Reps", text: $editableSets[index].repsText)
                                 #if os(iOS)
                                 .keyboardType(.numberPad)
                                 #endif
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 50)
-                                .accessibilityIdentifier("edit-set-time-\(index)")
+                                .accessibilityIdentifier("edit-set-reps-\(index)")
+
+                            if !setRow.timeText.isEmpty {
+                                TextField("Time", text: $editableSets[index].timeText)
+                                    #if os(iOS)
+                                    .keyboardType(.numberPad)
+                                    #endif
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .accessibilityIdentifier("edit-set-time-\(index)")
+                                Text("s")
+                                    .font(.caption)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+
+                            Spacer()
+
+                            if setRow.status != .pending {
+                                Text(setRow.status.rawValue)
+                                    .font(.caption2)
+                                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            }
+                        }
+
+                        HStack(spacing: LiftMarkTheme.spacingSM) {
+                            Text("Rest")
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.tertiaryLabel)
+                                .frame(width: 45, alignment: .leading)
+                            TextField("Rest", text: $editableSets[index].restText, prompt: Text("none"))
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 65)
+                                .accessibilityIdentifier("edit-set-rest-\(index)")
                             Text("s")
                                 .font(.caption)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                        }
-
-                        Spacer()
-
-                        if setRow.status != .pending {
-                            Text(setRow.status.rawValue)
-                                .font(.caption2)
-                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Spacer()
                         }
                     }
                 }
@@ -217,6 +240,7 @@ struct EditExerciseSheet: View {
             weightText: lastSet?.weightText ?? "",
             repsText: lastSet?.repsText ?? "",
             timeText: lastSet?.timeText ?? "",
+            restText: lastSet?.restText ?? "",
             weightUnit: lastSet?.weightUnit,
             status: .pending
         )
@@ -252,26 +276,7 @@ struct EditExerciseSheet: View {
             saveName = parsedExercise.exerciseName
             saveEquipment = parsedExercise.equipmentType ?? ""
             saveNotes = parsedExercise.notes ?? ""
-
-            var newSets: [EditableSetRow] = []
-            for (i, parsedSet) in parsedExercise.sets.enumerated() {
-                let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
-                let existingStatus: SetStatus = i < exercise.sets.count ? exercise.sets[i].status : .pending
-                let parsedTarget = parsedSet.entries.first?.target
-                let weightVal = parsedTarget?.weight?.value
-                let weightStr: String = weightVal.map {
-                    $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
-                } ?? ""
-                newSets.append(EditableSetRow(
-                    id: existingId ?? UUID().uuidString,
-                    existingSetId: existingId,
-                    weightText: weightStr,
-                    repsText: parsedTarget?.reps.map { "\($0)" } ?? "",
-                    timeText: parsedTarget?.time.map { "\($0)" } ?? "",
-                    weightUnit: parsedTarget?.weight?.unit,
-                    status: existingStatus
-                ))
-            }
+            let newSets = editableSetRows(from: parsedExercise)
             saveSets = newSets
 
             // Also update @State for UI consistency
@@ -293,11 +298,15 @@ struct EditExerciseSheet: View {
             let weight = Double(setRow.weightText)
             let reps = Int(setRow.repsText)
             let time = Int(setRow.timeText)
+            let rest: Int? = {
+                guard let r = Int(setRow.restText), r > 0 else { return nil }
+                return r
+            }()
 
             if let existingId = setRow.existingSetId {
-                changes.append(.update(setId: existingId, weight: weight, reps: reps, time: time))
+                changes.append(.update(setId: existingId, weight: weight, reps: reps, time: time, rest: rest))
             } else {
-                changes.append(.add(weight: weight, unit: setRow.weightUnit, reps: reps, time: time))
+                changes.append(.add(weight: weight, unit: setRow.weightUnit, reps: reps, time: time, rest: rest))
             }
         }
 
@@ -339,7 +348,11 @@ struct EditExerciseSheet: View {
         if !setRow.timeText.isEmpty {
             parts.append("\(setRow.timeText)s")
         }
-        return parts.isEmpty ? "x 1" : parts.joined(separator: " ")
+        var line = parts.isEmpty ? "x 1" : parts.joined(separator: " ")
+        if let rest = Int(setRow.restText), rest > 0 {
+            line += " @rest: \(rest)s"
+        }
+        return line
     }
 
     static func generateMarkdown(from exercise: SessionExercise) -> String {
@@ -367,7 +380,11 @@ struct EditExerciseSheet: View {
             if let t = target?.time {
                 parts.append("\(t)s")
             }
-            lines.append("- \(parts.joined(separator: " "))")
+            var line = parts.joined(separator: " ")
+            if let rest = set.restSeconds, rest > 0 {
+                line += " @rest: \(rest)s"
+            }
+            lines.append("- \(line)")
         }
         return lines.joined(separator: "\n")
     }
@@ -383,26 +400,35 @@ struct EditExerciseSheet: View {
         name = parsedExercise.exerciseName
         equipmentType = parsedExercise.equipmentType ?? ""
         notes = parsedExercise.notes ?? ""
+        editableSets = editableSetRows(from: parsedExercise)
+    }
 
-        var newSets: [EditableSetRow] = []
+    /// Build `EditableSetRow`s from a parsed exercise, preserving existing set IDs and
+    /// status by position so that edits update the same session sets instead of
+    /// replacing them wholesale.
+    private func editableSetRows(from parsedExercise: PlannedExercise) -> [EditableSetRow] {
+        var rows: [EditableSetRow] = []
         for (i, parsedSet) in parsedExercise.sets.enumerated() {
             let existingId: String? = i < exercise.sets.count ? exercise.sets[i].id : nil
             let existingStatus: SetStatus = i < exercise.sets.count ? exercise.sets[i].status : .pending
             let parsedTarget = parsedSet.entries.first?.target
-            let weightVal = parsedTarget?.weight?.value
-            let weightStr: String = weightVal.map {
-                $0.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int($0))" : String(format: "%.1f", $0)
-            } ?? ""
-            newSets.append(EditableSetRow(
+            let weightStr: String
+            if let w = parsedTarget?.weight?.value {
+                weightStr = w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
+            } else {
+                weightStr = ""
+            }
+            rows.append(EditableSetRow(
                 id: existingId ?? UUID().uuidString,
                 existingSetId: existingId,
                 weightText: weightStr,
                 repsText: parsedTarget?.reps.map { "\($0)" } ?? "",
                 timeText: parsedTarget?.time.map { "\($0)" } ?? "",
+                restText: parsedSet.restSeconds.map { "\($0)" } ?? "",
                 weightUnit: parsedTarget?.weight?.unit,
                 status: existingStatus
             ))
         }
-        editableSets = newSets
+        return rows
     }
 }

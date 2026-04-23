@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// Top bar for the active workout screen with pause, add, notes, and finish controls.
+/// Top bar for the active workout screen with pause, notes, and finish controls.
+///
+/// Add Exercise is intentionally NOT in the top bar — it lives as a primary-styled
+/// bottom action button (see `ActiveWorkoutFooter`) so the top cluster stays
+/// readable on iPhone and the add action is larger and easier to hit mid-workout.
 struct ActiveWorkoutHeader: View {
     let sessionName: String
     /// True when the active session already has non-empty notes. Used to badge the
     /// notes button so the user can see, at a glance, that notes exist.
     var hasNotes: Bool = false
     let onPause: () -> Void
-    let onAddExercise: () -> Void
     let onNotes: () -> Void
     let onFinish: () -> Void
 
@@ -45,15 +48,6 @@ struct ActiveWorkoutHeader: View {
             .accessibilityHint("Opens a free-text editor for notes on this workout")
 
             Button {
-                onAddExercise()
-            } label: {
-                Image(systemName: "plus")
-            }
-            .accessibilityIdentifier("active-workout-add-exercise-button")
-            .accessibilityLabel("Add exercise")
-            .accessibilityHint("Opens a sheet to add a new exercise to this workout")
-
-            Button {
                 onFinish()
             } label: {
                 Text("Finish")
@@ -67,6 +61,50 @@ struct ActiveWorkoutHeader: View {
         .background(LiftMarkTheme.background)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("active-workout-header")
+    }
+}
+
+/// Bottom action bar for the active workout screen.
+///
+/// Houses the primary **Add Exercise** button (moved out of the cramped top bar,
+/// per #98) and a secondary bottom **Finish** button (per #99) so the user does not
+/// have to reach back up to the top-right corner on large iPhones. The top-bar
+/// Finish button is preserved for users who end from the top.
+struct ActiveWorkoutFooter: View {
+    let onAddExercise: () -> Void
+    let onFinish: () -> Void
+
+    var body: some View {
+        HStack(spacing: LiftMarkTheme.spacingSM) {
+            Button {
+                onAddExercise()
+            } label: {
+                Label("Add Exercise", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("active-workout-add-exercise-button")
+            .accessibilityLabel("Add exercise")
+            .accessibilityHint("Opens a sheet to add a new exercise to this workout")
+
+            Button {
+                onFinish()
+            } label: {
+                Text("Finish")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("active-workout-footer-finish-button")
+            .accessibilityLabel("Finish workout")
+            .accessibilityHint("Completes and saves the workout session")
+        }
+        .padding(.horizontal)
+        .padding(.vertical, LiftMarkTheme.spacingSM)
+        .background(.bar)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("active-workout-footer")
     }
 }
 

@@ -453,7 +453,7 @@ struct SessionRepository {
     }
 
     @discardableResult
-    func updateSessionSetTarget(_ setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) throws -> [SyncChange] {
+    func updateSessionSetTarget(_ setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?, restSeconds: Int?) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let now = self.now
 
@@ -465,10 +465,11 @@ struct SessionRepository {
 
         var newMeasurementIds: [String] = []
         try dbQueue.write { db in
-            // Update set timestamp
+            // Update set timestamp and rest_seconds (rest is stored on the session_sets row itself,
+            // not in set_measurements)
             try db.execute(
-                sql: "UPDATE session_sets SET updated_at = ? WHERE id = ?",
-                arguments: [now, setId]
+                sql: "UPDATE session_sets SET updated_at = ?, rest_seconds = ? WHERE id = ?",
+                arguments: [now, restSeconds, setId]
             )
 
             // Replace target measurements
@@ -594,7 +595,8 @@ struct SessionRepository {
     func insertSessionSet(
         exerciseId: String, orderIndex: Int,
         targetWeight: Double? = nil, targetWeightUnit: WeightUnit? = nil,
-        targetReps: Int? = nil, targetTime: Int? = nil
+        targetReps: Int? = nil, targetTime: Int? = nil,
+        restSeconds: Int? = nil
     ) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()
         let setId = IDGenerator.generate()
@@ -605,7 +607,7 @@ struct SessionRepository {
                 id: setId,
                 sessionExerciseId: exerciseId,
                 orderIndex: orderIndex,
-                restSeconds: nil,
+                restSeconds: restSeconds,
                 completedAt: nil,
                 status: SetStatus.pending.rawValue,
                 notes: nil,

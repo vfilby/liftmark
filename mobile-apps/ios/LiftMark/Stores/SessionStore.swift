@@ -135,9 +135,9 @@ final class SessionStore {
         }
     }
 
-    func updateSetTarget(setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?) {
+    func updateSetTarget(setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?, restSeconds: Int?) {
         do {
-            let changes = try repository.updateSessionSetTarget(setId, targetWeight: targetWeight, targetReps: targetReps, targetTime: targetTime)
+            let changes = try repository.updateSessionSetTarget(setId, targetWeight: targetWeight, targetReps: targetReps, targetTime: targetTime, restSeconds: restSeconds)
             SyncChange.notifyAll(changes)
             reloadActiveSession()
         } catch {
@@ -146,7 +146,7 @@ final class SessionStore {
         }
     }
 
-    func addExercise(exerciseName: String, sets: [(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?)]) {
+    func addExercise(exerciseName: String, sets: [(weight: Double?, unit: WeightUnit?, reps: Int?, time: Int?, rest: Int?)]) {
         guard let session = activeSession else { return }
         do {
             var allChanges: [SyncChange] = []
@@ -164,7 +164,8 @@ final class SessionStore {
                     targetWeight: set.weight,
                     targetWeightUnit: set.unit,
                     targetReps: set.reps,
-                    targetTime: set.time
+                    targetTime: set.time,
+                    restSeconds: set.rest
                 )
                 allChanges.append(contentsOf: setChanges)
             }
@@ -176,7 +177,7 @@ final class SessionStore {
         }
     }
 
-    func addSetToExercise(exerciseId: String, targetWeight: Double?, targetWeightUnit: WeightUnit?, targetReps: Int?, targetTime: Int?) {
+    func addSetToExercise(exerciseId: String, targetWeight: Double?, targetWeightUnit: WeightUnit?, targetReps: Int?, targetTime: Int?, restSeconds: Int?) {
         guard let session = activeSession,
               let exercise = session.exercises.first(where: { $0.id == exerciseId }) else { return }
         do {
@@ -187,7 +188,8 @@ final class SessionStore {
                 targetWeight: targetWeight,
                 targetWeightUnit: targetWeightUnit,
                 targetReps: targetReps,
-                targetTime: targetTime
+                targetTime: targetTime,
+                restSeconds: restSeconds
             )
             SyncChange.notifyAll(changes)
             reloadActiveSession()

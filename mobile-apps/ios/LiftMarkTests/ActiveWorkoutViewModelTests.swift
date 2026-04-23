@@ -691,4 +691,54 @@ final class ActiveWorkoutViewModelTests: XCTestCase {
             status: status
         )
     }
+
+    // MARK: - parseExerciseFromMarkdown
+
+    func testParseExerciseFromMarkdownAcceptsStandaloneExerciseBlock() {
+        let md = """
+        ## Bicep Curl
+        - 25 x 12
+        - 25 x 10
+        """
+        let parsed = ActiveWorkoutViewModel.parseExerciseFromMarkdown(md)
+        XCTAssertNotNil(parsed, "Standalone exercise block (no workout header) should parse")
+        XCTAssertEqual(parsed?.name, "Bicep Curl")
+        XCTAssertEqual(parsed?.sets.count, 2)
+        XCTAssertEqual(parsed?.sets.first?.reps, 12)
+        XCTAssertEqual(parsed?.sets.first?.weight, 25)
+    }
+
+    func testParseExerciseFromMarkdownAcceptsFullWorkoutMarkdown() {
+        let md = """
+        # Quick Add
+        ## Bench Press
+        - 135 x 5
+        """
+        let parsed = ActiveWorkoutViewModel.parseExerciseFromMarkdown(md)
+        XCTAssertEqual(parsed?.name, "Bench Press")
+        XCTAssertEqual(parsed?.sets.count, 1)
+        XCTAssertEqual(parsed?.sets.first?.reps, 5)
+    }
+
+    func testParseExerciseFromMarkdownReturnsNilForEmpty() {
+        XCTAssertNil(ActiveWorkoutViewModel.parseExerciseFromMarkdown(""))
+        XCTAssertNil(ActiveWorkoutViewModel.parseExerciseFromMarkdown("   \n  "))
+    }
+
+    func testParseExerciseFromMarkdownReturnsNilForNoExercise() {
+        // Just text, no `##` exercise header — parser should produce no exercise.
+        XCTAssertNil(ActiveWorkoutViewModel.parseExerciseFromMarkdown("just some notes"))
+    }
+
+    func testParseExerciseFromMarkdownCarriesRestSeconds() {
+        let md = """
+        ## Bench Press
+        - 135 x 5 @rest: 120s
+        - 135 x 5 @rest: 180s
+        """
+        let parsed = ActiveWorkoutViewModel.parseExerciseFromMarkdown(md)
+        XCTAssertEqual(parsed?.sets.count, 2)
+        XCTAssertEqual(parsed?.sets[0].rest, 120)
+        XCTAssertEqual(parsed?.sets[1].rest, 180)
+    }
 }

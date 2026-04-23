@@ -229,7 +229,7 @@ final class SessionRepositoryTests: XCTestCase {
         let (session, _) = try repo.createFromPlan(plan)
         let setId = session.exercises[0].sets[0].id
 
-        try repo.updateSessionSetTarget(setId, targetWeight: 235, targetReps: 3, targetTime: nil)
+        try repo.updateSessionSetTarget(setId, targetWeight: 235, targetReps: 3, targetTime: nil, restSeconds: nil)
 
         let fetched = try repo.getById(session.id)
         let updatedSet = fetched?.exercises[0].sets[0]

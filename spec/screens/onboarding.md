@@ -16,13 +16,13 @@ Welcome new users and present a legal disclaimer that must be accepted before us
 
 - **App icon** (centered, moderate size)
 - **Title**: "Welcome to LiftMark"
-- **Subtitle**: "Your workout tracking companion"
+- **Subtitle**: "Markdown workouts you own"
 
 ### Middle Section — Brief Explanation
 
 A short paragraph explaining what the app does:
 
-> LiftMark helps you track your strength training workouts. Import workout plans, log your sets, reps, and weights during sessions, and review your progress over time.
+> LiftMark keeps your workout plans as plain markdown — files you can read, edit, and share. Log your sets during sessions and keep a portable history of your training, ready for any text editor or AI assistant.
 
 ### Disclaimer Section — Scrollable
 

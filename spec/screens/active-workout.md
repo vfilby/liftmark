@@ -7,9 +7,10 @@ Primary workout execution screen. Displays all exercises and sets for the active
 `/workout/active` — Navigated to after starting or resuming a workout.
 
 ## Layout
-- **Header**: Custom header with Pause button (left), workout name (center), Notes button + Add Exercise button + Finish button (right). The Notes button is persistently reachable at all times during the session — the user should never lose a thought because they can't find the field.
+- **Header**: Custom header with Pause button (left), workout name (center), Notes button + Finish button (right). The Notes button is persistently reachable at all times during the session — the user should never lose a thought because they can't find the field. Add Exercise is intentionally NOT in the header; it lives in the bottom action bar so the top cluster stays readable on iPhone (GH #98).
 - **Progress bar**: Below header showing completed/total sets
 - **Body**: ScrollView of exercise sections, each containing SetRow components
+- **Bottom action bar** (`active-workout-footer`): Pinned to the bottom safe-area inset. Houses the primary **Add Exercise** button (filled, `active-workout-add-exercise-button`) and a secondary **Finish** button (bordered, `active-workout-footer-finish-button`). The bottom Finish exists in addition to the top-bar Finish so the user does not have to reach the top-right corner on large iPhones (GH #99). Both Finish buttons trigger the same finish confirmation flow.
 - **Modals**: EditExerciseModal, AddExerciseModal (overlaid)
 
 ## UI Elements
@@ -20,8 +21,10 @@ Primary workout execution screen. Displays all exercises and sets for the active
 | Header | `active-workout-header` | View |
 | Pause button | `active-workout-pause-button` | TouchableOpacity |
 | Notes button | `active-workout-notes-button` | Button |
-| Add exercise button | `active-workout-add-exercise-button` | TouchableOpacity |
-| Finish button | `active-workout-finish-button` | TouchableOpacity |
+| Finish button (top) | `active-workout-finish-button` | Button |
+| Footer | `active-workout-footer` | View |
+| Add exercise button (bottom) | `active-workout-add-exercise-button` | Button |
+| Finish button (bottom) | `active-workout-footer-finish-button` | Button |
 | Progress section | `active-workout-progress` | View |
 | Scroll content | `active-workout-scroll` | ScrollView |
 | Exercise card | `exercise-card-{index}` | View |
@@ -82,7 +85,8 @@ Primary workout execution screen. Displays all exercises and sets for the active
 - **Tap Pause** → pauses timer; elapsed time is frozen
 - **Tap timer display** → toggles between count-up and count-down display modes:
   - **Count-up**: Shows elapsed time counting from 0 toward target (e.g., "0:00 → target")
-  - **Count-down**: Shows remaining time counting from target toward 0 (e.g., "target → 0:00"). Displayed as `max(0, targetSeconds - elapsed)`.
+  - **Count-down**: Shows remaining time counting from target toward 0 (e.g., "target → 0:00"). Displayed as `max(0, targetSeconds - elapsed)` while still counting down.
+  - **Count-down overrun**: When the count-down reaches zero the timer does NOT auto-dismiss. It fires the zero-crossing completion cue (completion sound, gated by the Countdown Sounds setting — fires exactly once per timer instance, not on every overrun tick) and transitions to an overrun display. The timer color switches to amber (`LiftMarkTheme.warning`) and the display format becomes `+M:SS` (e.g. `+0:23`) counting up from zero, indicating how far past the target the user has gone. Overrun continues until the user taps **Done** (which logs `actualTime = elapsed`, including the overrun portion), **Pause**, or the set is otherwise completed. Toggling to count-up mode while in overrun simply shows the full elapsed time (which is > target) in the count-up success color. Overrun applies only to count-down mode; count-up mode has no overrun concept.
   - The **initial mode** for each new timed set is determined by the `defaultTimerCountdown` user setting (see [Settings → Default Timer Countdown Behavior](./settings.md)). Default is count-up (setting off). Users who prefer count-down can enable the setting to skip the per-set toggle.
   - Count-down mode is only available when `targetSeconds` is not nil. When no target exists, the timer always shows count-up regardless of the setting.
   - A small arrow icon (up or down) appears next to the timer text to indicate the current mode.
@@ -136,8 +140,8 @@ Primary workout execution screen. Displays all exercises and sets for the active
 
 ### Exercise Editing
 - **Tap pencil icon** (top-right of exercise card header, 36x36 tap target, `.body` font) on exercise → opens Edit Exercise sheet with two tabs:
-  - **Form tab** (default): structured fields for name, equipment, notes, and an editable list of sets (weight/reps/time fields, add set, delete set via swipe, reorder via drag)
-  - **Markdown tab**: TextEditor with exercise in LMWF format (`## Name`, `@type: equipment`, notes, `- weight x reps`); parsed on save via MarkdownParser
+  - **Form tab** (default): structured fields for name, equipment, notes, and an editable list of sets (weight/reps/time/rest fields, add set, delete set via swipe, reorder via drag). Each set row exposes a per-set rest input (seconds, `edit-set-rest-{index}`). Empty rest input means "no rest" (stored as NULL).
+  - **Markdown tab**: TextEditor with exercise in LMWF format (`## Name`, `@type: equipment`, notes, `- weight x reps @rest: Ns`); parsed on save via MarkdownParser. Rest is round-tripped via the `@rest:` modifier on each set line, so switching between Form and Markdown preserves user-entered rest values.
 - **Sheet must display exercise data**: The edit sheet must always be pre-populated with the tapped exercise's current data (name, equipment, notes, sets). A blank or empty sheet is a bug — the sheet presentation must be bound directly to the exercise being edited.
 - **Segmented picker** (`edit-exercise-mode-picker`) toggles between Form and Markdown tabs
 - Switching tabs syncs data: Form→Markdown regenerates LMWF, Markdown→Form parses the text
@@ -158,10 +162,13 @@ Primary workout execution screen. Displays all exercises and sets for the active
 | Cancel button | `edit-exercise-cancel` | Button |
 | Set weight field | `edit-set-weight-{index}` | TextField |
 | Set reps field | `edit-set-reps-{index}` | TextField |
+| Set time field | `edit-set-time-{index}` | TextField |
+| Set rest field | `edit-set-rest-{index}` | TextField |
 
 ### Add Exercise
 - **Tap "+" in header** → opens AddExerciseModal with markdown template
 - Enter exercise markdown → **Save** → parses and adds exercise to session
+- **Accepted input**: The sheet accepts either a full workout markdown (`# Title` + `## Exercise` + sets) or a standalone exercise block (`## Exercise` + sets with no workout header). When no `# Workout` header is present the parser is invoked with a synthetic header prepended — users should not have to type a workout title just to add a single exercise mid-session. The example hint text shows the standalone form.
 
 ### Section Display
 - Workouts may contain organizational sections (e.g., Warmup, Main Workout, Cool Down) defined by section headers in the LMWF format.

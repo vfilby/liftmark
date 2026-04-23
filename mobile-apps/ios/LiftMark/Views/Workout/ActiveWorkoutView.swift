@@ -94,6 +94,9 @@ struct ActiveWorkoutView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("active-workout-screen")
+        .safeAreaInset(edge: .bottom) {
+            workoutFooter
+        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
@@ -135,10 +138,10 @@ struct ActiveWorkoutView: View {
                     sessionStore.updateExercise(exerciseId: exercise.id, name: name, notes: notes, equipmentType: equipmentType)
                     for change in setChanges {
                         switch change {
-                        case .update(let setId, let weight, let reps, let time):
-                            sessionStore.updateSetTarget(setId: setId, targetWeight: weight, targetReps: reps, targetTime: time)
-                        case .add(let weight, let unit, let reps, let time):
-                            sessionStore.addSetToExercise(exerciseId: exercise.id, targetWeight: weight, targetWeightUnit: unit, targetReps: reps, targetTime: time)
+                        case .update(let setId, let weight, let reps, let time, let rest):
+                            sessionStore.updateSetTarget(setId: setId, targetWeight: weight, targetReps: reps, targetTime: time, restSeconds: rest)
+                        case .add(let weight, let unit, let reps, let time, let rest):
+                            sessionStore.addSetToExercise(exerciseId: exercise.id, targetWeight: weight, targetWeightUnit: unit, targetReps: reps, targetTime: time, restSeconds: rest)
                         case .delete(let setId):
                             sessionStore.deleteSet(setId: setId)
                         }
@@ -159,16 +162,24 @@ struct ActiveWorkoutView: View {
                 ActiveWorkoutViewModel.endLiveActivity(settings: settingsStore.settings, immediate: true)
                 dismiss()
             },
-            onAddExercise: { showAddExercise = true },
             onNotes: { showNotesSheet = true },
-            onFinish: {
-                if isSkipHeavy {
-                    showDiscardConfirm = true
-                } else {
-                    showFinishConfirm = true
-                }
-            }
+            onFinish: confirmFinish
         )
+    }
+
+    private var workoutFooter: some View {
+        ActiveWorkoutFooter(
+            onAddExercise: { showAddExercise = true },
+            onFinish: confirmFinish
+        )
+    }
+
+    private func confirmFinish() {
+        if isSkipHeavy {
+            showDiscardConfirm = true
+        } else {
+            showFinishConfirm = true
+        }
     }
 
     // MARK: - Progress Bar

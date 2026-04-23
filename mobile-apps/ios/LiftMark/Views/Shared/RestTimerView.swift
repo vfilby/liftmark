@@ -202,21 +202,44 @@ struct ExerciseTimerView: View {
         return displayElapsed >= target
     }
 
-    /// The display value: either elapsed (count-up) or remaining (count-down).
-    private var displayValue: Int {
+    /// True while in count-down mode and elapsed has passed the target — the user is
+    /// over the planned duration. Only meaningful in count-down mode; count-up has no overrun.
+    private var isOverrun: Bool {
+        guard showCountdown, let target = targetSeconds else { return false }
+        return displayElapsed > target
+    }
+
+    /// Formatted display string. In count-down mode past target, shows `+M:SS` overrun.
+    private var displayText: String {
         if showCountdown, let target = targetSeconds {
-            return max(0, target - displayElapsed)
+            if displayElapsed > target {
+                return "+" + formatTime(displayElapsed - target)
+            }
+            return formatTime(max(0, target - displayElapsed))
         }
-        return displayElapsed
+        return formatTime(displayElapsed)
+    }
+
+    private var timerColor: Color {
+        if isOverrun { return LiftMarkTheme.warning }
+        if isComplete { return LiftMarkTheme.success }
+        return LiftMarkTheme.primary
+    }
+
+    private var timerAccessibilityLabel: String {
+        if isOverrun, let target = targetSeconds {
+            return "Exercise timer, overrun by \(displayElapsed - target) seconds"
+        }
+        return "Exercise timer, \(displayElapsed) seconds elapsed"
     }
 
     var body: some View {
         VStack(spacing: LiftMarkTheme.spacingSM) {
             // Timer display — tap to toggle count-up/count-down
             HStack(spacing: 6) {
-                Text(formatTime(displayValue))
+                Text(displayText)
                     .font(.system(size: 40, weight: .light, design: .monospaced))
-                    .foregroundStyle(isComplete ? LiftMarkTheme.success : LiftMarkTheme.primary)
+                    .foregroundStyle(timerColor)
                     .tracking(1)
 
                 if targetSeconds != nil {
@@ -225,7 +248,7 @@ struct ExerciseTimerView: View {
                         .foregroundStyle(LiftMarkTheme.tertiaryLabel)
                 }
             }
-            .accessibilityLabel("Exercise timer, \(displayElapsed) seconds elapsed")
+            .accessibilityLabel(timerAccessibilityLabel)
             .accessibilityHint(targetSeconds != nil ? "Tap to toggle between count-up and count-down" : "")
             .onTapGesture {
                 if targetSeconds != nil {
