@@ -570,6 +570,10 @@ extension MigratorBridge {
             try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_timer_countdown INTEGER DEFAULT 0")
         }
 
+        m.registerMigration("v14_default_weight_step_lbs") { db in
+            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5")
+        }
+
         return m
     }
 

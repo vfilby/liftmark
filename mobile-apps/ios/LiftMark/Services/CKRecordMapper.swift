@@ -229,6 +229,7 @@ final class CKRecordMapper {
         record["showOpenInClaudeButton"] = Int64(s.showOpenInClaudeButton) as CKRecordValue
         record["countdownSoundsEnabled"] = Int64(s.countdownSoundsEnabled) as CKRecordValue
         record["defaultTimerCountdown"] = Int64(s.defaultTimerCountdown) as CKRecordValue
+        record["defaultWeightStepLbs"] = s.defaultWeightStepLbs as CKRecordValue
         if let c = s.customPromptAddition { record["customPromptAddition"] = c as CKRecordValue }
         if let h = s.homeTiles { record["homeTiles"] = h as CKRecordValue }
         if let d = parseDate(s.updatedAt) { record["updatedAt"] = d as CKRecordValue }
@@ -577,6 +578,7 @@ final class CKRecordMapper {
                     countdownSoundsEnabled: Int(self.int64Field(record, "countdownSoundsEnabled") ?? Int64(existing.countdownSoundsEnabled)),
                     hasAcceptedDisclaimer: existing.hasAcceptedDisclaimer, // Never sync — local-only
                     defaultTimerCountdown: Int(self.int64Field(record, "defaultTimerCountdown") ?? Int64(existing.defaultTimerCountdown)),
+                    defaultWeightStepLbs: self.doubleField(record, "defaultWeightStepLbs") ?? existing.defaultWeightStepLbs,
                     homeTiles: self.stringField(record, "homeTiles") ?? existing.homeTiles,
                     createdAt: existing.createdAt,
                     updatedAt: updatedAt
@@ -602,6 +604,7 @@ final class CKRecordMapper {
                     countdownSoundsEnabled: Int(self.int64Field(record, "countdownSoundsEnabled") ?? 1),
                     hasAcceptedDisclaimer: 0, // New device — must accept again
                     defaultTimerCountdown: Int(self.int64Field(record, "defaultTimerCountdown") ?? 0),
+                    defaultWeightStepLbs: self.doubleField(record, "defaultWeightStepLbs") ?? 2.5,
                     homeTiles: self.stringField(record, "homeTiles"),
                     createdAt: now,
                     updatedAt: self.dateToISO(remoteUpdatedAt) ?? now

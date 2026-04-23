@@ -44,6 +44,7 @@ struct SettingsRepository {
                     countdown_sounds_enabled = ?,
                     has_accepted_disclaimer = ?,
                     default_timer_countdown = ?,
+                    default_weight_step_lbs = ?,
                     home_tiles = ?,
                     updated_at = ?
                 WHERE id = ?
@@ -63,6 +64,7 @@ struct SettingsRepository {
                 settings.countdownSoundsEnabled ? 1 : 0,
                 settings.hasAcceptedDisclaimer ? 1 : 0,
                 settings.defaultTimerCountdown ? 1 : 0,
+                settings.defaultWeightStepLbs,
                 homeTilesJSON,
                 now,
                 settings.id
@@ -91,6 +93,7 @@ struct SettingsRepository {
             countdownSoundsEnabled: row.countdownSoundsEnabled != 0,
             hasAcceptedDisclaimer: row.hasAcceptedDisclaimer != 0,
             defaultTimerCountdown: row.defaultTimerCountdown != 0,
+            defaultWeightStepLbs: row.defaultWeightStepLbs,
             homeTiles: row.homeTiles.flatMap { data in
                 (try? JSONDecoder().decode([String].self, from: Data(data.utf8)))
             },

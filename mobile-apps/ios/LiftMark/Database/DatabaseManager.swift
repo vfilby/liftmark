@@ -11,7 +11,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    static let currentSchemaVersion = 13
+    static let currentSchemaVersion = 14
 
     private init() {}
 
@@ -177,6 +177,7 @@ final class DatabaseManager: @unchecked Sendable {
         if currentVersion < 11 && targetVersion >= 11 { try migrateToV11(db) }
         if currentVersion < 12 && targetVersion >= 12 { try migrateToV12(db) }
         if currentVersion < 13 && targetVersion >= 13 { try migrateToV13(db) }
+        if currentVersion < 14 && targetVersion >= 14 { try migrateToV14(db) }
 
         try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [targetVersion])
     }
@@ -785,6 +786,12 @@ final class DatabaseManager: @unchecked Sendable {
 
     private static func migrateToV13(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_timer_countdown INTEGER DEFAULT 0")
+    }
+
+    // MARK: - V14: default_weight_step_lbs user setting
+
+    private static func migrateToV14(_ db: Database) throws {
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5")
     }
 
     private static func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {

@@ -40,6 +40,7 @@ GRDB persists applied migrations as one row per identifier in `grdb_migrations (
 | 11                      | `v11_gym_unique_fk_indexes`   |
 | 12                      | `v12_set_measurements`        |
 | 13                      | `v13_default_timer_countdown` |
+| 14                      | `v14_default_weight_step_lbs` |
 
 Naming rule: `vN_<short_description>`. The numeric prefix matches the legacy `schema_version` value and the order `DatabaseMigrator` enforces.
 

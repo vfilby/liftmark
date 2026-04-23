@@ -245,6 +245,8 @@ Configure weight units, rest timer behavior, and screen preferences.
 | Screen container | `workout-settings-screen` | View |
 | LBS button | `button-unit-lbs` | TouchableOpacity |
 | KG button | `button-unit-kg` | TouchableOpacity |
+| Weight step fine button | `button-step-fine` | TouchableOpacity |
+| Weight step coarse button | `button-step-coarse` | TouchableOpacity |
 | Workout timer switch | `switch-workout-timer` | Switch |
 | Auto-start rest timer switch | `switch-auto-start-rest` | Switch |
 | Keep screen awake switch | `switch-keep-screen-awake` | Switch |
@@ -259,6 +261,18 @@ The "Start timer in countdown mode" toggle under Rest Timer controls the **initi
 - **On**: Exercise timers start in count-down mode — remaining time counts from target toward 0.
 - Users may still tap the timer display at any time during a set to toggle between modes. The setting only controls the initial value for each new set; it does not disable the per-exercise tap toggle.
 - Persisted via the `default_timer_countdown` column in `user_settings` (see [database-schema.md](../data/database-schema.md)).
+
+### Weight Step Behavior
+
+The "Weight Step" picker under Units controls the increment used by the weight stepper buttons (`+` / `−`) on the active workout set row. The picker offers two tiers — **fine** (default) and **coarse** — labeled by the current default weight unit.
+
+| Tier   | lbs step | kg step |
+|--------|----------|---------|
+| Fine   | 2.5 lbs  | 1.25 kg |
+| Coarse | 5 lbs    | 2.5 kg  |
+
+- Each set uses the tier mapped to that set's unit (lbs or kg), not the default unit. A kg set in an otherwise-lbs workout still gets the metric step value.
+- Persisted via the `default_weight_step_lbs` REAL column in `user_settings` (2.5 = fine tier, 5.0 = coarse tier). The column stores the lbs representation for wire compatibility; the kg value is derived at display time (see [database-schema.md](../data/database-schema.md)).
 
 ---
 

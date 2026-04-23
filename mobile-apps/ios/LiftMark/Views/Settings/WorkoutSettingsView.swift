@@ -26,6 +26,26 @@ struct WorkoutSettingsView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 120)
                     }
+
+                    HStack {
+                        Text("Weight Step")
+                        Spacer()
+                        Picker("Weight Step", selection: Binding(
+                            get: { settings.defaultWeightStepLbs },
+                            set: { newStep in
+                                var updated = settings
+                                updated.defaultWeightStepLbs = newStep
+                                settingsStore.updateSettings(updated)
+                            }
+                        )) {
+                            Text(settings.defaultWeightUnit == .kg ? "1.25 kg" : "2.5 lbs").tag(2.5)
+                                .accessibilityIdentifier("button-step-fine")
+                            Text(settings.defaultWeightUnit == .kg ? "2.5 kg" : "5 lbs").tag(5.0)
+                                .accessibilityIdentifier("button-step-coarse")
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 160)
+                    }
                 }
 
                 Section("Rest Timer") {

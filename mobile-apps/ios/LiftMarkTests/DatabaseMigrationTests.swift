@@ -278,23 +278,28 @@ final class DatabaseMigrationTests: XCTestCase {
 
     // MARK: - v13 seed: no-op
 
-    func testV13Seed_migratesToHead_isNoOp() throws {
+    func testV13Seed_migratesToHead_addsWeightStepColumn() throws {
         let (loaded, q) = try loadAndMigrate(ddl: DatabaseSeeds.v13DDL, data: DatabaseSeeds.v13Data)
         defer { DatabaseSeedLoader.cleanup(loaded) }
-        try assertUniversalInvariants(q, label: "v13→13")
+        try assertUniversalInvariants(q, label: "v13→head")
         try q.read { db in
             XCTAssertEqual(try count(db, table: "workout_templates"), 1)
             XCTAssertEqual(try count(db, table: "gyms"), 1)
+            // v14 adds default_weight_step_lbs with default 2.5 — existing user_settings row
+            // must be backfilled by SQLite's ALTER TABLE default.
+            XCTAssertTrue(try columnNames(db, table: "user_settings").contains("default_weight_step_lbs"))
+            let step = try Double.fetchOne(db, sql: "SELECT default_weight_step_lbs FROM user_settings LIMIT 1")
+            XCTAssertEqual(step, 2.5)
         }
     }
 
-    // MARK: - Synthetic v14 seed: runner must not mutate a future-versioned DB
+    // MARK: - Synthetic future seed: runner must not mutate a future-versioned DB
 
-    func testV14SyntheticSeed_migrationRunnerIsNoOp() throws {
-        // Build a v13-shaped DB with schema_version=14 to simulate "DB from the future".
+    func testV15SyntheticSeed_migrationRunnerIsNoOp() throws {
+        // Build a head-shaped DB with schema_version=15 to simulate "DB from the future".
         let loaded = try DatabaseSeedLoader.load(
-            ddl: DatabaseSeeds.v14SyntheticDDL,
-            data: DatabaseSeeds.v14SyntheticData
+            ddl: DatabaseSeeds.v15SyntheticDDL,
+            data: DatabaseSeeds.v15SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
         let q = try DatabaseSeedLoader.openQueue(at: loaded.path)
@@ -303,14 +308,14 @@ final class DatabaseMigrationTests: XCTestCase {
         let beforeVersion = try q.read { try Int.fetchOne($0, sql: "SELECT version FROM schema_version LIMIT 1") }
         let beforeRows = try q.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM user_settings") ?? -1 }
 
-        // Runner should short-circuit: currentVersion (14) >= targetVersion (13).
+        // Runner should short-circuit: currentVersion (15) >= targetVersion (14).
         try DatabaseManager.runMigrations(on: q)
 
         let afterVersion = try q.read { try Int.fetchOne($0, sql: "SELECT version FROM schema_version LIMIT 1") }
         let afterRows = try q.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM user_settings") ?? -1 }
 
-        XCTAssertEqual(beforeVersion, 14, "seed sanity")
-        XCTAssertEqual(afterVersion, 14, "runner must not lower schema_version")
+        XCTAssertEqual(beforeVersion, 15, "seed sanity")
+        XCTAssertEqual(afterVersion, 15, "runner must not lower schema_version")
         XCTAssertEqual(beforeRows, afterRows, "runner must not mutate a future-versioned DB")
     }
 }

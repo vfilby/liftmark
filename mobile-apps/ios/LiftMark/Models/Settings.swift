@@ -20,6 +20,8 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var countdownSoundsEnabled: Bool
     var hasAcceptedDisclaimer: Bool
     var defaultTimerCountdown: Bool
+    /// Weight step increment for lbs (2.5 or 5.0). Kg always uses 2.5.
+    var defaultWeightStepLbs: Double
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -42,6 +44,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         countdownSoundsEnabled: Bool = true,
         hasAcceptedDisclaimer: Bool = false,
         defaultTimerCountdown: Bool = false,
+        defaultWeightStepLbs: Double = 2.5,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -63,6 +66,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.countdownSoundsEnabled = countdownSoundsEnabled
         self.hasAcceptedDisclaimer = hasAcceptedDisclaimer
         self.defaultTimerCountdown = defaultTimerCountdown
+        self.defaultWeightStepLbs = defaultWeightStepLbs
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -82,6 +86,7 @@ struct UserSettings: Identifiable, Codable, Hashable {
         showOpenInClaudeButton != other.showOpenInClaudeButton ||
         countdownSoundsEnabled != other.countdownSoundsEnabled ||
         defaultTimerCountdown != other.defaultTimerCountdown ||
+        defaultWeightStepLbs != other.defaultWeightStepLbs ||
         homeTiles != other.homeTiles
     }
 }

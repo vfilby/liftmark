@@ -13,6 +13,8 @@ extension VerticalAlignment {
 /// Individual set row in the active workout view.
 /// Handles display for pending, current, completed, and skipped states.
 struct SetRowView: View {
+    @Environment(SettingsStore.self) private var settingsStore
+
     let set: SessionSet
     let setNumber: Int
     let isCurrent: Bool
@@ -373,12 +375,12 @@ struct SetRowView: View {
                         Text("Complete Set")
                             .font(.subheadline.bold())
                     }
-                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(LiftMarkTheme.success)
-                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
+                .tint(LiftMarkTheme.success)
                 .accessibilityIdentifier("set-complete-button")
                 .accessibilityLabel("Complete set \(setNumber)")
                 .accessibilityHint("Records this set with the entered weight and reps")
@@ -821,10 +823,16 @@ struct SetRowView: View {
         return "Target: \(parts.joined(separator: " "))"
     }
 
-    /// Step increment for weight stepper buttons: 5 for lbs, 2.5 for kg.
+    /// Step increment for weight stepper buttons. The user's configured step tier
+    /// (stored as its lbs value: 2.5 = fine, 5 = coarse) maps to a unit-appropriate
+    /// value: lbs uses the tier directly; kg uses 1.25 (fine) or 2.5 (coarse).
     private var weightStepIncrement: Double {
         let unit = set.entries.first?.target?.weight?.unit ?? set.entries.first?.actual?.weight?.unit
-        return unit == .kg ? 2.5 : 5.0
+        let tier = settingsStore.settings?.defaultWeightStepLbs ?? 2.5
+        if unit == .kg {
+            return tier >= 5.0 ? 2.5 : 1.25
+        }
+        return tier
     }
 
     /// Adjusts the main weight field by the given delta, clamped to 0.

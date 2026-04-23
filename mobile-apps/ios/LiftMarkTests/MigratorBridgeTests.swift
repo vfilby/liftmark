@@ -147,13 +147,13 @@ final class MigratorBridgeTests: XCTestCase {
         XCTAssertFalse(tablesPresent.contains("sync_conflicts"))
     }
 
-    func testFreshInstall_schemaVersionIs13ForDowngradeSafety() throws {
+    func testFreshInstall_schemaVersionIsHead() throws {
         let (loaded, queue, url) = try makeEmptyDB()
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
         _ = try runBridgeAndLegacy(on: queue, liveDBURL: url)
 
-        XCTAssertEqual(try schemaVersion(queue), 13)
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
     }
 
     // MARK: - Existing-at-v13 (common case)
@@ -182,19 +182,17 @@ final class MigratorBridgeTests: XCTestCase {
         let after = try rowCount(queue, sql: "SELECT COUNT(*) FROM user_settings")
 
         XCTAssertEqual(before, after)
-        XCTAssertEqual(try schemaVersion(queue), 13)
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
     }
 
-    func testExistingAtV13_legacyRunMigrationsIsNoop() throws {
+    func testExistingAtV13_legacyRunMigrationsCompletesToHead() throws {
         let (loaded, queue, url) = try loadSeed(ddl: DatabaseSeeds.v13DDL, data: DatabaseSeeds.v13Data)
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
         _ = try MigratorBridge.runIfNeeded(on: queue, liveDBURL: url)
-        // Legacy path runs immediately after — verify it doesn't throw and doesn't modify schema_version.
-        let beforeVer = try schemaVersion(queue)
+        // Legacy path runs post-bridge and advances schema_version from 13 to head.
         try DatabaseManager.runMigrations(on: queue)
-        let afterVer = try schemaVersion(queue)
-        XCTAssertEqual(beforeVer, afterVer)
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
     }
 
     // MARK: - Existing-at-v<13 (rare, but the design accounts for it)
@@ -211,9 +209,9 @@ final class MigratorBridgeTests: XCTestCase {
         } else {
             XCTFail("expected .bridged, got \(outcome)")
         }
-        // After bridge + migrator, all 13 identifiers should be present.
+        // After bridge + migrator, all identifiers should be present.
         XCTAssertEqual(try identifiers(queue), MigratorBridge.identifiers.sorted())
-        XCTAssertEqual(try schemaVersion(queue), 13)
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
     }
 
     func testExistingAtV11_endStateMatchesLegacyOnlyPath() throws {
@@ -285,8 +283,8 @@ final class MigratorBridgeTests: XCTestCase {
 
     func testFutureVersion_bridgeRefuses() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v14SyntheticDDL,
-            data: DatabaseSeeds.v14SyntheticData
+            ddl: DatabaseSeeds.v15SyntheticDDL,
+            data: DatabaseSeeds.v15SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -294,14 +292,14 @@ final class MigratorBridgeTests: XCTestCase {
             guard case MigratorBridgeError.refusedFutureVersion(let version) = error else {
                 return XCTFail("expected refusedFutureVersion, got \(error)")
             }
-            XCTAssertEqual(version, 14)
+            XCTAssertEqual(version, 15)
         }
     }
 
     func testFutureVersion_doesNotMutateDatabase() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v14SyntheticDDL,
-            data: DatabaseSeeds.v14SyntheticData
+            ddl: DatabaseSeeds.v15SyntheticDDL,
+            data: DatabaseSeeds.v15SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -311,7 +309,7 @@ final class MigratorBridgeTests: XCTestCase {
 
         XCTAssertEqual(rowsBefore, rowsAfter)
         // schema_version unchanged
-        XCTAssertEqual(try schemaVersion(queue), 14)
+        XCTAssertEqual(try schemaVersion(queue), 15)
         // grdb_migrations table should NOT have been created.
         let bridgeTablePresent = try queue.read { db in
             try Int.fetchOne(
@@ -354,7 +352,7 @@ final class MigratorBridgeTests: XCTestCase {
         _ = try MigratorBridge.runIfNeeded(on: queue, liveDBURL: url)
         try DatabaseManager.runMigrations(on: queue)
 
-        XCTAssertEqual(try schemaVersion(queue), 13)
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
     }
 
     // MARK: - Sentry event catalog
@@ -396,8 +394,8 @@ final class MigratorBridgeTests: XCTestCase {
         }
 
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v14SyntheticDDL,
-            data: DatabaseSeeds.v14SyntheticData
+            ddl: DatabaseSeeds.v15SyntheticDDL,
+            data: DatabaseSeeds.v15SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -453,8 +451,8 @@ final class MigratorBridgeTests: XCTestCase {
     /// the offending schema version so the launch alert can surface it.
     func testFutureVersion_persistsFailureForAlertUI() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v14SyntheticDDL,
-            data: DatabaseSeeds.v14SyntheticData
+            ddl: DatabaseSeeds.v15SyntheticDDL,
+            data: DatabaseSeeds.v15SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -462,7 +460,7 @@ final class MigratorBridgeTests: XCTestCase {
 
         let persisted = MigratorBridgeFailure.loadPersisted()
         XCTAssertEqual(persisted?.failure, .futureVersion)
-        XCTAssertEqual(persisted?.context.fromVersion, 14)
+        XCTAssertEqual(persisted?.context.fromVersion, 15)
     }
 
     /// A successful bridge must clear a stale lastAttemptFailed + failure case
