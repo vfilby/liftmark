@@ -89,6 +89,20 @@ final class CrashReporter: @unchecked Sendable {
             return
         }
 
+        // Skip Sentry on simulator and DEBUG builds to preserve the event quota —
+        // dev testing shouldn't count against prod. Override with
+        // LIFTMARK_SENTRY_FORCE=1 when you explicitly want to exercise Sentry locally.
+        let forceEnabled = ProcessInfo.processInfo.environment["LIFTMARK_SENTRY_FORCE"] == "1"
+        if !forceEnabled {
+            #if targetEnvironment(simulator)
+            Logger.shared.info(.sync, "CrashReporter: simulator build, skipping Sentry init")
+            return
+            #elseif DEBUG
+            Logger.shared.info(.sync, "CrashReporter: DEBUG build, skipping Sentry init")
+            return
+            #endif
+        }
+
         let dsn = SentryConfig.dsn
         guard !dsn.isEmpty, dsn.hasPrefix("https://") else {
             Logger.shared.info(.sync, "CrashReporter: no DSN configured, skipping Sentry init")
