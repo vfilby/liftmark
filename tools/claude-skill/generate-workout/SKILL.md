@@ -1,0 +1,86 @@
+---
+name: generate-workout
+description: Generate a strength training workout plan in LMWF (LiftMark Workout Format). Use when the user asks to write, generate, draft, or plan a workout, training day, training plan, lifting session, program, or asks for something "in LMWF" / "in LiftMark format". Produces valid LMWF markdown, validates it via the live API, and iterates on any errors before returning.
+---
+
+# Generate a workout in LMWF
+
+LMWF is a markdown-based format for strength training **plans** (not session records). Full spec: https://workoutformat.liftmark.app/spec.md — fetch it if you need detail beyond what's below.
+
+## Critical semantic: plans, not records
+
+LMWF documents describe what the athlete **intends to do**. Notes express programming intent, technique cues, stop conditions, and targets. **Never** write retrospective content like "felt strong today", "bar path was clean", "last set was a grinder". That is session-log semantics and belongs in the app's session data, not in LMWF.
+
+## Format essentials
+
+```
+# Workout Name
+@tags: strength, push        # optional, comma-separated
+@units: lbs                  # or kg; optional, default is lbs
+
+Workout-level programming note — focus, constraints, stop conditions.
+
+## Exercise Name
+Exercise-level note — target ranges, cues, substitutions.
+
+- 135 x 5                    # weight x reps
+- 185 x 5 @rest: 180s        # functional modifier: @rest
+- 225 x 5 @rest: 180s Aim for RPE 7   # trailing text is a per-set freeform note
+- x 10                       # bodyweight (no weight)
+- 60s                        # time-based (seconds)
+- 2m                         # time-based (minutes)
+- 1m 30s                     # time-based (mixed)
+```
+
+### Supersets (nested headers, one level deeper)
+
+```
+## Arms Superset
+
+### Cable Triceps Pushdown
+- 50 x 12
+- 50 x 12
+
+### Dumbbell Curl
+- 30 x 10
+- 30 x 10
+```
+
+### Modifiers
+
+- **Functional (use when needed):** `@rest: <duration>`, `@dropset`, `@perside`, `@amrap`. These trigger app behavior (timers, drop-set recording, etc.).
+- **Deprecated (do not use — validator emits a warning):** `@rpe`, `@tempo`. Express RPE, tempo, and all descriptive targets as trailing freeform text on the set line (e.g. `- 225 x 5 @rest: 180s Aim for RPE 8, controlled eccentric`).
+
+## Workflow
+
+1. **Generate.** Write the LMWF document based on the user's ask. Default to `@units: lbs` unless the user says kg. Include warmup and cooldown blocks for full sessions; skip them for quick single-exercise drafts. Add programming notes where useful — don't pad.
+
+2. **Validate.** Run the bundled validator:
+
+   ```bash
+   ~/.claude/skills/generate-workout/validate.sh <<'EOF'
+   # your LMWF here
+   EOF
+   ```
+
+   or against a file:
+
+   ```bash
+   ~/.claude/skills/generate-workout/validate.sh path/to/workout.md
+   ```
+
+   The response is JSON with `success`, `summary`, `errors`, `warnings`. If `success: true` and `errors: []`, you're done — if there are warnings, show them to the user but do not block.
+
+3. **Fix and re-validate** on any errors. Common fixes:
+   - Bad set format (e.g. using `@rpe` — replace with trailing note).
+   - Missing workout H1.
+   - Orphan set before first exercise header.
+   - Mixed unit suffix in same workout with a different `@units` metadata.
+
+4. **Return** the validated LMWF to the user in a single fenced code block. Do not include the validator's JSON unless asked — the user wants the workout, not the diagnostics.
+
+## Reference
+
+- Full spec (markdown): https://workoutformat.liftmark.app/spec.md
+- Human docs + in-browser validator: https://workoutformat.liftmark.app/
+- Validator API: `POST https://workoutformat.liftmark.app/validate` (Content-Type `application/json` with `{"markdown": "..."}` or `text/markdown` with the raw body)

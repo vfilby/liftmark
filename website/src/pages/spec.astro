@@ -1,0 +1,44 @@
+---
+import Base from '../layouts/Base.astro';
+import { marked } from 'marked';
+// Single source of truth: the spec lives outside this site, in the
+// liftmark-workout-format/ package. We import it as a raw string at build
+// time and render it to HTML with marked. Do NOT copy the spec into this
+// tree.
+import specSource from '../../../liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md?raw';
+
+marked.setOptions({
+  gfm: true,
+  breaks: false,
+});
+
+const html = marked.parse(specSource) as string;
+---
+
+<Base
+  title="Specification"
+  description="The LiftMark Workout Format (LMWF) specification: full format definition, modifiers, validation rules, and examples."
+>
+  <p class="muted spec-meta">
+    Rendered from the canonical
+    <a href="https://github.com/vfilby/liftmark/blob/main/liftmark-workout-format/LIFTMARK_WORKOUT_FORMAT_SPEC.md" rel="external noopener">LIFTMARK_WORKOUT_FORMAT_SPEC.md</a>.
+    Also available as <a href="/spec.md">raw markdown</a>.
+  </p>
+
+  <article class="spec" set:html={html} />
+
+  <style>
+    .spec-meta {
+      margin-top: 0.25rem;
+    }
+
+    .spec :global(h1:first-child) {
+      margin-top: 0.5rem;
+    }
+
+    .spec :global(img) {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</Base>
