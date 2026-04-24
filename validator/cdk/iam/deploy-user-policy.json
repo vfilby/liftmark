@@ -6,11 +6,53 @@
       "Effect": "Allow",
       "Action": "sts:AssumeRole",
       "Resource": [
-        "arn:aws:iam::341556346945:role/cdk-hnb659fds-deploy-role-341556346945-us-west-2",
-        "arn:aws:iam::341556346945:role/cdk-hnb659fds-file-publishing-role-341556346945-us-west-2",
-        "arn:aws:iam::341556346945:role/cdk-hnb659fds-image-publishing-role-341556346945-us-west-2",
-        "arn:aws:iam::341556346945:role/cdk-hnb659fds-lookup-role-341556346945-us-west-2"
+        "arn:aws:iam::341556346945:role/cdk-lmwf-deploy-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-file-publishing-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-image-publishing-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-lookup-role-341556346945-us-west-2",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-deploy-role-341556346945-us-east-1",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-file-publishing-role-341556346945-us-east-1",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-image-publishing-role-341556346945-us-east-1",
+        "arn:aws:iam::341556346945:role/cdk-lmwf-lookup-role-341556346945-us-east-1"
       ],
+      "Condition": {
+        "Bool": { "aws:MultiFactorAuthPresent": "true" }
+      }
+    },
+    {
+      "Sid": "SiteContentSync",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::liftmark-workoutformat-*",
+      "Condition": {
+        "Bool": { "aws:MultiFactorAuthPresent": "true" }
+      }
+    },
+    {
+      "Sid": "SiteContentObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::liftmark-workoutformat-*/*",
+      "Condition": {
+        "Bool": { "aws:MultiFactorAuthPresent": "true" }
+      }
+    },
+    {
+      "Sid": "SiteCacheInvalidation",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation",
+        "cloudfront:ListInvalidations"
+      ],
+      "Resource": "*",
       "Condition": {
         "Bool": { "aws:MultiFactorAuthPresent": "true" }
       }

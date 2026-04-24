@@ -1,6 +1,6 @@
 # Deploy User IAM Policy
 
-`deploy-user-policy.json` is the inline policy attached to the IAM user `liftmark-deploy` (account `341556346945`). It grants only `sts:AssumeRole` on the four CDK v2 bootstrap roles in `us-west-2`, gated on MFA. All real permissions live in the bootstrap roles themselves, which CDK maintains.
+`deploy-user-policy.json` is the inline policy attached to the IAM user `liftmark-deploy` (account `341556346945`). It grants `sts:AssumeRole` on the LiftMark-namespaced CDK bootstrap roles (`cdk-lmwf-*`) in both `us-west-2` (Lambda + API Gateway origin + S3 + CloudFront) and `us-east-1` (CloudFront cert), gated on MFA. All real permissions live in the bootstrap roles themselves, scoped by `../deploy-policy.json`, which CDK maintains.
 
 ## Applying
 
@@ -17,5 +17,40 @@ aws iam put-user-policy \
 
 ## Prerequisites
 
-- Bootstrap roles must trust the account root (default for `cdk bootstrap` without `--trust` overrides).
+- Both regions must be CDK-bootstrapped with the `lmwf` qualifier and the `LmwfCdkToolkit` stack name. If you haven't already:
+
+  ```bash
+  cdk bootstrap aws://341556346945/us-west-2 \
+    --qualifier lmwf --toolkit-stack-name LmwfCdkToolkit
+
+  cdk bootstrap aws://341556346945/us-east-1 \
+    --qualifier lmwf --toolkit-stack-name LmwfCdkToolkit
+  ```
+
+  Pass `--cloudformation-execution-policies arn:aws:iam::341556346945:policy/LmwfCdkDeployPolicy` to either bootstrap call if you want the scoped execution policy (`../deploy-policy.json`) applied to the CFN deploy role. Omitting that flag uses CDK's default `AdministratorAccess` for the deploy role, which is acceptable for a single-project account.
+
+  To create or refresh the managed policy:
+
+  ```bash
+  # first time
+  aws iam create-policy \
+    --policy-name LmwfCdkDeployPolicy \
+    --policy-document file://../deploy-policy.json
+
+  # subsequent updates
+  aws iam create-policy-version \
+    --policy-arn arn:aws:iam::341556346945:policy/LmwfCdkDeployPolicy \
+    --policy-document file://../deploy-policy.json \
+    --set-as-default
+  ```
+
+- Bootstrap roles trust the account root (default for `cdk bootstrap` without `--trust` overrides).
 - User must have MFA configured and be accessed via aws-vault (or another MFA-prompting flow).
+
+## Why two regions?
+
+CloudFront requires its ACM certificate in `us-east-1`. The deploy is split into `LmwfEdgeStack` (us-east-1, cert only) and `LmwfValidatorStack` (us-west-2, everything else). CDK's `crossRegionReferences` ties them together via SSM parameters.
+
+## Why the `lmwf` qualifier?
+
+The default CDK qualifier (`hnb659fds`) creates roles, buckets, and SSM parameters with names that would be shared by any other project using default bootstrap in the same AWS account. The `lmwf` qualifier plus the `LmwfCdkToolkit` stack name keep all LiftMark CDK infrastructure in its own namespace. It is wired into the code via `cdk.json` (`@aws-cdk/core:bootstrapQualifier` context + `toolkitStackName` top-level field).

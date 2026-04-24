@@ -42,14 +42,17 @@ bundle:
 		--format=cjs
 
 # ── CDK commands ──
+# Both stacks deploy together: LmwfEdgeStack (us-east-1 cert) and
+# LmwfValidatorStack (Lambda + API + S3 + CloudFront).
 build: bundle
-	cd cdk && $(AWS_VAULT) npx cdk synth
+	cd cdk && $(AWS_VAULT) npx cdk synth --all
 
 diff: bundle
-	cd cdk && $(AWS_VAULT) npx cdk diff --strict
+	cd cdk && $(AWS_VAULT) npx cdk diff --strict --all
 
 deploy: bundle
-	cd cdk && $(AWS_VAULT) npx cdk deploy --require-approval any-change
+	cd cdk && $(AWS_VAULT) npx cdk deploy --all --require-approval any-change \
+	    --outputs-file outputs.json
 
 destroy:
-	cd cdk && $(AWS_VAULT) npx cdk destroy
+	cd cdk && $(AWS_VAULT) npx cdk destroy --all

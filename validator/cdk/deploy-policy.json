@@ -29,7 +29,8 @@
       ],
       "Resource": [
         "arn:aws:cloudformation:*:*:stack/LmwfValidatorStack/*",
-        "arn:aws:cloudformation:*:*:stack/CDKToolkit/*"
+        "arn:aws:cloudformation:*:*:stack/LmwfEdgeStack/*",
+        "arn:aws:cloudformation:*:*:stack/LmwfCdkToolkit/*"
       ]
     },
     {
@@ -42,14 +43,19 @@
         "lambda:DeleteFunction",
         "lambda:GetFunction",
         "lambda:GetFunctionConfiguration",
+        "lambda:GetFunctionCodeSigningConfig",
         "lambda:ListFunctions",
+        "lambda:InvokeFunction",
         "lambda:AddPermission",
         "lambda:RemovePermission",
         "lambda:TagResource",
         "lambda:UntagResource",
         "lambda:ListTags"
       ],
-      "Resource": "arn:aws:lambda:*:*:function:LmwfValidatorStack-*"
+      "Resource": [
+        "arn:aws:lambda:*:*:function:LmwfValidatorStack-*",
+        "arn:aws:lambda:*:*:function:LmwfEdgeStack-*"
+      ]
     },
     {
       "Sid": "ApiGatewayManagement",
@@ -85,7 +91,8 @@
       ],
       "Resource": [
         "arn:aws:iam::*:role/LmwfValidatorStack-*",
-        "arn:aws:iam::*:role/cdk-*"
+        "arn:aws:iam::*:role/LmwfEdgeStack-*",
+        "arn:aws:iam::*:role/cdk-lmwf-*"
       ]
     },
     {
@@ -99,7 +106,10 @@
         "logs:DescribeLogGroups",
         "logs:TagResource"
       ],
-      "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/LmwfValidatorStack-*"
+      "Resource": [
+        "arn:aws:logs:*:*:log-group:/aws/lambda/LmwfValidatorStack-*",
+        "arn:aws:logs:*:*:log-group:/aws/lambda/LmwfEdgeStack-*"
+      ]
     },
     {
       "Sid": "CloudWatchAlarms",
@@ -131,19 +141,100 @@
         "s3:GetEncryptionConfiguration"
       ],
       "Resource": [
-        "arn:aws:s3:::cdk-*",
-        "arn:aws:s3:::cdk-*/*"
+        "arn:aws:s3:::cdk-lmwf-*",
+        "arn:aws:s3:::cdk-lmwf-*/*"
       ]
     },
     {
-      "Sid": "SSMBootstrapRead",
+      "Sid": "S3SiteBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "s3:GetBucketPolicy",
+        "s3:PutBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:PutBucketVersioning",
+        "s3:GetBucketVersioning",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketTagging",
+        "s3:GetBucketTagging",
+        "s3:PutLifecycleConfiguration",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::liftmark-workoutformat-*",
+        "arn:aws:s3:::liftmark-workoutformat-*/*"
+      ]
+    },
+    {
+      "Sid": "CloudFrontDistribution",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateDistribution",
+        "cloudfront:UpdateDistribution",
+        "cloudfront:DeleteDistribution",
+        "cloudfront:GetDistribution",
+        "cloudfront:GetDistributionConfig",
+        "cloudfront:ListDistributions",
+        "cloudfront:TagResource",
+        "cloudfront:UntagResource",
+        "cloudfront:ListTagsForResource",
+        "cloudfront:CreateOriginAccessControl",
+        "cloudfront:UpdateOriginAccessControl",
+        "cloudfront:DeleteOriginAccessControl",
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:GetOriginAccessControlConfig",
+        "cloudfront:ListOriginAccessControls",
+        "cloudfront:CreateFunction",
+        "cloudfront:UpdateFunction",
+        "cloudfront:DeleteFunction",
+        "cloudfront:DescribeFunction",
+        "cloudfront:GetFunction",
+        "cloudfront:ListFunctions",
+        "cloudfront:PublishFunction",
+        "cloudfront:AssociateAlias",
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation",
+        "cloudfront:ListInvalidations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SSMBootstrapReadAnyQualifier",
       "Effect": "Allow",
       "Action": [
         "ssm:GetParameter",
-        "ssm:PutParameter",
-        "ssm:DeleteParameter"
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath",
+        "ssm:DescribeParameters",
+        "ssm:ListTagsForResource"
       ],
-      "Resource": "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*"
+      "Resource": [
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*",
+        "arn:aws:ssm:*:*:parameter/cdk/exports/*"
+      ]
+    },
+    {
+      "Sid": "SSMBootstrapWriteLmwf",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:PutParameter",
+        "ssm:DeleteParameter",
+        "ssm:AddTagsToResource",
+        "ssm:RemoveTagsFromResource"
+      ],
+      "Resource": [
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/lmwf/*",
+        "arn:aws:ssm:*:*:parameter/cdk/exports/*"
+      ]
     },
     {
       "Sid": "ECRCDKBootstrap",
@@ -154,7 +245,7 @@
         "ecr:SetRepositoryPolicy",
         "ecr:PutLifecyclePolicy"
       ],
-      "Resource": "arn:aws:ecr:*:*:repository/cdk-*"
+      "Resource": "arn:aws:ecr:*:*:repository/cdk-lmwf-*"
     },
     {
       "Sid": "ACMCertificates",
