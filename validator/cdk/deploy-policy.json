@@ -208,7 +208,7 @@
       "Resource": "*"
     },
     {
-      "Sid": "SSMBootstrapReadAnyQualifier",
+      "Sid": "SSMBootstrapRead",
       "Effect": "Allow",
       "Action": [
         "ssm:GetParameter",
@@ -218,12 +218,12 @@
         "ssm:ListTagsForResource"
       ],
       "Resource": [
-        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*",
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/lmwf/*",
         "arn:aws:ssm:*:*:parameter/cdk/exports/*"
       ]
     },
     {
-      "Sid": "SSMBootstrapWriteLmwf",
+      "Sid": "SSMBootstrapWrite",
       "Effect": "Allow",
       "Action": [
         "ssm:PutParameter",
