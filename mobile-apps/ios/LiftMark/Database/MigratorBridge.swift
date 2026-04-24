@@ -73,8 +73,9 @@ enum MigratorBridge {
 
         // Fresh install — no legacy DB, no bridge table. Migrator runs from scratch.
         if initialState.isFreshInstall {
-            CrashReporter.shared.captureMigratorEvent(
-                "migrator_bridge_skipped_fresh_install"
+            CrashReporter.shared.addBreadcrumb(
+                "migrator_bridge_skipped_fresh_install",
+                category: .database
             )
             let migrator = Self.migrator
             try migrator.migrate(dbQueue)
@@ -121,25 +122,31 @@ enum MigratorBridge {
                 )
                 throw MigratorBridgeError.refusedFutureVersion(version: initialState.legacyVersion)
             }
-            CrashReporter.shared.captureMigratorEvent(
+            CrashReporter.shared.addBreadcrumb(
                 "migrator_bridge_skipped_already_done",
+                category: .database,
                 metadata: ["buildNumber": currentBuildNumber()]
             )
             // Informational downgrade-round-trip event.
             if let lastSuccess = UserDefaults.standard.string(forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber),
                lastSuccess != currentBuildNumber()
             {
-                CrashReporter.shared.captureMigratorEvent(
+                CrashReporter.shared.addBreadcrumb(
                     "migrator_bridge_observed_after_downgrade",
+                    category: .database,
                     metadata: [
                         "buildNumber": currentBuildNumber(),
                         "lastSuccessBuildNumber": lastSuccess
                     ]
                 )
             }
-            // Migrator pass is a no-op for already-bridged DBs at v13; safe to run.
+            // Migrator may apply newly-registered versions on a previously-bridged DB.
+            // Update schema_version to match so the legacy `DatabaseManager.runMigrations`
+            // catch-up pass doesn't re-run the same ALTER TABLE and blow up on a
+            // duplicate column.
             let migrator = Self.migrator
             try migrator.migrate(dbQueue)
+            try writeSchemaVersion(dbQueue, version: currentVersion)
             MigratorBridgeFailure.clearPersisted()
             return .skippedAlreadyBridged
         }

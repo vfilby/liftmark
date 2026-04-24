@@ -262,6 +262,43 @@ final class MigratorBridgeTests: XCTestCase {
         XCTAssertEqual(countBefore, countAfter, "already-bridged bridge call must not add rows")
     }
 
+    /// Regression: when a user upgrades an app that has already bridged at version N-1
+    /// to a build at version N, the bridge's `.skippedAlreadyBridged` path runs the migrator
+    /// (which applies the new migration), then the legacy `runMigrations` catch-up must not
+    /// re-apply the same ALTER TABLE. Prior to the fix this produced a duplicate-column
+    /// SQLite error that took down `DatabaseManager.database()` entirely on every launch
+    /// for every upgrading TestFlight user.
+    func testAlreadyBridgedAtPriorVersion_doesNotDoubleApplyCurrentMigration() throws {
+        let (loaded, queue, url) = try loadSeed(ddl: DatabaseSeeds.v13DDL, data: DatabaseSeeds.v13Data)
+        defer { DatabaseSeedLoader.cleanup(loaded) }
+
+        // Simulate "this DB was bridged by a prior build whose head was v13":
+        // populate grdb_migrations with v1..v13 (but not v14) and leave schema_version at 13.
+        try queue.write { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS grdb_migrations (identifier TEXT PRIMARY KEY NOT NULL)
+            """)
+            for identifier in MigratorBridge.identifiers.prefix(13) {
+                try db.execute(
+                    sql: "INSERT OR IGNORE INTO grdb_migrations (identifier) VALUES (?)",
+                    arguments: [identifier]
+                )
+            }
+        }
+
+        // Running bridge + legacy from this state must succeed — bridge's migrator applies v14,
+        // then legacy runMigrations must early-return instead of re-running migrateToV14.
+        XCTAssertNoThrow(try runBridgeAndLegacy(on: queue, liveDBURL: url))
+        XCTAssertEqual(try schemaVersion(queue), DatabaseManager.currentSchemaVersion)
+        XCTAssertEqual(try identifiers(queue), MigratorBridge.identifiers.sorted())
+
+        // The v14 column should exist exactly once and user_settings should still be queryable.
+        let columns = try queue.read { db in
+            try Row.fetchAll(db, sql: "PRAGMA table_info(user_settings)").compactMap { $0["name"] as String? }
+        }
+        XCTAssertEqual(columns.filter { $0 == "default_weight_step_lbs" }.count, 1)
+    }
+
     func testAlreadyBridged_succeededEventEmittedExactlyOnce() throws {
         var capturedEvents: [String] = []
         CrashReporter.migratorEventRecorder = { event, _ in
@@ -371,20 +408,6 @@ final class MigratorBridgeTests: XCTestCase {
         XCTAssertTrue(capturedEvents.contains("migrator_bridge_attempted"))
         XCTAssertTrue(capturedEvents.contains("migrator_bridge_backup_succeeded"))
         XCTAssertTrue(capturedEvents.contains("migrator_bridge_succeeded"))
-    }
-
-    func testFreshInstall_emitsSkippedFreshInstallEvent() throws {
-        var capturedEvents: [String] = []
-        CrashReporter.migratorEventRecorder = { event, _ in
-            capturedEvents.append(event)
-        }
-
-        let (loaded, queue, url) = try makeEmptyDB()
-        defer { DatabaseSeedLoader.cleanup(loaded) }
-
-        _ = try runBridgeAndLegacy(on: queue, liveDBURL: url)
-
-        XCTAssertTrue(capturedEvents.contains("migrator_bridge_skipped_fresh_install"))
     }
 
     func testFutureVersion_emitsRefusedEvent() throws {

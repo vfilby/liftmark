@@ -54,7 +54,7 @@ Naming rule: `vN_<short_description>`. The numeric prefix matches the legacy `sc
 - **User at N = 13** (virtually all existing users): bridge inserts all 13 identifier rows into `grdb_migrations`.
 - **User at 1 ≤ N < 13**: bridge completes the pending legacy migrations through v13 using the in-process legacy chain, then inserts v1..v13 identifier rows. (The population is near-zero because the legacy chain ran eagerly on every launch, but the design is correct for it.)
 - **User at N > 13** (forward-time downgrade): bridge refuses. See §3.e.
-- **Already bridged** (`grdb_migrations` populated): bridge detects this and hands off directly to `DatabaseMigrator`.
+- **Already bridged** (`grdb_migrations` populated): bridge detects this and hands off directly to `DatabaseMigrator`. After the migrator returns, the bridge writes `schema_version.version = currentVersion` so that the legacy `DatabaseManager.runMigrations` catch-up pass (still called from `database()` during the bridge era) observes the advanced schema and does not attempt to re-apply a migration that the migrator just ran. Without this write, a build that adds a new migration (e.g. v14 on top of a v13-bridged DB) crashes in the legacy chain with "duplicate column name".
 
 ### 1.4 What the bridge does NOT do
 
@@ -242,9 +242,9 @@ Positive-path events:
 | `migrator_bridge_attempted`                | Entry to bridge, after pre-flight passes                      | `fromVersion`, `dbSizeBytes`                                          |
 | `migrator_bridge_backup_succeeded`         | After §2.4 verification passes                                | `backupSizeBytes`, `durationMs`                                       |
 | `migrator_bridge_succeeded`                | After transaction commit, before returning                    | `fromVersion`, `toIdentifier`, `bridgedIdentifierCount`, `durationMs` |
-| `migrator_bridge_skipped_fresh_install`    | Bridge detects no `schema_version` and no `grdb_migrations`   | (none)                                                                |
-| `migrator_bridge_skipped_already_done`     | Bridge detects `grdb_migrations` populated                    | `buildNumber`                                                         |
 | `migrator_bridge_observed_after_downgrade` | See §3.g                                                      | `buildNumber`, previous `lastSuccessBuildNumber`                      |
+
+> `migrator_bridge_skipped_fresh_install` and `migrator_bridge_skipped_already_done` were previously emitted as Sentry events but were demoted to breadcrumbs (§5.2) because they fire on every launch for every already-bridged user, which generated high-volume info-level noise in Sentry. See §5.3.1 for the revised cleanup-trigger approach.
 
 Failure events (one per §3 row):
 
@@ -266,6 +266,8 @@ Breadcrumbs (not events):
 - `bridge.backup.begin` / `bridge.backup.end`
 - `bridge.write.begin` / `bridge.write.end`
 - `bridge.resumed_after_kill` (§3.h)
+- `migrator_bridge_skipped_fresh_install`
+- `migrator_bridge_skipped_already_done`
 
 ### 5.3 `migrator_bridge_succeeded` — cleanup-trigger event
 
@@ -275,9 +277,13 @@ The single event that drives §6. Requirements:
 - **Carries `fromVersion`** so we can disaggregate "already at v13" from "caught up from v<13".
 - **Carries `buildNumber`** (auto-attached) so Sentry queries for "devices seen in build X but no success event" are straightforward.
 
+### 5.3.1 Cleanup-trigger signal (revised)
+
+The previous §6 cleanup check (3) compared `migrator_bridge_skipped_already_done` event counts across build numbers to detect lingering pre-bridge traffic. That event is now a breadcrumb, so the check must be re-derived from the `migrator_bridge_succeeded` event's `buildNumber` tag instead: any device emitting sync errors without a corresponding `succeeded` tag at a bridge-containing build is a lingering pre-bridge install. Re-add a rate-limited `skipped_already_done` event (once per buildNumber per device, via UserDefaults) before re-evaluating cleanup readiness if the `succeeded`-only signal is insufficient.
+
 ### 5.4 Alert tag
 
-Every failure event sets `scope.setTag("data_integrity_risk", "true")` except `skipped_already_done`, `skipped_fresh_install`, and `observed_after_downgrade`. This supports a single Sentry alert rule on the tag.
+Every failure event sets `scope.setTag("data_integrity_risk", "true")` except `observed_after_downgrade`. This supports a single Sentry alert rule on the tag.
 
 ---
 
@@ -289,7 +295,7 @@ We ship the cleanup build when **all** of the following hold:
 
 1. At least **90 consecutive days** have passed since the bridge was first released to TestFlight (absolute floor for infrequent-use devices).
 2. In the Sentry query `event:migrator_bridge_succeeded AND environment:(testflight OR release)`, the most recent 30 days of events show **≥ 95%** of all devices currently emitting any event (measured by Sentry `device.id`) have a `migrator_bridge_succeeded` event at some point in history.
-3. **Zero** `migrator_bridge_skipped_already_done` events in the last 30 days carry a `buildNumber` **lower than** the first bridge-containing build. (Non-zero means a pre-bridge build is still shipping traffic.)
+3. **Zero** lingering pre-bridge traffic per §5.3.1 (the original `skipped_already_done`-count check is superseded; use the `migrator_bridge_succeeded` `buildNumber` coverage signal instead).
 4. **Zero** `migrator_bridge_*_failed` events in the last 30 days are unreproduced or unexplained.
 
 The rule is intentionally conservative: the wrong side of the decision is shipping cleanup while a user still has an un-bridged DB.
