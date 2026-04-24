@@ -230,6 +230,10 @@ final class CKRecordMapper {
         record["countdownSoundsEnabled"] = Int64(s.countdownSoundsEnabled) as CKRecordValue
         record["defaultTimerCountdown"] = Int64(s.defaultTimerCountdown) as CKRecordValue
         record["defaultWeightStepLbs"] = s.defaultWeightStepLbs as CKRecordValue
+        record["aiPromptIncludeFormatPointer"] = Int64(s.aiPromptIncludeFormatPointer) as CKRecordValue
+        record["aiPromptIncludeRecentWorkouts"] = Int64(s.aiPromptIncludeRecentWorkouts) as CKRecordValue
+        record["aiPromptIncludeProgression"] = Int64(s.aiPromptIncludeProgression) as CKRecordValue
+        record["aiPromptIncludeEquipment"] = Int64(s.aiPromptIncludeEquipment) as CKRecordValue
         if let c = s.customPromptAddition { record["customPromptAddition"] = c as CKRecordValue }
         if let h = s.homeTiles { record["homeTiles"] = h as CKRecordValue }
         if let d = parseDate(s.updatedAt) { record["updatedAt"] = d as CKRecordValue }
@@ -579,6 +583,10 @@ final class CKRecordMapper {
                     hasAcceptedDisclaimer: existing.hasAcceptedDisclaimer, // Never sync — local-only
                     defaultTimerCountdown: Int(self.int64Field(record, "defaultTimerCountdown") ?? Int64(existing.defaultTimerCountdown)),
                     defaultWeightStepLbs: self.doubleField(record, "defaultWeightStepLbs") ?? existing.defaultWeightStepLbs,
+                    aiPromptIncludeFormatPointer: Int(self.int64Field(record, "aiPromptIncludeFormatPointer") ?? Int64(existing.aiPromptIncludeFormatPointer)),
+                    aiPromptIncludeRecentWorkouts: Int(self.int64Field(record, "aiPromptIncludeRecentWorkouts") ?? Int64(existing.aiPromptIncludeRecentWorkouts)),
+                    aiPromptIncludeProgression: Int(self.int64Field(record, "aiPromptIncludeProgression") ?? Int64(existing.aiPromptIncludeProgression)),
+                    aiPromptIncludeEquipment: Int(self.int64Field(record, "aiPromptIncludeEquipment") ?? Int64(existing.aiPromptIncludeEquipment)),
                     homeTiles: self.stringField(record, "homeTiles") ?? existing.homeTiles,
                     createdAt: existing.createdAt,
                     updatedAt: updatedAt
@@ -605,6 +613,10 @@ final class CKRecordMapper {
                     hasAcceptedDisclaimer: 0, // New device — must accept again
                     defaultTimerCountdown: Int(self.int64Field(record, "defaultTimerCountdown") ?? 0),
                     defaultWeightStepLbs: self.doubleField(record, "defaultWeightStepLbs") ?? 2.5,
+                    aiPromptIncludeFormatPointer: Int(self.int64Field(record, "aiPromptIncludeFormatPointer") ?? 1),
+                    aiPromptIncludeRecentWorkouts: Int(self.int64Field(record, "aiPromptIncludeRecentWorkouts") ?? 1),
+                    aiPromptIncludeProgression: Int(self.int64Field(record, "aiPromptIncludeProgression") ?? 1),
+                    aiPromptIncludeEquipment: Int(self.int64Field(record, "aiPromptIncludeEquipment") ?? 1),
                     homeTiles: self.stringField(record, "homeTiles"),
                     createdAt: now,
                     updatedAt: self.dateToISO(remoteUpdatedAt) ?? now

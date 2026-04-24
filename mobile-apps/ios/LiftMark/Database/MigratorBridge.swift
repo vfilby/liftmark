@@ -37,11 +37,12 @@ enum MigratorBridge {
         "v11_gym_unique_fk_indexes",
         "v12_set_measurements",
         "v13_default_timer_countdown",
-        "v14_default_weight_step_lbs"
+        "v14_default_weight_step_lbs",
+        "v15_ai_prompt_toggles"
     ]
 
     /// Highest bridge version == number of registered migrations.
-    static let currentVersion = 14
+    static let currentVersion = 15
 
     // MARK: - Outcome
 

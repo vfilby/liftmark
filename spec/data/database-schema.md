@@ -34,6 +34,7 @@ Observable changes per schema version. Full migration contract lives in [`migrat
 | 12  | Major reshape: `set_measurements` created; all measurement columns fanned out from `session_sets` / `template_sets`; both set tables rebuilt with measurement columns removed and lossy drop of `parent_set_id`, `drop_sequence`, `tempo`, `target_weight_unit` (see "Legacy columns removed in v12" below). |
 | 13  | `user_settings` += `default_timer_countdown`. |
 | 14  | `user_settings` += `default_weight_step_lbs` (REAL, default 2.5). |
+| 15  | `user_settings` += `ai_prompt_include_format_pointer`, `ai_prompt_include_recent_workouts`, `ai_prompt_include_progression`, `ai_prompt_include_equipment` (INTEGER, default 1). |
 
 ### Forward Compatibility
 
@@ -70,7 +71,7 @@ CREATE TABLE IF NOT EXISTS grdb_migrations (
 );
 ```
 
-Identifiers (v1..v14), in application order:
+Identifiers (v1..v15), in application order:
 
 ```
 v1_bootstrap
@@ -87,6 +88,7 @@ v11_gym_unique_fk_indexes
 v12_set_measurements
 v13_default_timer_countdown
 v14_default_weight_step_lbs
+v15_ai_prompt_toggles
 ```
 
 The mapping is a wire-level contract — identifiers **must not change** after first ship. Canonical definition in [`../services/migrator.md`](../services/migrator.md).
@@ -290,6 +292,10 @@ CREATE TABLE IF NOT EXISTS user_settings (
   has_accepted_disclaimer     INTEGER DEFAULT 0,     -- Boolean: onboarding disclaimer accepted
   default_timer_countdown     INTEGER DEFAULT 0,     -- Boolean: initial mode for ExerciseTimerView (0 = count-up, 1 = count-down)
   default_weight_step_lbs     REAL DEFAULT 2.5,      -- Weight stepper increment for lbs sets (2.5 or 5.0); kg sets always use 2.5
+  ai_prompt_include_format_pointer  INTEGER DEFAULT 1,  -- Boolean: include brief LMWF format pointer + spec.md URL in AI prompt
+  ai_prompt_include_recent_workouts INTEGER DEFAULT 1,  -- Boolean: include compact summary of last 5 workouts in AI prompt
+  ai_prompt_include_progression     INTEGER DEFAULT 1,  -- Boolean: include trajectory of top-5-by-frequency exercises (compounds preferred) in AI prompt
+  ai_prompt_include_equipment       INTEGER DEFAULT 1,  -- Boolean: include selected-gym equipment list in AI prompt
   created_at                  TEXT NOT NULL,
   updated_at                  TEXT NOT NULL
 );

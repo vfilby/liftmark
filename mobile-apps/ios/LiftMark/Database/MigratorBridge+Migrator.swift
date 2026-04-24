@@ -574,6 +574,13 @@ extension MigratorBridge {
             try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5")
         }
 
+        m.registerMigration("v15_ai_prompt_toggles") { db in
+            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_format_pointer INTEGER DEFAULT 1")
+            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_recent_workouts INTEGER DEFAULT 1")
+            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_progression INTEGER DEFAULT 1")
+            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_equipment INTEGER DEFAULT 1")
+        }
+
         return m
     }
 

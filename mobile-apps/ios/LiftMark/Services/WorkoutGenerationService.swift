@@ -2,16 +2,39 @@ import Foundation
 
 // MARK: - Types
 
+struct AIPromptToggles: Equatable {
+    var includeFormatPointer: Bool
+    var includeRecentWorkouts: Bool
+    var includeProgression: Bool
+    var includeEquipment: Bool
+
+    static let all = AIPromptToggles(
+        includeFormatPointer: true,
+        includeRecentWorkouts: true,
+        includeProgression: true,
+        includeEquipment: true
+    )
+
+    static let none = AIPromptToggles(
+        includeFormatPointer: false,
+        includeRecentWorkouts: false,
+        includeProgression: false,
+        includeEquipment: false
+    )
+}
+
 struct WorkoutGenerationContext {
     var defaultWeightUnit: WeightUnit
     var customPromptAddition: String?
     var recentWorkouts: String
+    var progression: String
     var availableEquipment: [String]
     var currentGym: String?
+    var toggles: AIPromptToggles
 }
 
 struct WorkoutGenerationParams {
-    var intent: String
+    var intent: String?
     var duration: WorkoutDuration?
     var difficulty: WorkoutDifficulty?
     var focusAreas: [String]?
@@ -40,112 +63,156 @@ struct WorkoutValidationResult {
 
 enum WorkoutGenerationService {
 
+    static let lmwfSpecURL = "https://workoutformat.liftmark.app/spec.md"
+
     // MARK: - Prompt Building
 
-    /// Build the complete prompt for Claude API workout generation.
+    /// Compose the AI prompt from independently-toggleable context blocks.
+    /// Pure function — the `GeneratePromptView` uses this for both the live preview and
+    /// the actual API call, so the user sees exactly what will be sent.
     static func buildWorkoutGenerationPrompt(
         context: WorkoutGenerationContext,
         params: WorkoutGenerationParams
     ) -> String {
-        let equipment = params.equipmentOverride ?? context.availableEquipment
-        let equipmentList = equipment.isEmpty ? "full commercial gym equipment" : equipment.joined(separator: ", ")
+        var sections: [String] = []
 
-        let durationGuidance: String
-        switch params.duration ?? .medium {
-        case .short:
-            durationGuidance = "~30 minutes (4-5 exercises, 12-15 working sets total)"
-        case .medium:
-            durationGuidance = "~60 minutes (6-8 exercises, 18-24 working sets total)"
-        case .long:
-            durationGuidance = "~90 minutes (8-10 exercises, 25-30 working sets total)"
+        sections.append("You are a professional strength coach creating a personalized workout plan in LiftMark Workout Format (LMWF).")
+
+        let userContext = buildUserContextSection(context: context, params: params)
+        if !userContext.isEmpty {
+            sections.append(userContext)
         }
 
-        let difficultyGuidance = params.difficulty.map { "Target difficulty: \($0.rawValue). " } ?? ""
-        let focusAreasText = (params.focusAreas?.isEmpty == false)
-            ? "Focus areas: \(params.focusAreas!.joined(separator: ", ")). "
-            : ""
+        if context.toggles.includeFormatPointer {
+            sections.append(formatPointerBlock(unit: context.defaultWeightUnit))
+        }
 
-        let customNotes = context.customPromptAddition.map { "- Custom notes: \($0)" } ?? ""
+        if let request = buildRequestSection(params: params, context: context) {
+            sections.append(request)
+        }
+
+        sections.append("""
+        # OUTPUT INSTRUCTIONS
+
+        Output ONLY the workout in LMWF markdown. No preamble, no explanation, no surrounding prose — the response will be parsed directly.
+        """)
+
+        return sections.joined(separator: "\n\n")
+    }
+
+    // MARK: - Block Composers
+
+    private static func buildUserContextSection(
+        context: WorkoutGenerationContext,
+        params: WorkoutGenerationParams
+    ) -> String {
+        var blocks: [String] = []
+
+        if context.toggles.includeRecentWorkouts,
+           !context.recentWorkouts.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            blocks.append("""
+            ## Recent Training History
+            \(context.recentWorkouts)
+            """)
+        }
+
+        if context.toggles.includeProgression,
+           !context.progression.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            blocks.append("""
+            ## Progression
+            \(context.progression)
+            """)
+        }
+
+        if context.toggles.includeEquipment {
+            let equipment = params.equipmentOverride ?? context.availableEquipment
+            let equipmentList = equipment.isEmpty ? "full commercial gym equipment" : equipment.joined(separator: ", ")
+            let gymLine = context.currentGym.map { "Gym: \($0)\n" } ?? ""
+            blocks.append("""
+            ## Current Gym & Equipment
+            \(gymLine)Available equipment: \(equipmentList)
+            """)
+        }
+
+        var prefs = ["- Weight unit: \(context.defaultWeightUnit.rawValue)"]
+        if let custom = context.customPromptAddition?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !custom.isEmpty {
+            prefs.append("- Custom notes: \(custom)")
+        }
+        blocks.append("""
+        ## Preferences
+        \(prefs.joined(separator: "\n"))
+        """)
+
+        return "# USER CONTEXT\n\n" + blocks.joined(separator: "\n\n")
+    }
+
+    private static func formatPointerBlock(unit: WeightUnit) -> String {
+        """
+        # LMWF FORMAT
+
+        Output valid LiftMark Workout Format (LMWF) markdown — full spec at \(lmwfSpecURL)
+
+        Minimal shape:
+        ```
+        # Workout Name
+        @tags: tag1, tag2
+        @units: \(unit.rawValue)
+
+        ## Exercise Name
+        - 135 x 5 @rest: 120s
+        - 185 x 5
+        ```
+
+        Use nested headers (`###` under a `## Superset:` parent) for supersets/circuits.
+        Functional modifiers: `@rest: 120s`, `@dropset`, `@per-side`, `@amrap`.
+        """
+    }
+
+    private static func buildRequestSection(
+        params: WorkoutGenerationParams,
+        context: WorkoutGenerationContext
+    ) -> String? {
+        let intent = params.intent?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let intent, !intent.isEmpty else { return nil }
+
+        var lines = ["Generate a workout for: \(intent)"]
+
+        if let duration = params.duration {
+            let guidance: String
+            switch duration {
+            case .short: guidance = "~30 minutes (4–5 exercises, 12–15 working sets)"
+            case .medium: guidance = "~60 minutes (6–8 exercises, 18–24 working sets)"
+            case .long: guidance = "~90 minutes (8–10 exercises, 25–30 working sets)"
+            }
+            lines.append("Target duration: \(guidance)")
+        }
+        if let difficulty = params.difficulty {
+            lines.append("Target difficulty: \(difficulty.rawValue)")
+        }
+        if let focus = params.focusAreas, !focus.isEmpty {
+            lines.append("Focus areas: \(focus.joined(separator: ", "))")
+        }
+
+        var requirements: [String] = ["1. Match the stated intent."]
+        if context.toggles.includeProgression || context.toggles.includeRecentWorkouts {
+            requirements.append("2. Base weights and exercise selection on the recent training history / progression above.")
+        }
+        if context.toggles.includeEquipment {
+            requirements.append("\(requirements.count + 1). Only use equipment from the available list above.")
+        }
+        if context.toggles.includeRecentWorkouts {
+            requirements.append("\(requirements.count + 1). Consider recency and volume of similar movements for recovery.")
+        }
 
         return """
-        You are a professional strength coach creating a personalized workout for an athlete.
-
-        # USER CONTEXT
-
-        ## Recent Training History
-        \(context.recentWorkouts)
-
-        ## Current Gym & Equipment
-        Gym: \(context.currentGym ?? "Default gym")
-        Available equipment: \(equipmentList)
-
-        ## Preferences
-        - Weight unit: \(context.defaultWeightUnit.rawValue)
-        \(customNotes)
-
         # WORKOUT REQUEST
 
-        Generate a workout for: \(params.intent)
-
-        \(difficultyGuidance)\(focusAreasText)Target duration: \(durationGuidance)
+        \(lines.joined(separator: "\n"))
 
         # REQUIREMENTS
 
-        1. **Progression**: Base exercises and weights on the user's recent training history and PRs
-        2. **Equipment**: Only use equipment from the available list above
-        3. **Specificity**: Address the user's stated intent (\(params.intent))
-        4. **Recovery**: Consider recency and volume of similar movements in recent workouts
-        5. **Format**: Output ONLY in LiftMark Workout Format (LMWF) - see spec below
-
-        # LIFTMARK WORKOUT FORMAT (LMWF) SPECIFICATION
-
-        The output must be valid LMWF markdown that can be parsed automatically.
-
-        ## Structure:
-        ```markdown
-        # Workout Name
-        @tags: tag1, tag2, tag3
-        @units: \(context.defaultWeightUnit.rawValue)
-
-        Optional freeform description or notes here.
-
-        ## Exercise Name
-        Optional exercise notes here
-        - weight x reps @modifier: value
-        - weight x reps @modifier: value
-
-        ## Another Exercise
-        - weight x reps
-        ```
-
-        ## Supported Set Formats:
-        - `135 x 5` - Weight and reps
-        - `x 10` - Bodyweight for reps
-        - `60s` or `1m 30s` - Time-based (planks, cardio)
-
-        ## Supported Modifiers:
-        - `@rest: 120s` - Rest period in seconds
-        - `@rpe: 8` - Rate of perceived exertion (1-10)
-        - `@tempo: 3-0-1-0` - Eccentric-pause-concentric-pause in seconds
-        - `@dropset` - Indicates a drop set
-        - `@per-side` - Weight/reps are per side
-        - `@amrap` - As many reps as possible
-
-        ## Supersets and Grouping:
-        Use nested headers for supersets/circuits:
-        ```markdown
-        ## Superset: Upper Body
-
-        ### Bench Press
-        - 185 x 8 @rest: 30s
-
-        ### Barbell Row
-        - 155 x 8 @rest: 120s
-        ```
-
-        # OUTPUT INSTRUCTIONS
-
-        Generate ONLY the workout in LMWF format above. Do not include any preamble, explanation, or additional text outside the markdown format. The output should be ready to parse and save directly.
+        \(requirements.joined(separator: "\n"))
         """
     }
 

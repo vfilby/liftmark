@@ -8,6 +8,20 @@ struct SettingsAISection: View {
     var body: some View {
         if let settings = settingsStore.settings {
             VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+                Text("Include in AI prompt")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("LMWF format pointer", isOn: toggleBinding(\.aiPromptIncludeFormatPointer))
+                    .accessibilityIdentifier("toggle-ai-include-format-pointer")
+                Toggle("Recent workouts", isOn: toggleBinding(\.aiPromptIncludeRecentWorkouts))
+                    .accessibilityIdentifier("toggle-ai-include-recent-workouts")
+                Toggle("Progression", isOn: toggleBinding(\.aiPromptIncludeProgression))
+                    .accessibilityIdentifier("toggle-ai-include-progression")
+                Toggle("Gym equipment", isOn: toggleBinding(\.aiPromptIncludeEquipment))
+                    .accessibilityIdentifier("toggle-ai-include-equipment")
+            }
+
+            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
                 Text("Custom Prompt")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -87,6 +101,19 @@ struct SettingsAISection: View {
                 }
             }
         }
+    }
+
+    // MARK: - Toggle Binding
+
+    private func toggleBinding(_ keyPath: WritableKeyPath<UserSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings?[keyPath: keyPath] ?? true },
+            set: { newValue in
+                guard var updated = settingsStore.settings else { return }
+                updated[keyPath: keyPath] = newValue
+                settingsStore.updateSettings(updated)
+            }
+        )
     }
 
     // MARK: - API Key Actions

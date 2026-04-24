@@ -166,6 +166,94 @@ final class WorkoutHistoryServiceTests: XCTestCase {
         XCTAssertFalse(result.contains("Empty Exercise"))
     }
 
+    // MARK: - formatProgression
+
+    func testFormatProgressionEmptyWhenNoSessions() {
+        XCTAssertEqual(service.formatProgression(sessions: []), "")
+    }
+
+    func testFormatProgressionPrefersCompounds() {
+        // 3 compound, 3 isolation. Top 2 should both be compound.
+        let sessions: [WorkoutSession] = [
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 185, actualReps: 5, status: .completed)
+                ]),
+                makeSessionExercise(name: "Bicep Curl", sets: [
+                    makeSessionSet(actualWeight: 35, actualReps: 10, status: .completed)
+                ])
+            ]),
+            makeSession(exercises: [
+                makeSessionExercise(name: "Back Squat", sets: [
+                    makeSessionSet(actualWeight: 225, actualReps: 5, status: .completed)
+                ]),
+                makeSessionExercise(name: "Bicep Curl", sets: [
+                    makeSessionSet(actualWeight: 40, actualReps: 10, status: .completed)
+                ])
+            ])
+        ]
+        let output = service.formatProgression(sessions: sessions, topN: 2)
+        XCTAssertTrue(output.contains("Bench"))
+        XCTAssertTrue(output.contains("Squat"))
+        XCTAssertFalse(output.contains("Curls"))
+    }
+
+    func testFormatProgressionPadsWithNonCompoundsWhenShort() {
+        // Only 1 compound, topN=3 → pads with 2 isolations.
+        let sessions: [WorkoutSession] = [
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 185, actualReps: 5, status: .completed)
+                ]),
+                makeSessionExercise(name: "Bicep Curl", sets: [
+                    makeSessionSet(actualWeight: 35, actualReps: 10, status: .completed)
+                ]),
+                makeSessionExercise(name: "Lateral Raise", sets: [
+                    makeSessionSet(actualWeight: 15, actualReps: 12, status: .completed)
+                ])
+            ])
+        ]
+        let output = service.formatProgression(sessions: sessions, topN: 3)
+        XCTAssertTrue(output.contains("Bench"))
+        XCTAssertTrue(output.contains("Curls"))
+        XCTAssertTrue(output.contains("Lat Raise"))
+    }
+
+    func testFormatProgressionEmitsOldestToNewestTrajectory() {
+        // Session 1 (oldest entered first in list → but repository returns newest first;
+        // we honor that convention: sessions[0] is most recent).
+        let sessions: [WorkoutSession] = [
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 205, actualReps: 5, status: .completed)
+                ])
+            ]),
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 195, actualReps: 5, status: .completed)
+                ])
+            ]),
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 185, actualReps: 5, status: .completed)
+                ])
+            ])
+        ]
+        let output = service.formatProgression(sessions: sessions, topN: 1)
+        XCTAssertTrue(output.contains("185x5→195x5→205x5"))
+    }
+
+    func testFormatProgressionSkipsSessionsWithoutCompletedSets() {
+        let sessions: [WorkoutSession] = [
+            makeSession(exercises: [
+                makeSessionExercise(name: "Bench Press", sets: [
+                    makeSessionSet(actualWeight: 185, actualReps: 5, status: .skipped)
+                ])
+            ])
+        ]
+        XCTAssertEqual(service.formatProgression(sessions: sessions), "")
+    }
+
     // MARK: - Helpers
 
     private func makeSession(

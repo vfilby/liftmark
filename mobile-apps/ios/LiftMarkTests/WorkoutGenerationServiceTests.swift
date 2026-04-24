@@ -59,10 +59,10 @@ final class WorkoutGenerationServiceTests: XCTestCase {
         XCTAssertTrue(prompt.contains("~90 minutes"))
     }
 
-    func testBuildPromptDefaultsDurationToMedium() {
+    func testBuildPromptOmitsDurationWhenNotSpecified() {
         let params = WorkoutGenerationParams(intent: "Workout")
         let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: makeContext(), params: params)
-        XCTAssertTrue(prompt.contains("~60 minutes"))
+        XCTAssertFalse(prompt.contains("Target duration"))
     }
 
     func testBuildPromptIncludesDifficulty() {
@@ -98,12 +98,88 @@ final class WorkoutGenerationServiceTests: XCTestCase {
         XCTAssertTrue(prompt.contains("Bench 225x5"))
     }
 
-    func testBuildPromptContainsLMWFSpec() {
+    func testBuildPromptContainsLMWFFormatPointerWhenToggled() {
         let params = WorkoutGenerationParams(intent: "Workout")
         let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: makeContext(), params: params)
-        XCTAssertTrue(prompt.contains("LIFTMARK WORKOUT FORMAT"))
+        XCTAssertTrue(prompt.contains("# LMWF FORMAT"))
+        XCTAssertTrue(prompt.contains(WorkoutGenerationService.lmwfSpecURL))
         XCTAssertTrue(prompt.contains("@rest:"))
-        XCTAssertTrue(prompt.contains("@rpe:"))
+    }
+
+    // MARK: - Toggle behavior
+
+    func testBuildPromptOmitsFormatPointerWhenDisabled() {
+        var toggles = AIPromptToggles.all
+        toggles.includeFormatPointer = false
+        let context = makeContext(toggles: toggles)
+        let params = WorkoutGenerationParams(intent: "Workout")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("# LMWF FORMAT"))
+        XCTAssertFalse(prompt.contains(WorkoutGenerationService.lmwfSpecURL))
+    }
+
+    func testBuildPromptOmitsRecentWorkoutsWhenDisabled() {
+        var toggles = AIPromptToggles.all
+        toggles.includeRecentWorkouts = false
+        let context = makeContext(recentWorkouts: "2024-01-14 Push: Bench 225x5", toggles: toggles)
+        let params = WorkoutGenerationParams(intent: "Pull day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("Bench 225x5"))
+        XCTAssertFalse(prompt.contains("Recent Training History"))
+    }
+
+    func testBuildPromptOmitsEquipmentWhenDisabled() {
+        var toggles = AIPromptToggles.all
+        toggles.includeEquipment = false
+        let context = makeContext(equipment: ["barbell", "dumbbells"], toggles: toggles)
+        let params = WorkoutGenerationParams(intent: "Workout")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("barbell"))
+        XCTAssertFalse(prompt.contains("Current Gym & Equipment"))
+    }
+
+    func testBuildPromptIncludesProgressionWhenToggled() {
+        let context = makeContext(progression: "- Bench: 185x5→195x5")
+        let params = WorkoutGenerationParams(intent: "Push day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertTrue(prompt.contains("## Progression"))
+        XCTAssertTrue(prompt.contains("185x5→195x5"))
+    }
+
+    func testBuildPromptOmitsProgressionWhenDisabled() {
+        var toggles = AIPromptToggles.all
+        toggles.includeProgression = false
+        let context = makeContext(progression: "- Bench: 185x5→195x5", toggles: toggles)
+        let params = WorkoutGenerationParams(intent: "Push day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("185x5→195x5"))
+        XCTAssertFalse(prompt.contains("## Progression"))
+    }
+
+    func testBuildPromptOmitsRequestSectionWithoutIntent() {
+        let params = WorkoutGenerationParams(intent: nil)
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: makeContext(), params: params)
+        XCTAssertFalse(prompt.contains("# WORKOUT REQUEST"))
+        XCTAssertFalse(prompt.contains("# REQUIREMENTS"))
+    }
+
+    func testBuildPromptAllTogglesOffIsMinimal() {
+        let context = makeContext(
+            recentWorkouts: "history",
+            progression: "progression",
+            equipment: ["barbell"],
+            gym: "Home",
+            toggles: .none
+        )
+        let params = WorkoutGenerationParams(intent: "Workout")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("# LMWF FORMAT"))
+        XCTAssertFalse(prompt.contains("Recent Training History"))
+        XCTAssertFalse(prompt.contains("## Progression"))
+        XCTAssertFalse(prompt.contains("Current Gym & Equipment"))
+        // Intent still reaches the prompt, and preferences block always present.
+        XCTAssertTrue(prompt.contains("Workout"))
+        XCTAssertTrue(prompt.contains("## Preferences"))
     }
 
     // MARK: - validateGeneratedWorkout
@@ -302,15 +378,19 @@ final class WorkoutGenerationServiceTests: XCTestCase {
         weightUnit: WeightUnit = .lbs,
         customPrompt: String? = nil,
         recentWorkouts: String = "No recent workouts",
+        progression: String = "",
         equipment: [String] = ["barbell", "dumbbells"],
-        gym: String? = nil
+        gym: String? = nil,
+        toggles: AIPromptToggles = .all
     ) -> WorkoutGenerationContext {
         WorkoutGenerationContext(
             defaultWeightUnit: weightUnit,
             customPromptAddition: customPrompt,
             recentWorkouts: recentWorkouts,
+            progression: progression,
             availableEquipment: equipment,
-            currentGym: gym
+            currentGym: gym,
+            toggles: toggles
         )
     }
 

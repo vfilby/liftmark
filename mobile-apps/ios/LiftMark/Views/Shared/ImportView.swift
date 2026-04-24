@@ -9,10 +9,10 @@ struct ImportView: View {
     @State private var markdownText = ""
     @State private var parseResult: ParseResult?
     @State private var parseError: String?
-    @State private var isGenerating = false
     @State private var showImportSuccess = false
     @State private var importedPlanName = ""
     @State private var showDiscardConfirm = false
+    @State private var showGeneratePrompt = false
     @Environment(\.dismiss) private var dismiss
     @Environment(WorkoutPlanStore.self) private var planStore
     @Environment(SettingsStore.self) private var settingsStore
@@ -37,41 +37,13 @@ struct ImportView: View {
                         .accessibilityIdentifier("button-paste")
 
                         Button {
-                            copyPromptToClipboard()
+                            showGeneratePrompt = true
                         } label: {
-                            Label("Copy Prompt", systemImage: "doc.on.doc")
+                            Label("Build with AI", systemImage: "sparkles")
                                 .font(.subheadline)
                         }
                         .buttonStyle(.bordered)
-                        .accessibilityIdentifier("button-copy-prompt")
-
-                        if settingsStore.settings?.anthropicApiKeyStatus == .verified {
-                            Button {
-                                generateWorkout()
-                            } label: {
-                                if isGenerating {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                } else {
-                                    Label("Generate", systemImage: "sparkles")
-                                        .font(.subheadline)
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(isGenerating)
-                            .accessibilityIdentifier("button-generate")
-                        }
-
-                        if settingsStore.settings?.showOpenInClaudeButton == true {
-                            Button {
-                                openInClaude()
-                            } label: {
-                                Label("Open Claude", systemImage: "arrow.up.right.square")
-                                    .font(.subheadline)
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityIdentifier("button-open-claude")
-                        }
+                        .accessibilityIdentifier("button-build-with-ai")
                     }
                     .padding(.horizontal)
                     .padding(.vertical, LiftMarkTheme.spacingSM)
@@ -197,6 +169,11 @@ struct ImportView: View {
             } message: {
                 Text("\(importedPlanName) has been imported successfully.")
             }
+            .sheet(isPresented: $showGeneratePrompt) {
+                GeneratePromptView { markdown in
+                    markdownText = markdown
+                }
+            }
         }
         .accessibilityIdentifier("import-modal")
         .onAppear {
@@ -214,54 +191,6 @@ struct ImportView: View {
             markdownText = text
         }
         #endif
-    }
-
-    private func copyPromptToClipboard() {
-        #if canImport(UIKit)
-        let prompt = buildAIPrompt()
-        UIPasteboard.general.string = prompt
-        #endif
-    }
-
-    private func openInClaude() {
-        copyPromptToClipboard()
-        #if canImport(UIKit)
-        if let url = URL(string: "https://claude.ai") {
-            UIApplication.shared.open(url)
-        }
-        #endif
-    }
-
-    private func generateWorkout() {
-        isGenerating = true
-        Task {
-            guard let apiKey = SecureStorage.getApiKey() else {
-                isGenerating = false
-                return
-            }
-
-            let context = WorkoutGenerationContext(
-                defaultWeightUnit: settingsStore.settings?.defaultWeightUnit ?? .lbs,
-                customPromptAddition: settingsStore.settings?.customPromptAddition,
-                recentWorkouts: "",
-                availableEquipment: [],
-                currentGym: nil
-            )
-            let params = WorkoutGenerationParams(
-                intent: "general workout"
-            )
-            let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
-            let result = await AnthropicService.shared.generateWorkout(apiKey: apiKey, prompt: prompt)
-
-            await MainActor.run {
-                isGenerating = false
-                if let workout = result.workout {
-                    markdownText = workout
-                } else if let error = result.error {
-                    parseError = error.message
-                }
-            }
-        }
     }
 
     private func parseMarkdown() {
@@ -297,17 +226,6 @@ struct ImportView: View {
         showImportSuccess = true
     }
 
-    private func buildAIPrompt() -> String {
-        var prompt = "Generate a workout plan in LiftMark Workout Format (LMWF).\n\n"
-        prompt += "Format example:\n"
-        prompt += "# Workout Name\n@tags: tag1, tag2\n@units: lbs\n\n"
-        prompt += "## Exercise Name [equipment]\n- weight x reps\n\n"
-
-        if let addition = settingsStore.settings?.customPromptAddition, !addition.isEmpty {
-            prompt += "Additional context: \(addition)\n"
-        }
-        return prompt
-    }
 }
 
 // MARK: - Parse Result

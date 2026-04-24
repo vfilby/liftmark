@@ -278,7 +278,7 @@ final class DatabaseMigrationTests: XCTestCase {
 
     // MARK: - v13 seed: no-op
 
-    func testV13Seed_migratesToHead_addsWeightStepColumn() throws {
+    func testV13Seed_migratesToHead_addsWeightStepAndAIPromptColumns() throws {
         let (loaded, q) = try loadAndMigrate(ddl: DatabaseSeeds.v13DDL, data: DatabaseSeeds.v13Data)
         defer { DatabaseSeedLoader.cleanup(loaded) }
         try assertUniversalInvariants(q, label: "v13→head")
@@ -287,19 +287,27 @@ final class DatabaseMigrationTests: XCTestCase {
             XCTAssertEqual(try count(db, table: "gyms"), 1)
             // v14 adds default_weight_step_lbs with default 2.5 — existing user_settings row
             // must be backfilled by SQLite's ALTER TABLE default.
-            XCTAssertTrue(try columnNames(db, table: "user_settings").contains("default_weight_step_lbs"))
+            let cols = try columnNames(db, table: "user_settings")
+            XCTAssertTrue(cols.contains("default_weight_step_lbs"))
             let step = try Double.fetchOne(db, sql: "SELECT default_weight_step_lbs FROM user_settings LIMIT 1")
             XCTAssertEqual(step, 2.5)
+            // v15 adds the 4 AI prompt inclusion toggles with default 1.
+            XCTAssertTrue(cols.contains("ai_prompt_include_format_pointer"))
+            XCTAssertTrue(cols.contains("ai_prompt_include_recent_workouts"))
+            XCTAssertTrue(cols.contains("ai_prompt_include_progression"))
+            XCTAssertTrue(cols.contains("ai_prompt_include_equipment"))
+            let fp = try Int.fetchOne(db, sql: "SELECT ai_prompt_include_format_pointer FROM user_settings LIMIT 1")
+            XCTAssertEqual(fp, 1)
         }
     }
 
     // MARK: - Synthetic future seed: runner must not mutate a future-versioned DB
 
-    func testV15SyntheticSeed_migrationRunnerIsNoOp() throws {
-        // Build a head-shaped DB with schema_version=15 to simulate "DB from the future".
+    func testV16SyntheticSeed_migrationRunnerIsNoOp() throws {
+        // Build a head-shaped DB with schema_version=16 to simulate "DB from the future".
         let loaded = try DatabaseSeedLoader.load(
-            ddl: DatabaseSeeds.v15SyntheticDDL,
-            data: DatabaseSeeds.v15SyntheticData
+            ddl: DatabaseSeeds.v16SyntheticDDL,
+            data: DatabaseSeeds.v16SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
         let q = try DatabaseSeedLoader.openQueue(at: loaded.path)
@@ -308,14 +316,14 @@ final class DatabaseMigrationTests: XCTestCase {
         let beforeVersion = try q.read { try Int.fetchOne($0, sql: "SELECT version FROM schema_version LIMIT 1") }
         let beforeRows = try q.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM user_settings") ?? -1 }
 
-        // Runner should short-circuit: currentVersion (15) >= targetVersion (14).
+        // Runner should short-circuit: currentVersion (16) >= targetVersion (15).
         try DatabaseManager.runMigrations(on: q)
 
         let afterVersion = try q.read { try Int.fetchOne($0, sql: "SELECT version FROM schema_version LIMIT 1") }
         let afterRows = try q.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM user_settings") ?? -1 }
 
-        XCTAssertEqual(beforeVersion, 15, "seed sanity")
-        XCTAssertEqual(afterVersion, 15, "runner must not lower schema_version")
+        XCTAssertEqual(beforeVersion, 16, "seed sanity")
+        XCTAssertEqual(afterVersion, 16, "runner must not lower schema_version")
         XCTAssertEqual(beforeRows, afterRows, "runner must not mutate a future-versioned DB")
     }
 }

@@ -320,8 +320,8 @@ final class MigratorBridgeTests: XCTestCase {
 
     func testFutureVersion_bridgeRefuses() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v15SyntheticDDL,
-            data: DatabaseSeeds.v15SyntheticData
+            ddl: DatabaseSeeds.v16SyntheticDDL,
+            data: DatabaseSeeds.v16SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -329,14 +329,14 @@ final class MigratorBridgeTests: XCTestCase {
             guard case MigratorBridgeError.refusedFutureVersion(let version) = error else {
                 return XCTFail("expected refusedFutureVersion, got \(error)")
             }
-            XCTAssertEqual(version, 15)
+            XCTAssertEqual(version, 16)
         }
     }
 
     func testFutureVersion_doesNotMutateDatabase() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v15SyntheticDDL,
-            data: DatabaseSeeds.v15SyntheticData
+            ddl: DatabaseSeeds.v16SyntheticDDL,
+            data: DatabaseSeeds.v16SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -346,7 +346,7 @@ final class MigratorBridgeTests: XCTestCase {
 
         XCTAssertEqual(rowsBefore, rowsAfter)
         // schema_version unchanged
-        XCTAssertEqual(try schemaVersion(queue), 15)
+        XCTAssertEqual(try schemaVersion(queue), 16)
         // grdb_migrations table should NOT have been created.
         let bridgeTablePresent = try queue.read { db in
             try Int.fetchOne(
@@ -417,8 +417,8 @@ final class MigratorBridgeTests: XCTestCase {
         }
 
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v15SyntheticDDL,
-            data: DatabaseSeeds.v15SyntheticData
+            ddl: DatabaseSeeds.v16SyntheticDDL,
+            data: DatabaseSeeds.v16SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -474,8 +474,8 @@ final class MigratorBridgeTests: XCTestCase {
     /// the offending schema version so the launch alert can surface it.
     func testFutureVersion_persistsFailureForAlertUI() throws {
         let (loaded, queue, url) = try loadSeed(
-            ddl: DatabaseSeeds.v15SyntheticDDL,
-            data: DatabaseSeeds.v15SyntheticData
+            ddl: DatabaseSeeds.v16SyntheticDDL,
+            data: DatabaseSeeds.v16SyntheticData
         )
         defer { DatabaseSeedLoader.cleanup(loaded) }
 
@@ -483,7 +483,7 @@ final class MigratorBridgeTests: XCTestCase {
 
         let persisted = MigratorBridgeFailure.loadPersisted()
         XCTAssertEqual(persisted?.failure, .futureVersion)
-        XCTAssertEqual(persisted?.context.fromVersion, 15)
+        XCTAssertEqual(persisted?.context.fromVersion, 16)
     }
 
     /// A successful bridge must clear a stale lastAttemptFailed + failure case

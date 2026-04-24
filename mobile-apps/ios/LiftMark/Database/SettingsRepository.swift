@@ -45,6 +45,10 @@ struct SettingsRepository {
                     has_accepted_disclaimer = ?,
                     default_timer_countdown = ?,
                     default_weight_step_lbs = ?,
+                    ai_prompt_include_format_pointer = ?,
+                    ai_prompt_include_recent_workouts = ?,
+                    ai_prompt_include_progression = ?,
+                    ai_prompt_include_equipment = ?,
                     home_tiles = ?,
                     updated_at = ?
                 WHERE id = ?
@@ -65,6 +69,10 @@ struct SettingsRepository {
                 settings.hasAcceptedDisclaimer ? 1 : 0,
                 settings.defaultTimerCountdown ? 1 : 0,
                 settings.defaultWeightStepLbs,
+                settings.aiPromptIncludeFormatPointer ? 1 : 0,
+                settings.aiPromptIncludeRecentWorkouts ? 1 : 0,
+                settings.aiPromptIncludeProgression ? 1 : 0,
+                settings.aiPromptIncludeEquipment ? 1 : 0,
                 homeTilesJSON,
                 now,
                 settings.id
@@ -94,6 +102,10 @@ struct SettingsRepository {
             hasAcceptedDisclaimer: row.hasAcceptedDisclaimer != 0,
             defaultTimerCountdown: row.defaultTimerCountdown != 0,
             defaultWeightStepLbs: row.defaultWeightStepLbs,
+            aiPromptIncludeFormatPointer: row.aiPromptIncludeFormatPointer != 0,
+            aiPromptIncludeRecentWorkouts: row.aiPromptIncludeRecentWorkouts != 0,
+            aiPromptIncludeProgression: row.aiPromptIncludeProgression != 0,
+            aiPromptIncludeEquipment: row.aiPromptIncludeEquipment != 0,
             homeTiles: row.homeTiles.flatMap { data in
                 (try? JSONDecoder().decode([String].self, from: Data(data.utf8)))
             },

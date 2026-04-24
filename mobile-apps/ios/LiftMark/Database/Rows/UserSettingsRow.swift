@@ -23,6 +23,10 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
     var hasAcceptedDisclaimer: Int // SQLite boolean
     var defaultTimerCountdown: Int // SQLite boolean
     var defaultWeightStepLbs: Double
+    var aiPromptIncludeFormatPointer: Int // SQLite boolean
+    var aiPromptIncludeRecentWorkouts: Int // SQLite boolean
+    var aiPromptIncludeProgression: Int // SQLite boolean
+    var aiPromptIncludeEquipment: Int // SQLite boolean
     var homeTiles: String? // JSON array
     var createdAt: String
     var updatedAt: String
@@ -45,6 +49,10 @@ struct UserSettingsRow: Codable, FetchableRecord, PersistableRecord, Hashable {
         case hasAcceptedDisclaimer = "has_accepted_disclaimer"
         case defaultTimerCountdown = "default_timer_countdown"
         case defaultWeightStepLbs = "default_weight_step_lbs"
+        case aiPromptIncludeFormatPointer = "ai_prompt_include_format_pointer"
+        case aiPromptIncludeRecentWorkouts = "ai_prompt_include_recent_workouts"
+        case aiPromptIncludeProgression = "ai_prompt_include_progression"
+        case aiPromptIncludeEquipment = "ai_prompt_include_equipment"
         case homeTiles = "home_tiles"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

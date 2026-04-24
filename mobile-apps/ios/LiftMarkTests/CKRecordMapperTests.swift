@@ -352,6 +352,10 @@ final class CKRecordMapperTests: XCTestCase {
             developerModeEnabled: 1, countdownSoundsEnabled: 0,
             hasAcceptedDisclaimer: 1, defaultTimerCountdown: 1,
             defaultWeightStepLbs: 5.0,
+            aiPromptIncludeFormatPointer: 0,
+            aiPromptIncludeRecentWorkouts: 1,
+            aiPromptIncludeProgression: 0,
+            aiPromptIncludeEquipment: 1,
             homeTiles: "[\"Squat\"]", createdAt: ts, updatedAt: ts
         )
         try db.write { try original.insert($0) }
@@ -373,6 +377,10 @@ final class CKRecordMapperTests: XCTestCase {
         XCTAssertEqual(fetched?.theme, "dark")
         XCTAssertEqual(fetched?.enableWorkoutTimer, 1)
         XCTAssertEqual(fetched?.autoStartRestTimer, 0)
+        XCTAssertEqual(fetched?.aiPromptIncludeFormatPointer, 0)
+        XCTAssertEqual(fetched?.aiPromptIncludeRecentWorkouts, 1)
+        XCTAssertEqual(fetched?.aiPromptIncludeProgression, 0)
+        XCTAssertEqual(fetched?.aiPromptIncludeEquipment, 1)
     }
 
     // MARK: - Merge: Last-Writer-Wins (local newer, remote skipped)

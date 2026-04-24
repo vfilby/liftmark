@@ -2,13 +2,13 @@ import Foundation
 
 extension DatabaseSeeds {
 
-    // MARK: - Synthetic future (v15) — used to verify early-return behavior
+    // MARK: - Synthetic future (v16) — used to verify early-return behavior
     //
     // File is named V14SyntheticSeed.swift for historical reasons; the seed now
-    // represents a "from the future" DB at schema_version=15. DDL matches the
-    // current head (v14) so the shape is valid — only the version marker is ahead.
+    // represents a "from the future" DB at schema_version=16. DDL matches the
+    // current head (v15) so the shape is valid — only the version marker is ahead.
 
-    static let v15SyntheticDDL: String = #"""
+    static let v16SyntheticDDL: String = #"""
     CREATE TABLE workout_templates (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, tags TEXT,
         default_weight_unit TEXT, source_markdown TEXT,
@@ -41,7 +41,11 @@ extension DatabaseSeeds {
         countdown_sounds_enabled INTEGER DEFAULT 1,
         has_accepted_disclaimer INTEGER DEFAULT 0,
         default_timer_countdown INTEGER DEFAULT 0,
-        default_weight_step_lbs REAL DEFAULT 2.5
+        default_weight_step_lbs REAL DEFAULT 2.5,
+        ai_prompt_include_format_pointer INTEGER DEFAULT 1,
+        ai_prompt_include_recent_workouts INTEGER DEFAULT 1,
+        ai_prompt_include_progression INTEGER DEFAULT 1,
+        ai_prompt_include_equipment INTEGER DEFAULT 1
     );
     CREATE TABLE gyms (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, is_default INTEGER DEFAULT 0,
@@ -108,7 +112,7 @@ extension DatabaseSeeds {
     CREATE INDEX idx_set_measurements_group ON set_measurements(set_id, group_index);
     """#
 
-    static let v15SyntheticData: String = #"""
+    static let v16SyntheticData: String = #"""
     INSERT INTO user_settings
       (id, default_weight_unit, enable_workout_timer, auto_start_rest_timer, theme, notifications_enabled,
        anthropic_api_key_status, healthkit_enabled, live_activities_enabled, keep_screen_awake,
@@ -125,6 +129,6 @@ extension DatabaseSeeds {
     INSERT INTO gyms (id, name, is_default, created_at, updated_at, deleted_at) VALUES
       ('\#(gymHome)', 'Home Gym', 1, '\#(ts1)', '\#(ts1)', NULL);
 
-    INSERT INTO schema_version (version) VALUES (15);
+    INSERT INTO schema_version (version) VALUES (16);
     """#
 }

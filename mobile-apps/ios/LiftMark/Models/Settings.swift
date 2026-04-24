@@ -22,6 +22,14 @@ struct UserSettings: Identifiable, Codable, Hashable {
     var defaultTimerCountdown: Bool
     /// Weight step increment for lbs (2.5 or 5.0). Kg always uses 2.5.
     var defaultWeightStepLbs: Double
+    /// Include brief LMWF format pointer + spec.md URL in AI prompts.
+    var aiPromptIncludeFormatPointer: Bool
+    /// Include compact summary of recent workouts in AI prompts.
+    var aiPromptIncludeRecentWorkouts: Bool
+    /// Include top-5-by-frequency exercise trajectory (compounds preferred) in AI prompts.
+    var aiPromptIncludeProgression: Bool
+    /// Include selected-gym equipment list in AI prompts.
+    var aiPromptIncludeEquipment: Bool
     var homeTiles: [String]?
     var createdAt: String
     var updatedAt: String
@@ -45,6 +53,10 @@ struct UserSettings: Identifiable, Codable, Hashable {
         hasAcceptedDisclaimer: Bool = false,
         defaultTimerCountdown: Bool = false,
         defaultWeightStepLbs: Double = 2.5,
+        aiPromptIncludeFormatPointer: Bool = true,
+        aiPromptIncludeRecentWorkouts: Bool = true,
+        aiPromptIncludeProgression: Bool = true,
+        aiPromptIncludeEquipment: Bool = true,
         homeTiles: [String]? = ["Back Squat", "Deadlift", "Bench Press", "Overhead Press"],
         createdAt: String = ISO8601DateFormatter().string(from: Date()),
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
@@ -67,6 +79,10 @@ struct UserSettings: Identifiable, Codable, Hashable {
         self.hasAcceptedDisclaimer = hasAcceptedDisclaimer
         self.defaultTimerCountdown = defaultTimerCountdown
         self.defaultWeightStepLbs = defaultWeightStepLbs
+        self.aiPromptIncludeFormatPointer = aiPromptIncludeFormatPointer
+        self.aiPromptIncludeRecentWorkouts = aiPromptIncludeRecentWorkouts
+        self.aiPromptIncludeProgression = aiPromptIncludeProgression
+        self.aiPromptIncludeEquipment = aiPromptIncludeEquipment
         self.homeTiles = homeTiles
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -87,6 +103,10 @@ struct UserSettings: Identifiable, Codable, Hashable {
         countdownSoundsEnabled != other.countdownSoundsEnabled ||
         defaultTimerCountdown != other.defaultTimerCountdown ||
         defaultWeightStepLbs != other.defaultWeightStepLbs ||
+        aiPromptIncludeFormatPointer != other.aiPromptIncludeFormatPointer ||
+        aiPromptIncludeRecentWorkouts != other.aiPromptIncludeRecentWorkouts ||
+        aiPromptIncludeProgression != other.aiPromptIncludeProgression ||
+        aiPromptIncludeEquipment != other.aiPromptIncludeEquipment ||
         homeTiles != other.homeTiles
     }
 }

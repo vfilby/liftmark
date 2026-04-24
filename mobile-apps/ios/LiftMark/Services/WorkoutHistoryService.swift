@@ -130,4 +130,72 @@ struct WorkoutHistoryService {
         let sessions = try repository.getRecentSessions(1)
         return !sessions.isEmpty
     }
+
+    /// Generate a trajectory block for the top `topN` exercises by recent frequency.
+    /// Compounds are preferred; if fewer than `topN` compounds appear in the window,
+    /// pad with the most-frequent remaining exercises regardless of category.
+    /// Pulls from the last `windowSize` sessions to rank and build trajectories.
+    /// Emits plain weight×reps trajectories with no coach-style hints — the LLM decides
+    /// the next step.
+    func generateProgressionContext(topN: Int = 5, windowSize: Int = 30) throws -> String {
+        let sessions = try repository.getRecentSessions(windowSize)
+        return formatProgression(sessions: sessions, topN: topN)
+    }
+
+    /// Pure formatter — takes sessions (most-recent first) and returns the progression block.
+    /// Exposed for unit tests.
+    func formatProgression(sessions: [WorkoutSession], topN: Int = 5) -> String {
+        guard !sessions.isEmpty else { return "" }
+
+        // Canonical name → ordered list of completed set summaries (most recent first).
+        var trajectoriesByName: [String: [String]] = [:]
+        var frequency: [String: Int] = [:]
+
+        for session in sessions {
+            for exercise in session.exercises where !exercise.sets.isEmpty {
+                let canonical = ExerciseDictionary.getCanonicalName(exercise.exerciseName)
+                let completedSets = exercise.sets.filter { $0.status == .completed }
+                guard !completedSets.isEmpty else { continue }
+
+                frequency[canonical, default: 0] += 1
+                let setStrings = completedSets.map { formatSetCompact($0) }.filter { !$0.isEmpty }
+                guard let topSet = setStrings.first else { continue }
+                trajectoriesByName[canonical, default: []].append(topSet)
+            }
+        }
+
+        guard !frequency.isEmpty else { return "" }
+
+        let compounds = frequency.keys.filter { name in
+            ExerciseDictionary.getDefinition(name)?.category == "compound"
+        }
+        let nonCompounds = frequency.keys.filter { name in
+            ExerciseDictionary.getDefinition(name)?.category != "compound"
+        }
+
+        let sortByFreq: (String, String) -> Bool = { a, b in
+            let fa = frequency[a] ?? 0
+            let fb = frequency[b] ?? 0
+            if fa != fb { return fa > fb }
+            return a < b
+        }
+
+        var selected = Array(compounds.sorted(by: sortByFreq).prefix(topN))
+        if selected.count < topN {
+            let pad = nonCompounds.sorted(by: sortByFreq).prefix(topN - selected.count)
+            selected.append(contentsOf: pad)
+        }
+
+        guard !selected.isEmpty else { return "" }
+
+        var lines = ["Recent progression (top \(selected.count) by frequency):"]
+        for name in selected {
+            let trajectory = trajectoriesByName[name] ?? []
+            // Take up to 3 most-recent, reverse to oldest→newest.
+            let recent = trajectory.prefix(3).reversed().joined(separator: "→")
+            guard !recent.isEmpty else { continue }
+            lines.append("- \(abbreviateExerciseName(name)): \(recent)")
+        }
+        return lines.joined(separator: "\n")
+    }
 }

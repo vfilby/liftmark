@@ -11,7 +11,7 @@ final class DatabaseManager: @unchecked Sendable {
     private let dbLock = NSLock()
 
     private static let dbName = "liftmark.db"
-    static let currentSchemaVersion = 14
+    static let currentSchemaVersion = 15
 
     private init() {}
 
@@ -178,6 +178,7 @@ final class DatabaseManager: @unchecked Sendable {
         if currentVersion < 12 && targetVersion >= 12 { try migrateToV12(db) }
         if currentVersion < 13 && targetVersion >= 13 { try migrateToV13(db) }
         if currentVersion < 14 && targetVersion >= 14 { try migrateToV14(db) }
+        if currentVersion < 15 && targetVersion >= 15 { try migrateToV15(db) }
 
         try db.execute(sql: "UPDATE schema_version SET version = ?", arguments: [targetVersion])
     }
@@ -792,6 +793,15 @@ final class DatabaseManager: @unchecked Sendable {
 
     private static func migrateToV14(_ db: Database) throws {
         try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5")
+    }
+
+    // MARK: - V15: AI prompt inclusion toggles
+
+    private static func migrateToV15(_ db: Database) throws {
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_format_pointer INTEGER DEFAULT 1")
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_recent_workouts INTEGER DEFAULT 1")
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_progression INTEGER DEFAULT 1")
+        try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_equipment INTEGER DEFAULT 1")
     }
 
     private static func insertMeasurementV12(_ db: Database, setId: String, parentType: String, role: String, kind: String, value: Double, unit: String?, updatedAt: String?) throws {
