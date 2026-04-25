@@ -130,13 +130,17 @@ enum DatabaseBackupService {
         }
 
         do {
-            // Close current database connection
+            // Close current database connection. This synchronously tears down
+            // the SQLite handle (and its vnode-watcher dispatch source) so the
+            // file replacement below doesn't trigger `SQLITE_IOERR_VNODE` on a
+            // still-open connection. See GH #104.
             DatabaseManager.shared.close()
 
-            // Delete current database
-            if fileManager.fileExists(atPath: dbPath.path) {
-                try fileManager.removeItem(at: dbPath)
-            }
+            // Delete current database AND any SQLite sidecar files. Leftover
+            // -wal / -shm / -journal files from the old DB would otherwise be
+            // picked up by SQLite when it opens the freshly-imported file and
+            // could corrupt its view of the data.
+            try removeDatabaseFiles(at: dbPath, fileManager: fileManager)
 
             // Copy imported file to database location
             try fileManager.copyItem(at: fileURL, to: dbPath)
@@ -150,9 +154,10 @@ enum DatabaseBackupService {
             // Attempt to restore from safety backup
             if fileManager.fileExists(atPath: backupURL.path) {
                 do {
-                    if fileManager.fileExists(atPath: dbPath.path) {
-                        try fileManager.removeItem(at: dbPath)
-                    }
+                    // Close again in case `database()` reopened on the partially-
+                    // copied file before we got here.
+                    DatabaseManager.shared.close()
+                    try removeDatabaseFiles(at: dbPath, fileManager: fileManager)
                     try fileManager.copyItem(at: backupURL, to: dbPath)
                     _ = try DatabaseManager.shared.database()
                 } catch {
@@ -161,6 +166,20 @@ enum DatabaseBackupService {
             }
 
             throw BackupError.importFailed(error.localizedDescription)
+        }
+    }
+
+    /// Remove the SQLite database file and any associated sidecar files
+    /// (`-wal`, `-shm`, `-journal`). The connection MUST already be closed.
+    private static func removeDatabaseFiles(at dbPath: URL, fileManager: FileManager) throws {
+        let suffixes = ["", "-wal", "-shm", "-journal"]
+        for suffix in suffixes {
+            let url = suffix.isEmpty
+                ? dbPath
+                : dbPath.deletingLastPathComponent().appendingPathComponent(dbPath.lastPathComponent + suffix)
+            if fileManager.fileExists(atPath: url.path) {
+                try fileManager.removeItem(at: url)
+            }
         }
     }
 }
