@@ -52,7 +52,7 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
-          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+          APP_BUNDLE_ID: com.eff3.liftmark.native-ios
           SOURCE_GROUP_NAME: Beta
           TARGET_GROUP_NAME: Pre-flight
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
