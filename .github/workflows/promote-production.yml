@@ -57,7 +57,7 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
-          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+          APP_BUNDLE_ID: com.eff3.liftmark.native-ios
           BUILD_NUMBER: ${{ github.event.inputs.build_number }}
           RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
           AUTO_RELEASE: ${{ github.event.inputs.auto_release }}

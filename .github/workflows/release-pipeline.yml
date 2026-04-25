@@ -233,17 +233,10 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
-      - name: Wait for TestFlight processing & attach to Alpha group
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
-          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
-          TESTFLIGHT_GROUP_NAME: Beta
-          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
-          MARKETING_VERSION: ${{ steps.version.outputs.marketing_version }}
-        working-directory: ${{ github.workspace }}
-        run: node .github/scripts/attach-to-group.mjs
+      # Beta (internal) group has "automatically distribute to internal testers"
+      # enabled in App Store Connect, so the upload above is sufficient — no
+      # explicit attach call needed. Pre-flight (external) attachment happens in
+      # promote-preflight.yml after the soak gate passes.
 
       - name: Tag deploy
         if: success()
