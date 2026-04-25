@@ -71,15 +71,10 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             | xcpretty
 
-      - name: Run UI tests
-        run: |
-          xcodebuild test \
-            -scheme LiftMark \
-            -project LiftMark.xcodeproj \
-            -only-testing:LiftMarkUITests \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
-            -resultBundlePath TestResults-UI.xcresult \
-            | xcpretty
+      # UI tests (LiftMarkUITests) are disabled on hosted runners until we move
+      # them to a self-hosted Mac runner — they take ~20 min on macos-26, dominate
+      # PR feedback time, and have known flakes (issue #106). Re-enable once the
+      # self-hosted runner is up.
 
       - name: Upload unit test results
         uses: actions/upload-artifact@v7
@@ -87,12 +82,4 @@ jobs:
         with:
           name: test-results
           path: mobile-apps/ios/TestResults.xcresult
-          retention-days: 7
-
-      - name: Upload UI test results
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: test-results-ui
-          path: mobile-apps/ios/TestResults-UI.xcresult
           retention-days: 7
