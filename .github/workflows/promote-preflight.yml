@@ -1,0 +1,70 @@
+name: Promote Beta → Pre-flight
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Evaluate eligibility but do not promote'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: promote-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-and-promote:
+    name: Evaluate Beta builds and promote latest eligible to Pre-flight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Fetch blocked build numbers from git tags
+        id: blocks
+        run: |
+          git fetch --tags --quiet
+          BLOCKED=$(git tag -l 'block-promotion/build-*' | sed 's|block-promotion/build-||' | tr '\n' ',' | sed 's/,$//')
+          echo "blocked=${BLOCKED}" >> "$GITHUB_OUTPUT"
+          echo "Blocked builds: ${BLOCKED:-(none)}"
+
+      - name: Evaluate and promote
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+          SOURCE_GROUP_NAME: Beta
+          TARGET_GROUP_NAME: Pre-flight
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SOAK_HOURS: '72'
+          MIN_SESSIONS: '5'
+          MIN_CRASH_FREE_RATE: '0.99'
+          BLOCKED_BUILDS: ${{ steps.blocks.outputs.blocked }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node .github/scripts/promote-preflight.mjs
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.private_keys || true

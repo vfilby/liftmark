@@ -1,12 +1,6 @@
 name: Swift CI
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'mobile-apps/ios/**'
-      - 'e2e-spec/**'
-      - '.github/workflows/swift-ci.yml'
   pull_request:
     branches: [main]
     paths:
