@@ -126,7 +126,7 @@ Tags attached to captured events:
 | Tag | Values | Purpose |
 |-----|--------|---------|
 | `tag: "data_loss"` | set on `SyncSessionGuard` data-loss-detected / restore-failed paths, and on `migrator_bridge_restore_failed` | Target for a single alert rule |
-| `data_integrity_risk` | `"true"` on every migrator failure event except `skipped_already_done`, `skipped_fresh_install`, `observed_after_downgrade` | Target for a single migrator-failure alert rule. See [`migrator.md`](migrator.md) §5.4. |
+| `data_integrity_risk` | `"true"` on every migrator failure event except `skipped_already_done`, `skipped_fresh_install`, `build_number_changed` | Target for a single migrator-failure alert rule. See [`migrator.md`](migrator.md) §5.4. |
 
 ### `beforeSend` hook
 

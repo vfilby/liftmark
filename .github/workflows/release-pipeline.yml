@@ -54,6 +54,11 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      # See deploy-alpha job for context — xcodebuild's resolvePackageDependencies
+      # refuses to redownload a binary target if a leftover extract exists.
+      - name: Clear SwiftPM artifacts cache
+        run: rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -scheme LiftMark -project LiftMark.xcodeproj
 
@@ -137,6 +142,16 @@ jobs:
 
       - name: Generate Xcode project
         run: xcodegen generate
+
+      # Clear any stale SwiftPM binary-artifact extracts. xcodebuild's
+      # -resolvePackageDependencies refuses to re-download a binary target if a
+      # leftover directory already exists at the destination (observed with the
+      # Sentry xcframework on macos-26 runners), failing with:
+      #   "already exists in file system ... fatalError"
+      # The runner is ephemeral so removing the cache is free, and it makes the
+      # resolve step deterministic across reruns.
+      - name: Clear SwiftPM artifacts cache
+        run: rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts
 
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -scheme $SCHEME -project $PROJECT

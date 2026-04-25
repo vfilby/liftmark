@@ -128,16 +128,20 @@ enum MigratorBridge {
                 category: .database,
                 metadata: ["buildNumber": currentBuildNumber()]
             )
-            // Informational downgrade-round-trip event.
+            // Informational build-transition event. Fires for any build change since
+            // the last successful bridge — upgrade, downgrade, or non-numeric change.
+            // The downgrade case (§3.g) is what motivates the breadcrumb; the others
+            // are recorded for completeness.
             if let lastSuccess = UserDefaults.standard.string(forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber),
                lastSuccess != currentBuildNumber()
             {
                 CrashReporter.shared.addBreadcrumb(
-                    "migrator_bridge_observed_after_downgrade",
+                    "migrator_bridge_build_number_changed",
                     category: .database,
                     metadata: [
                         "buildNumber": currentBuildNumber(),
-                        "lastSuccessBuildNumber": lastSuccess
+                        "lastSuccessBuildNumber": lastSuccess,
+                        "direction": buildNumberDirection(from: lastSuccess, to: currentBuildNumber())
                     ]
                 )
             }
@@ -517,6 +521,15 @@ enum MigratorBridge {
 
     private static func currentBuildNumber() -> String {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+    }
+
+    /// Classifies a build-number transition. Returns `"upgrade"` / `"downgrade"` if
+    /// both sides parse as integers, `"changed"` otherwise (non-numeric build strings).
+    static func buildNumberDirection(from previous: String, to current: String) -> String {
+        guard let prev = Int(previous), let curr = Int(current) else { return "changed" }
+        if curr > prev { return "upgrade" }
+        if curr < prev { return "downgrade" }
+        return "changed"
     }
 }
 

@@ -101,6 +101,28 @@ final class CKSyncConflictResolver: @unchecked Sendable {
             case .partialFailure:
                 handlePartialFailure(recordName: recordName, recordType: recordType, error: error)
 
+            case .serverRejectedRequest:
+                // CK 2006 — typically schema drift (a field on the local record
+                // doesn't exist on the deployed CloudKit container schema, or has
+                // the wrong type). Capture the field names so we can identify
+                // which schema element is missing without needing to repro.
+                let fields = record.allKeys().sorted().joined(separator: ",")
+                Logger.shared.error(
+                    .sync,
+                    "[sync-engine] Server rejected \(recordType)/\(recordName) (CKError 2006) — likely schema drift. Fields sent: [\(fields)]"
+                )
+                CrashReporter.shared.captureError(
+                    error,
+                    category: .sync,
+                    metadata: [
+                        "recordType": recordType,
+                        "recordFields": fields,
+                        "errorCode": "\(error.code.rawValue)",
+                        "errorDomain": CKErrorDomain,
+                        "tag": "schema-drift-suspected"
+                    ]
+                )
+
             default:
                 Logger.shared.error(
                     .sync,
@@ -109,7 +131,17 @@ final class CKSyncConflictResolver: @unchecked Sendable {
                         + "(\(Self.errorCodeName(error.code))) "
                         + "— \(error.localizedDescription)"
                 )
-                CrashReporter.shared.captureError(error, category: .sync, metadata: ["recordType": recordType, "errorCode": "\(error.code.rawValue)", "errorDomain": CKErrorDomain])
+                let fields = record.allKeys().sorted().joined(separator: ",")
+                CrashReporter.shared.captureError(
+                    error,
+                    category: .sync,
+                    metadata: [
+                        "recordType": recordType,
+                        "recordFields": fields,
+                        "errorCode": "\(error.code.rawValue)",
+                        "errorDomain": CKErrorDomain
+                    ]
+                )
             }
         }
 

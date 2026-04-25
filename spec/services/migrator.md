@@ -159,7 +159,7 @@ Every failure has a detection signal, user-facing behavior, Sentry event, and re
 | 3.e.1 | First post-bridge migration throws (future v14+) | throw inside `migrator.migrate(db)` | "Database upgrade failed and has been rolled back. Your data is unchanged." | `migrator_post_bridge_migration_failed` (with `failedIdentifier`) | Transaction rollback leaves live DB unchanged. Retry on next launch once fix ships. |
 | 3.e.2 | `schema_version.version > 13` | Pre-check | "This database was written by a newer version of LiftMark. Update the app to continue." App refuses to proceed. | `migrator_bridge_refused_future_version` | Wait for upgrade. |
 | 3.f | FK violation at commit | `SQLITE_CONSTRAINT_FOREIGNKEY` (extended 787) | Same as 3.e.1 | `migrator_post_bridge_fk_violation` (with `failedIdentifier`, `fkTable`) | Transaction rollback. Investigate before re-enabling. |
-| 3.g | Pre-bridge build installed after bridge ran | New build launch: `grdb_migrations` populated AND `schema_version` present AND `lastSuccessBuildNumber` differs | None (pre-bridge build no-ops on `schema_version = 13`). | On new-build relaunch: `migrator_bridge_observed_after_downgrade` (informational) | None needed. This is why `schema_version` is retained (§1.4). |
+| 3.g | Build number changed since last successful bridge | New build launch: `grdb_migrations` populated AND `schema_version` present AND `lastSuccessBuildNumber` differs | None — fires for any build transition (upgrade, downgrade, or non-numeric change). | On relaunch with a different build: `migrator_bridge_build_number_changed` (informational, with `direction` = `upgrade` / `downgrade` / `changed`) | None needed. This is why `schema_version` is retained (§1.4). The downgrade case is what motivates the breadcrumb; the upgrade/changed cases are recorded for completeness. |
 | 3.h | App killed mid-bridge | Next launch: `grdb_migrations` populated → treat as success. Empty → retry. | None. | `migrator_bridge_resumed_after_kill` breadcrumb on retry. | Idempotent retry. Reuse the verified backup rather than regenerate. |
 | 3.i | Bridge ran → downgrade → upgrade-forward | Compound of 3.g + forward: `grdb_migrations` populated, `schema_version = 13`. | None. | `migrator_bridge_skipped_already_done` | None. No re-entry. |
 
@@ -243,7 +243,7 @@ Positive-path events:
 | `migrator_bridge_attempted`                | Entry to bridge, after pre-flight passes                      | `fromVersion`, `dbSizeBytes`                                          |
 | `migrator_bridge_backup_succeeded`         | After §2.4 verification passes                                | `backupSizeBytes`, `durationMs`                                       |
 | `migrator_bridge_succeeded`                | After transaction commit, before returning                    | `fromVersion`, `toIdentifier`, `bridgedIdentifierCount`, `durationMs` |
-| `migrator_bridge_observed_after_downgrade` | See §3.g                                                      | `buildNumber`, previous `lastSuccessBuildNumber`                      |
+| `migrator_bridge_build_number_changed`     | See §3.g                                                      | `buildNumber`, previous `lastSuccessBuildNumber`, `direction`         |
 
 > `migrator_bridge_skipped_fresh_install` and `migrator_bridge_skipped_already_done` were previously emitted as Sentry events but were demoted to breadcrumbs (§5.2) because they fire on every launch for every already-bridged user, which generated high-volume info-level noise in Sentry. See §5.3.1 for the revised cleanup-trigger approach.
 
@@ -284,7 +284,7 @@ The previous §6 cleanup check (3) compared `migrator_bridge_skipped_already_don
 
 ### 5.4 Alert tag
 
-Every failure event sets `scope.setTag("data_integrity_risk", "true")` except `observed_after_downgrade`. This supports a single Sentry alert rule on the tag.
+Every failure event sets `scope.setTag("data_integrity_risk", "true")` except `build_number_changed`. This supports a single Sentry alert rule on the tag.
 
 ---
 
