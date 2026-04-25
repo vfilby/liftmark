@@ -1,4 +1,4 @@
-name: Promote Beta → Production
+name: '[iOS] Promote Beta → Production'
 
 on:
   workflow_dispatch:

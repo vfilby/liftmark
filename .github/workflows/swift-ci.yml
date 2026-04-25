@@ -1,4 +1,4 @@
-name: Swift CI
+name: '[iOS] CI'
 
 on:
   pull_request:
