@@ -89,9 +89,19 @@ final class DatabaseManager: @unchecked Sendable {
     }
 
     /// Close the database connection.
+    ///
+    /// Deterministically tears down the underlying SQLite connection (and its
+    /// vnode-watcher dispatch source) before releasing the queue reference, so
+    /// callers that intend to mutate the backing file (rename / replace / delete)
+    /// don't trip Apple's `SQLITE_IOERR_VNODE` check on a still-open connection.
+    /// See GH #104.
     func close() {
         dbLock.lock()
         defer { dbLock.unlock() }
+        // Synchronously close the SQLite handle. `try?` because GRDB will throw
+        // if statements are still in-flight; in that case ARC will tear the
+        // connection down on deinit, which is the same behavior as before.
+        try? dbQueue?.close()
         dbQueue = nil
     }
 
