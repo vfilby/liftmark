@@ -34,8 +34,8 @@ struct SettingsAISection: View {
                     }
                 ), axis: .vertical)
                 .lineLimit(2...4)
+                .accessibilityIdentifier("input-custom-prompt")
             }
-            .accessibilityIdentifier("input-custom-prompt")
 
             VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
                 Text("API Key")

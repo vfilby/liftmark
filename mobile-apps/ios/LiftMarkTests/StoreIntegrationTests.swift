@@ -530,6 +530,39 @@ final class SettingsStoreTests: XCTestCase {
         settings.customPromptAddition = "I have a bad back"
         store.updateSettings(settings)
         XCTAssertEqual(store.settings?.customPromptAddition, "I have a bad back")
+
+        let store2 = SettingsStore()
+        store2.loadSettings()
+        XCTAssertEqual(store2.settings?.customPromptAddition, "I have a bad back")
+    }
+
+    func testUpdateSettingsCustomPromptMultiLine() {
+        store.loadSettings()
+        guard var settings = store.settings else { return }
+        let multiLine = "Line one\nLine two\nLine three"
+        settings.customPromptAddition = multiLine
+        store.updateSettings(settings)
+
+        let store2 = SettingsStore()
+        store2.loadSettings()
+        XCTAssertEqual(store2.settings?.customPromptAddition, multiLine)
+    }
+
+    func testUpdateSettingsAIPromptToggles() {
+        store.loadSettings()
+        guard var settings = store.settings else { return }
+        settings.aiPromptIncludeFormatPointer = false
+        settings.aiPromptIncludeRecentWorkouts = false
+        settings.aiPromptIncludeProgression = false
+        settings.aiPromptIncludeEquipment = false
+        store.updateSettings(settings)
+
+        let store2 = SettingsStore()
+        store2.loadSettings()
+        XCTAssertEqual(store2.settings?.aiPromptIncludeFormatPointer, false)
+        XCTAssertEqual(store2.settings?.aiPromptIncludeRecentWorkouts, false)
+        XCTAssertEqual(store2.settings?.aiPromptIncludeProgression, false)
+        XCTAssertEqual(store2.settings?.aiPromptIncludeEquipment, false)
     }
 
     func testUpdateSettingsHomeTiles() {

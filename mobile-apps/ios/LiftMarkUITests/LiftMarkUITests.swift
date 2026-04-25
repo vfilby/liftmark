@@ -99,4 +99,8 @@ final class LiftMarkUITests: XCTestCase {
         runner.runScenario(named: "onboarding")
     }
 
+    func testAIPromptSettings() throws {
+        runner.runScenario(named: "ai-prompt-settings")
+    }
+
 }

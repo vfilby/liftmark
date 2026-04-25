@@ -1,0 +1,109 @@
+name: "AI prompt settings"
+
+# Phase 4 verification for #101 / #94 — confirms the AI prompt surface in
+# Settings: the toggle controls and custom-prompt input are reachable, and
+# the custom prompt persists across relaunch. Block-composition behaviour
+# (which toggles control which prompt sections) and the persistence of the
+# four boolean toggle settings are covered by unit tests
+# (WorkoutGenerationServiceTests, StoreIntegrationTests).
+
+setup:
+  - action: launchApp
+    newInstance: true
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+  - action: tap
+    target: "tab-settings"
+  - action: waitFor
+    target: "settings-screen"
+    timeout: 5000
+  # AI section is below Appearance/Workout/Gym/Integrations — bring it on-screen.
+  # Two swipes lands the section in view; `expect toExist` has a scroll-search
+  # fallback that handles minor over/undershoot.
+  - action: scroll
+    target: "settings-screen"
+    direction: "up"
+  - action: delay
+    ms: 300
+  - action: scroll
+    target: "settings-screen"
+    direction: "up"
+  - action: delay
+    ms: 500
+  - action: expect
+    target: "toggle-ai-include-format-pointer"
+    assertion: "toExist"
+
+tests:
+  - name: "AI section toggles and custom prompt input are reachable"
+    steps:
+      - action: expect
+        target: "toggle-ai-include-format-pointer"
+        assertion: "toExist"
+      - action: expect
+        target: "toggle-ai-include-recent-workouts"
+        assertion: "toExist"
+      - action: expect
+        target: "toggle-ai-include-progression"
+        assertion: "toExist"
+      - action: expect
+        target: "toggle-ai-include-equipment"
+        assertion: "toExist"
+      - action: expect
+        target: "input-custom-prompt"
+        assertion: "toExist"
+
+  - name: "custom prompt persists across relaunch"
+    steps:
+      - action: expect
+        target: "input-custom-prompt"
+        assertion: "toExist"
+      - action: replaceText
+        target: "input-custom-prompt"
+        value: "Avoid overhead pressing"
+      - action: delay
+        ms: 300
+      - action: expect
+        target: "input-custom-prompt"
+        assertion: "toHaveText"
+        value: "Avoid overhead pressing"
+      - action: launchApp
+        newInstance: true
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "home-screen"
+            timeout: 30000
+        catch:
+          - action: waitFor
+            target: "max-lift-tile-0"
+            timeout: 5000
+      - action: tap
+        target: "tab-settings"
+      - action: waitFor
+        target: "settings-screen"
+        timeout: 5000
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
+      - action: delay
+        ms: 300
+      - action: scroll
+        target: "settings-screen"
+        direction: "up"
+      - action: delay
+        ms: 500
+      - action: expect
+        target: "input-custom-prompt"
+        assertion: "toExist"
+      - action: expect
+        target: "input-custom-prompt"
+        assertion: "toHaveText"
+        value: "Avoid overhead pressing"

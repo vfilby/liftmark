@@ -84,6 +84,30 @@ final class WorkoutGenerationServiceTests: XCTestCase {
         XCTAssertTrue(prompt.contains("shoulder injury"))
     }
 
+    func testBuildPromptOmitsCustomNotesWhenNil() {
+        let context = makeContext(customPrompt: nil)
+        let params = WorkoutGenerationParams(intent: "Push day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("Custom notes"))
+    }
+
+    func testBuildPromptOmitsCustomNotesWhenWhitespaceOnly() {
+        let context = makeContext(customPrompt: "   \n\t  ")
+        let params = WorkoutGenerationParams(intent: "Push day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertFalse(prompt.contains("Custom notes"))
+    }
+
+    func testBuildPromptPreservesMultiLineCustomNotes() {
+        let multiLine = "Line one\nLine two\nLine three"
+        let context = makeContext(customPrompt: multiLine)
+        let params = WorkoutGenerationParams(intent: "Push day")
+        let prompt = WorkoutGenerationService.buildWorkoutGenerationPrompt(context: context, params: params)
+        XCTAssertTrue(prompt.contains("Line one"))
+        XCTAssertTrue(prompt.contains("Line two"))
+        XCTAssertTrue(prompt.contains("Line three"))
+    }
+
     func testBuildPromptIncludesGymName() {
         let context = makeContext(gym: "Iron Paradise")
         let params = WorkoutGenerationParams(intent: "Workout")
