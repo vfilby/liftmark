@@ -36,7 +36,10 @@ enum MigratorBridgeFailure: String, CaseIterable {
             let needed = context.requiredMegabytes ?? 0
             return "Free up ~\(needed) MB and relaunch."
         case .integrityFailed:
-            return "Your local workout database reports an inconsistency. LiftMark will not upgrade until this is resolved. Tap here to export a copy for support."
+            return """
+            Your local workout database reports an inconsistency. LiftMark will not upgrade \
+            until this is resolved. Tap here to export a copy for support.
+            """
         case .backupFailed:
             return "LiftMark couldn't create a safety backup. Your data is unchanged. Please try again."
         case .bridgeWriteFailed:
@@ -69,9 +72,9 @@ enum MigratorBridgeFailure: String, CaseIterable {
 /// Numeric context captured when a failure is persisted, used for message substitution
 /// and (optionally) support diagnostics. Any field may be `nil`.
 struct MigratorBridgeFailureContext: Equatable {
-    var requiredBytes: Int64? = nil
-    var dbSizeBytes: Int64? = nil
-    var fromVersion: Int? = nil
+    var requiredBytes: Int64?
+    var dbSizeBytes: Int64?
+    var fromVersion: Int?
 
     /// Bytes rounded up to the next whole megabyte for user-facing messages.
     /// Uses binary MiB (1024²) because the on-device "Storage" UI does the same.
@@ -105,18 +108,18 @@ extension MigratorBridgeFailure {
     ) {
         defaults.set(true, forKey: MigratorBridgeBackup.UserDefaultsKey.lastAttemptFailed)
         defaults.set(failure.rawValue, forKey: PersistenceKey.lastFailureCase)
-        if let v = context.requiredBytes {
-            defaults.set(NSNumber(value: v), forKey: PersistenceKey.lastFailureRequiredBytes)
+        if let value = context.requiredBytes {
+            defaults.set(NSNumber(value: value), forKey: PersistenceKey.lastFailureRequiredBytes)
         } else {
             defaults.removeObject(forKey: PersistenceKey.lastFailureRequiredBytes)
         }
-        if let v = context.dbSizeBytes {
-            defaults.set(NSNumber(value: v), forKey: PersistenceKey.lastFailureDbSizeBytes)
+        if let value = context.dbSizeBytes {
+            defaults.set(NSNumber(value: value), forKey: PersistenceKey.lastFailureDbSizeBytes)
         } else {
             defaults.removeObject(forKey: PersistenceKey.lastFailureDbSizeBytes)
         }
-        if let v = context.fromVersion {
-            defaults.set(v, forKey: PersistenceKey.lastFailureFromVersion)
+        if let value = context.fromVersion {
+            defaults.set(value, forKey: PersistenceKey.lastFailureFromVersion)
         } else {
             defaults.removeObject(forKey: PersistenceKey.lastFailureFromVersion)
         }
@@ -137,11 +140,11 @@ extension MigratorBridgeFailure {
             return nil
         }
         var context = MigratorBridgeFailureContext()
-        if let n = defaults.object(forKey: PersistenceKey.lastFailureRequiredBytes) as? NSNumber {
-            context.requiredBytes = n.int64Value
+        if let number = defaults.object(forKey: PersistenceKey.lastFailureRequiredBytes) as? NSNumber {
+            context.requiredBytes = number.int64Value
         }
-        if let n = defaults.object(forKey: PersistenceKey.lastFailureDbSizeBytes) as? NSNumber {
-            context.dbSizeBytes = n.int64Value
+        if let number = defaults.object(forKey: PersistenceKey.lastFailureDbSizeBytes) as? NSNumber {
+            context.dbSizeBytes = number.int64Value
         }
         if defaults.object(forKey: PersistenceKey.lastFailureFromVersion) != nil {
             context.fromVersion = defaults.integer(forKey: PersistenceKey.lastFailureFromVersion)

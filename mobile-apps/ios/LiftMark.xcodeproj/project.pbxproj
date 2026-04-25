@@ -83,6 +83,7 @@
 		6421E3FB66672D05E8EFC771 /* JsonImportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BC03CA247E92B49F3558D8 /* JsonImportServiceTests.swift */; };
 		65DF287BCE23EABD6F60D848 /* MarkdownParserAdvancedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBFB6A09B3686193653A62B /* MarkdownParserAdvancedTests.swift */; };
 		67F8E833AB970E7C0B0D3E7F /* SyncChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FB0FF7A71BDC475DA488AB4 /* SyncChange.swift */; };
+		68FA9B5D53CC0AED850ACCCF /* SessionRepository+SetMutations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F661FFBD647E29D31221146 /* SessionRepository+SetMutations.swift */; };
 		697ACE9A93DBDD78F0B11F3B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D5191B081A643D264F9790 /* SettingsView.swift */; };
 		6AAEFF60A1CB9A5943574B71 /* ExerciseTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D356A67A58628F0D7881CC0 /* ExerciseTrendView.swift */; };
 		6C719CD2D4AEF2D0928096A2 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 6D124AFE5C66ABF0FB74FBC2 /* Sentry */; };
@@ -246,6 +247,7 @@
 		0CA40A430E6513546C353DA5 /* CKSyncMetadataStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CKSyncMetadataStoreTests.swift; sourceTree = "<group>"; };
 		0DBFB6A09B3686193653A62B /* MarkdownParserAdvancedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParserAdvancedTests.swift; sourceTree = "<group>"; };
 		0F5CCC90C4FCF3464EB1900B /* SentryConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryConfig.swift; sourceTree = "<group>"; };
+		0F661FFBD647E29D31221146 /* SessionRepository+SetMutations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRepository+SetMutations.swift"; sourceTree = "<group>"; };
 		0F8D8C6B7DB03FE38BFEF1F2 /* LiveWorkoutsLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutsLiveActivity.swift; sourceTree = "<group>"; };
 		0FF868F5979A1635824B2B27 /* SecureStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorageTests.swift; sourceTree = "<group>"; };
 		100FA0E0A273C20AB13B252D /* LiveWorkoutsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutsBundle.swift; sourceTree = "<group>"; };
@@ -712,6 +714,7 @@
 				6A2AEF2440BDB5076F5D02A3 /* MigratorBridgeBackup.swift */,
 				0470585628866D2538B4ED7A /* MigratorBridgeFailure.swift */,
 				FB133008B74E2A84E1FC8E73 /* SessionRepository.swift */,
+				0F661FFBD647E29D31221146 /* SessionRepository+SetMutations.swift */,
 				557BC7BEA37C9CC95B533600 /* SettingsRepository.swift */,
 				E0525E47DACD40D017D6CF66 /* WorkoutPlanRepository.swift */,
 			);
@@ -1132,6 +1135,7 @@
 				4795C2A323A8F776D98904FE /* SentryConfig.swift in Sources */,
 				0A1408CC7EF27C2FCA9FAEF2 /* SessionLMWFEncoder.swift in Sources */,
 				DE32D2B2D0BC36737819F32E /* SessionNotesSheet.swift in Sources */,
+				68FA9B5D53CC0AED850ACCCF /* SessionRepository+SetMutations.swift in Sources */,
 				D1F4C2096E3E879F3919EE3D /* SessionRepository.swift in Sources */,
 				1330EAEB43A76F37FAD353AA /* SessionStore.swift in Sources */,
 				7D298DEAA05518F3DC66D53A /* SetEntry.swift in Sources */,
