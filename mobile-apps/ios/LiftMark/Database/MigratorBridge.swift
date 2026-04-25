@@ -132,7 +132,8 @@ enum MigratorBridge {
             // the last successful bridge — upgrade, downgrade, or non-numeric change.
             // The downgrade case (§3.g) is what motivates the breadcrumb; the others
             // are recorded for completeness.
-            if let lastSuccess = UserDefaults.standard.string(forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber),
+            let lastSuccessKey = MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber
+            if let lastSuccess = UserDefaults.standard.string(forKey: lastSuccessKey),
                lastSuccess != currentBuildNumber()
             {
                 CrashReporter.shared.addBreadcrumb(
@@ -200,7 +201,10 @@ enum MigratorBridge {
             rowsInserted: rowsInserted,
             durationMs: totalDurationMs
         )
-        UserDefaults.standard.set(currentBuildNumber(), forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber)
+        UserDefaults.standard.set(
+            currentBuildNumber(),
+            forKey: MigratorBridgeBackup.UserDefaultsKey.lastSuccessBuildNumber
+        )
         MigratorBridgeFailure.clearPersisted()
 
         return .bridged(fromVersion: fromVersion, rowsInserted: rowsInserted)
@@ -544,8 +548,9 @@ enum MigratorBridgeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .refusedFutureVersion(let v):
-            return "Migrator bridge refused to run: database schema_version=\(v) is newer than this build (max=\(MigratorBridge.currentVersion))."
+        case .refusedFutureVersion(let version):
+            return "Migrator bridge refused to run: database schema_version=\(version) "
+                + "is newer than this build (max=\(MigratorBridge.currentVersion))."
         case .preflightFailed(let reason):
             return "Migrator bridge pre-flight failed: \(reason)."
         case .backupFailed(let reason):

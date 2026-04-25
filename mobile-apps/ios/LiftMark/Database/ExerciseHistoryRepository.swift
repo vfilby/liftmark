@@ -114,7 +114,9 @@ struct ExerciseHistoryRepository {
                     AND mr_t.parent_type = 'session' AND mr_t.kind = 'reps' AND mr_t.role = 'target'
                 LEFT JOIN set_measurements mt_a ON mt_a.set_id = ss.id
                     AND mt_a.parent_type = 'session' AND mt_a.kind = 'time' AND mt_a.role = 'actual'
-                WHERE LOWER(se.exercise_name) IN (\(placeholders)) AND ws.status = 'completed' AND ss.status = 'completed'
+                WHERE LOWER(se.exercise_name) IN (\(placeholders))
+                    AND ws.status = 'completed'
+                    AND ss.status = 'completed'
                 GROUP BY ws.id
                 ORDER BY ws.date DESC
             """, arguments: StatementArguments(aliases))

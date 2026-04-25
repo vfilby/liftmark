@@ -210,21 +210,51 @@ extension MigratorBridge {
             """)
 
             // v1 indexes
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_workout ON template_exercises(workout_template_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_sets_exercise ON template_sets(template_exercise_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite ON workout_templates(is_favorite)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_session ON session_exercises(workout_session_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_name ON session_exercises(exercise_name)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_sets_exercise ON session_sets(session_exercise_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_sessions_status ON workout_sessions(status)")
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_template_exercises_workout
+                ON template_exercises(workout_template_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_template_sets_exercise
+                ON template_sets(template_exercise_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_workout_templates_favorite
+                ON workout_templates(is_favorite)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_session_exercises_session
+                ON session_exercises(workout_session_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_session_exercises_name
+                ON session_exercises(exercise_name)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_session_sets_exercise
+                ON session_sets(session_exercise_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_workout_sessions_status
+                ON workout_sessions(status)
+                """)
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gyms_default ON gyms(is_default)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id)")
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_sync_queue_entity
+                ON sync_queue(entity_type, entity_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_sync_conflicts_entity
+                ON sync_conflicts(entity_type, entity_id)
+                """)
 
             // Orphaned equipment fixup
-            let orphanCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL") ?? 0
+            let orphanCount = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM gym_equipment WHERE gym_id IS NULL"
+            ) ?? 0
             if orphanCount > 0 {
                 let now = ISO8601DateFormatter().string(from: Date())
                 let orphanGymId = IDGenerator.generate()
@@ -232,7 +262,10 @@ extension MigratorBridge {
                     sql: "INSERT INTO gyms (id, name, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
                     arguments: [orphanGymId, "My Gym", 1, now, now]
                 )
-                try db.execute(sql: "UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL", arguments: [orphanGymId])
+                try db.execute(
+                    sql: "UPDATE gym_equipment SET gym_id = ? WHERE gym_id IS NULL",
+                    arguments: [orphanGymId]
+                )
             }
 
             // Default user_settings row
@@ -241,7 +274,10 @@ extension MigratorBridge {
                 let now = ISO8601DateFormatter().string(from: Date())
                 try db.execute(
                     sql: """
-                        INSERT INTO user_settings (id, default_weight_unit, enable_workout_timer, auto_start_rest_timer, theme, notifications_enabled, created_at, updated_at)
+                        INSERT INTO user_settings (
+                            id, default_weight_unit, enable_workout_timer, auto_start_rest_timer,
+                            theme, notifications_enabled, created_at, updated_at
+                        )
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     arguments: [IDGenerator.generate(), "lbs", 1, 1, "auto", 1, now, now]
@@ -358,8 +394,12 @@ extension MigratorBridge {
                 )
             """)
             try db.execute(sql: """
-                INSERT INTO gym_equipment_new (id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at)
-                SELECT id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at
+                INSERT INTO gym_equipment_new (
+                    id, name, is_available, last_checked_at,
+                    created_at, updated_at, gym_id, deleted_at
+                )
+                SELECT id, name, is_available, last_checked_at,
+                       created_at, updated_at, gym_id, deleted_at
                 FROM gym_equipment
             """)
             try db.execute(sql: "DROP TABLE gym_equipment")
@@ -367,13 +407,28 @@ extension MigratorBridge {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_name ON gym_equipment(name)")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_gym_equipment_gym ON gym_equipment(gym_id)")
 
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_workout_sessions_date ON workout_sessions(date DESC)")
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_workout_sessions_date
+                ON workout_sessions(date DESC)
+                """)
 
             let now = ISO8601DateFormatter().string(from: Date())
-            try db.execute(sql: "UPDATE session_exercises SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
-            try db.execute(sql: "UPDATE session_sets SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
-            try db.execute(sql: "UPDATE template_exercises SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
-            try db.execute(sql: "UPDATE template_sets SET updated_at = ? WHERE updated_at IS NULL", arguments: [now])
+            try db.execute(
+                sql: "UPDATE session_exercises SET updated_at = ? WHERE updated_at IS NULL",
+                arguments: [now]
+            )
+            try db.execute(
+                sql: "UPDATE session_sets SET updated_at = ? WHERE updated_at IS NULL",
+                arguments: [now]
+            )
+            try db.execute(
+                sql: "UPDATE template_exercises SET updated_at = ? WHERE updated_at IS NULL",
+                arguments: [now]
+            )
+            try db.execute(
+                sql: "UPDATE template_sets SET updated_at = ? WHERE updated_at IS NULL",
+                arguments: [now]
+            )
 
             // schema_version may not exist in GRDB-migrator-from-scratch flow;
             // the legacy chain guarantees it did for pre-bridge DBs.
@@ -382,7 +437,10 @@ extension MigratorBridge {
                 sql: "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='schema_version'"
             ) ?? 0
             if hasSchemaVersion > 0 {
-                try db.execute(sql: "DELETE FROM schema_version WHERE rowid NOT IN (SELECT MIN(rowid) FROM schema_version)")
+                try db.execute(sql: """
+                    DELETE FROM schema_version
+                    WHERE rowid NOT IN (SELECT MIN(rowid) FROM schema_version)
+                    """)
             }
 
             try db.execute(sql: "DROP TABLE IF EXISTS sync_queue")
@@ -400,9 +458,18 @@ extension MigratorBridge {
         }
 
         m.registerMigration("v11_gym_unique_fk_indexes") { db in
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_exercises_parent ON session_exercises(parent_exercise_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_session_sets_parent ON session_sets(parent_set_id)")
-            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_template_exercises_parent ON template_exercises(parent_exercise_id)")
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_session_exercises_parent
+                ON session_exercises(parent_exercise_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_session_sets_parent
+                ON session_sets(parent_set_id)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_template_exercises_parent
+                ON template_exercises(parent_exercise_id)
+                """)
 
             try db.execute(sql: """
                 CREATE TABLE gym_equipment_new (
@@ -419,8 +486,12 @@ extension MigratorBridge {
                 )
             """)
             try db.execute(sql: """
-                INSERT INTO gym_equipment_new (id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at)
-                SELECT id, name, is_available, last_checked_at, created_at, updated_at, gym_id, deleted_at
+                INSERT INTO gym_equipment_new (
+                    id, name, is_available, last_checked_at,
+                    created_at, updated_at, gym_id, deleted_at
+                )
+                SELECT id, name, is_available, last_checked_at,
+                       created_at, updated_at, gym_id, deleted_at
                 FROM gym_equipment
             """)
             try db.execute(sql: "DROP TABLE gym_equipment")
@@ -444,74 +515,35 @@ extension MigratorBridge {
                     updated_at TEXT
                 )
             """)
-            try db.execute(sql: "CREATE INDEX idx_set_measurements_set ON set_measurements(set_id, parent_type)")
-            try db.execute(sql: "CREATE INDEX idx_set_measurements_group ON set_measurements(set_id, group_index)")
+            try db.execute(sql: """
+                CREATE INDEX idx_set_measurements_set
+                ON set_measurements(set_id, parent_type)
+                """)
+            try db.execute(sql: """
+                CREATE INDEX idx_set_measurements_group
+                ON set_measurements(set_id, group_index)
+                """)
 
             // Session fan-out
             let sessionSets = try Row.fetchAll(db, sql: "SELECT * FROM session_sets")
             for row in sessionSets {
-                guard let setId: String = row["id"] else { continue }
-                let updatedAt: String? = row["updated_at"]
-
-                if let w: Double = row["target_weight"] {
-                    let unit: String? = row["target_weight_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
-                }
-                if let r: Int = row["target_reps"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
-                }
-                if let t: Int = row["target_time"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
-                }
-                if let d: Double = row["target_distance"] {
-                    let unit: String? = row["target_distance_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
-                }
-                if let rpe: Int = row["target_rpe"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "target", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
-                }
-                if let w: Double = row["actual_weight"] {
-                    let unit: String? = row["actual_weight_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
-                }
-                if let r: Int = row["actual_reps"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
-                }
-                if let t: Int = row["actual_time"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
-                }
-                if let d: Double = row["actual_distance"] {
-                    let unit: String? = row["actual_distance_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
-                }
-                if let rpe: Int = row["actual_rpe"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "session", role: "actual", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
-                }
+                try fanOutMeasurementsV12(
+                    db,
+                    row: row,
+                    parentType: "session",
+                    includeActual: true
+                )
             }
 
-            // Template fan-out
+            // Template fan-out (planned rows only have target columns)
             let templateSets = try Row.fetchAll(db, sql: "SELECT * FROM template_sets")
             for row in templateSets {
-                guard let setId: String = row["id"] else { continue }
-                let updatedAt: String? = row["updated_at"]
-
-                if let w: Double = row["target_weight"] {
-                    let unit: String? = row["target_weight_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "weight", value: w, unit: unit, updatedAt: updatedAt)
-                }
-                if let r: Int = row["target_reps"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "reps", value: Double(r), unit: nil, updatedAt: updatedAt)
-                }
-                if let t: Int = row["target_time"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "time", value: Double(t), unit: "s", updatedAt: updatedAt)
-                }
-                if let d: Double = row["target_distance"] {
-                    let unit: String? = row["target_distance_unit"]
-                    try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "distance", value: d, unit: unit, updatedAt: updatedAt)
-                }
-                if let rpe: Int = row["target_rpe"] {
-                    try insertMeasurementV12(db, setId: setId, parentType: "planned", role: "target", kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt)
-                }
+                try fanOutMeasurementsV12(
+                    db,
+                    row: row,
+                    parentType: "planned",
+                    includeActual: false
+                )
             }
 
             // Rebuild session_sets
@@ -533,13 +565,22 @@ extension MigratorBridge {
                 )
             """)
             try db.execute(sql: """
-                INSERT INTO session_sets_new (id, session_exercise_id, order_index, rest_seconds, completed_at, status, notes, is_dropset, is_per_side, is_amrap, side, updated_at)
-                SELECT id, session_exercise_id, order_index, rest_seconds, completed_at, status, notes, is_dropset, is_per_side, 0, side, updated_at
+                INSERT INTO session_sets_new (
+                    id, session_exercise_id, order_index, rest_seconds,
+                    completed_at, status, notes,
+                    is_dropset, is_per_side, is_amrap, side, updated_at
+                )
+                SELECT id, session_exercise_id, order_index, rest_seconds,
+                       completed_at, status, notes,
+                       is_dropset, is_per_side, 0, side, updated_at
                 FROM session_sets
             """)
             try db.execute(sql: "DROP TABLE session_sets")
             try db.execute(sql: "ALTER TABLE session_sets_new RENAME TO session_sets")
-            try db.execute(sql: "CREATE INDEX idx_session_sets_exercise ON session_sets(session_exercise_id)")
+            try db.execute(sql: """
+                CREATE INDEX idx_session_sets_exercise
+                ON session_sets(session_exercise_id)
+                """)
 
             // Rebuild template_sets
             try db.execute(sql: """
@@ -557,28 +598,53 @@ extension MigratorBridge {
                 )
             """)
             try db.execute(sql: """
-                INSERT INTO template_sets_new (id, template_exercise_id, order_index, rest_seconds, is_dropset, is_per_side, is_amrap, notes, updated_at)
-                SELECT id, template_exercise_id, order_index, rest_seconds, is_dropset, is_per_side, is_amrap, notes, updated_at
+                INSERT INTO template_sets_new (
+                    id, template_exercise_id, order_index, rest_seconds,
+                    is_dropset, is_per_side, is_amrap, notes, updated_at
+                )
+                SELECT id, template_exercise_id, order_index, rest_seconds,
+                       is_dropset, is_per_side, is_amrap, notes, updated_at
                 FROM template_sets
             """)
             try db.execute(sql: "DROP TABLE template_sets")
             try db.execute(sql: "ALTER TABLE template_sets_new RENAME TO template_sets")
-            try db.execute(sql: "CREATE INDEX idx_template_sets_exercise ON template_sets(template_exercise_id)")
+            try db.execute(sql: """
+                CREATE INDEX idx_template_sets_exercise
+                ON template_sets(template_exercise_id)
+                """)
         }
 
         m.registerMigration("v13_default_timer_countdown") { db in
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_timer_countdown INTEGER DEFAULT 0")
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN default_timer_countdown INTEGER DEFAULT 0
+                """)
         }
 
         m.registerMigration("v14_default_weight_step_lbs") { db in
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5")
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN default_weight_step_lbs REAL DEFAULT 2.5
+                """)
         }
 
         m.registerMigration("v15_ai_prompt_toggles") { db in
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_format_pointer INTEGER DEFAULT 1")
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_recent_workouts INTEGER DEFAULT 1")
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_progression INTEGER DEFAULT 1")
-            try db.execute(sql: "ALTER TABLE user_settings ADD COLUMN ai_prompt_include_equipment INTEGER DEFAULT 1")
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN ai_prompt_include_format_pointer INTEGER DEFAULT 1
+                """)
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN ai_prompt_include_recent_workouts INTEGER DEFAULT 1
+                """)
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN ai_prompt_include_progression INTEGER DEFAULT 1
+                """)
+            try db.execute(sql: """
+                ALTER TABLE user_settings
+                ADD COLUMN ai_prompt_include_equipment INTEGER DEFAULT 1
+                """)
         }
 
         return m
@@ -596,8 +662,88 @@ extension MigratorBridge {
     ) throws {
         let id = UUID().uuidString
         try db.execute(
-            sql: "INSERT INTO set_measurements (id, set_id, parent_type, role, kind, value, unit, group_index, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+            sql: """
+            INSERT INTO set_measurements (
+                id, set_id, parent_type, role, kind, value, unit, group_index, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+            """,
             arguments: [id, setId, parentType, role, kind, value, unit, updatedAt]
         )
+    }
+
+    /// Fan one legacy `*_sets` row into per-measurement rows. `target_*` columns are always
+    /// considered; `actual_*` columns only when `includeActual` is true (planned rows have none).
+    private static func fanOutMeasurementsV12(
+        _ db: Database,
+        row: Row,
+        parentType: String,
+        includeActual: Bool
+    ) throws {
+        guard let setId: String = row["id"] else { return }
+        let updatedAt: String? = row["updated_at"]
+
+        try insertMeasurementsV12(
+            db,
+            row: row,
+            setId: setId,
+            parentType: parentType,
+            role: "target",
+            updatedAt: updatedAt
+        )
+        if includeActual {
+            try insertMeasurementsV12(
+                db,
+                row: row,
+                setId: setId,
+                parentType: parentType,
+                role: "actual",
+                updatedAt: updatedAt
+            )
+        }
+    }
+
+    private static func insertMeasurementsV12(
+        _ db: Database,
+        row: Row,
+        setId: String,
+        parentType: String,
+        role: String,
+        updatedAt: String?
+    ) throws {
+        let prefix = role  // "target" or "actual"
+
+        if let weight: Double = row["\(prefix)_weight"] {
+            let unit: String? = row["\(prefix)_weight_unit"]
+            try insertMeasurementV12(
+                db, setId: setId, parentType: parentType, role: role,
+                kind: "weight", value: weight, unit: unit, updatedAt: updatedAt
+            )
+        }
+        if let reps: Int = row["\(prefix)_reps"] {
+            try insertMeasurementV12(
+                db, setId: setId, parentType: parentType, role: role,
+                kind: "reps", value: Double(reps), unit: nil, updatedAt: updatedAt
+            )
+        }
+        if let time: Int = row["\(prefix)_time"] {
+            try insertMeasurementV12(
+                db, setId: setId, parentType: parentType, role: role,
+                kind: "time", value: Double(time), unit: "s", updatedAt: updatedAt
+            )
+        }
+        if let distance: Double = row["\(prefix)_distance"] {
+            let unit: String? = row["\(prefix)_distance_unit"]
+            try insertMeasurementV12(
+                db, setId: setId, parentType: parentType, role: role,
+                kind: "distance", value: distance, unit: unit, updatedAt: updatedAt
+            )
+        }
+        if let rpe: Int = row["\(prefix)_rpe"] {
+            try insertMeasurementV12(
+                db, setId: setId, parentType: parentType, role: role,
+                kind: "rpe", value: Double(rpe), unit: nil, updatedAt: updatedAt
+            )
+        }
     }
 }

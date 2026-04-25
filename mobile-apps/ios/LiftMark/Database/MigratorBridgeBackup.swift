@@ -197,7 +197,8 @@ enum MigratorBridgeBackup {
         if liveVersion != backupVersion {
             throw BackupError.verificationFailed(
                 step: .rowCount,
-                detail: "schema_version mismatch: live=\(String(describing: liveVersion)) backup=\(String(describing: backupVersion))"
+                detail: "schema_version mismatch: live=\(String(describing: liveVersion)) "
+                    + "backup=\(String(describing: backupVersion))"
             )
         }
     }
