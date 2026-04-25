@@ -98,10 +98,18 @@ final class DatabaseManager: @unchecked Sendable {
     func close() {
         dbLock.lock()
         defer { dbLock.unlock() }
-        // Synchronously close the SQLite handle. `try?` because GRDB will throw
-        // if statements are still in-flight; in that case ARC will tear the
-        // connection down on deinit, which is the same behavior as before.
-        try? dbQueue?.close()
+        // Synchronously close the SQLite handle. If GRDB throws (typically
+        // because statements are still in-flight) we fall back to ARC teardown
+        // on deinit — same behavior as before this fix, which is the flake-prone
+        // path. Log so we can tell from telemetry whether this fallback ever
+        // fires in production.
+        if let queue = dbQueue {
+            do {
+                try queue.close()
+            } catch {
+                Logger.shared.error(.database, "DatabaseQueue.close() failed; falling back to ARC teardown", error: error)
+            }
+        }
         dbQueue = nil
     }
 
