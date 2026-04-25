@@ -40,8 +40,9 @@ clean:
 	xcodebuild clean -scheme $(SCHEME)
 	rm -rf .build build
 
-# Trigger TestFlight deploy via GitHub Actions
+# Manually re-trigger the release pipeline against current main.
+# Pushes to main also trigger it automatically; use this to re-run without an empty commit.
 release-alpha:
-	@echo "Triggering Swift TestFlight build..."
-	gh workflow run "Deploy Swift to TestFlight" --ref main --field bump=build
+	@echo "Triggering release pipeline..."
+	gh workflow run "Release Pipeline" --ref main
 	@echo "Workflow triggered. Monitor at: https://github.com/$$(gh repo view --json nameWithOwner -q .nameWithOwner)/actions"

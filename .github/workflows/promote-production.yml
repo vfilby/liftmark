@@ -1,0 +1,76 @@
+name: Promote Beta → Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'TestFlight build number to submit for App Store review'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (What to Test → What Changed in App Store)'
+        required: false
+        type: string
+      auto_release:
+        description: 'Release automatically after approval (vs. manual release)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+      phased_release:
+        description: 'Use phased release (7-day gradual rollout)'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: Submit build to App Store review
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Submit to App Store review
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+          BUILD_NUMBER: ${{ github.event.inputs.build_number }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+          AUTO_RELEASE: ${{ github.event.inputs.auto_release }}
+          PHASED_RELEASE: ${{ github.event.inputs.phased_release }}
+        run: node .github/scripts/promote-production.mjs
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.private_keys || true
+
+      - name: Summary
+        run: |
+          echo "## Production Submission" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build:** ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auto-release:** ${{ github.event.inputs.auto_release }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Phased release:** ${{ github.event.inputs.phased_release }}" >> $GITHUB_STEP_SUMMARY
