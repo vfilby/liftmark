@@ -6,6 +6,7 @@ import GRDB
 extension SessionRepository {
 
     @discardableResult
+    // swiftlint:disable:next function_parameter_count
     func updateSessionSet(
         _ setId: String,
         actualWeight: Double?,
@@ -19,18 +20,12 @@ extension SessionRepository {
         let now = self.now
         let completedAt = status == .completed ? now : nil
 
-        // Collect old actual measurement IDs before deleting
-        let oldMeasurementIds = try dbQueue.read { db -> [String] in
-            let rows = try Row.fetchAll(db, sql: """
-                SELECT id FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'
-                """, arguments: [setId])
-            return rows.compactMap { $0["id"] as String? }
+        let oldMeasurementIds = try dbQueue.read { db in
+            try fetchMeasurementIds(setId: setId, role: "actual", db: db)
         }
 
         var newMeasurementIds: [String] = []
         try dbQueue.write { db in
-            // Update set status
             try db.execute(
                 sql: """
                 UPDATE session_sets
@@ -39,15 +34,7 @@ extension SessionRepository {
                 """,
                 arguments: [status.rawValue, completedAt, now, setId]
             )
-
-            // Replace actual measurements
-            try db.execute(
-                sql: """
-                DELETE FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'
-                """,
-                arguments: [setId]
-            )
+            try deleteMeasurements(setId: setId, role: "actual", db: db)
             let actual = EntryValues(
                 weight: actualWeight.map { MeasuredWeight(value: $0, unit: actualWeightUnit ?? .lbs) },
                 reps: actualReps,
@@ -55,29 +42,11 @@ extension SessionRepository {
                 distance: nil,
                 rpe: actualRpe
             )
-            if !actual.isEmpty {
-                let rows = actual.toMeasurementRows(
-                    setId: setId,
-                    parentType: "session",
-                    role: "actual",
-                    groupIndex: 0,
-                    now: now
-                )
-                for mRow in rows {
-                    try mRow.insert(db)
-                    newMeasurementIds.append(mRow.id)
-                }
-            }
+            newMeasurementIds = try insertMeasurements(
+                actual, setId: setId, role: "actual", groupIndex: 0, now: now, db: db
+            )
         }
-
-        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
-        for mId in oldMeasurementIds {
-            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
-        }
-        for mId in newMeasurementIds {
-            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
-        }
-        return changes
+        return measurementSyncChanges(setId: setId, deleted: oldMeasurementIds, saved: newMeasurementIds)
     }
 
     @discardableResult
@@ -91,32 +60,18 @@ extension SessionRepository {
         let dbQueue = try dbManager.database()
         let now = self.now
 
-        // Collect old target measurement IDs before deleting
-        let oldMeasurementIds = try dbQueue.read { db -> [String] in
-            let rows = try Row.fetchAll(db, sql: """
-                SELECT id FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'target'
-                """, arguments: [setId])
-            return rows.compactMap { $0["id"] as String? }
+        let oldMeasurementIds = try dbQueue.read { db in
+            try fetchMeasurementIds(setId: setId, role: "target", db: db)
         }
 
         var newMeasurementIds: [String] = []
         try dbQueue.write { db in
-            // Update set timestamp and rest_seconds (rest is stored on the session_sets row itself,
-            // not in set_measurements)
+            // rest is stored on the session_sets row, not in set_measurements
             try db.execute(
                 sql: "UPDATE session_sets SET updated_at = ?, rest_seconds = ? WHERE id = ?",
                 arguments: [now, restSeconds, setId]
             )
-
-            // Replace target measurements
-            try db.execute(
-                sql: """
-                DELETE FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'target'
-                """,
-                arguments: [setId]
-            )
+            try deleteMeasurements(setId: setId, role: "target", db: db)
             let target = EntryValues(
                 weight: targetWeight.map { MeasuredWeight(value: $0, unit: .lbs) },
                 reps: targetReps,
@@ -124,29 +79,11 @@ extension SessionRepository {
                 distance: nil,
                 rpe: nil
             )
-            if !target.isEmpty {
-                let rows = target.toMeasurementRows(
-                    setId: setId,
-                    parentType: "session",
-                    role: "target",
-                    groupIndex: 0,
-                    now: now
-                )
-                for mRow in rows {
-                    try mRow.insert(db)
-                    newMeasurementIds.append(mRow.id)
-                }
-            }
+            newMeasurementIds = try insertMeasurements(
+                target, setId: setId, role: "target", groupIndex: 0, now: now, db: db
+            )
         }
-
-        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
-        for mId in oldMeasurementIds {
-            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
-        }
-        for mId in newMeasurementIds {
-            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
-        }
-        return changes
+        return measurementSyncChanges(setId: setId, deleted: oldMeasurementIds, saved: newMeasurementIds)
     }
 
     /// Complete a drop set by saving multiple actual entries at different groupIndices.
@@ -158,18 +95,12 @@ extension SessionRepository {
         let dbQueue = try dbManager.database()
         let now = self.now
 
-        // Collect old actual measurement IDs before deleting
-        let oldMeasurementIds = try dbQueue.read { db -> [String] in
-            let rows = try Row.fetchAll(db, sql: """
-                SELECT id FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'
-                """, arguments: [setId])
-            return rows.compactMap { $0["id"] as String? }
+        let oldMeasurementIds = try dbQueue.read { db in
+            try fetchMeasurementIds(setId: setId, role: "actual", db: db)
         }
 
         var newMeasurementIds: [String] = []
         try dbQueue.write { db in
-            // Update set status
             try db.execute(
                 sql: """
                 UPDATE session_sets
@@ -178,15 +109,7 @@ extension SessionRepository {
                 """,
                 arguments: [SetStatus.completed.rawValue, now, now, setId]
             )
-
-            // Replace actual measurements
-            try db.execute(
-                sql: """
-                DELETE FROM set_measurements
-                WHERE set_id = ? AND parent_type = 'session' AND role = 'actual'
-                """,
-                arguments: [setId]
-            )
+            try deleteMeasurements(setId: setId, role: "actual", db: db)
 
             for (groupIndex, entry) in entries.enumerated() {
                 let actual = EntryValues(
@@ -196,30 +119,13 @@ extension SessionRepository {
                     distance: nil,
                     rpe: nil
                 )
-                if !actual.isEmpty {
-                    let rows = actual.toMeasurementRows(
-                        setId: setId,
-                        parentType: "session",
-                        role: "actual",
-                        groupIndex: groupIndex,
-                        now: now
-                    )
-                    for mRow in rows {
-                        try mRow.insert(db)
-                        newMeasurementIds.append(mRow.id)
-                    }
-                }
+                let inserted = try insertMeasurements(
+                    actual, setId: setId, role: "actual", groupIndex: groupIndex, now: now, db: db
+                )
+                newMeasurementIds.append(contentsOf: inserted)
             }
         }
-
-        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
-        for mId in oldMeasurementIds {
-            changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
-        }
-        for mId in newMeasurementIds {
-            changes.append(.save(recordType: "SetMeasurement", recordID: mId))
-        }
-        return changes
+        return measurementSyncChanges(setId: setId, deleted: oldMeasurementIds, saved: newMeasurementIds)
     }
 
     @discardableResult
@@ -427,6 +333,58 @@ extension SessionRepository {
             changes.append(.delete(recordType: "SetMeasurement", recordID: mId))
         }
         changes.append(.delete(recordType: "SessionSet", recordID: setId))
+        return changes
+    }
+
+    // MARK: - Shared measurement helpers
+
+    fileprivate func fetchMeasurementIds(setId: String, role: String, db: Database) throws -> [String] {
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT id FROM set_measurements
+            WHERE set_id = ? AND parent_type = 'session' AND role = ?
+            """, arguments: [setId, role])
+        return rows.compactMap { $0["id"] as String? }
+    }
+
+    fileprivate func deleteMeasurements(setId: String, role: String, db: Database) throws {
+        try db.execute(
+            sql: """
+            DELETE FROM set_measurements
+            WHERE set_id = ? AND parent_type = 'session' AND role = ?
+            """,
+            arguments: [setId, role]
+        )
+    }
+
+    // swiftlint:disable:next function_parameter_count
+    fileprivate func insertMeasurements(
+        _ values: EntryValues,
+        setId: String,
+        role: String,
+        groupIndex: Int,
+        now: String,
+        db: Database
+    ) throws -> [String] {
+        guard !values.isEmpty else { return [] }
+        var ids: [String] = []
+        let rows = values.toMeasurementRows(
+            setId: setId, parentType: "session", role: role, groupIndex: groupIndex, now: now
+        )
+        for mRow in rows {
+            try mRow.insert(db)
+            ids.append(mRow.id)
+        }
+        return ids
+    }
+
+    fileprivate func measurementSyncChanges(
+        setId: String,
+        deleted: [String],
+        saved: [String]
+    ) -> [SyncChange] {
+        var changes: [SyncChange] = [.save(recordType: "SessionSet", recordID: setId)]
+        changes.append(contentsOf: deleted.map { .delete(recordType: "SetMeasurement", recordID: $0) })
+        changes.append(contentsOf: saved.map { .save(recordType: "SetMeasurement", recordID: $0) })
         return changes
     }
 }
