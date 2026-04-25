@@ -44,5 +44,5 @@ clean:
 # Pushes to main also trigger it automatically; use this to re-run without an empty commit.
 release-alpha:
 	@echo "Triggering release pipeline..."
-	gh workflow run "Release Pipeline" --ref main
+	gh workflow run "[iOS] Release Pipeline" --ref main
 	@echo "Workflow triggered. Monitor at: https://github.com/$$(gh repo view --json nameWithOwner -q .nameWithOwner)/actions"

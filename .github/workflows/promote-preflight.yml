@@ -1,4 +1,4 @@
-name: Promote Beta → Pre-flight
+name: '[iOS] Promote Beta → Pre-flight'
 
 on:
   schedule:

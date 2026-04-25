@@ -1,4 +1,4 @@
-name: Release Pipeline
+name: '[iOS] Release Pipeline'
 
 on:
   push:
