@@ -92,6 +92,10 @@ async function main() {
   const sourceBuilds = await listBuildsInGroup(appId, sourceName);
   const targetBuilds = await listBuildsInGroup(appId, targetName);
   const targetBuildIds = new Set(targetBuilds.map((b) => b.id));
+  const maxTargetBuildNumber = targetBuilds.reduce(
+    (max, b) => Math.max(max, Number(b.buildNumber) || 0),
+    0,
+  );
 
   sourceBuilds.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
@@ -102,6 +106,9 @@ async function main() {
     const ageHours = (now - new Date(build.uploadedAt).getTime()) / 3_600_000;
     const reasons = [];
     if (targetBuildIds.has(build.id)) reasons.push(`already in ${targetName}`);
+    if (Number(build.buildNumber) <= maxTargetBuildNumber) {
+      reasons.push(`older than ${targetName}'s latest (${maxTargetBuildNumber})`);
+    }
     if (ageHours < soakHours) reasons.push(`soak ${ageHours.toFixed(1)}h < ${soakHours}h`);
     if (blocked.has(String(build.buildNumber))) reasons.push('blocked by git tag');
 
