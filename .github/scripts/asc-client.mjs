@@ -85,8 +85,15 @@ export async function getGroupId(appId, groupName) {
 // Returns [{ id, buildNumber, version, uploadedAt, processingState }]
 export async function listBuildsInGroup(appId, groupName) {
   const groupId = await getGroupId(appId, groupName);
-  const path = `/betaGroups/${groupId}/builds?include=preReleaseVersion&fields[builds]=version,uploadedDate,processingState,preReleaseVersion&fields[preReleaseVersions]=version&limit=200`;
-  const res = await ascFetch(path);
+  // /betaGroups/{id}/builds doesn't accept include/fields; query /builds with filter[betaGroups] instead.
+  const params = new URLSearchParams({
+    'filter[betaGroups]': groupId,
+    'include': 'preReleaseVersion',
+    'fields[builds]': 'version,uploadedDate,processingState,preReleaseVersion',
+    'fields[preReleaseVersions]': 'version',
+    'limit': '200',
+  });
+  const res = await ascFetch(`/builds?${params}`);
   const versionById = new Map();
   for (const inc of res.included || []) {
     if (inc.type === 'preReleaseVersions') {
