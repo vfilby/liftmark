@@ -73,7 +73,8 @@ export async function getAppId(bundleId) {
 }
 
 export async function getGroupId(appId, groupName) {
-  const res = await ascFetch(`/apps/${appId}/betaGroups?filter[name]=${encodeURIComponent(groupName)}&limit=200`);
+  // /apps/{id}/betaGroups doesn't accept filter[name]; list all and match client-side.
+  const res = await ascFetch(`/apps/${appId}/betaGroups?limit=200`);
   const match = (res.data || []).find((g) => g.attributes?.name === groupName);
   if (!match) {
     throw new Error(`No TestFlight group named "${groupName}" on app ${appId}`);
