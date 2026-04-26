@@ -36,7 +36,8 @@ function makeJwt() {
   const signingInput = `${b64(header)}.${b64(payload)}`;
   const signer = createSign('SHA256');
   signer.update(signingInput);
-  const signature = signer.sign(privateKey).toString('base64url');
+  // JWS ES256 requires raw R||S (IEEE P1363) — Node defaults to DER, which Apple rejects with 401.
+  const signature = signer.sign({ key: privateKey, dsaEncoding: 'ieee-p1363' }).toString('base64url');
   return `${signingInput}.${signature}`;
 }
 
