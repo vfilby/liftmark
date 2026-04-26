@@ -6,10 +6,12 @@
 //
 // Eligibility gate:
 //   1. In the Beta group, not yet in the Pre-flight group
-//   2. Build age ≥ SOAK_HOURS
-//   3. Build number not in BLOCKED_BUILDS (from block-promotion/build-N git tags)
-//   4. Sentry session count for the build's release ≥ MIN_SESSIONS
-//   5. Sentry crash-free session rate ≥ MIN_CRASH_FREE_RATE
+//   2. Build number > newest already in the Pre-flight group (downgrade guard)
+//   3. Build age ≥ SOAK_HOURS
+//   4. Build number not in BLOCKED_BUILDS (from block-promotion/build-N git tags)
+//   5. Sentry session count for the build's release ≥ MIN_SESSIONS
+//   6. Sentry crash-free session rate ≥ MIN_CRASH_FREE_RATE
+//   7. Sentry unresolved error/fatal issues for the release ≤ MAX_UNRESOLVED_ISSUES
 //
 // Picks the *newest* build passing all gates. Older eligible builds are skipped.
 // A build failing the minimum-sessions check is considered "still soaking," not rejected.
@@ -17,6 +19,7 @@
 // Env:
 //   APP_BUNDLE_ID, SOURCE_GROUP_NAME, TARGET_GROUP_NAME
 //   SOAK_HOURS, MIN_SESSIONS, MIN_CRASH_FREE_RATE
+//   MAX_UNRESOLVED_ISSUES (optional; defaults to off if unset)
 //   BLOCKED_BUILDS (comma-separated build numbers)
 //   SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT
 //   DRY_RUN ('true' evaluates without promoting)
@@ -72,6 +75,29 @@ async function sentryCrashFreeRate(release) {
   return { sessions, crashFreeRate };
 }
 
+async function sentryUnresolvedIssueCount(release) {
+  const token = required('SENTRY_AUTH_TOKEN');
+  const org = required('SENTRY_ORG');
+  const project = required('SENTRY_PROJECT');
+  const projectId = await sentryProjectId(org, project, token);
+
+  const params = new URLSearchParams({
+    project: projectId,
+    query: `release:${release} is:unresolved level:[fatal,error]`,
+    statsPeriod: '14d',
+    limit: '100',
+  });
+  const res = await fetch(`https://sentry.io/api/0/organizations/${encodeURIComponent(org)}/issues/?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Sentry issues → ${res.status}: ${await res.text()}`);
+  // X-Hits exposes total without paginating; fall back to page length.
+  const hits = res.headers.get('x-hits');
+  if (hits != null) return Number(hits);
+  const data = await res.json();
+  return Array.isArray(data) ? data.length : 0;
+}
+
 function parseBlocked(csv) {
   return new Set((csv || '').split(',').map((s) => s.trim()).filter(Boolean));
 }
@@ -83,6 +109,9 @@ async function main() {
   const soakHours = Number(required('SOAK_HOURS'));
   const minSessions = Number(required('MIN_SESSIONS'));
   const minCrashFree = Number(required('MIN_CRASH_FREE_RATE'));
+  const maxIssues = process.env.MAX_UNRESOLVED_ISSUES != null && process.env.MAX_UNRESOLVED_ISSUES !== ''
+    ? Number(process.env.MAX_UNRESOLVED_ISSUES)
+    : Infinity;
   const blocked = parseBlocked(process.env.BLOCKED_BUILDS);
   const dryRun = process.env.DRY_RUN === 'true';
 
@@ -118,6 +147,11 @@ async function main() {
       health = await sentryCrashFreeRate(release);
       if (health.sessions < minSessions) reasons.push(`sessions ${health.sessions} < ${minSessions} (still soaking)`);
       else if (health.crashFreeRate < minCrashFree) reasons.push(`crash-free ${(health.crashFreeRate * 100).toFixed(2)}% < ${(minCrashFree * 100).toFixed(2)}%`);
+      else if (Number.isFinite(maxIssues)) {
+        const issues = await sentryUnresolvedIssueCount(release);
+        health.unresolvedIssues = issues;
+        if (issues > maxIssues) reasons.push(`unresolved error/fatal issues ${issues} > ${maxIssues}`);
+      }
     }
 
     results.push({ build, ageHours, reasons, health });

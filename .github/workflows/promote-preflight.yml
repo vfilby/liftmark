@@ -61,6 +61,7 @@ jobs:
           SOAK_HOURS: '72'
           MIN_SESSIONS: '5'
           MIN_CRASH_FREE_RATE: '0.99'
+          MAX_UNRESOLVED_ISSUES: '0'
           BLOCKED_BUILDS: ${{ steps.blocks.outputs.blocked }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: node .github/scripts/promote-preflight.mjs
