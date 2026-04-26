@@ -1,0 +1,74 @@
+name: '[iOS] Promote Build → Group (manual)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number to promote (e.g. 109)'
+        required: true
+        type: string
+      version:
+        description: 'Marketing version (optional, e.g. 1.0.109)'
+        required: false
+        type: string
+      target_group:
+        description: 'TestFlight group to attach to'
+        required: true
+        default: 'Pre-flight'
+        type: string
+      force:
+        description: 'Skip downgrade guard'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+      dry_run:
+        description: 'Evaluate without promoting'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: promote-manual
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Manually promote build to TestFlight group
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo -n "$ASC_API_KEY_P8" > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Promote
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          APP_BUNDLE_ID: com.eff3.liftmark.native-ios
+          TARGET_GROUP_NAME: ${{ github.event.inputs.target_group }}
+          BUILD_NUMBER: ${{ github.event.inputs.build_number }}
+          VERSION: ${{ github.event.inputs.version }}
+          FORCE: ${{ github.event.inputs.force }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node .github/scripts/promote-manual.mjs
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.private_keys || true
