@@ -4,6 +4,7 @@ struct SettingsAISection: View {
     @Environment(SettingsStore.self) private var settingsStore
     @State private var showApiKey = false
     @State private var apiKeyText = ""
+    @FocusState private var apiKeyFocused: Bool
 
     var body: some View {
         Group {
@@ -76,11 +77,17 @@ struct SettingsAISection: View {
                     TextField("API Key", text: $apiKeyText)
                         .textContentType(.password)
                         .autocorrectionDisabled()
+                        .focused($apiKeyFocused)
                 } else {
                     SecureField("Anthropic API Key", text: $apiKeyText)
+                        .focused($apiKeyFocused)
                 }
                 Button {
+                    let wasFocused = apiKeyFocused
                     showApiKey.toggle()
+                    if wasFocused {
+                        DispatchQueue.main.async { apiKeyFocused = true }
+                    }
                 } label: {
                     Image(systemName: showApiKey ? "eye.slash" : "eye")
                 }
