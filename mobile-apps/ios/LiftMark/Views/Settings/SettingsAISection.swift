@@ -31,110 +31,124 @@ struct SettingsAISection: View {
     @ViewBuilder
     private func content(settings: UserSettings) -> some View {
         Group {
-            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                Text("Include in AI prompt")
+            togglesGroup
+            customPromptGroup(settings: settings)
+            apiKeyGroup
+            apiKeyStatusBadge(status: settings.anthropicApiKeyStatus)
+        }
+    }
+
+    private var togglesGroup: some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            Text("Include in AI prompt")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                Toggle("LMWF format pointer", isOn: toggleBinding(\.aiPromptIncludeFormatPointer))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-format-pointer")
+                Divider()
+                Toggle("Recent workouts", isOn: toggleBinding(\.aiPromptIncludeRecentWorkouts))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-recent-workouts")
+                Divider()
+                Toggle("Progression", isOn: toggleBinding(\.aiPromptIncludeProgression))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-progression")
+                Divider()
+                Toggle("Gym equipment", isOn: toggleBinding(\.aiPromptIncludeEquipment))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-equipment")
+            }
+        }
+    }
+
+    private func customPromptGroup(settings: UserSettings) -> some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            Text("Custom Prompt")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField("Additional instructions for AI...", text: Binding(
+                get: { settings.customPromptAddition ?? "" },
+                set: { newValue in
+                    var updated = settings
+                    updated.customPromptAddition = newValue.isEmpty ? nil : newValue
+                    settingsStore.updateSettings(updated)
+                }
+            ), axis: .vertical)
+            .lineLimit(2...4)
+            .focused($focusedField, equals: .customPrompt)
+            .accessibilityIdentifier("input-custom-prompt")
+        }
+    }
+
+    private var apiKeyGroup: some View {
+        VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
+            Text("API Key")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: LiftMarkTheme.spacingSM) {
+                if showApiKey {
+                    TextField("API Key", text: $apiKeyText)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .apiKey)
+                } else {
+                    SecureField("Anthropic API Key", text: $apiKeyText)
+                        .focused($focusedField, equals: .apiKey)
+                }
+                Button {
+                    showApiKey.toggle()
+                } label: {
+                    Image(systemName: showApiKey ? "eye.slash" : "eye")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("toggle-api-key-visibility")
+
+                Button {
+                    saveApiKey()
+                } label: {
+                    Text("Save")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(LiftMarkTheme.primary)
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("save-api-key-button")
+
+                Button {
+                    removeApiKey()
+                } label: {
+                    Text("Remove")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .overlay(
+                            Capsule()
+                                .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
+                        )
+                        .foregroundStyle(LiftMarkTheme.destructive)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("remove-api-key-button")
+            }
+        }
+        .accessibilityIdentifier("input-api-key")
+    }
+
+    @ViewBuilder
+    private func apiKeyStatusBadge(status: ApiKeyStatus?) -> some View {
+        if let status {
+            HStack {
+                Circle()
+                    .fill(apiKeyStatusColor(status))
+                    .frame(width: 8, height: 8)
+                Text(apiKeyStatusLabel(status))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                VStack(spacing: 0) {
-                    Toggle("LMWF format pointer", isOn: toggleBinding(\.aiPromptIncludeFormatPointer))
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("toggle-ai-include-format-pointer")
-                    Divider()
-                    Toggle("Recent workouts", isOn: toggleBinding(\.aiPromptIncludeRecentWorkouts))
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("toggle-ai-include-recent-workouts")
-                    Divider()
-                    Toggle("Progression", isOn: toggleBinding(\.aiPromptIncludeProgression))
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("toggle-ai-include-progression")
-                    Divider()
-                    Toggle("Gym equipment", isOn: toggleBinding(\.aiPromptIncludeEquipment))
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("toggle-ai-include-equipment")
-                }
-            }
-
-            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                Text("Custom Prompt")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Additional instructions for AI...", text: Binding(
-                    get: { settings.customPromptAddition ?? "" },
-                    set: { newValue in
-                        var updated = settings
-                        updated.customPromptAddition = newValue.isEmpty ? nil : newValue
-                        settingsStore.updateSettings(updated)
-                    }
-                ), axis: .vertical)
-                .lineLimit(2...4)
-                .focused($focusedField, equals: .customPrompt)
-                .accessibilityIdentifier("input-custom-prompt")
-            }
-
-            VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
-                Text("API Key")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: LiftMarkTheme.spacingSM) {
-                    if showApiKey {
-                        TextField("API Key", text: $apiKeyText)
-                            .textContentType(.password)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .apiKey)
-                    } else {
-                        SecureField("Anthropic API Key", text: $apiKeyText)
-                            .focused($focusedField, equals: .apiKey)
-                    }
-                    Button {
-                        showApiKey.toggle()
-                    } label: {
-                        Image(systemName: showApiKey ? "eye.slash" : "eye")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("toggle-api-key-visibility")
-
-                    Button {
-                        saveApiKey()
-                    } label: {
-                        Text("Save")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .background(LiftMarkTheme.primary)
-                            .foregroundStyle(.white)
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("save-api-key-button")
-
-                    Button {
-                        removeApiKey()
-                    } label: {
-                        Text("Remove")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .overlay(
-                                Capsule()
-                                    .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
-                            )
-                            .foregroundStyle(LiftMarkTheme.destructive)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("remove-api-key-button")
-                }
-            }
-            .accessibilityIdentifier("input-api-key")
-
-            if let status = settings.anthropicApiKeyStatus {
-                HStack {
-                    Circle()
-                        .fill(apiKeyStatusColor(status))
-                        .frame(width: 8, height: 8)
-                    Text(apiKeyStatusLabel(status))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
         }
     }
