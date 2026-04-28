@@ -24,6 +24,7 @@ struct SetRowView: View {
     var onCompleteDropSet: ((_ entries: [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) -> Void)? = nil
     let onSkip: () -> Void
     let onSave: (Double?, Int?, Int?) -> Void
+    var onUnlog: (() -> Void)? = nil
     var onWeightChanged: ((String) -> Void)? = nil
 
     @State private var weightText: String = ""
@@ -369,17 +370,19 @@ struct SetRowView: View {
                         onComplete(Double(weightText), Int(repsText), Int(timeText))
                     }
                 } label: {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "checkmark")
-                            .font(.body.bold())
+                            .font(.footnote.bold())
                         Text("Complete Set")
-                            .font(.subheadline.bold())
+                            .font(.footnote.bold())
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
-                .controlSize(.large)
+                .controlSize(.small)
                 .tint(LiftMarkTheme.success)
                 .accessibilityIdentifier("set-complete-button")
                 .accessibilityLabel("Complete set \(setNumber)")
@@ -541,6 +544,37 @@ struct SetRowView: View {
 
             Spacer()
 
+            // Overflow menu — destructive set actions (skip / clear log) live
+            // here rather than as bare buttons to keep the edit row uncluttered.
+            Menu {
+                Button {
+                    onSkip()
+                    isEditing = false
+                } label: {
+                    Label("Mark as Skipped", systemImage: "forward.end")
+                }
+                if let onUnlog {
+                    Button(role: .destructive) {
+                        onUnlog()
+                        isEditing = false
+                    } label: {
+                        Label("Clear Log", systemImage: "arrow.uturn.backward")
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.body)
+                    .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Circle()
+                            .stroke(LiftMarkTheme.tertiaryLabel, lineWidth: 1)
+                    )
+            }
+            .accessibilityLabel("More set actions")
+            .accessibilityHint("Mark as skipped or clear the log for this set")
+            .alignmentGuide(.textFieldCenter) { d in d[VerticalAlignment.center] }
+
             // Update button
             Button {
                 onSave(Double(weightText), Int(repsText), Int(timeText))
@@ -551,7 +585,7 @@ struct SetRowView: View {
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                     .background(LiftMarkTheme.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                    .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Save changes")
@@ -567,7 +601,7 @@ struct SetRowView: View {
                     .foregroundStyle(LiftMarkTheme.secondaryLabel)
                     .frame(width: 36, height: 36)
                     .overlay(
-                        RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
+                        Circle()
                             .stroke(LiftMarkTheme.tertiaryLabel, lineWidth: 1)
                     )
             }

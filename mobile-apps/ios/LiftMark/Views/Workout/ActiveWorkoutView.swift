@@ -234,6 +234,9 @@ struct ActiveWorkoutView: View {
                                     onSaveSet: { setIndex, weight, reps, time in
                                         saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps, time: time)
                                     },
+                                    onUnlogSet: { setIndex in
+                                        unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                                    },
                                     onDismissRest: {
                                         activeRestTimer = nil
                                         ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
@@ -273,6 +276,9 @@ struct ActiveWorkoutView: View {
                                     },
                                     onSaveSet: { exerciseIndex, setIndex, weight, reps, time in
                                         saveEditedSet(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps, time: time)
+                                    },
+                                    onUnlogSet: { exerciseIndex, setIndex in
+                                        unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
                                     },
                                     onDismissRest: {
                                         activeRestTimer = nil
@@ -414,6 +420,18 @@ struct ActiveWorkoutView: View {
         activeRestTimer = nil
 
         sessionStore.skipSet(setId: exercise.sets[setIndex].id)
+        ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
+    }
+
+    private func unlogSet(exerciseIndex: Int, setIndex: Int) {
+        guard let session, exerciseIndex < session.exercises.count else { return }
+        let exercise = session.exercises[exerciseIndex]
+        guard setIndex < exercise.sets.count else { return }
+
+        lastInteractedExerciseId = exercise.id
+        activeRestTimer = nil
+
+        sessionStore.unlogSet(setId: exercise.sets[setIndex].id)
         ActiveWorkoutViewModel.updateLiveActivity(session: sessionStore.activeSession, settings: settingsStore.settings)
     }
 

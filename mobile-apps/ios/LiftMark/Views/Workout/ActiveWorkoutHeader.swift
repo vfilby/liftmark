@@ -80,12 +80,14 @@ struct ActiveWorkoutFooter: View {
                 onAddExercise()
             } label: {
                 Label("Add Exercise", systemImage: "plus")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .font(.footnote.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(Capsule())
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
-            .controlSize(.large)
+            .controlSize(.small)
             .accessibilityIdentifier("active-workout-add-exercise-button")
             .accessibilityLabel("Add exercise")
             .accessibilityHint("Opens a sheet to add a new exercise to this workout")
@@ -98,12 +100,14 @@ struct ActiveWorkoutFooter: View {
                 // `Log Anyway` in confirm alerts) can't accidentally match this button
                 // when the confirm alert is what should be hit.
                 Text("End Workout")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .font(.footnote.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(Capsule())
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)
-            .controlSize(.large)
+            .controlSize(.small)
             .accessibilityIdentifier("active-workout-footer-finish-button")
             .accessibilityLabel("End workout")
             .accessibilityHint("Completes and saves the workout session")

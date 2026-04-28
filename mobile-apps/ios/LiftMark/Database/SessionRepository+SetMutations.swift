@@ -128,6 +128,31 @@ extension SessionRepository {
         return measurementSyncChanges(setId: setId, deleted: oldMeasurementIds, saved: newMeasurementIds)
     }
 
+    /// Revert a logged or skipped set back to `.pending`, clearing any actual
+    /// measurements. Lets the user undo a set decision without re-creating it.
+    @discardableResult
+    func unlogSet(_ setId: String) throws -> [SyncChange] {
+        let dbQueue = try dbManager.database()
+        let now = self.now
+
+        let oldMeasurementIds = try dbQueue.read { db in
+            try fetchMeasurementIds(setId: setId, role: "actual", db: db)
+        }
+
+        try dbQueue.write { db in
+            try db.execute(
+                sql: """
+                UPDATE session_sets
+                SET status = ?, completed_at = NULL, updated_at = ?
+                WHERE id = ?
+                """,
+                arguments: [SetStatus.pending.rawValue, now, setId]
+            )
+            try deleteMeasurements(setId: setId, role: "actual", db: db)
+        }
+        return measurementSyncChanges(setId: setId, deleted: oldMeasurementIds, saved: [])
+    }
+
     @discardableResult
     func skipSet(_ setId: String) throws -> [SyncChange] {
         let dbQueue = try dbManager.database()

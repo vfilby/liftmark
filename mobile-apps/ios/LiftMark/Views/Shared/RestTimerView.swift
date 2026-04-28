@@ -65,7 +65,7 @@ struct RestTimerView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
                     .overlay(
-                        RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM)
+                        Capsule()
                             .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
                     )
             }
@@ -285,7 +285,7 @@ struct ExerciseTimerView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 40)
                         .background(isRunning ? LiftMarkTheme.warning : LiftMarkTheme.primary)
-                        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("exercise-timer-start-button")
@@ -304,7 +304,7 @@ struct ExerciseTimerView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, minHeight: 40)
                             .background(LiftMarkTheme.success)
-                            .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusSM))
+                            .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("exercise-timer-done-button")

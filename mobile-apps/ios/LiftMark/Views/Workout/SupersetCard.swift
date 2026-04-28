@@ -11,6 +11,7 @@ struct SupersetCard: View {
     let onCompleteDropSet: ((Int, Int, [(weight: Double?, weightUnit: WeightUnit?, reps: Int?)]) -> Void)?
     let onSkipSet: (Int, Int) -> Void  // exerciseIndex, setIndex
     let onSaveSet: (Int, Int, Double?, Int?, Int?) -> Void  // exerciseIndex, setIndex, weight, reps, time
+    let onUnlogSet: (Int, Int) -> Void  // exerciseIndex, setIndex
     let onDismissRest: () -> Void
     var restTimerGeneration: Int = 0
 
@@ -145,7 +146,8 @@ struct SupersetCard: View {
                         onSkip: { onSkipSet(item.exerciseIndex, item.setIndex) },
                         onSave: { weight, reps, time in
                             onSaveSet(item.exerciseIndex, item.setIndex, weight, reps, time)
-                        }
+                        },
+                        onUnlog: { onUnlogSet(item.exerciseIndex, item.setIndex) }
                     )
 
                     // Rest timer after last completed set

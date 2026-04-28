@@ -13,6 +13,7 @@ struct ActiveExerciseCard: View {
     let onSkipSet: (Int) -> Void
     let onEditExercise: () -> Void
     let onSaveSet: (Int, Double?, Int?, Int?) -> Void
+    let onUnlogSet: (Int) -> Void
     let onDismissRest: () -> Void
     var restTimerGeneration: Int = 0
 
@@ -68,7 +69,7 @@ struct ActiveExerciseCard: View {
                             .font(.caption.bold())
                             .foregroundStyle(.white)
                             .frame(width: 24, height: 24)
-                            .background(exerciseStatusColor)
+                            .background(dotFill)
                             .clipShape(Circle())
 
                         Text(exercise.exerciseName)
@@ -138,10 +139,25 @@ struct ActiveExerciseCard: View {
                         onSave: { weight, reps, time in
                             onSaveSet(setIndex, weight, reps, time)
                         },
+                        onUnlog: { onUnlogSet(setIndex) },
                         onWeightChanged: setIndex == currentSetIndex ? { newWeight in
                             currentWeightText = newWeight
                         } : nil
                     )
+
+                    // Timed-exercise timer — pinned directly under the active set
+                    // so the timer reads as part of that set rather than the
+                    // bottom of the exercise card. Keyed by setId so state
+                    // resets when the active set advances.
+                    if setIndex == currentSetIndex,
+                       let targetTime = currentTimedSetTarget,
+                       let setId = currentTimedSetId {
+                        ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
+                            let weight = Double(currentWeightText)
+                            onCompleteSet(setIndex, weight, nil, elapsedSeconds)
+                        }
+                        .id(setId)
+                    }
 
                     // Inline rest timer — placed after the last completed set
                     if let lastIdx = lastCompletedSetIndex, setIndex == lastIdx,
@@ -196,21 +212,6 @@ struct ActiveExerciseCard: View {
                 }
             }
 
-            // Timed exercise timer — rendered outside the collapsed content block
-            // so that @State (startDate, pausedElapsed, isRunning, etc.) survives
-            // collapse/expand cycles. Hidden visually when collapsed.
-            if let targetTime = currentTimedSetTarget, let setId = currentTimedSetId {
-                ExerciseTimerView(targetSeconds: targetTime) { elapsedSeconds in
-                    if let setIndex = currentSetIndex {
-                        let weight = Double(currentWeightText)
-                        onCompleteSet(setIndex, weight, nil, elapsedSeconds)
-                    }
-                }
-                .id(setId)
-                .opacity(isCollapsed ? 0 : 1)
-                .frame(height: isCollapsed ? 0 : nil)
-                .clipped()
-            }
         }
         .padding()
         .background {
@@ -220,13 +221,41 @@ struct ActiveExerciseCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
-        .opacity(exercise.sets.allSatisfy({ $0.status == .completed || $0.status == .skipped }) ? 0.6 : 1.0)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("exercise-card-\(exerciseIndex)")
         .accessibilityValue(cardTint.accessibilityDescription ?? "")
     }
 
-    private var exerciseStatusColor: Color {
+    /// Fill for the numbered exercise dot. When every set is finalized, the
+    /// dot reflects the aggregate set state — bright green (all logged), amber
+    /// (all skipped), or a left/right split (mixed). While the exercise is
+    /// still in progress or untouched, falls back to the per-exercise status
+    /// color so the dot reads as primary/tertiary as before.
+    private var dotFill: AnyShapeStyle {
+        switch cardTint {
+        case .completed:
+            return AnyShapeStyle(LiftMarkTheme.success)
+        case .skipped:
+            return AnyShapeStyle(LiftMarkTheme.warning)
+        case .mixed:
+            return AnyShapeStyle(
+                LinearGradient(
+                    stops: [
+                        .init(color: LiftMarkTheme.success, location: 0),
+                        .init(color: LiftMarkTheme.success, location: 0.375),
+                        .init(color: LiftMarkTheme.warning, location: 0.625),
+                        .init(color: LiftMarkTheme.warning, location: 1)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        case .neutral:
+            return AnyShapeStyle(neutralDotColor)
+        }
+    }
+
+    private var neutralDotColor: Color {
         switch exercise.status {
         case .completed: return LiftMarkTheme.success
         case .inProgress: return LiftMarkTheme.primary

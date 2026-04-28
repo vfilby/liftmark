@@ -146,6 +146,17 @@ final class SessionStore {
         }
     }
 
+    func unlogSet(setId: String) {
+        do {
+            let changes = try repository.unlogSet(setId)
+            SyncChange.notifyAll(changes)
+            reloadActiveSession()
+        } catch {
+            lastError = error
+            Logger.shared.error(.database, "Failed to unlog set", error: error)
+        }
+    }
+
     func updateSetTarget(setId: String, targetWeight: Double?, targetReps: Int?, targetTime: Int?, restSeconds: Int?) {
         do {
             let changes = try repository.updateSessionSetTarget(setId, targetWeight: targetWeight, targetReps: targetReps, targetTime: targetTime, restSeconds: restSeconds)

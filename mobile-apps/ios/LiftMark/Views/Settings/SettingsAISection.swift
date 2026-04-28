@@ -11,14 +11,23 @@ struct SettingsAISection: View {
                 Text("Include in AI prompt")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("LMWF format pointer", isOn: toggleBinding(\.aiPromptIncludeFormatPointer))
-                    .accessibilityIdentifier("toggle-ai-include-format-pointer")
-                Toggle("Recent workouts", isOn: toggleBinding(\.aiPromptIncludeRecentWorkouts))
-                    .accessibilityIdentifier("toggle-ai-include-recent-workouts")
-                Toggle("Progression", isOn: toggleBinding(\.aiPromptIncludeProgression))
-                    .accessibilityIdentifier("toggle-ai-include-progression")
-                Toggle("Gym equipment", isOn: toggleBinding(\.aiPromptIncludeEquipment))
-                    .accessibilityIdentifier("toggle-ai-include-equipment")
+                VStack(spacing: 0) {
+                    Toggle("LMWF format pointer", isOn: toggleBinding(\.aiPromptIncludeFormatPointer))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("toggle-ai-include-format-pointer")
+                    Divider()
+                    Toggle("Recent workouts", isOn: toggleBinding(\.aiPromptIncludeRecentWorkouts))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("toggle-ai-include-recent-workouts")
+                    Divider()
+                    Toggle("Progression", isOn: toggleBinding(\.aiPromptIncludeProgression))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("toggle-ai-include-progression")
+                    Divider()
+                    Toggle("Gym equipment", isOn: toggleBinding(\.aiPromptIncludeEquipment))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("toggle-ai-include-equipment")
+                }
             }
 
             VStack(alignment: .leading, spacing: LiftMarkTheme.spacingSM) {
@@ -66,7 +75,7 @@ struct SettingsAISection: View {
                             .padding(.vertical, 6)
                             .background(LiftMarkTheme.primary)
                             .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("save-api-key-button")
@@ -79,7 +88,7 @@ struct SettingsAISection: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                Capsule()
                                     .stroke(LiftMarkTheme.destructive, lineWidth: 1.5)
                             )
                             .foregroundStyle(LiftMarkTheme.destructive)

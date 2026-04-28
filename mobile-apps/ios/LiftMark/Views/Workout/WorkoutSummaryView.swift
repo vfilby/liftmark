@@ -269,7 +269,7 @@ struct WorkoutSummaryView: View {
                     .frame(height: 50)
                     .background(LiftMarkTheme.primary)
                     .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
+                    .clipShape(Capsule())
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("workout-summary-done-button")

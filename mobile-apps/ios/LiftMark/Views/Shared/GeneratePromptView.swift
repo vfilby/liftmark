@@ -155,14 +155,23 @@ struct GeneratePromptView: View {
             Text("Include in prompt")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Toggle("LMWF format pointer", isOn: toggle(\.aiPromptIncludeFormatPointer))
-                .accessibilityIdentifier("toggle-ai-include-format-pointer")
-            Toggle("Recent workouts", isOn: toggle(\.aiPromptIncludeRecentWorkouts))
-                .accessibilityIdentifier("toggle-ai-include-recent-workouts")
-            Toggle("Progression", isOn: toggle(\.aiPromptIncludeProgression))
-                .accessibilityIdentifier("toggle-ai-include-progression")
-            Toggle("Gym equipment", isOn: toggle(\.aiPromptIncludeEquipment))
-                .accessibilityIdentifier("toggle-ai-include-equipment")
+            VStack(spacing: 0) {
+                Toggle("LMWF format pointer", isOn: toggle(\.aiPromptIncludeFormatPointer))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-format-pointer")
+                Divider()
+                Toggle("Recent workouts", isOn: toggle(\.aiPromptIncludeRecentWorkouts))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-recent-workouts")
+                Divider()
+                Toggle("Progression", isOn: toggle(\.aiPromptIncludeProgression))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-progression")
+                Divider()
+                Toggle("Gym equipment", isOn: toggle(\.aiPromptIncludeEquipment))
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("toggle-ai-include-equipment")
+            }
         }
     }
 
