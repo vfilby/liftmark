@@ -99,15 +99,14 @@ final class HealthKitServiceTests: XCTestCase {
 
     // MARK: - HealthKit availability on simulator
 
-    // Note: a previous `testSaveWorkoutFailsGracefullyOnSimulator` test was deleted in
-    // GH #107. It exercised an async test method whose body did no real async work on
-    // simulator (`HealthKitService.saveWorkout` returns immediately from its
-    // `isHealthDataAvailable` guard). On macos-26 / Xcode 26 it intermittently tripped
-    // an XCTest-internal crash (`XCTActivityRecordStack finishedPlaying:`, see
-    // actions/runner-images #13853) — flaky framework bug, not our code. The behavior
-    // it covered (a 4-line guard returning a failure result) was redundant with
-    // `testIsHealthKitAvailableDoesNotCrash` + inspection of the guard, and
-    // simulator-side coverage of `saveWorkout` had no real signal.
+    // Note: previous async tests in this section were deleted because of an XCTest
+    // framework bug on macos-26 / Xcode 26 — async test bodies that do no real async
+    // work intermittently trip `XCTActivityRecordStack finishedPlaying:` (see
+    // actions/runner-images #13853). `testSaveWorkoutFailsGracefullyOnSimulator` was
+    // removed in GH #107; `testRequestAuthorizationReturnsFalseWhenUnavailable` was
+    // removed for the same reason. Both only exercised
+    // `guard isHealthKitAvailable() else { return false }`, redundant with the
+    // synchronous coverage below.
 
     func testIsHealthKitAvailableDoesNotCrash() {
         // Should return a boolean without crashing, regardless of platform
@@ -117,13 +116,6 @@ final class HealthKitServiceTests: XCTestCase {
     func testIsAuthorizedReturnsFalseWhenUnavailable() {
         if !HealthKitService.isHealthKitAvailable() {
             XCTAssertFalse(HealthKitService.isAuthorized())
-        }
-    }
-
-    func testRequestAuthorizationReturnsFalseWhenUnavailable() async {
-        if !HealthKitService.isHealthKitAvailable() {
-            let result = await HealthKitService.requestAuthorization()
-            XCTAssertFalse(result)
         }
     }
 
