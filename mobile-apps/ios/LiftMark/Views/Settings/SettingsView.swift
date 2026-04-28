@@ -40,6 +40,9 @@ struct SettingsView: View {
         }
         .accessibilityIdentifier("settings-screen")
         .navigationTitle("Settings")
+        #if os(iOS)
+        .scrollDismissesKeyboard(.interactively)
+        #endif
         .onAppear {
             healthKitAuthStatus = SettingsHealthKitSection.checkHealthKitStatus(settingsStore: settingsStore)
             liveActivitiesEnabled = LiveActivityService.shared.isAvailable()

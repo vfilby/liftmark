@@ -4,12 +4,6 @@ struct SettingsAISection: View {
     @Environment(SettingsStore.self) private var settingsStore
     @State private var showApiKey = false
     @State private var apiKeyText = ""
-    @FocusState private var focusedField: Field?
-
-    private enum Field: Hashable {
-        case customPrompt
-        case apiKey
-    }
 
     var body: some View {
         Group {
@@ -17,15 +11,6 @@ struct SettingsAISection: View {
                 content(settings: settings)
             }
         }
-        #if os(iOS)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedField = nil }
-                    .accessibilityIdentifier("button-keyboard-done")
-            }
-        }
-        #endif
     }
 
     @ViewBuilder
@@ -77,7 +62,6 @@ struct SettingsAISection: View {
                 }
             ), axis: .vertical)
             .lineLimit(2...4)
-            .focused($focusedField, equals: .customPrompt)
             .accessibilityIdentifier("input-custom-prompt")
         }
     }
@@ -92,10 +76,8 @@ struct SettingsAISection: View {
                     TextField("API Key", text: $apiKeyText)
                         .textContentType(.password)
                         .autocorrectionDisabled()
-                        .focused($focusedField, equals: .apiKey)
                 } else {
                     SecureField("Anthropic API Key", text: $apiKeyText)
-                        .focused($focusedField, equals: .apiKey)
                 }
                 Button {
                     showApiKey.toggle()
