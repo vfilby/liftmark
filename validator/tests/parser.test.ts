@@ -1834,10 +1834,11 @@ describe('Mixed Section Levels Warning', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Inconsistent nesting'));
     expect(mixedWarnings).toHaveLength(1);
-    expect(mixedWarnings[0]).toContain('##');
-    expect(mixedWarnings[0]).toContain('consistent nesting');
+    expect(mixedWarnings[0]).toContain("'Warmup'");
+    expect(mixedWarnings[0]).toContain("'Bench Press'");
+    expect(mixedWarnings[0]).toContain('relative nesting depth');
   });
 
   it('does not emit warning when all same-level headers are exercises', () => {
@@ -1854,7 +1855,7 @@ describe('Mixed Section Levels Warning', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Inconsistent nesting'));
     expect(mixedWarnings).toHaveLength(0);
   });
 
@@ -1875,11 +1876,11 @@ describe('Mixed Section Levels Warning', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Inconsistent nesting'));
     expect(mixedWarnings).toHaveLength(0);
   });
 
-  it('emits warning with correct heading level indicator', () => {
+  it('emits warning regardless of absolute heading level', () => {
     // Using ### as the exercise level (workout is ##)
     const markdown = `## Training Session
 
@@ -1892,9 +1893,10 @@ describe('Mixed Section Levels Warning', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Inconsistent nesting'));
     expect(mixedWarnings).toHaveLength(1);
-    expect(mixedWarnings[0]).toContain('###');
+    expect(mixedWarnings[0]).toContain("'Warmup'");
+    expect(mixedWarnings[0]).toContain("'Bench Press'");
   });
 
   it('emits warning with full structure from issue example', () => {
@@ -1918,7 +1920,7 @@ describe('Mixed Section Levels Warning', () => {
     const result = parseWorkout(markdown);
 
     expect(result.success).toBe(true);
-    const mixedWarnings = result.warnings.filter((w) => w.includes('Mixing exercises and sections'));
+    const mixedWarnings = result.warnings.filter((w) => w.includes('Inconsistent nesting'));
     expect(mixedWarnings).toHaveLength(1);
   });
 });

@@ -385,6 +385,8 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
   // Track which blocks are singles (exercises) vs groups (sections/supersets) for mixed-level warning
   let firstSingleLine: number | null = null;
   let firstGroupLine: number | null = null;
+  let firstSingleName: string | null = null;
+  let firstGroupName: string | null = null;
 
   while (context.currentIndex < context.lines.length) {
     const line = context.lines[context.currentIndex];
@@ -397,17 +399,24 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
     // Parse exercise at expected level
     if (line.headerLevel === context.exerciseHeaderLevel) {
       const blockLineNumber = line.lineNumber;
+      const blockHeaderText = line.headerText;
       const result = parseExerciseBlock(context, workoutPlanId, orderIndex);
       switch (result.type) {
         case 'single':
           exercises.push(result.exercise);
           orderIndex += 1;
-          if (firstSingleLine == null) firstSingleLine = blockLineNumber;
+          if (firstSingleLine == null) {
+            firstSingleLine = blockLineNumber;
+            firstSingleName = result.exercise.exerciseName;
+          }
           break;
         case 'group':
           exercises.push(...result.exercises);
           orderIndex += result.exercises.length;
-          if (firstGroupLine == null) firstGroupLine = blockLineNumber;
+          if (firstGroupLine == null) {
+            firstGroupLine = blockLineNumber;
+            firstGroupName = blockHeaderText ?? null;
+          }
           break;
         case 'none':
           break;
@@ -418,12 +427,20 @@ function parseExercises(context: ParseContext, workoutPlanId: string): PlannedEx
   }
 
   // Warn if both standalone exercises and sections/supersets exist at the same heading level
-  if (firstSingleLine != null && firstGroupLine != null && context.exerciseHeaderLevel != null) {
-    const hashes = '#'.repeat(context.exerciseHeaderLevel);
+  if (firstSingleLine != null && firstGroupLine != null) {
+    const groupExample = firstGroupName ?? 'a section';
+    const singleExample = firstSingleName ?? 'an exercise';
     context.warnings.push({
       line: Math.min(firstSingleLine, firstGroupLine),
-      message: `Mixing exercises and sections at the same heading level (${hashes}). Consider using consistent nesting.`,
-      code: 'MIXED_SECTION_LEVELS',
+      message:
+        `Inconsistent nesting: some entries at the section level are grouping headers ` +
+        `containing nested exercises (e.g. '${groupExample}') while others are standalone ` +
+        `exercises (e.g. '${singleExample}'). Either use sections consistently throughout — ` +
+        `wrap all exercise groups in named sections with exercises nested one level deeper ` +
+        `(e.g. Warm-Up → Arm Circles, Main Workout → Bench Press, Cool-Down → Doorway Stretch) — ` +
+        `or use a flat structure with all exercises at the same level. Structure is determined ` +
+        `by relative nesting depth, not specific heading levels.`,
+      code: 'INCONSISTENT_NESTING',
     });
   }
 
