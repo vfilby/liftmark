@@ -218,7 +218,7 @@
         "ssm:ListTagsForResource"
       ],
       "Resource": [
-        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/lmwf/*",
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*",
         "arn:aws:ssm:*:*:parameter/cdk/exports/*"
       ]
     },
@@ -232,7 +232,7 @@
         "ssm:RemoveTagsFromResource"
       ],
       "Resource": [
-        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/lmwf/*",
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*",
         "arn:aws:ssm:*:*:parameter/cdk/exports/*"
       ]
     },
