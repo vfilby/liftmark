@@ -37,7 +37,7 @@ bundle:
 	npx esbuild src/handler.ts \
 		--bundle \
 		--platform=node \
-		--target=node20 \
+		--target=node22 \
 		--outfile=dist/handler.js \
 		--format=cjs
 

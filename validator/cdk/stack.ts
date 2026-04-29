@@ -39,7 +39,7 @@ export class LmwfValidatorStack extends cdk.Stack {
     });
 
     const validatorFn = new lambda.Function(this, 'ValidatorFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       handler: 'handler.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'dist')),
