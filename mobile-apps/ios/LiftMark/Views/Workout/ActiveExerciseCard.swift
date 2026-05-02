@@ -27,6 +27,39 @@ struct ActiveExerciseCard: View {
         exercise.sets.filter { $0.status == .completed || $0.status == .skipped }.count
     }
 
+    /// Collapsed-card summary. For single-set time- or distance-based
+    /// exercises, show the actual/target value (e.g. "30:00", "5.2 km")
+    /// instead of "1/1 sets" — that count carries no useful information for
+    /// non-rep work.
+    private var collapsedSummary: String {
+        if exercise.sets.count == 1, let set = exercise.sets.first {
+            let entry = set.entries.first
+            let actual = entry?.actual
+            let target = entry?.target
+            let hasReps = (actual?.reps ?? target?.reps) != nil
+
+            if !hasReps {
+                if let t = actual?.time ?? target?.time {
+                    return formatTimeSummary(t)
+                }
+                if let d = actual?.distance ?? target?.distance {
+                    return "\(formatDistance(d.value)) \(d.unit.rawValue)"
+                }
+            }
+        }
+        return "\(completedSetCount)/\(exercise.sets.count) sets"
+    }
+
+    private func formatTimeSummary(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return m > 0 ? String(format: "%d:%02d", m, s) : "\(s)s"
+    }
+
+    private func formatDistance(_ value: Double) -> String {
+        value.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(value))" : String(format: "%.1f", value)
+    }
+
     /// Aggregate tint reflecting the finalized state of all sets.
     /// Neutral while any set is still pending.
     private var cardTint: ExerciseCardTint {
@@ -79,7 +112,7 @@ struct ActiveExerciseCard: View {
                         Spacer()
 
                         if isCollapsed {
-                            Text("\(completedSetCount)/\(exercise.sets.count) sets")
+                            Text(collapsedSummary)
                                 .font(.caption)
                                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
                             Image(systemName: "chevron.right")
@@ -91,7 +124,7 @@ struct ActiveExerciseCard: View {
                     .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isCollapsed ? "Expand \(exercise.exerciseName), \(completedSetCount) of \(exercise.sets.count) sets done" : "Collapse \(exercise.exerciseName)")
+                .accessibilityLabel(isCollapsed ? "Expand \(exercise.exerciseName), \(collapsedSummary)" : "Collapse \(exercise.exerciseName)")
                 .accessibilityHint(isCollapsed ? "Shows all sets for this exercise" : "Hides sets for this exercise")
 
                 // Edit button — separate from collapse toggle for reliable tap handling

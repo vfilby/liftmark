@@ -471,19 +471,31 @@ struct ActiveWorkoutView: View {
     }
 
     private func scrollToNextPendingExercise(proxy: ScrollViewProxy) {
-        guard let exercises = session?.exercises else { return }
+        guard let exercises = session?.exercises, !exercises.isEmpty else { return }
 
+        // Only advance once the just-interacted exercise is fully done; otherwise
+        // stay put so the user can keep working on it.
+        let anchorIdx: Int
         if let lastId = lastInteractedExerciseId,
-           let lastExercise = exercises.first(where: { $0.id == lastId }) {
-            let allDone = lastExercise.sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
+           let idx = exercises.firstIndex(where: { $0.id == lastId }) {
+            let allDone = exercises[idx].sets.allSatisfy { $0.status == .completed || $0.status == .skipped }
             guard allDone else { return }
+            anchorIdx = idx
+        } else {
+            anchorIdx = -1 // no anchor — search from the start
         }
 
-        if let nextExercise = exercises.first(where: { ex in
-            ex.sets.contains { $0.status == .pending }
-        }) {
-            withAnimation {
-                proxy.scrollTo(nextExercise.id, anchor: .top)
+        // Search for the next pending exercise starting *after* the anchor,
+        // wrapping around so earlier-skipped exercises still get picked up
+        // once everything later is done.
+        let count = exercises.count
+        for offset in 1...count {
+            let i = (anchorIdx + offset) % count
+            if exercises[i].sets.contains(where: { $0.status == .pending }) {
+                withAnimation {
+                    proxy.scrollTo(exercises[i].id, anchor: .top)
+                }
+                return
             }
         }
     }
