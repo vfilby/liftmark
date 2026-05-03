@@ -406,8 +406,12 @@ final class MigratorBridgeTests: XCTestCase {
         _ = try runBridgeAndLegacy(on: queue, liveDBURL: url)
 
         XCTAssertTrue(capturedEvents.contains("migrator_bridge_attempted"))
-        XCTAssertTrue(capturedEvents.contains("migrator_bridge_backup_succeeded"))
         XCTAssertTrue(capturedEvents.contains("migrator_bridge_succeeded"))
+        // migrator_bridge_backup_succeeded is intentionally a breadcrumb,
+        // not an event — backup completion is informational and doesn't
+        // need to count against the Sentry event cap. The end-of-bridge
+        // `migrator_bridge_succeeded` event records the overall outcome.
+        XCTAssertFalse(capturedEvents.contains("migrator_bridge_backup_succeeded"))
     }
 
     func testFutureVersion_emitsRefusedEvent() throws {
