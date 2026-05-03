@@ -340,7 +340,21 @@ struct ActiveWorkoutView: View {
 
     private func finishWorkout() {
         ActiveWorkoutViewModel.endLiveActivity(settings: settingsStore.settings, message: "Workout Complete")
-        let completedSession = sessionStore.activeSession
+        // Snapshot the in-memory session and stamp end_time/duration locally — the
+        // repository writes those on complete(), but we don't round-trip the result
+        // back to the in-memory copy, so the summary needs them computed here.
+        var completedSession = sessionStore.activeSession
+        if var snap = completedSession {
+            let nowDate = Date()
+            let nowIso = ISO8601DateFormatter().string(from: nowDate)
+            snap.endTime = nowIso
+            if let startTime = snap.startTime,
+               let start = ISO8601DateFormatter().date(from: startTime) {
+                snap.duration = Int(nowDate.timeIntervalSince(start))
+            }
+            snap.status = .completed
+            completedSession = snap
+        }
         completedSessionForSummary = completedSession
         sessionStore.completeSession()
         navigateToSummary = true

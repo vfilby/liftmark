@@ -111,16 +111,18 @@ final class CKSyncConflictResolver: @unchecked Sendable {
                     .sync,
                     "[sync-engine] Server rejected \(recordType)/\(recordName) (CKError 2006) — likely schema drift. Fields sent: [\(fields)]"
                 )
-                CrashReporter.shared.captureError(
-                    error,
-                    category: .sync,
-                    metadata: [
-                        "recordType": recordType,
-                        "recordFields": fields,
-                        "errorCode": "\(error.code.rawValue)",
-                        "errorDomain": CKErrorDomain,
-                        "tag": "schema-drift-suspected"
-                    ]
+                let metadata: [String: String] = [
+                    "recordType": recordType,
+                    "recordFields": fields,
+                    "errorCode": "\(error.code.rawValue)",
+                    "errorDomain": CKErrorDomain,
+                    "tag": "schema-drift-suspected"
+                ]
+                Self.captureOncePerBuild(
+                    key: "ck-reject-\(recordType)-\(fields)",
+                    error: error,
+                    breadcrumb: "sync.schemaDrift.repeat",
+                    metadata: metadata
                 )
 
             default:
@@ -132,15 +134,17 @@ final class CKSyncConflictResolver: @unchecked Sendable {
                         + "— \(error.localizedDescription)"
                 )
                 let fields = record.allKeys().sorted().joined(separator: ",")
-                CrashReporter.shared.captureError(
-                    error,
-                    category: .sync,
-                    metadata: [
-                        "recordType": recordType,
-                        "recordFields": fields,
-                        "errorCode": "\(error.code.rawValue)",
-                        "errorDomain": CKErrorDomain
-                    ]
+                let metadata: [String: String] = [
+                    "recordType": recordType,
+                    "recordFields": fields,
+                    "errorCode": "\(error.code.rawValue)",
+                    "errorDomain": CKErrorDomain
+                ]
+                Self.captureOncePerBuild(
+                    key: "ck-fail-\(error.code.rawValue)-\(recordType)-\(fields)",
+                    error: error,
+                    breadcrumb: "sync.saveFailed.repeat",
+                    metadata: metadata
                 )
             }
         }
@@ -257,5 +261,48 @@ final class CKSyncConflictResolver: @unchecked Sendable {
 
     static func errorCodeName(_ code: CKError.Code) -> String {
         errorCodeNames[code] ?? "unknown(\(code.rawValue))"
+    }
+
+    // MARK: - Capture throttling
+
+    /// Persistent set of (build, key) tuples we've already reported. Same
+    /// schema-drift fields would otherwise re-fire every sync cycle on every
+    /// affected device, so we capture the full error once per build then drop
+    /// to a breadcrumb. Resets when the build number changes so a new release
+    /// gets fresh signal even for an already-known offender.
+    private static let capturedKeysDefault = "ck-sync-captured-keys"
+    private static let capturedBuildDefault = "ck-sync-captured-build"
+    private static let capturedKeysLock = NSLock()
+
+    private static func captureOncePerBuild(
+        key: String,
+        error: Error,
+        breadcrumb: String,
+        metadata: [String: String]
+    ) {
+        let defaults = UserDefaults.standard
+        let currentBuild = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+
+        capturedKeysLock.lock()
+        let storedBuild = defaults.string(forKey: capturedBuildDefault)
+        var captured: Set<String>
+        if storedBuild == currentBuild {
+            captured = Set(defaults.stringArray(forKey: capturedKeysDefault) ?? [])
+        } else {
+            captured = []
+            defaults.set(currentBuild, forKey: capturedBuildDefault)
+        }
+        let alreadyCaptured = captured.contains(key)
+        if !alreadyCaptured {
+            captured.insert(key)
+            defaults.set(Array(captured), forKey: capturedKeysDefault)
+        }
+        capturedKeysLock.unlock()
+
+        if alreadyCaptured {
+            CrashReporter.shared.addBreadcrumb(breadcrumb, category: .sync, metadata: metadata)
+        } else {
+            CrashReporter.shared.captureError(error, category: .sync, metadata: metadata)
+        }
     }
 }

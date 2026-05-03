@@ -287,8 +287,12 @@ enum MigratorBridge {
         CrashReporter.shared.addBreadcrumb("bridge.backup.end", category: .database)
 
         let backupDurationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-        CrashReporter.shared.captureMigratorEvent(
+        // Informational milestone — backup completing isn't an error and doesn't
+        // need to count against the Sentry event cap. The end-of-bridge
+        // `migrator_bridge_succeeded` event still records the overall outcome.
+        CrashReporter.shared.addBreadcrumb(
             "migrator_bridge_backup_succeeded",
+            category: .database,
             metadata: [
                 "backupSizeBytes": String(backup.sizeBytes),
                 "backupPath": backup.url.path,

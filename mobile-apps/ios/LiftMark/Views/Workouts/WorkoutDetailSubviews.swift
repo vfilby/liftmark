@@ -279,6 +279,7 @@ struct PlanSupersetCard: View {
     let parent: PlannedExercise
     let children: [PlannedExercise]
     let sectionName: String?
+    var onEdit: (() -> Void)? = nil
 
     private var interleavedSets: [(exercise: PlannedExercise, set: PlannedSet, round: Int)] {
         let maxSets = children.map { $0.sets.count }.max() ?? 0
@@ -322,6 +323,36 @@ struct PlanSupersetCard: View {
                 }
 
                 Spacer()
+
+                if let onEdit {
+                    Button {
+                        onEdit()
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.body)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("edit-plan-superset-\(parent.id)")
+                    .accessibilityLabel("Edit superset \(parent.exerciseName)")
+                }
+            }
+
+            // Per-child descriptions — only render if any child actually has notes.
+            ForEach(children, id: \.id) { child in
+                if let notes = child.notes, !notes.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(child.exerciseName)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        Text(notes)
+                            .font(.caption)
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .italic()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
             Divider()
@@ -377,10 +408,36 @@ struct PlanSupersetCard: View {
                 }
             }
             .padding(.leading, 8)
+
+            // YouTube search — one link per child. Each link gets a tall row so
+            // adjacent links don't collide as tap targets.
+            Divider()
+            VStack(spacing: 16) {
+                ForEach(children, id: \.id) { child in
+                    if let url = youtubeSearchURL(for: child.exerciseName) {
+                        Link(destination: url) {
+                            HStack(spacing: LiftMarkTheme.spacingSM) {
+                                Image(systemName: "play.rectangle")
+                                    .font(.caption)
+                                Text("Search \"\(child.exerciseName)\" on YouTube")
+                                    .font(.caption)
+                            }
+                            .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .accessibilityIdentifier("youtube-link-\(child.exerciseName)")
+                    }
+                }
+            }
         }
         .padding()
         .background(LiftMarkTheme.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         .accessibilityIdentifier("superset-card-\(parent.id)")
+    }
+
+    private func youtubeSearchURL(for exerciseName: String) -> URL? {
+        let query = exerciseName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? exerciseName
+        return URL(string: "https://www.youtube.com/results?search_query=\(query)+form")
     }
 }

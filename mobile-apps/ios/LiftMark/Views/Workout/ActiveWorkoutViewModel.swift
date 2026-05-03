@@ -75,14 +75,32 @@ enum ActiveWorkoutViewModel {
                 // Skip orphan children (already handled by superset parent)
                 continue
             } else if exercise.groupType == .section && exercise.sets.isEmpty {
-                // Section header — emit section divider then gather children as individual exercises
+                // Section header — emit section divider then gather children. A
+                // child that is itself a superset parent must recurse so the
+                // grandchildren render inside SupersetCard; otherwise the
+                // superset parent (which has no sets) shows as an empty single
+                // card and the grandchildren are dropped as orphans.
                 processedIds.insert(exercise.id)
                 let sectionName = exercise.groupName ?? exercise.exerciseName
                 if !sectionName.isEmpty {
                     items.append(.section(name: sectionName))
                 }
                 for (childIndex, child) in exercises.enumerated() {
-                    if child.parentExerciseId == exercise.id {
+                    guard child.parentExerciseId == exercise.id else { continue }
+                    if child.groupType == .superset && child.sets.isEmpty {
+                        var grandchildren: [(exercise: SessionExercise, exerciseIndex: Int, displayNumber: Int)] = []
+                        for (gIndex, grandchild) in exercises.enumerated() {
+                            if grandchild.parentExerciseId == child.id {
+                                grandchildren.append((exercise: grandchild, exerciseIndex: gIndex, displayNumber: displayNumber))
+                                displayNumber += 1
+                                processedIds.insert(grandchild.id)
+                            }
+                        }
+                        processedIds.insert(child.id)
+                        if !grandchildren.isEmpty {
+                            items.append(.superset(parent: child, children: grandchildren))
+                        }
+                    } else {
                         items.append(.single(exercise: child, exerciseIndex: childIndex, displayNumber: displayNumber))
                         displayNumber += 1
                         processedIds.insert(child.id)

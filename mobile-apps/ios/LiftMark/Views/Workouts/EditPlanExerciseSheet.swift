@@ -30,41 +30,63 @@ struct EditablePlanSetRow: Identifiable {
 
 struct EditPlanExerciseSheet: View {
     let exercise: PlannedExercise
-    let onSave: (PlannedExercise) -> Void
+    let children: [PlannedExercise]
+    let onSave: ([PlannedExercise]) -> Void
     @State private var name: String
     @State private var equipmentType: String
     @State private var notes: String
     @State private var editableSets: [EditablePlanSetRow]
-    @State private var editMode: Int = 0
+    @State private var editMode: Int
     @State private var markdownText: String = ""
     @State private var markdownError: String?
     @Environment(\.dismiss) private var dismiss
 
-    init(exercise: PlannedExercise, onSave: @escaping (PlannedExercise) -> Void) {
+    /// Superset parents have no sets and contain children. The form view can't
+    /// represent the hierarchy, so editing routes exclusively through markdown.
+    private var isSuperset: Bool {
+        exercise.groupType == .superset && exercise.sets.isEmpty
+    }
+
+    init(exercise: PlannedExercise, children: [PlannedExercise] = [], onSave: @escaping ([PlannedExercise]) -> Void) {
         self.exercise = exercise
+        self.children = children
         self.onSave = onSave
         self._name = State(initialValue: exercise.exerciseName)
         self._equipmentType = State(initialValue: exercise.equipmentType ?? "")
         self._notes = State(initialValue: exercise.notes ?? "")
         self._editableSets = State(initialValue: exercise.sets.map { EditablePlanSetRow.from($0) })
-        self._markdownText = State(initialValue: Self.generateMarkdown(from: exercise))
+        let isSupersetParent = exercise.groupType == .superset && exercise.sets.isEmpty
+        self._editMode = State(initialValue: isSupersetParent ? 1 : 0)
+        let initialMarkdown = isSupersetParent
+            ? Self.generateSupersetMarkdown(parent: exercise, children: children)
+            : Self.generateMarkdown(from: exercise)
+        self._markdownText = State(initialValue: initialMarkdown)
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("Mode", selection: $editMode) {
-                    Text("Form").tag(0)
-                    Text("Markdown").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding()
-                .accessibilityIdentifier("edit-plan-exercise-mode-picker")
-
-                if editMode == 0 {
-                    formView
+                if !isSuperset {
+                    Picker("Mode", selection: $editMode) {
+                        Text("Form").tag(0)
+                        Text("Markdown").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding()
+                    .accessibilityIdentifier("edit-plan-exercise-mode-picker")
                 } else {
+                    Text("Edit superset block — children are nested under #### headings")
+                        .font(.caption)
+                        .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.top, LiftMarkTheme.spacingSM)
+                }
+
+                if isSuperset || editMode == 1 {
                     markdownView
+                } else {
+                    formView
                 }
             }
             .navigationTitle("Edit Exercise")
@@ -210,6 +232,11 @@ struct EditPlanExerciseSheet: View {
     }
 
     private func saveExercise() {
+        if isSuperset {
+            saveSupersetFromMarkdown()
+            return
+        }
+
         var saveName = name
         var saveNotes = notes
         var saveEquipment = equipmentType
@@ -281,8 +308,91 @@ struct EditPlanExerciseSheet: View {
         }
         updatedExercise.sets = newPlannedSets
 
-        onSave(updatedExercise)
+        onSave([updatedExercise])
         dismiss()
+    }
+
+    /// Parse the user's superset markdown and emit the parent + all children as
+    /// a single replacement set. Wraps the input as a workout/section so the
+    /// parser interprets `### name` as a superset header (when name contains
+    /// "superset") and nested `#### child` headings as superset children.
+    private func saveSupersetFromMarkdown() {
+        let wrappedMarkdown = "# Workout\n## Main\n\(markdownText)"
+        let result = MarkdownParser.parseWorkout(wrappedMarkdown)
+        guard let plan = result.data else {
+            markdownError = result.errors.first ?? "Failed to parse markdown"
+            return
+        }
+        guard let parsedParent = plan.exercises.first(where: { $0.groupType == .superset && $0.sets.isEmpty }) else {
+            markdownError = "Couldn't find a superset header — make sure the first line starts with '### Superset:'"
+            return
+        }
+        let parsedChildren = plan.exercises.filter { $0.parentExerciseId == parsedParent.id }
+        guard !parsedChildren.isEmpty else {
+            markdownError = "Superset needs at least one child exercise (nested under ####)"
+            return
+        }
+
+        // Preserve the original parent's ID, section parentage, ordering, and
+        // groupName so existing references in the plan stay stable. Children
+        // get re-linked to that preserved parent ID.
+        var finalParent = parsedParent
+        finalParent.id = exercise.id
+        finalParent.parentExerciseId = exercise.parentExerciseId
+        finalParent.orderIndex = exercise.orderIndex
+        finalParent.groupType = .superset
+        finalParent.groupName = exercise.groupName
+
+        let finalChildren = parsedChildren.map { child -> PlannedExercise in
+            var c = child
+            c.parentExerciseId = finalParent.id
+            c.groupType = .superset
+            c.groupName = finalParent.groupName
+            return c
+        }
+
+        markdownError = nil
+        onSave([finalParent] + finalChildren)
+        dismiss()
+    }
+
+    /// Build a `### Superset:\n#### child\n…` block with each child's notes
+    /// and sets, suitable for round-tripping through the parser.
+    private static func generateSupersetMarkdown(parent: PlannedExercise, children: [PlannedExercise]) -> String {
+        var lines: [String] = []
+        lines.append("### \(parent.exerciseName)")
+        if let notes = parent.notes, !notes.isEmpty {
+            lines.append(notes)
+        }
+        for child in children {
+            lines.append("")
+            lines.append("#### \(child.exerciseName)")
+            if let equip = child.equipmentType, !equip.isEmpty {
+                lines.append("@type: \(equip)")
+            }
+            if let notes = child.notes, !notes.isEmpty {
+                lines.append(notes)
+            }
+            for set in child.sets {
+                let target = set.entries.first?.target
+                var parts: [String] = []
+                if let w = target?.weight?.value {
+                    let wStr = w.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(w))" : String(format: "%.1f", w)
+                    parts.append(wStr)
+                    if let unit = target?.weight?.unit {
+                        parts.append(unit.rawValue)
+                    }
+                }
+                if let r = target?.reps {
+                    parts.append("x \(r)")
+                }
+                if let t = target?.time {
+                    parts.append("\(t)s")
+                }
+                lines.append("- \(parts.joined(separator: " "))")
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func generateMarkdownFromForm() -> String {

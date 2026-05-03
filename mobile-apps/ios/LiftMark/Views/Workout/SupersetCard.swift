@@ -84,19 +84,17 @@ struct SupersetCard: View {
                         .clipShape(Circle())
                         .accessibilityHidden(true)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: LiftMarkTheme.spacingXS) {
-                            Text("SUPERSET")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.purple)
-                                .clipShape(Capsule())
-                            Text(supersetTitle)
-                                .font(.headline)
-                                .foregroundStyle(allSetsCompleted ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
-                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("SUPERSET")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.purple)
+                            .clipShape(Capsule())
+                        Text(supersetTitle)
+                            .font(.headline)
+                            .foregroundStyle(allSetsCompleted ? LiftMarkTheme.secondaryLabel : LiftMarkTheme.label)
                         Text(children.map { "\($0.displayNumber). \($0.exercise.exerciseName)" }.joined(separator: " + "))
                             .font(.caption)
                             .foregroundStyle(LiftMarkTheme.secondaryLabel)
@@ -119,6 +117,24 @@ struct SupersetCard: View {
             .accessibilityHint(isCollapsed ? "Shows all interleaved sets" : "Hides sets for this superset")
 
             if !isCollapsed {
+                // Per-child notes — shown once at the top of the expanded card
+                // so descriptions/instructions aren't lost inside a superset.
+                ForEach(children, id: \.exercise.id) { child in
+                    if let notes = child.exercise.notes, !notes.isEmpty {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(child.exercise.exerciseName)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                            Text(notes)
+                                .font(.caption)
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                .italic()
+                        }
+                        .padding(.leading, 32)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
                 // Interleaved sets
                 let interleaved = interleavedSets
                 let firstPendingSetId = interleaved.first(where: { $0.set.status == .pending })?.set.id
@@ -159,6 +175,30 @@ struct SupersetCard: View {
                         .id(restTimerGeneration)
                     }
                 }
+
+                // YouTube search — one link per child. Each row has a 44pt
+                // minimum height so adjacent links are independent tap targets.
+                Divider()
+                VStack(spacing: 16) {
+                    ForEach(children, id: \.exercise.id) { child in
+                        if let url = youtubeSearchURL(for: child.exercise.exerciseName) {
+                            Link(destination: url) {
+                                HStack(spacing: LiftMarkTheme.spacingSM) {
+                                    Image(systemName: "play.rectangle")
+                                        .font(.caption)
+                                        .accessibilityHidden(true)
+                                    Text("Search \"\(child.exercise.exerciseName)\" on YouTube")
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(LiftMarkTheme.secondaryLabel)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            }
+                            .accessibilityIdentifier("youtube-link-\(child.exercise.exerciseName)")
+                            .accessibilityLabel("Search \(child.exercise.exerciseName) form videos on YouTube")
+                            .accessibilityHint("Opens YouTube in your browser")
+                        }
+                    }
+                }
             }
         }
         .padding()
@@ -173,6 +213,11 @@ struct SupersetCard: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("superset-card-\(parentExercise.exerciseName)")
         .accessibilityValue(cardTint.accessibilityDescription ?? "")
+    }
+
+    private func youtubeSearchURL(for name: String) -> URL? {
+        let query = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? name
+        return URL(string: "https://www.youtube.com/results?search_query=\(query)+form")
     }
 
     private var supersetTitle: String {

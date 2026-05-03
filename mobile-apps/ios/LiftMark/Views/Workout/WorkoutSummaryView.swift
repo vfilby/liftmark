@@ -160,13 +160,19 @@ struct WorkoutSummaryView: View {
                     }
                     .accessibilityIdentifier("workout-summary-highlights")
 
-                    // Stats Grid
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LiftMarkTheme.spacingMD) {
-                        StatCard(title: "Duration", value: durationText, icon: "clock")
-                        StatCard(title: "Sets", value: "\(completedSets)", icon: "repeat")
-                        StatCard(title: "Reps", value: "\(totalReps)", icon: "number")
-                        StatCard(title: "Volume", value: formatVolume(totalVolume), icon: "scalemass")
+                    // Stats strip — compact inline row, four stats with dividers
+                    HStack(spacing: 0) {
+                        StatPill(title: "Duration", value: durationText)
+                        Divider().frame(height: 32)
+                        StatPill(title: "Sets", value: "\(completedSets)")
+                        Divider().frame(height: 32)
+                        StatPill(title: "Reps", value: "\(totalReps)")
+                        Divider().frame(height: 32)
+                        StatPill(title: "Volume", value: formatVolume(totalVolume))
                     }
+                    .padding(.vertical, LiftMarkTheme.spacingSM)
+                    .background(LiftMarkTheme.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
                     .accessibilityIdentifier("workout-summary-stats")
 
                     // Completion Card
@@ -395,20 +401,52 @@ struct WorkoutSummaryView: View {
             }
         }
 
-        // Streak detection
-        let completedDates = Set(sessionStore.sessions.compactMap { session -> String? in
-            session.status == .completed ? session.date : nil
-        })
-        if completedDates.count >= 3 {
+        // Consecutive-week streak: weeks (Mon–Sun) with ≥1 completed workout,
+        // counted backward from this session's week. Only highlighted at 2+.
+        if let weeks = consecutiveWeekStreak(endingWith: session), weeks >= 2 {
             result.append(WorkoutHighlight(
                 type: .streak,
                 emoji: "🔥",
                 title: "Streak",
-                message: "\(completedDates.count) workouts completed"
+                message: "\(weeks) weeks in a row"
             ))
         }
 
         return result
+    }
+
+    /// Number of consecutive ISO calendar weeks ending in `session`'s week that
+    /// contain at least one completed workout.
+    private func consecutiveWeekStreak(endingWith session: WorkoutSession) -> Int? {
+        var calendar = Calendar(identifier: .iso8601)
+        calendar.firstWeekday = 2 // Monday
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+
+        guard let anchor = formatter.date(from: session.date),
+              let anchorWeekStart = calendar.dateInterval(of: .weekOfYear, for: anchor)?.start
+        else { return nil }
+
+        let completedWeekStarts: Set<Date> = Set(
+            sessionStore.sessions.compactMap { s -> Date? in
+                guard s.status == .completed,
+                      let d = formatter.date(from: s.date),
+                      let wk = calendar.dateInterval(of: .weekOfYear, for: d)?.start
+                else { return nil }
+                return wk
+            }
+        )
+
+        var weeks = 0
+        var cursor = anchorWeekStart
+        while completedWeekStarts.contains(cursor) {
+            weeks += 1
+            guard let prev = calendar.date(byAdding: .weekOfYear, value: -1, to: cursor) else { break }
+            cursor = prev
+        }
+        return weeks
     }
 
     private func exportSession() {
@@ -439,27 +477,21 @@ struct WorkoutSummaryView: View {
 
 // MARK: - Stat Card
 
-private struct StatCard: View {
+private struct StatPill: View {
     let title: String
     let value: String
-    let icon: String
 
     var body: some View {
-        VStack(spacing: LiftMarkTheme.spacingXS) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundStyle(LiftMarkTheme.secondaryLabel)
-                .accessibilityHidden(true)
+        VStack(spacing: 2) {
             Text(value)
-                .font(.title2.bold())
+                .font(.headline.monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             Text(title)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(LiftMarkTheme.secondaryLabel)
         }
         .frame(maxWidth: .infinity)
-        .padding()
-        .background(LiftMarkTheme.secondaryBackground)
-        .clipShape(RoundedRectangle(cornerRadius: LiftMarkTheme.cornerRadiusMD))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
     }

@@ -80,10 +80,26 @@ struct WorkoutDetailView: View {
                 // Skip orphan children already handled
                 continue
             } else if exercise.groupType == .section && exercise.sets.isEmpty {
-                // Section header — gather children as individual exercises
+                // Section header — gather children. A child that is itself a
+                // superset parent must recurse so grandchildren render inside
+                // PlanSupersetCard; otherwise the superset parent (no sets)
+                // shows as an empty single card and grandchildren are dropped.
                 processedIds.insert(exercise.id)
                 for child in exercises {
-                    if child.parentExerciseId == exercise.id {
+                    guard child.parentExerciseId == exercise.id else { continue }
+                    if child.groupType == .superset && child.sets.isEmpty {
+                        var grandchildren: [PlannedExercise] = []
+                        for grandchild in exercises {
+                            if grandchild.parentExerciseId == child.id {
+                                grandchildren.append(grandchild)
+                                processedIds.insert(grandchild.id)
+                            }
+                        }
+                        processedIds.insert(child.id)
+                        if !grandchildren.isEmpty {
+                            items.append(.superset(parent: child, children: grandchildren))
+                        }
+                    } else {
                         items.append(.single(exercise: child))
                         processedIds.insert(child.id)
                     }
@@ -177,7 +193,8 @@ struct WorkoutDetailView: View {
                                             PlanSupersetCard(
                                                 parent: parent,
                                                 children: children,
-                                                sectionName: section.name
+                                                sectionName: section.name,
+                                                onEdit: { editingPlanExercise = parent }
                                             )
                                         }
                                     }
@@ -250,10 +267,27 @@ struct WorkoutDetailView: View {
             }
         }
         .sheet(item: $editingPlanExercise) { exercise in
-            EditPlanExerciseSheet(exercise: exercise) { updatedExercise in
-                guard var currentPlan = plan else { return }
-                if let idx = currentPlan.exercises.firstIndex(where: { $0.id == exercise.id }) {
-                    currentPlan.exercises[idx] = updatedExercise
+            let supersetChildren = (plan?.exercises.filter { $0.parentExerciseId == exercise.id }) ?? []
+            EditPlanExerciseSheet(exercise: exercise, children: supersetChildren) { updatedExercises in
+                guard var currentPlan = plan, !updatedExercises.isEmpty else { return }
+                if updatedExercises.count == 1 {
+                    if let idx = currentPlan.exercises.firstIndex(where: { $0.id == exercise.id }) {
+                        currentPlan.exercises[idx] = updatedExercises[0]
+                    }
+                } else {
+                    // Superset: replace parent + all old children with the new
+                    // parent + new children, then renumber orderIndex so the
+                    // section's exercises stay sequential.
+                    let oldChildIds = Set(currentPlan.exercises.filter { $0.parentExerciseId == exercise.id }.map { $0.id })
+                    currentPlan.exercises.removeAll { oldChildIds.contains($0.id) }
+                    if let parentIdx = currentPlan.exercises.firstIndex(where: { $0.id == exercise.id }) {
+                        currentPlan.exercises[parentIdx] = updatedExercises[0]
+                        let newChildren = Array(updatedExercises.dropFirst())
+                        currentPlan.exercises.insert(contentsOf: newChildren, at: parentIdx + 1)
+                    }
+                    for i in 0..<currentPlan.exercises.count {
+                        currentPlan.exercises[i].orderIndex = i
+                    }
                 }
                 if currentPlan.sourceMarkdown != nil {
                     currentPlan.sourceMarkdown = regenerateMarkdown(from: currentPlan)
