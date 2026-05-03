@@ -133,6 +133,7 @@ struct TestAction {
     let catchSteps: [TestAction]?
     let permissions: YAMLValue?
     let launchArgs: YAMLValue?
+    let name: String?
 }
 
 // MARK: - TestSpecRunner
@@ -309,7 +310,8 @@ class TestSpecRunner {
             trySteps: yaml["try"]?.arrayValue?.compactMap(parseAction),
             catchSteps: yaml["catch"]?.arrayValue?.compactMap(parseAction),
             permissions: yaml["permissions"],
-            launchArgs: yaml["launchArgs"]
+            launchArgs: yaml["launchArgs"],
+            name: yaml["name"]?.stringValue
         )
     }
 }

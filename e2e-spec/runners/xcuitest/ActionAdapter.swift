@@ -72,6 +72,8 @@ class ActionAdapter {
             try executeTapSegment(action)
         case "execScript":
             try executeExecScript(action)
+        case "screenshot":
+            try executeScreenshot(action)
         default:
             XCTFail("Unknown action: \(action.action)")
         }
@@ -792,6 +794,22 @@ class ActionAdapter {
 
         let workoutName = element(byText: expectedName)
         XCTAssertTrue(workoutName.waitForExistence(timeout: 10), "Expected workout '\(expectedName)' not found after import")
+    }
+
+    private func executeScreenshot(_ action: TestAction) throws {
+        guard let name = action.name, !name.isEmpty else {
+            throw ActionError.missingParam("name", "screenshot")
+        }
+        // Wrap in XCTContext.runActivity so the attachment is owned by the
+        // current test activity — keeps it in the .xcresult bundle without
+        // needing a reference to the live XCTestCase.
+        XCTContext.runActivity(named: "Screenshot: \(name)") { activity in
+            let screenshot = XCUIScreen.main.screenshot()
+            let attachment = XCTAttachment(screenshot: screenshot)
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            activity.add(attachment)
+        }
     }
 
     private func executeExecScript(_ action: TestAction) throws {

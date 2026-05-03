@@ -32,6 +32,9 @@ struct LiftMarkApp: App {
         if ProcessInfo.processInfo.arguments.contains("--seed-sample-plans") {
             Self.seedSamplePlans()
         }
+        if ProcessInfo.processInfo.arguments.contains("--seed-screenshots") {
+            ScreenshotSeed.seed()
+        }
         #endif
 
         if !Self.isRunningTests {

@@ -1,0 +1,151 @@
+name: "App Store Screenshots"
+
+# Captures App Store screenshots from a deterministic seeded state. Pairs
+# with --seed-screenshots in the app: that flag plants four LMWF plans plus
+# six weeks of completed sessions on a PPL+conditioning split so home tiles,
+# history, and exercise progress charts all show realistic, varied content.
+#
+# Each `screenshot` action writes a PNG attachment into the .xcresult bundle
+# under the supplied name. The Makefile `screenshots` target extracts them
+# into mobile-apps/ios/Screenshots/.
+
+setupOnce:
+  - action: launchApp
+    newInstance: true
+    launchArgs:
+      - "--seed-screenshots"
+  - action: tryCatch
+    try:
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+    catch:
+      - action: waitFor
+        target: "max-lift-tile-0"
+        timeout: 5000
+
+tests:
+  - name: "capture home"
+    steps:
+      - action: tap
+        target: "tab-home"
+      - action: waitFor
+        target: "home-screen"
+        timeout: 5000
+      - action: delay
+        ms: 500
+      - action: screenshot
+        name: "01-home"
+
+  # Push Day has no warmup so workout-detail opens directly on the working
+  # sets — Bench Press, Overhead Press, and the Superset visible in frame.
+  - name: "capture workout detail"
+    steps:
+      - action: tap
+        target: "tab-workouts"
+      - action: waitFor
+        target: "workouts-screen"
+        timeout: 5000
+      - action: tap
+        target: "workout-card-index-0"
+      - action: waitFor
+        target: "workout-detail-view"
+        timeout: 5000
+      - action: delay
+        ms: 400
+      - action: screenshot
+        name: "02-workout-detail"
+
+  # Active workout opens with Bench Press as the current exercise, so the
+  # expanded card shows the working sets with their "Rest 90s/120s/150s"
+  # indicators between pending sets — the in-flow timer cues.
+  - name: "capture active workout"
+    steps:
+      - action: tap
+        target: "start-workout-button"
+      - action: waitFor
+        target: "active-workout-screen"
+        timeout: 10000
+      - action: delay
+        ms: 800
+      - action: screenshot
+        name: "03-active-workout"
+
+  # Same active workout, scrolled so the Superset card lands in frame.
+  - name: "capture active workout superset"
+    steps:
+      - action: scroll
+        target: "active-workout-scroll"
+        direction: "up"
+      - action: scroll
+        target: "active-workout-scroll"
+        direction: "up"
+      - action: delay
+        ms: 400
+      - action: screenshot
+        name: "04-active-superset"
+
+  # Relaunch with a fresh DB so the in-progress session left over from the
+  # active workout step doesn't pollute the history list. Re-seeding gives
+  # us the same six weeks of varied PPL+conditioning sessions.
+  - name: "reset for history capture"
+    steps:
+      - action: launchApp
+        newInstance: true
+        launchArgs:
+          - "--reset-data"
+          - "--seed-screenshots"
+      # --reset-data clears the disclaimer-accepted flag, so onboarding
+      # re-presents on relaunch. ActionAdapter only auto-dismisses on the
+      # first launch of a scenario, so handle it explicitly here.
+      - action: tryCatch
+        try:
+          - action: waitFor
+            target: "onboarding-accept-button"
+            timeout: 5000
+          - action: tap
+            target: "onboarding-accept-button"
+        catch: []
+      - action: waitFor
+        target: "home-screen"
+        timeout: 30000
+
+  - name: "capture history list"
+    steps:
+      - action: tap
+        target: "tab-history"
+      - action: waitFor
+        target: "history-screen"
+        timeout: 5000
+      - action: delay
+        ms: 500
+      - action: screenshot
+        name: "05-history"
+
+  # History detail with the Bench Press trend chart toggled open so the
+  # inline progress graph is visible alongside the logged sets. Index 0 —
+  # the seed's most recent session is Push Day, so this lands on a session
+  # that contains Barbell Bench Press.
+  - name: "capture trend graph"
+    steps:
+      - action: tapIndex
+        target: "history-session-card"
+        index: 0
+      - action: waitFor
+        target: "history-detail-screen"
+        timeout: 8000
+      # Trend history loads asynchronously in ExerciseTrendView's onAppear,
+      # and the toggle sits below Bench Press's five logged sets. Use
+      # `expect toExist` since it scroll-searches when the element isn't
+      # yet in the accessibility tree.
+      # Trend history loads asynchronously, so wait for the toggle text
+      # to render before tapping. Bench Press is the first exercise so the
+      # first "Show trends" button on the page belongs to it.
+      - action: delay
+        ms: 1200
+      - action: tapText
+        text: "Show trends"
+      - action: delay
+        ms: 1000
+      - action: screenshot
+        name: "06-trend-graph"

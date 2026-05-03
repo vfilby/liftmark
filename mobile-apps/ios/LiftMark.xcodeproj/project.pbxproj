@@ -177,6 +177,7 @@
 		DA40BCCFFD3A680879630392 /* CKRecordMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3CB86B68F041A69E6F4E6B7 /* CKRecordMapperTests.swift */; };
 		DAE84428789E0D6CA78B74D4 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9175B7DB4682E974D72FBF5 /* LoadingView.swift */; };
 		DC281FEEC2342BDA851A5E3D /* DebugLogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BC30CC7136FEBF11EFB81E /* DebugLogsView.swift */; };
+		DE179F500208338C247CC1D7 /* ScreenshotSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FFC4B0E050FECBAB275D1E5 /* ScreenshotSeed.swift */; };
 		DE32D2B2D0BC36737819F32E /* SessionNotesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4285B345A9C1B0810A967BD /* SessionNotesSheet.swift */; };
 		DE38D1DB725BDF730177A59C /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 35C7774955CFDD8AC21B7740 /* Yams */; };
 		DF373888E7CD580855CE16A4 /* DatabaseBackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10878713306254945D8C4834 /* DatabaseBackupServiceTests.swift */; };
@@ -298,6 +299,7 @@
 		4F067E23B00328947D5E7090 /* SessionRepository+Stats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRepository+Stats.swift"; sourceTree = "<group>"; };
 		4FB0FF7A71BDC475DA488AB4 /* SyncChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncChange.swift; sourceTree = "<group>"; };
 		4FD57CEFF5022DFA698C39EF /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		4FFC4B0E050FECBAB275D1E5 /* ScreenshotSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotSeed.swift; sourceTree = "<group>"; };
 		518E43810147703F2482ED39 /* ExerciseCardTintTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCardTintTests.swift; sourceTree = "<group>"; };
 		52467400FBF874734EDFD73B /* SettingsPrivacySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacySection.swift; sourceTree = "<group>"; };
 		54DEB10F36ACE6291531A52C /* RestTimerTickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerTickTests.swift; sourceTree = "<group>"; };
@@ -688,6 +690,7 @@
 				DA93F33BB15CE056E4A94451 /* BuildInfo.swift */,
 				888A9E535EF4C68643D49640 /* ContentView.swift */,
 				70B5C9C6A595B9A570A75396 /* LiftMarkApp.swift */,
+				4FFC4B0E050FECBAB275D1E5 /* ScreenshotSeed.swift */,
 				0F5CCC90C4FCF3464EB1900B /* SentryConfig.swift */,
 			);
 			path = App;
@@ -1143,6 +1146,7 @@
 				F37EC6ABED84F7A871698B2A /* PlateCalculator.swift in Sources */,
 				8A5E5266EC0AF8521010B53C /* RestTimerState.swift in Sources */,
 				A47498AD84CC4B09D112D56A /* RestTimerView.swift in Sources */,
+				DE179F500208338C247CC1D7 /* ScreenshotSeed.swift in Sources */,
 				CFA76D7EC9EE9EC8195CCD9F /* SecureStorage.swift in Sources */,
 				4795C2A323A8F776D98904FE /* SentryConfig.swift in Sources */,
 				0A1408CC7EF27C2FCA9FAEF2 /* SessionLMWFEncoder.swift in Sources */,

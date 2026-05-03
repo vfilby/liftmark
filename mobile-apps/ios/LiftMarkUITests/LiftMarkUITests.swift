@@ -103,4 +103,11 @@ final class LiftMarkUITests: XCTestCase {
         runner.runScenario(named: "ai-prompt-settings")
     }
 
+    /// Capture App Store screenshots. Invoke via `make screenshots` to land
+    /// the PNGs under mobile-apps/ios/Screenshots/. Adds ~30s to a full
+    /// `make test` run since the screenshot scenario is part of the suite.
+    func testScreenshots() throws {
+        runner.runScenario(named: "screenshots")
+    }
+
 }

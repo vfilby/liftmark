@@ -50,6 +50,9 @@ xcuserdata/
 mobile-apps/ios/build/
 mobile-apps/ios/.build/
 
+# Generated App Store screenshots — regenerate via `make screenshots`
+mobile-apps/ios/Screenshots/
+
 # Sentry DSN — local xcconfig, commit the .example instead
 mobile-apps/ios/Config/Sentry.xcconfig
 
